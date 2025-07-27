@@ -135,7 +135,7 @@ export default function NewCampaignPage() {
         
     const mockProductForPreview = mockProducts[0];
     const mockReviewForPreview = mockReviews[0];
-    const canPreview = creatives.some(c => c.image || c.embedUrl);
+    const canPreview = creatives.length > 0;
 
 
     return (
@@ -350,7 +350,7 @@ export default function NewCampaignPage() {
                                                                     <div className="relative w-full h-full">
                                                                         <div className="relative" style={{height: isPreviewMobile ? '100%' : '100%'}}>
                                                                             {creative.image?.src && <Image src={creative.image.src} alt={creative.title} fill className="object-cover" />}
-                                                                            {creative.embedUrl && !creative.image && <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                                            {creative.embedUrl && !creative.image?.src && <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
                                                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                                                             <div className="absolute inset-0 flex items-center justify-center text-center">
                                                                                 <div className="text-white p-4">
@@ -528,5 +528,3 @@ export default function NewCampaignPage() {
         </div>
     );
 }
-
-    
