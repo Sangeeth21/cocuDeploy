@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -19,6 +19,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
+import { Separator } from "@/components/ui/separator"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -121,6 +122,15 @@ function ImagePreview3D({ images }: { images: ProductImages }) {
     );
 }
 
+const getYoutubeEmbedUrl = (url: string) => {
+    let embedUrl = null;
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(youtubeRegex);
+    if (match && match[1]) {
+        embedUrl = `https://www.youtube.com/embed/${match[1]}`;
+    }
+    return embedUrl;
+}
 
 export default function NewProductPage() {
     const { toast } = useToast();
@@ -135,6 +145,10 @@ export default function NewProductPage() {
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
 
+    const [galleryImages, setGalleryImages] = useState<{file: File, src: string}[]>([]);
+    const [videoUrl, setVideoUrl] = useState("");
+    const [videoEmbedUrl, setVideoEmbedUrl] = useState<string | null>(null);
+
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, side: ImageSide) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
@@ -142,6 +156,34 @@ export default function NewProductPage() {
             setImages(prev => ({ ...prev, [side]: { file, src } }));
         }
     };
+    
+    const handleGalleryImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files) {
+            const files = Array.from(event.target.files);
+            const newImages = files.map(file => ({
+                file,
+                src: URL.createObjectURL(file)
+            }));
+            setGalleryImages(prev => [...prev, ...newImages]);
+        }
+    };
+    
+    const removeGalleryImage = (srcToRemove: string) => {
+        setGalleryImages(prev => {
+            const imageToRemove = prev.find(img => img.src === srcToRemove);
+            if (imageToRemove) {
+                 URL.revokeObjectURL(imageToRemove.src);
+            }
+            return prev.filter(img => img.src !== srcToRemove);
+        });
+    }
+    
+    const handleVideoUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const url = e.target.value;
+        setVideoUrl(url);
+        const embedUrl = getYoutubeEmbedUrl(url);
+        setVideoEmbedUrl(embedUrl);
+    }
 
     const removeImage = (side: ImageSide) => {
         setImages(prev => {
@@ -313,6 +355,53 @@ export default function NewProductPage() {
                         </Button>
                     </div>
                      {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, & Right images to enable the 3D preview.</p>}
+                     <Separator className="my-6" />
+                     
+                     <div className="space-y-4">
+                        <div>
+                             <Label className="font-medium">Gallery Images</Label>
+                             <p className="text-sm text-muted-foreground">Upload additional images for display in the product gallery.</p>
+                        </div>
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                            {galleryImages.map((image, index) => (
+                                <div key={index} className="relative group aspect-square">
+                                    <Image src={image.src} alt={`Gallery image ${index + 1}`} fill className="object-cover rounded-md" />
+                                     <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeGalleryImage(image.src)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ))}
+                             <label htmlFor="gallery-upload" className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                <ImageIcon className="h-6 w-6 text-muted-foreground"/>
+                                <span className="text-xs text-muted-foreground">Add</span>
+                            </label>
+                            <input id="gallery-upload" type="file" multiple accept="image/*" className="sr-only" onChange={handleGalleryImageUpload} />
+                        </div>
+                     </div>
+
+                     <Separator className="my-6" />
+
+                     <div className="space-y-4">
+                        <div>
+                            <Label htmlFor="video-url" className="font-medium">Product Video</Label>
+                             <p className="text-sm text-muted-foreground">Add a link to a promotional video on YouTube.</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <Video className="h-5 w-5 text-muted-foreground"/>
+                             <Input id="video-url" placeholder="https://www.youtube.com/watch?v=..." value={videoUrl} onChange={handleVideoUrlChange} />
+                        </div>
+                        {videoEmbedUrl && (
+                            <div className="aspect-video w-full rounded-lg overflow-hidden border">
+                                <iframe
+                                    src={videoEmbedUrl}
+                                    title="Product Video Preview"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                    allowFullScreen
+                                    className="w-full h-full"
+                                ></iframe>
+                            </div>
+                        )}
+                     </div>
                 </CardContent>
             </Card>
         </div>
