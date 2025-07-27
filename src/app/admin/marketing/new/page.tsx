@@ -18,6 +18,7 @@ import type { DisplayProduct, MarketingCampaign } from "@/lib/types";
 import { format, addDays, parseISO } from "date-fns";
 import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User, PlusCircle, Trash2, Clock, Settings } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import type { DateRange } from "react-day-picker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
