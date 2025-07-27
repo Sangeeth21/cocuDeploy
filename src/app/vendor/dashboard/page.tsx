@@ -1,29 +1,20 @@
+
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ListChecks, LineChart, Package, MessageSquare, LayoutTemplate, PlusCircle, ArrowRight } from "lucide-react";
+import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, LayoutDashboard } from "lucide-react";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 
 export default function VendorDashboardPage() {
   return (
-    <div className="container py-12">
+    <VendorSidebarLayout>
       <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-                <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
-                <AvatarFallback>V</AvatarFallback>
-            </Avatar>
-            <div>
-                <h1 className="text-3xl font-bold font-headline">Vendor Dashboard</h1>
-                <p className="text-muted-foreground">Welcome back, Timeless Co.</p>
-            </div>
+        <div>
+            <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
+            <p className="text-muted-foreground">Welcome back, Timeless Co.</p>
         </div>
-        <Button asChild>
-            <Link href="/products/new">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add New Product
-            </Link>
-        </Button>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
@@ -77,10 +68,10 @@ export default function VendorDashboardPage() {
             <CardTitle className="font-headline">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4">
-              <Button variant="outline"><Package className="mr-2"/> Manage Products</Button>
-              <Button variant="outline"><ListChecks className="mr-2"/> View Orders</Button>
-              <Button variant="outline"><LineChart className="mr-2"/> View Analytics</Button>
-              <Button variant="outline"><MessageSquare className="mr-2"/> Read Messages</Button>
+              <Button variant="outline" asChild><Link href="/vendor/products"><Package className="mr-2"/> Manage Products</Link></Button>
+              <Button variant="outline" asChild><Link href="/vendor/orders"><ListChecks className="mr-2"/> View Orders</Link></Button>
+              <Button variant="outline" asChild><Link href="/vendor/analytics"><LineChart className="mr-2"/> View Analytics</Link></Button>
+              <Button variant="outline" asChild><Link href="/vendor/messages"><MessageSquare className="mr-2"/> Read Messages</Link></Button>
           </CardContent>
         </Card>
         <Card>
@@ -100,6 +91,6 @@ export default function VendorDashboardPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </VendorSidebarLayout>
   );
 }
