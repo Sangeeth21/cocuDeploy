@@ -28,7 +28,7 @@ export default function VendorTemplatesPage() {
                         <CardHeader className="p-0">
                              <div className="relative aspect-video w-full overflow-hidden">
                                 <Image 
-                                    src={`https://placehold.co/600x400`} 
+                                    src={`https://placehold.co/600x400.png`} 
                                     alt={`${template.name} Template Preview`} 
                                     fill 
                                     className="object-cover transition-transform duration-300 group-hover:scale-105"

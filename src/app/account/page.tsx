@@ -11,7 +11,7 @@ export default function AccountPage() {
     <div className="container py-12">
       <div className="flex items-center gap-6 mb-8">
         <Avatar className="h-24 w-24">
-          <AvatarImage src="https://placehold.co/100x100" alt="User Avatar" data-ai-hint="person face" />
+          <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" data-ai-hint="person face" />
           <AvatarFallback>JD</AvatarFallback>
         </Avatar>
         <div>

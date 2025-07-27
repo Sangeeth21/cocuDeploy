@@ -7,12 +7,12 @@ export const mockProducts: Product[] = [
     description: 'A timeless piece that combines classic design with modern functionality. Features a genuine leather strap and a stainless steel case. Perfect for any occasion, from formal events to casual outings. Water-resistant up to 50 meters.',
     price: 199.99,
     category: 'Accessories',
-    imageUrl: 'https://placehold.co/600x600',
+    imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.5,
     reviewCount: 120,
     vendor: 'Timeless Co.',
     tags: ['watch', 'leather'],
-    images: ['https://placehold.co/600x600', 'https://placehold.co/600x400', 'https://placehold.co/400x600']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
   {
     id: '2',
@@ -20,12 +20,12 @@ export const mockProducts: Product[] = [
     description: 'Experience immersive sound with these noise-cancelling wireless headphones. Up to 30 hours of battery life on a single charge. Connects seamlessly to all your devices. Includes a carrying case.',
     price: 149.50,
     category: 'Electronics',
-    imageUrl: 'https://placehold.co/600x600',
+    imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.8,
     reviewCount: 350,
     vendor: 'SoundWave',
     tags: ['headphones', 'audio'],
-    images: ['https://placehold.co/600x600', 'https://placehold.co/600x400', 'https://placehold.co/400x600']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
   {
     id: '3',
@@ -33,12 +33,12 @@ export const mockProducts: Product[] = [
     description: 'Made from 100% GOTS certified organic cotton, this t-shirt is both comfortable and sustainable. A wardrobe essential with a classic fit. Available in various colors.',
     price: 29.99,
     category: 'Apparel',
-    imageUrl: 'https://placehold.co/600x600',
+    imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.2,
     reviewCount: 85,
     vendor: 'EcoThreads',
     tags: ['t-shirt', 'organic'],
-    images: ['https://placehold.co/600x600', 'https://placehold.co/600x400', 'https://placehold.co/400x600']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
   {
     id: '4',
@@ -46,12 +46,12 @@ export const mockProducts: Product[] = [
     description: 'Start your day with a beautiful, handcrafted ceramic mug. Each piece is unique, with subtle variations in color and texture. Microwave and dishwasher safe. Holds 12 oz.',
     price: 24.00,
     category: 'Home Goods',
-    imageUrl: 'https://placehold.co/600x600',
+    imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.9,
     reviewCount: 215,
     vendor: 'Artisan Pottery',
     tags: ['mug', 'ceramic'],
-    images: ['https://placehold.co/600x600', 'https://placehold.co/600x400', 'https://placehold.co/400x600']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
   {
     id: '5',
@@ -59,12 +59,12 @@ export const mockProducts: Product[] = [
     description: 'A rich and aromatic blend of single-origin Arabica beans from the highlands of Colombia. Medium roast with notes of chocolate and citrus. Whole bean, 12 oz bag.',
     price: 18.99,
     category: 'Groceries',
-    imageUrl: 'https://placehold.co/600x600',
+    imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.7,
     reviewCount: 412,
     vendor: 'The Daily Grind',
     tags: ['coffee', 'beans'],
-    images: ['https://placehold.co/600x600', 'https://placehold.co/600x400', 'https://placehold.co/400x600']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
   {
     id: '6',
@@ -72,12 +72,12 @@ export const mockProducts: Product[] = [
     description: 'This non-slip, eco-friendly yoga mat provides the perfect cushioning and stability for your practice. Made from natural tree rubber. Includes a carrying strap.',
     price: 79.99,
     category: 'Sports',
-    imageUrl: 'https://placehold.co/600x600',
+    imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.6,
     reviewCount: 198,
     vendor: 'ZenFlow',
     tags: ['yoga', 'fitness'],
-    images: ['https://placehold.co/600x600', 'https://placehold.co/600x400', 'https://placehold.co/400x600']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
   {
     id: '7',
@@ -85,12 +85,12 @@ export const mockProducts: Product[] = [
     description: 'A sleek and stylish desk that fits perfectly in any modern workspace. Features a durable oak top and sturdy steel legs. Easy assembly required.',
     price: 349.00,
     category: 'Furniture',
-    imageUrl: 'https://placehold.co/600x600',
+    imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.4,
     reviewCount: 55,
     vendor: 'Urban Desks',
     tags: ['desk', 'furniture'],
-    images: ['https://placehold.co/600x600', 'https://placehold.co/600x400', 'https://placehold.co/400x600']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
   {
     id: '8',
@@ -98,27 +98,27 @@ export const mockProducts: Product[] = [
     description: 'Rejuvenate your skin with this set of all-natural skincare products, including a cleanser, toner, and moisturizer. Vegan and cruelty-free. Suitable for all skin types.',
     price: 89.99,
     category: 'Beauty',
-    imageUrl: 'https://placehold.co/600x600',
+    imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.8,
     reviewCount: 289,
     vendor: 'GlowUp',
     tags: ['skincare', 'beauty'],
-    images: ['https://placehold.co/600x600', 'https://placehold.co/600x400', 'https://placehold.co/400x600']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
 ];
 
 export const mockReviews: Review[] = [
-    { id: '1', author: 'Jane D.', avatarUrl: 'https://placehold.co/40x40', rating: 5, title: 'Absolutely love it!', comment: 'This is the best purchase I have made this year. The quality is outstanding and it looks even better in person.', date: '2024-05-15' },
-    { id: '2', author: 'John S.', avatarUrl: 'https://placehold.co/40x40', rating: 4, title: 'Pretty good', comment: 'Solid product, works as advertised. The packaging was a bit flimsy but the product itself is great.', date: '2024-05-12' },
-    { id: '3', author: 'Emily R.', avatarUrl: 'https://placehold.co/40x40', rating: 5, title: 'Exceeded my expectations', comment: 'I was hesitant at first but I am so glad I bought it. Highly recommended!', date: '2024-05-10' },
-    { id: '4', author: 'Mike T.', avatarUrl: 'https://placehold.co/40x40', rating: 3, title: 'It\'s okay', comment: 'Does the job, but it feels a bit overpriced for what it is. Not bad, but not amazing either.', date: '2024-05-08' },
+    { id: '1', author: 'Jane D.', avatarUrl: 'https://placehold.co/40x40.png', rating: 5, title: 'Absolutely love it!', comment: 'This is the best purchase I have made this year. The quality is outstanding and it looks even better in person.', date: '2024-05-15' },
+    { id: '2', author: 'John S.', avatarUrl: 'https://placehold.co/40x40.png', rating: 4, title: 'Pretty good', comment: 'Solid product, works as advertised. The packaging was a bit flimsy but the product itself is great.', date: '2024-05-12' },
+    { id: '3', author: 'Emily R.', avatarUrl: 'https://placehold.co/40x40.png', rating: 5, title: 'Exceeded my expectations', comment: 'I was hesitant at first but I am so glad I bought it. Highly recommended!', date: '2024-05-10' },
+    { id: '4', author: 'Mike T.', avatarUrl: 'https://placehold.co/40x40.png', rating: 3, title: 'It\'s okay', comment: 'Does the job, but it feels a bit overpriced for what it is. Not bad, but not amazing either.', date: '2024-05-08' },
 ];
 
 export const mockCategories: Category[] = [
-    { name: 'Electronics', imageUrl: 'https://placehold.co/400x300', productCount: 150 },
-    { name: 'Apparel', imageUrl: 'https://placehold.co/400x300', productCount: 320 },
-    { name: 'Home Goods', imageUrl: 'https://placehold.co/400x300', productCount: 210 },
-    { name: 'Books', imageUrl: 'https://placehold.co/400x300', productCount: 80 },
-    { name: 'Sports', imageUrl: 'https://placehold.co/400x300', productCount: 120 },
-    { name: 'Beauty', imageUrl: 'https://placehold.co/400x300', productCount: 180 },
+    { name: 'Electronics', imageUrl: 'https://placehold.co/400x300.png', productCount: 150 },
+    { name: 'Apparel', imageUrl: 'https://placehold.co/400x300.png', productCount: 320 },
+    { name: 'Home Goods', imageUrl: 'https://placehold.co/400x300.png', productCount: 210 },
+    { name: 'Books', imageUrl: 'https://placehold.co/400x300.png', productCount: 80 },
+    { name: 'Sports', imageUrl: 'https://placehold.co/400x300.png', productCount: 120 },
+    { name: 'Beauty', imageUrl: 'https://placehold.co/400x300.png', productCount: 180 },
 ];
