@@ -1,5 +1,6 @@
 
-import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo } from './types';
+
+import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign } from './types';
 
 export const mockProducts: DisplayProduct[] = [
   {
@@ -265,6 +266,49 @@ export const mockActivity = [
 // Mock data for the new marketing features
 const futureDate = new Date();
 futureDate.setDate(futureDate.getDate() + 3);
+
+export const mockCampaigns: MarketingCampaign[] = [
+    {
+        id: "CAMP001",
+        name: "Summer Sale 2024",
+        type: "Sale",
+        status: "Active",
+        startDate: "2024-06-01",
+        endDate: "2024-06-30",
+    },
+    {
+        id: "CAMP002",
+        name: "New Electronics Launch",
+        type: "Promotion",
+        status: "Active",
+        startDate: "2024-06-15",
+        endDate: "2024-07-15",
+    },
+     {
+        id: "CAMP003",
+        name: "Weekend Flash Deals",
+        type: "Flash Sale",
+        status: "Scheduled",
+        startDate: "2024-06-22",
+        endDate: "2024-06-23",
+    },
+    {
+        id: "CAMP004",
+        name: "Holiday Freebies",
+        type: "Freebie",
+        status: "Finished",
+        startDate: "2023-12-15",
+        endDate: "2023-12-25",
+    },
+     {
+        id: "CAMP005",
+        name: "Draft Campaign",
+        type: "Sale",
+        status: "Draft",
+        startDate: "2024-08-01",
+        endDate: "2024-08-31",
+    }
+]
 
 export const mockFlashDeals: FlashDeal[] = [
     {

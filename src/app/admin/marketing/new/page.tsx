@@ -2,8 +2,8 @@
 
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -13,9 +13,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { mockProducts, mockReviews } from "@/lib/mock-data";
-import type { DisplayProduct } from "@/lib/types";
-import { format, addDays } from "date-fns";
+import { mockProducts, mockReviews, mockCampaigns } from "@/lib/mock-data";
+import type { DisplayProduct, MarketingCampaign } from "@/lib/types";
+import { format, addDays, parseISO } from "date-fns";
 import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User, PlusCircle, Trash2 } from "lucide-react";
 import Image from "next/image";
 import type { DateRange } from "react-day-picker";
@@ -41,7 +41,7 @@ type Creative = {
     title: string;
     description: string;
     cta: string;
-    image: { file: File, src: string } | null;
+    image: { file?: File, src: string } | null;
     videoUrl: string;
     embedUrl: string | null;
 };
@@ -49,7 +49,14 @@ type Creative = {
 
 export default function NewCampaignPage() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const { toast } = useToast();
+
+    const [campaignId, setCampaignId] = useState<string | null>(null);
+    const [pageTitle, setPageTitle] = useState("Create New Campaign");
+
+    const [campaignName, setCampaignName] = useState("");
+    const [campaignType, setCampaignType] = useState<MarketingCampaign['type'] | ''>('');
     const [date, setDate] = useState<DateRange | undefined>({ from: new Date(), to: addDays(new Date(), 7) });
     const [selectedProducts, setSelectedProducts] = useState<DisplayProduct[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
@@ -63,10 +70,32 @@ export default function NewCampaignPage() {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [previewingCreative, setPreviewingCreative] = useState<Creative | null>(null);
 
+     useEffect(() => {
+        const id = searchParams.get('id');
+        if (id) {
+            const existingCampaign = mockCampaigns.find(c => c.id === id);
+            if (existingCampaign) {
+                setCampaignId(id);
+                setPageTitle(`Editing: ${existingCampaign.name}`);
+                setCampaignName(existingCampaign.name);
+                setCampaignType(existingCampaign.type);
+                setDate({
+                    from: parseISO(existingCampaign.startDate),
+                    to: parseISO(existingCampaign.endDate),
+                });
+            }
+        }
+    }, [searchParams]);
+
     const handleCreateCampaign = () => {
+        const toastTitle = campaignId ? "Campaign Updated!" : "Campaign Created!";
+        const toastDescription = campaignId 
+            ? `The campaign "${campaignName}" has been updated successfully.`
+            : "The new marketing campaign has been saved successfully.";
+
         toast({
-            title: "Campaign Created!",
-            description: "The new marketing campaign has been saved successfully.",
+            title: toastTitle,
+            description: toastDescription,
         });
         router.push("/admin/marketing");
     };
@@ -158,7 +187,7 @@ export default function NewCampaignPage() {
                 <ArrowLeft className="mr-2 h-4 w-4" /> Back to Campaigns
             </Button>
             <div className="mb-4">
-                <h1 className="text-3xl font-bold font-headline">Create New Campaign</h1>
+                <h1 className="text-3xl font-bold font-headline">{pageTitle}</h1>
                 <p className="text-muted-foreground">Configure and launch a new marketing initiative.</p>
             </div>
             
@@ -171,20 +200,20 @@ export default function NewCampaignPage() {
                         <CardContent className="grid sm:grid-cols-2 gap-4">
                             <div className="sm:col-span-2 space-y-2">
                                 <Label htmlFor="campaign-name">Campaign Name</Label>
-                                <Input id="campaign-name" placeholder="e.g. Summer Flash Sale" />
+                                <Input id="campaign-name" placeholder="e.g. Summer Flash Sale" value={campaignName} onChange={e => setCampaignName(e.target.value)} />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="campaign-type">Campaign Type</Label>
-                                <Select>
+                                <Select value={campaignType} onValueChange={(value) => setCampaignType(value as MarketingCampaign['type'])}>
                                     <SelectTrigger id="campaign-type">
                                         <SelectValue placeholder="Select a type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="sale">Sale</SelectItem>
-                                        <SelectItem value="promotion">Promotion</SelectItem>
-                                        <SelectItem value="flash-sale">Flash Sale</SelectItem>
-                                        <SelectItem value="freebie">Freebie</SelectItem>
-                                        <SelectItem value="combo-offer">Combo Offer</SelectItem>
+                                        <SelectItem value="Sale">Sale</SelectItem>
+                                        <SelectItem value="Promotion">Promotion</SelectItem>
+                                        <SelectItem value="Flash Sale">Flash Sale</SelectItem>
+                                        <SelectItem value="Freebie">Freebie</SelectItem>
+                                        <SelectItem value="Combo Offer">Combo Offer</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
