@@ -27,12 +27,8 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const isAdminOrVendorRoute = pathname.startsWith('/admin') || pathname.startsWith('/vendor');
-
-  // Metadata can't be in a client component, so we define it here before returning the JSX.
-  // This is a simplified approach. For dynamic metadata, further setup would be needed.
-  if (typeof window === 'undefined') {
-    // Faux metadata for server render. Real metadata would be in a parent Server Component if possible.
-  }
+  const isAuthRoute = pathname === '/login' || pathname === '/signup';
+  const showHeaderAndFooter = !isAdminOrVendorRoute && !isAuthRoute;
 
 
   return (
@@ -45,9 +41,9 @@ export default function RootLayout({
         <UserProvider>
           <CartProvider>
             <WishlistProvider>
-              {!isAdminOrVendorRoute && <Header />}
+              {showHeaderAndFooter && <Header />}
               <main className="flex-1">{children}</main>
-              {!isAdminOrVendorRoute && <Footer />}
+              {showHeaderAndFooter && <Footer />}
               <Toaster />
             </WishlistProvider>
           </CartProvider>
