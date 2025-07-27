@@ -91,11 +91,9 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                 </SidebarFooter>
             </Sidebar>
             <div className="flex flex-col flex-1">
-                 <header className="flex items-center justify-between p-4 border-b md:justify-end">
-                    <div className="flex items-center gap-4">
-                        <SidebarTrigger className="md:hidden"/>
-                        <span className="font-bold hidden md:inline-block">Vendor Portal</span>
-                    </div>
+                 <header className="flex h-16 items-center justify-between p-4 border-b md:justify-end">
+                    <SidebarTrigger className="md:hidden"/>
+                    <span className="font-bold hidden md:inline-block">Vendor Portal</span>
                  </header>
                  <main className="flex-1 p-4 sm:p-8 bg-muted/40">
                     {children}
