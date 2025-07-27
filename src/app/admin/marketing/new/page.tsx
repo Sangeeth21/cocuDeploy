@@ -48,25 +48,31 @@ type Creative = {
 };
 
 const CountdownTimerPreview = () => {
+    const [timeLeft, setTimeLeft] = useState({ days: 15, hours: 10, minutes: 32, seconds: 54 });
+
+    useEffect(() => {
+        // This is a static preview, but a real implementation would use an interval
+    }, []);
+    
     return (
         <div className="flex items-center gap-2 justify-center">
             <div className="flex flex-col items-center">
-                <span className="text-2xl font-bold font-mono">15</span>
+                <span className="text-2xl font-bold font-mono">{String(timeLeft.days).padStart(2, '0')}</span>
                 <span className="text-xs text-muted-foreground">Days</span>
             </div>
             <span className="text-2xl font-bold">:</span>
             <div className="flex flex-col items-center">
-                <span className="text-2xl font-bold font-mono">10</span>
+                <span className="text-2xl font-bold font-mono">{String(timeLeft.hours).padStart(2, '0')}</span>
                 <span className="text-xs text-muted-foreground">Hours</span>
             </div>
              <span className="text-2xl font-bold">:</span>
             <div className="flex flex-col items-center">
-                <span className="text-2xl font-bold font-mono">32</span>
+                <span className="text-2xl font-bold font-mono">{String(timeLeft.minutes).padStart(2, '0')}</span>
                 <span className="text-xs text-muted-foreground">Mins</span>
             </div>
              <span className="text-2xl font-bold">:</span>
             <div className="flex flex-col items-center">
-                <span className="text-2xl font-bold font-mono">54</span>
+                <span className="text-2xl font-bold font-mono">{String(timeLeft.seconds).padStart(2, '0')}</span>
                 <span className="text-xs text-muted-foreground">Secs</span>
             </div>
         </div>
@@ -84,7 +90,7 @@ export default function NewCampaignPage() {
 
     const [campaignName, setCampaignName] = useState("");
     const [campaignType, setCampaignType] = useState<MarketingCampaign['type'] | ''>('');
-    const [date, setDate] = useState<DateRange | undefined>({ from: new Date(), to: addDays(new Date(), 7) });
+    const [date, setDate] = useState<DateRange | undefined>(undefined);
     const [startTime, setStartTime] = useState("00:00");
     const [endTime, setEndTime] = useState("23:59");
     const [showCountdown, setShowCountdown] = useState(false);
@@ -117,6 +123,9 @@ export default function NewCampaignPage() {
                 setEndTime(existingCampaign.endTime || "23:59");
                 setShowCountdown(existingCampaign.showCountdown || false);
             }
+        } else {
+            // Set initial date on client-side to avoid hydration mismatch
+            setDate({ from: new Date(), to: addDays(new Date(), 7) });
         }
     }, [searchParams]);
 
