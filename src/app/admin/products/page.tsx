@@ -65,28 +65,22 @@ export default function AdminProductsPage() {
                         </TableCell>
                         <TableCell className="hidden md:table-cell">${product.price.toFixed(2)}</TableCell>
                         <TableCell className="text-right">
-                             {product.status === 'Needs Review' ? (
-                                <Button asChild size="sm">
-                                    <Link href={`/admin/smart-pricing?productId=${product.id}`}>Review Price</Link>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                    <span className="sr-only">Toggle menu</span>
                                 </Button>
-                             ) : (
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                    <Button aria-haspopup="true" size="icon" variant="ghost">
-                                        <MoreHorizontal className="h-4 w-4" />
-                                        <span className="sr-only">Toggle menu</span>
-                                    </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                                        <DropdownMenuItem>Unpublish</DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link href={`/products/${product.id}`} target="_blank">View Live Page <ExternalLink className="ml-auto h-3 w-3"/></Link>
-                                        </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                             )}
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                    <DropdownMenuItem>Edit</DropdownMenuItem>
+                                    <DropdownMenuItem>Unpublish</DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href={`/products/${product.id}`} target="_blank">View Live Page <ExternalLink className="ml-auto h-3 w-3"/></Link>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </TableCell>
                     </TableRow>
                    ))}
@@ -97,5 +91,3 @@ export default function AdminProductsPage() {
       </div>
     );
 }
-
-    
