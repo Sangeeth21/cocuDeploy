@@ -3,13 +3,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingCart, X } from "lucide-react";
+import { ShoppingCart, X, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { mockProducts } from "@/lib/mock-data";
 import { useState } from "react";
 import type { DisplayProduct } from "@/lib/types";
+import { Input } from "./ui/input";
 
 type CartItem = DisplayProduct & { quantity: number };
 
@@ -19,6 +20,19 @@ export function CartPreview() {
     );
 
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    
+    const handleQuantityChange = (id: string, delta: number) => {
+        setCartItems(currentItems =>
+          currentItems.map(item =>
+            item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
+          ).filter(item => item.quantity > 0)
+        );
+    };
+
+     const removeItem = (id: string) => {
+        setCartItems(currentItems => currentItems.filter(item => item.id !== id));
+    }
+
 
     return (
         <Popover>
@@ -26,13 +40,13 @@ export function CartPreview() {
                 <Button variant="ghost" size="icon" aria-label="Open cart preview" className="relative">
                     <ShoppingCart className="h-5 w-5" />
                     {cartItems.length > 0 && (
-                        <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                            {cartItems.length}
+                        <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                            {cartItems.reduce((acc, item) => acc + item.quantity, 0)}
                         </span>
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-80" align="end">
+            <PopoverContent className="w-96" align="end">
                 <div className="grid gap-4">
                     <div className="space-y-2">
                         <h4 className="font-medium leading-none">My Cart</h4>
@@ -43,18 +57,26 @@ export function CartPreview() {
                     <div className="grid gap-4">
                        {cartItems.length > 0 ? (
                             <>
-                                <div className="max-h-60 overflow-y-auto pr-2 space-y-4">
+                                <div className="max-h-[22rem] overflow-y-auto pr-2 space-y-4">
                                 {cartItems.map(item => (
-                                    <div key={item.id} className="flex items-start gap-3">
-                                        <div className="relative h-16 w-16 rounded-md overflow-hidden flex-shrink-0">
+                                    <div key={item.id} className="flex items-start gap-4">
+                                        <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
                                             <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="product image" />
                                         </div>
-                                        <div className="flex-1">
-                                            <p className="text-sm font-medium leading-tight">{item.name}</p>
-                                            <p className="text-xs text-muted-foreground">Qty: {item.quantity}</p>
-                                            <p className="text-sm font-semibold mt-1">${(item.price * item.quantity).toFixed(2)}</p>
+                                        <div className="flex-1 space-y-1">
+                                            <Link href={`/products/${item.id}`} className="text-sm font-medium leading-tight hover:text-primary">{item.name}</Link>
+                                            <p className="text-sm font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                                             <div className="flex items-center gap-2">
+                                                <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleQuantityChange(item.id, -1)}>
+                                                    <Minus className="h-3 w-3" />
+                                                </Button>
+                                                <Input type="number" value={item.quantity} className="w-12 h-6 text-center" readOnly />
+                                                <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleQuantityChange(item.id, 1)}>
+                                                    <Plus className="h-3 w-3" />
+                                                </Button>
+                                            </div>
                                         </div>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
+                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => removeItem(item.id)}>
                                             <X className="h-4 w-4" />
                                         </Button>
                                     </div>
