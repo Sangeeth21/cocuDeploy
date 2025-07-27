@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown } from "lucide-react";
+import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchBar } from "@/components/search-bar";
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
+import { CartPreview } from "@/components/cart-preview";
 
 
 const navLinks = [
@@ -91,12 +92,7 @@ export function Header() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <SearchBar />
           </div>
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/cart">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="sr-only">Shopping Cart</span>
-            </Link>
-          </Button>
+          <CartPreview />
           {isLoggedIn ? (
             <div className="flex items-center rounded-md hover:bg-accent focus-within:bg-accent">
                <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-transparent" asChild>
