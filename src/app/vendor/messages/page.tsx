@@ -274,7 +274,7 @@ export default function VendorMessagesPage() {
   return (
     <>
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-[calc(100vh-11rem)] gap-4">
-        <Card className="md:col-span-1 xl:col-span-1 flex flex-col">
+        <Card className="md:col-span-1 xl:col-span-1 flex flex-col h-full">
           <CardHeader className="p-4 border-b">
             <h1 className="text-2xl font-bold font-headline">Inbox</h1>
             <div className="relative mt-2">
@@ -324,7 +324,7 @@ export default function VendorMessagesPage() {
                     {remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached'}
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 p-0 bg-muted/20">
+              <CardContent className="flex-1 p-0 bg-muted/20" style={{minHeight: 0}}>
                 <ScrollArea className="h-full" ref={scrollAreaRef}>
                     <div className="p-4 space-y-4">
                     {selectedConversation.messages.map((msg, index) => (
