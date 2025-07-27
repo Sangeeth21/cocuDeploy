@@ -9,24 +9,37 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, DollarSign, PackageCheck, Box, Rotate3d } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Slider } from "@/components/ui/slider"
 
 
-type ImagePreview = {
-    src: string;
-    is3D: boolean;
+type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
+
+const imageSides: { key: ImageSide; label: string }[] = [
+    { key: "front", label: "Front" },
+    { key: "back", label: "Back" },
+    { key: "left", label: "Left" },
+    { key: "right", label: "Right" },
+    { key: "top", label: "Top" },
+    { key: "bottom", label: "Bottom" },
+];
+
+type ProductImages = {
+    [key in ImageSide]?: string;
 };
 
-function ImagePreview3D({ src, alt }: { src: string, alt: string }) {
-    const [rotation, setRotation] = useState({ x: 15, y: -30 });
+function ImagePreview3D({ images }: { images: ProductImages }) {
+    const [rotation, setRotation] = useState({ x: -20, y: 30 });
     const isDragging = useRef(false);
     const prevMousePos = useRef({ x: 0, y: 0 });
+
+    const hasTopAndBottom = images.top && images.bottom;
+    const hasSides = images.left && images.right;
 
     const handleMouseDown = (e: React.MouseEvent) => {
         isDragging.current = true;
@@ -39,32 +52,35 @@ function ImagePreview3D({ src, alt }: { src: string, alt: string }) {
 
     const handleMouseMove = (e: React.MouseEvent) => {
         if (!isDragging.current) return;
-
         const deltaX = e.clientX - prevMousePos.current.x;
         const deltaY = e.clientY - prevMousePos.current.y;
-
         setRotation(prev => ({
-            x: prev.x - deltaY * 0.5,
+            x: prev.x - (hasTopAndBottom ? deltaY * 0.5 : 0),
             y: prev.y + deltaX * 0.5,
         }));
-
         prevMousePos.current = { x: e.clientX, y: e.clientY };
     };
     
     useEffect(() => {
-        const handleGlobalMouseUp = () => {
-            if (isDragging.current) {
-                isDragging.current = false;
-            }
-        };
-
+        const handleGlobalMouseUp = () => { isDragging.current = false };
         window.addEventListener('mouseup', handleGlobalMouseUp);
-
-        return () => {
-            window.removeEventListener('mouseup', handleGlobalMouseUp);
-        };
+        return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
     }, []);
 
+    const getTransform = () => {
+      if (hasTopAndBottom && hasSides) { // Full 3D box
+        return `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)`;
+      }
+      if (hasSides) { // Horizontal 360
+        return `rotateY(${rotation.y}deg)`;
+      }
+      if (hasTopAndBottom) { // Vertical 360 (unlikely scenario, but handled)
+         return `rotateX(${rotation.x}deg)`;
+      }
+      return `rotateY(${rotation.y}deg)`;
+    }
+
+    const cubeSize = 250;
 
     return (
         <div className="w-full h-full flex flex-col items-center justify-center gap-4">
@@ -74,12 +90,17 @@ function ImagePreview3D({ src, alt }: { src: string, alt: string }) {
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
             >
-                <div className="relative w-4/5 h-4/5 transition-transform duration-75 ease-out" style={{ transformStyle: 'preserve-3d', transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)` }}>
-                    <Image src={src} alt={alt} fill className="object-contain rounded-md shadow-2xl border" />
+                <div className="relative transition-transform duration-75 ease-out" style={{ width: `${cubeSize}px`, height: `${cubeSize}px`, transformStyle: 'preserve-3d', transform: getTransform() }}>
+                    {images.front && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.front})`, transform: `rotateY(0deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.back && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.back})`, transform: `rotateY(180deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.right && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.right})`, transform: `rotateY(90deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.left && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.left})`, transform: `rotateY(-90deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.top && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.top})`, transform: `rotateX(90deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.bottom && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.bottom})`, transform: `rotateX(-90deg) translateZ(${cubeSize / 2}px)` }} />}
                 </div>
             </div>
             <div className="w-full px-8">
-                <Label htmlFor="rotation-slider" className="text-sm text-muted-foreground mb-2 block">Rotate View</Label>
+                <Label htmlFor="rotation-slider" className="text-sm text-muted-foreground mb-2 block text-center">Rotate View</Label>
                 <Slider 
                     id="rotation-slider"
                     min={-180}
@@ -93,30 +114,32 @@ function ImagePreview3D({ src, alt }: { src: string, alt: string }) {
     );
 }
 
+
 export default function NewProductPage() {
-    const [images, setImages] = useState<ImagePreview[]>([]);
+    const [images, setImages] = useState<ProductImages>({});
     const [status, setStatus] = useState(false);
-    const [previewedImage, setPreviewedImage] = useState<ImagePreview | null>(null);
+    const [show3DPreview, setShow3DPreview] = useState(false);
+    const [is3DEnabled, setIs3DEnabled] = useState(true);
 
-
-    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files) {
-            const files = Array.from(event.target.files);
-            const newImagePreviews = files.map(file => ({
-                src: URL.createObjectURL(file),
-                is3D: false,
-            }));
-            setImages(prev => [...prev, ...newImagePreviews]);
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, side: ImageSide) => {
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            const src = URL.createObjectURL(file);
+            setImages(prev => ({ ...prev, [side]: src }));
         }
     };
 
-    const removeImage = (index: number) => {
-        setImages(prev => prev.filter((_, i) => i !== index));
+    const removeImage = (side: ImageSide) => {
+        setImages(prev => {
+            const newImages = { ...prev };
+            delete newImages[side];
+            return newImages;
+        });
     };
-
-    const toggle3D = (index: number) => {
-        setImages(prev => prev.map((img, i) => i === index ? { ...img, is3D: !img.is3D } : img));
-    };
+    
+    const canPreview3D = useMemo(() => {
+       return is3DEnabled && images.front && ( (images.left && images.right) || (images.top && images.bottom) );
+    }, [images, is3DEnabled]);
 
   return (
     <>
@@ -150,43 +173,47 @@ export default function NewProductPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Media</CardTitle>
-                    <CardDescription>Upload high-quality images of your product.</CardDescription>
+                    <CardDescription>Upload images for each side of your product to generate a 3D preview.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                        {images.map((img, index) => (
-                            <div key={index} className="space-y-2">
-                                <div 
-                                    className="relative group aspect-square rounded-md border"
-                                    onClick={() => img.is3D && setPreviewedImage(img)}
-                                >
-                                    <Image src={img.src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md" />
-                                    {img.is3D && (
-                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md">
-                                            <Rotate3d className="h-8 w-8 text-white" />
-                                        </div>
-                                    )}
-                                    <Button
-                                        variant="destructive"
-                                        size="icon"
-                                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                        onClick={(e) => { e.stopPropagation(); removeImage(index); }}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                                <div className="flex items-center justify-center space-x-2">
-                                    <Label htmlFor={`3d-toggle-${index}`} className="text-xs">3D</Label>
-                                    <Switch id={`3d-toggle-${index}`} checked={img.is3D} onCheckedChange={() => toggle3D(index)} />
-                                </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {imageSides.map(({ key, label }) => (
+                            <div key={key} className="space-y-1">
+                                <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+                                {images[key] ? (
+                                    <div className="relative group aspect-square rounded-md border">
+                                        <Image src={images[key]!} alt={`${label} view`} fill className="object-cover rounded-md" />
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            onClick={(e) => { e.stopPropagation(); removeImage(key); }}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <label htmlFor={`image-upload-${key}`} className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                        <Upload className="h-8 w-8 text-muted-foreground"/>
+                                        <span className="text-xs text-muted-foreground text-center mt-1">Upload</span>
+                                        <input id={`image-upload-${key}`} type="file" accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e, key)} />
+                                    </label>
+                                )}
                             </div>
                         ))}
-                         <label htmlFor="image-upload" className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted-foreground rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                            <Upload className="h-8 w-8 text-muted-foreground"/>
-                            <span className="text-xs text-muted-foreground text-center mt-1">Upload</span>
-                            <input id="image-upload" type="file" multiple accept="image/*" className="sr-only" onChange={handleImageUpload} />
-                        </label>
                     </div>
+                     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg bg-muted/40">
+                        <div className="flex items-center space-x-3">
+                            <Switch id="3d-toggle" checked={is3DEnabled} onCheckedChange={setIs3DEnabled} />
+                            <Label htmlFor="3d-toggle" className="font-medium">Enable 3D Experience</Label>
+                        </div>
+                        <Button onClick={() => setShow3DPreview(true)} disabled={!canPreview3D} className="w-full sm:w-auto">
+                            <Rotate3d className="mr-2" />
+                            Preview 3D Model
+                        </Button>
+                    </div>
+                    {!is3DEnabled && <p className="text-xs text-muted-foreground mt-2">Enable 3D Experience to preview the model.</p>}
+                     {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload at least a 'Front' and both 'Left' & 'Right' images to enable the 3D preview.</p>}
                 </CardContent>
             </Card>
         </div>
@@ -200,8 +227,8 @@ export default function NewProductPage() {
                     <div className="space-y-2">
                         <Label htmlFor="price">Price</Label>
                         <div className="relative">
-                            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input id="price" type="number" placeholder="19.99" className="pl-8"/>
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                            <Input id="price" type="number" placeholder="19.99" className="pl-6"/>
                         </div>
                     </div>
                 </CardContent>
@@ -243,21 +270,21 @@ export default function NewProductPage() {
         <Button variant="outline" asChild>
             <Link href="/vendor/dashboard">Cancel</Link>
         </Button>
-        <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-            Save Product
+        <Button>
+            Save as Draft
         </Button>
-         <Button>
-            <PackageCheck className="mr-2 h-4 w-4"/>
-            Publish
+         <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+            <CheckCircle className="mr-2 h-4 w-4"/>
+            Publish Product
         </Button>
       </div>
     </div>
-    <Dialog open={!!previewedImage} onOpenChange={(isOpen) => !isOpen && setPreviewedImage(null)}>
+    <Dialog open={show3DPreview} onOpenChange={setShow3DPreview}>
         <DialogContent className="max-w-3xl h-3/4 flex flex-col p-8">
             <DialogHeader>
                 <DialogTitle>3D Rotatable Preview</DialogTitle>
             </DialogHeader>
-            {previewedImage && <ImagePreview3D src={previewedImage.src} alt="3D preview" />}
+            <ImagePreview3D images={images} />
         </DialogContent>
     </Dialog>
     </>
