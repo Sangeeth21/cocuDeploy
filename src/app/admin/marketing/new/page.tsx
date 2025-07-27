@@ -268,7 +268,9 @@ export default function NewCampaignPage() {
                                                  )}
                                              </div>
                                              <div className="flex justify-between items-center">
-                                                <Button variant="outline" size="sm" onClick={() => setPreviewingCreative(creative)} disabled={!creative.image}><Eye className="mr-2 h-4 w-4"/> Preview Creative</Button>
+                                                <Button variant="outline" size="sm" onClick={() => setPreviewingCreative(creative)} disabled={!creative.image}>
+                                                    <Eye className="mr-2 h-4 w-4"/> Preview Creative
+                                                </Button>
                                                 <Button variant="destructive" size="sm" onClick={() => handleRemoveCreative(creative.id)}><Trash2 className="mr-2 h-4 w-4" /> Remove</Button>
                                              </div>
                                         </AccordionContent>
@@ -353,38 +355,46 @@ export default function NewCampaignPage() {
                                     <Carousel className="w-full h-full" opts={{loop: true}}>
                                         <CarouselContent>
                                             {creatives.map(c => (
-                                            <CarouselItem key={c.id}>
-                                                <div className="relative w-full h-full">
-                                                    <div className="relative" style={{height: isPreviewMobile ? '100%' : '100%'}}>
-                                                        {c.image?.src && <Image src={c.image.src} alt={c.title} fill className="object-cover" />}
-                                                        {c.embedUrl && !c.image?.src && <iframe src={c.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
-                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                                        <div className="absolute inset-0 flex items-center justify-center text-center">
-                                                            <div className="text-white p-4">
-                                                                <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>{c.title}</h1>
-                                                                <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>{c.description}</p>
-                                                                <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">{c.cta}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+                                                c.image?.src &&
+                                                <CarouselItem key={c.id}>
+                                                    <div className="relative w-full h-full">
+                                                        <div className="relative" style={{height: isPreviewMobile ? '100%' : '100%'}}>
+                                                            <Image src={c.image.src} alt={c.title} fill className="object-cover" />
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                                            <div className="absolute inset-0 flex items-center justify-center text-center">
+                                                                <div className="text-white p-4">
+                                                                    <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>{c.title}</h1>
+                                                                    <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>{c.description}</p>
+                                                                    <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">{c.cta}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                </div>
-                                            </CarouselItem>
+                                                </CarouselItem>
                                             ))}
                                         </CarouselContent>
                                     </Carousel>
                                 )}
                                 {placement === 'banner' && (
-                                    <div className="w-full h-full flex flex-col">
-                                        <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center justify-center relative whitespace-nowrap overflow-hidden">
-                                            <div className="flex items-center gap-2 mx-4 animate-marquee">
-                                                {previewingCreative.image?.src && <Image src={previewingCreative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
-                                                <span className="font-semibold">{previewingCreative.title}</span>
-                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{previewingCreative.cta}</Button>
+                                     <div className="w-full h-full flex flex-col">
+                                        <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center relative whitespace-nowrap overflow-hidden">
+                                            <div className="flex items-center gap-4 animate-marquee">
+                                                {creatives.map(c => (
+                                                    <div key={c.id} className="flex items-center gap-2 mx-4">
+                                                        {c.image?.src && <Image src={c.image.src} alt={c.title} width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                        <span className="font-semibold">{c.title}</span>
+                                                        <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{c.cta}</Button>
+                                                    </div>
+                                                ))}
                                             </div>
-                                             <div className="flex items-center gap-2 mx-4 animate-marquee-2" aria-hidden="true">
-                                                {previewingCreative.image?.src && <Image src={previewingCreative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
-                                                <span className="font-semibold">{previewingCreative.title}</span>
-                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{previewingCreative.cta}</Button>
+                                            <div className="absolute top-0 left-0 flex items-center h-full animate-marquee-2">
+                                                 {creatives.map(c => (
+                                                    <div key={c.id} className="flex items-center gap-4 mx-4">
+                                                        {c.image?.src && <Image src={c.image.src} alt={c.title} width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                        <span className="font-semibold">{c.title}</span>
+                                                        <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{c.cta}</Button>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </div>
                                         <div className="p-4 flex-1">
@@ -403,14 +413,10 @@ export default function NewCampaignPage() {
                                             <Carousel className="w-full">
                                                 <CarouselContent>
                                                     {creatives.map(c => (
+                                                        c.image?.src &&
                                                         <CarouselItem key={c.id}>
                                                             <div className="flex flex-col items-center">
-                                                                {c.image?.src && <Image src={c.image.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />}
-                                                                {c.embedUrl && !c.image?.src && (
-                                                                    <div className="aspect-video w-full">
-                                                                        <iframe src={c.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
-                                                                    </div>
-                                                                )}
+                                                                <Image src={c.image.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />
                                                                 <div className="p-6">
                                                                     <h2 className="text-lg font-bold font-headline mb-2">{c.title}</h2>
                                                                     <p className="text-sm text-muted-foreground mb-4">{c.description}</p>
@@ -437,10 +443,10 @@ export default function NewCampaignPage() {
                                          <Carousel className="w-full" opts={{loop:true}}>
                                             <CarouselContent>
                                                 {creatives.map(c => (
+                                                c.image?.src &&
                                                 <CarouselItem key={c.id}>
                                                     <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
-                                                        {c.image?.src && <Image src={c.image.src} alt={c.title} fill className="object-cover" />}
-                                                        {c.embedUrl && !c.image?.src && <iframe src={c.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                        <Image src={c.image.src} alt={c.title} fill className="object-cover" />
                                                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
                                                             <div>
                                                                 <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>{c.title}</h2>
@@ -481,9 +487,10 @@ export default function NewCampaignPage() {
                                         <Carousel className="w-full" opts={{loop: true}}>
                                             <CarouselContent>
                                                 {creatives.map(c => (
+                                                c.image?.src &&
                                                 <CarouselItem key={c.id}>
                                                     <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
-                                                        {c.image?.src && <Image src={c.image.src} alt={c.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />}
+                                                        <Image src={c.image.src} alt={c.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />
                                                         <div className="flex-1 text-center md:text-left">
                                                             <h3 className="font-bold">{c.title}</h3>
                                                             <p className="text-sm text-muted-foreground">{c.description}</p>
@@ -527,13 +534,13 @@ export default function NewCampaignPage() {
                     to { transform: translateX(-100%); }
                 }
                 .animate-marquee {
-                    animation: marquee 15s linear infinite;
+                    animation: marquee 30s linear infinite;
                     flex-shrink: 0;
                 }
                 .animate-marquee-2 {
-                    animation: marquee 15s linear infinite;
+                    animation: marquee 30s linear infinite;
+                    animation-delay: 15s;
                     flex-shrink: 0;
-                    animation-delay: 7.5s;
                 }
             `}</style>
         </div>
