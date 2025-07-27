@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -11,22 +12,12 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
-import type { Message } from "@/lib/types";
+import type { Message, Conversation as AdminConversation } from "@/lib/types";
 
-type Attachment = {
-    name: string;
-    type: 'image' | 'file';
-    url: string;
-}
-
-type Conversation = {
-  id: number;
-  customerId: string;
-  vendorId: string;
+type Conversation = Omit<AdminConversation, 'awaitingVendorDecision' | 'userMessageCount'> & {
   customerAvatar: string;
   vendorAvatar: string;
-  messages: Message[];
-};
+}
 
 const initialConversations: Conversation[] = [
   {
@@ -40,6 +31,7 @@ const initialConversations: Conversation[] = [
       { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it." },
       { id: 'msg3', sender: "customer", text: "That would be great, thank you!" },
     ],
+    avatar: '', // not used in this view
   },
   {
     id: 2,
@@ -48,6 +40,7 @@ const initialConversations: Conversation[] = [
     customerAvatar: "https://placehold.co/40x40.png",
     vendorAvatar: "https://placehold.co/40x40.png",
     messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada?" }],
+     avatar: '',
   },
 ];
 
@@ -114,7 +107,7 @@ export default function AdminChatLogsPage() {
                         <span>{convo.vendorId}</span>
                     </div>
                     <p className="text-xs text-muted-foreground truncate mt-1">
-                        {convo.messages[convo.messages.length - 1].text}
+                        {convo.messages.filter(m => m.sender !== 'system').pop()?.text}
                     </p>
                 </div>
                 ))}
@@ -139,6 +132,9 @@ export default function AdminChatLogsPage() {
                 <ScrollArea className="flex-1 bg-muted/20" ref={scrollAreaRef}>
                     <div className="p-4 space-y-4">
                     {selectedConversation.messages.map((msg, index) => (
+                         msg.sender === 'system' ? (
+                            <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                        ) : (
                         <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
                         {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.customerAvatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId.charAt(0)}</AvatarFallback></Avatar>}
                         <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
@@ -146,6 +142,7 @@ export default function AdminChatLogsPage() {
                         </div>
                         {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.vendorAvatar} alt={selectedConversation.vendorId} /><AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
                         </div>
+                        )
                     ))}
                     </div>
                 </ScrollArea>

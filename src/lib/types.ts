@@ -41,7 +41,7 @@ export type Attachment = {
 
 export type Message = {
   id: string;
-  sender: "customer" | "vendor";
+  sender: "customer" | "vendor" | "system";
   text: string;
   attachments?: Attachment[];
   status?: 'sent' | 'delivered' | 'read';
@@ -56,6 +56,18 @@ export type User = {
     joinedDate: string;
     avatar: string;
 }
+
+export type Conversation = {
+  id: number;
+  vendorId: string;
+  customerId?: string; // For vendor/admin view
+  avatar: string;
+  messages: Message[];
+  unread?: boolean;
+  userMessageCount: number;
+  awaitingVendorDecision: boolean;
+};
+
 
 // Order Management
 export type OrderItem = {
