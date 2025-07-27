@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X } from "lucide-react";
+import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User } from "lucide-react";
 import Link from "next/link";
 
 
@@ -16,10 +16,13 @@ const mockRecentSales = [
     { id: '5', name: 'Sofia Davis', email: 'sofia.davis@email.com', amount: 39.00, avatar: 'https://placehold.co/40x40.png' },
 ]
 
-const mockConfirmationRequests = [
-    { id: 'REQ001', customerName: 'Alice Johnson', productName: 'Professional Yoga Mat', requestedAt: '2h ago' },
-    { id: 'REQ002', customerName: 'Bob Williams', productName: 'Modern Minimalist Desk', requestedAt: '4h ago' }
+const mockActivity = [
+    { type: 'user_report', id: 'REP003', text: 'User reported for inappropriate language', time: '1h ago', icon: ShieldAlert, variant: 'destructive', href: '/admin/moderation' },
+    { type: 'product_review', id: 'PROD006', text: 'Product needs pricing review', time: '3h ago', icon: Package, variant: 'default', href: '/admin/smart-pricing?productId=6' },
+    { type: 'new_vendor', id: 'USR008', text: 'New vendor "HomeBody Decor" signed up', time: '8h ago', icon: User, variant: 'default', href: '/admin/vendors' },
+    { type: 'confirmation_request', id: 'REQ001', text: 'Confirmation needed for "Professional Yoga Mat"', time: '1d ago', icon: BellRing, variant: 'default', href: '/admin/orders' },
 ]
+
 
 export default function AdminDashboardPage() {
   return (
@@ -129,6 +132,30 @@ export default function AdminDashboardPage() {
         </Card>
         <div className="space-y-4">
             <Card>
+                <CardHeader>
+                    <CardTitle>Activity & Moderation</CardTitle>
+                    <CardDescription>Recent events across the platform.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    {mockActivity.map(item => {
+                        const Icon = item.icon
+                        return (
+                            <div key={item.id} className="flex items-center gap-4">
+                                <div className={`p-2 rounded-full ${item.variant === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'}`}>
+                                    <Icon className={`h-5 w-5 ${item.variant === 'destructive' ? 'text-destructive' : 'text-primary'}`}/>
+                                </div>
+                                <div className="grid gap-1 flex-1">
+                                    <p className="text-sm font-medium leading-none">
+                                        <Link href={item.href} className="hover:underline">{item.text}</Link>
+                                    </p>
+                                    <p className="text-sm text-muted-foreground">{item.time}</p>
+                                </div>
+                            </div>
+                        )
+                    })}
+                </CardContent>
+            </Card>
+             <Card>
                 <CardHeader className="flex flex-row items-center">
                      <div className="grid gap-2">
                         <CardTitle>New Users</CardTitle>
@@ -164,33 +191,6 @@ export default function AdminDashboardPage() {
                         </div>
                         <div className="ml-auto font-medium"><Badge variant="secondary">Vendor</Badge></div>
                     </div>
-                </CardContent>
-            </Card>
-             <Card>
-                <CardHeader className="flex flex-row items-center">
-                    <div className="grid gap-2">
-                        <CardTitle>Confirmation Requests</CardTitle>
-                        <CardDescription>Vendors must confirm these before purchase.</CardDescription>
-                    </div>
-                </CardHeader>
-                <CardContent className="grid gap-4">
-                    {mockConfirmationRequests.map(req => (
-                    <div key={req.id} className="flex items-center gap-4">
-                         <div className="p-2 bg-primary/10 rounded-full">
-                            <BellRing className="h-5 w-5 text-primary"/>
-                        </div>
-                        <div className="grid gap-1 flex-1">
-                            <p className="text-sm font-medium leading-none">
-                                {req.customerName} requests <span className="font-bold">{req.productName}</span>
-                            </p>
-                            <p className="text-sm text-muted-foreground">{req.requestedAt}</p>
-                        </div>
-                        <div className="flex gap-1">
-                            <Button variant="outline" size="icon" className="h-7 w-7"><Check className="h-4 w-4"/></Button>
-                            <Button variant="destructive" size="icon" className="h-7 w-7"><X className="h-4 w-4"/></Button>
-                        </div>
-                    </div>
-                    ))}
                 </CardContent>
             </Card>
         </div>

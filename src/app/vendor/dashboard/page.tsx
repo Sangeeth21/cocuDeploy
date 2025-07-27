@@ -1,7 +1,16 @@
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ListChecks, LineChart, Package, MessageSquare, ArrowRight } from "lucide-react";
+import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign, PackageWarning } from "lucide-react";
 import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+
+const mockActivity = [
+    { type: 'order', id: 'ORD004', text: 'New order #ORD004 from CUST004 for $215.00', time: '30m ago', href: '/vendor/orders' },
+    { type: 'message', id: 'MSG012', text: 'New message from CUST001 about "Classic Leather Watch"', time: '2h ago', href: '/vendor/messages' },
+    { type: 'stock', id: 'CM-HND-BL', text: '"Handcrafted Ceramic Mug" is low on stock (8 left)', time: '1d ago', href: '/vendor/inventory' },
+    { type: 'confirmation', id: 'REQ001', text: 'Confirmation requested for "Professional Yoga Mat"', time: '2d ago', href: '/vendor/orders' },
+]
 
 export default function VendorDashboardPage() {
   return (
@@ -17,9 +26,7 @@ export default function VendorDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" className="h-4 w-4 text-muted-foreground">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">$45,231.89</div>
@@ -39,7 +46,10 @@ export default function VendorDashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">New Messages</CardTitle>
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <div className="relative">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                <Badge className="absolute -top-2 -right-2 h-4 w-4 justify-center p-0">5</Badge>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">+5</div>
@@ -61,13 +71,23 @@ export default function VendorDashboardPage() {
       <div className="grid md:grid-cols-2 gap-8">
         <Card>
           <CardHeader>
-            <CardTitle className="font-headline">Quick Actions</CardTitle>
+            <CardTitle className="font-headline">Recent Activity</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Button variant="outline" asChild><Link href="/vendor/products"><Package className="mr-2"/> Manage Products</Link></Button>
-              <Button variant="outline" asChild><Link href="/vendor/orders"><ListChecks className="mr-2"/> View Orders</Link></Button>
-              <Button variant="outline" asChild><Link href="/vendor/analytics"><LineChart className="mr-2"/> View Analytics</Link></Button>
-              <Button variant="outline" asChild><Link href="/vendor/messages"><MessageSquare className="mr-2"/> Read Messages</Link></Button>
+          <CardContent className="space-y-4">
+            {mockActivity.map(item => {
+                const Icon = item.type === 'stock' ? PackageWarning : item.type === 'message' ? MessageSquare : ListChecks;
+                return (
+                     <div key={item.id} className="flex items-start gap-4">
+                        <div className="p-2 bg-primary/10 rounded-full">
+                            <Icon className="h-5 w-5 text-primary"/>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm"><Link href={item.href} className="font-semibold hover:underline">{item.text}</Link></p>
+                            <p className="text-xs text-muted-foreground">{item.time}</p>
+                        </div>
+                    </div>
+                )
+            })}
           </CardContent>
         </Card>
         <Card>

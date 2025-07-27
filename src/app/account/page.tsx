@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -476,10 +476,20 @@ export default function AccountPage() {
           </Card>
            <Card className="mt-6">
               <CardHeader>
-                  <CardTitle className="font-headline">Order Confirmations</CardTitle>
-                  <CardDescription>Notifications from vendors regarding your purchase requests.</CardDescription>
+                  <CardTitle className="font-headline">Notifications</CardTitle>
+                  <CardDescription>Recent updates about your orders and account activity.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                        <div className="p-2 bg-blue-100 rounded-full dark:bg-blue-900">
+                            <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400"/>
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-semibold text-blue-800 dark:text-blue-200">Your order #ORD002 has shipped!</p>
+                            <p className="text-sm text-blue-600 dark:text-blue-400">Estimated delivery: June 25, 2024. <Link href="#" className="font-bold hover:underline">Track</Link></p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">1d ago</span>
+                  </div>
                   <div className="flex items-center gap-4 p-4 border rounded-lg bg-green-50 dark:bg-green-950">
                         <div className="p-2 bg-green-100 rounded-full dark:bg-green-900">
                             <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400"/>
