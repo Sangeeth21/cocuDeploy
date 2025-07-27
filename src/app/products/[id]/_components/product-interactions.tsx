@@ -5,7 +5,7 @@
 import Image from "next/image";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { DisplayProduct, Conversation, Message } from "@/lib/types";
 import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle } from "lucide-react";
@@ -13,6 +13,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
+import { useRouter } from "next/navigation";
+import { mockUserOrders } from "@/lib/mock-data";
 
 type Attachment = {
     name: string;
@@ -30,11 +32,19 @@ const initialConversation: Conversation = {
     status: 'active',
 };
 
+// Simulate tracking for chat abuse prevention
+// In a real app, this would come from a user context or API call
+const MAX_CHATS_WITHOUT_PURCHASE = 4;
+let hasMadePurchase = mockUserOrders.length > 0;
+let uniqueVendorChats = 2; // Starting with 2 from the initial mock data in account page
 
 export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const { toast } = useToast();
+  const router = useRouter();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPreChatOpen, setIsPreChatOpen] = useState(false);
+  const [isChatDisabledOpen, setIsChatDisabledOpen] = useState(false);
+
   const [conversation, setConversation] = useState<Conversation>({
       ...initialConversation, 
       vendorId: product.vendorId
@@ -44,6 +54,8 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const MAX_MESSAGE_LENGTH = 1500;
+
+  const isChatDisabled = !hasMadePurchase && uniqueVendorChats >= MAX_CHATS_WITHOUT_PURCHASE;
 
   useEffect(() => {
     if (isChatOpen && conversation.messages.length === 0) {
@@ -69,9 +81,20 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
     });
   };
 
+  const handleMessageVendorClick = () => {
+    if (isChatDisabled) {
+        setIsChatDisabledOpen(true);
+    } else {
+        setIsPreChatOpen(true);
+    }
+  }
+
   const handleProceedToChat = () => {
     setIsPreChatOpen(false);
-    setIsChatOpen(true);
+    // In a real app, you would check if a conversation with this vendor exists.
+    // If not, you'd create one and redirect. For now, we open a local chat modal.
+    // To properly sync state, we redirect to the account page to create the conversation.
+    router.push(`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`);
   }
 
   const handleSendMessage = useCallback((e: React.FormEvent) => {
@@ -170,13 +193,13 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
     <>
       <div className="flex flex-col sm:flex-row gap-2">
         <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>Add to Cart</Button>
-        <Dialog open={isPreChatOpen} onOpenChange={setIsPreChatOpen}>
-            <DialogTrigger asChild>
-                <Button size="lg" variant="outline" className="w-full">
-                    <MessageSquare className="mr-2 h-5 w-5" />
-                    Message Vendor
-                </Button>
-            </DialogTrigger>
+        <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendorClick} disabled={isChatDisabled}>
+            <MessageSquare className="mr-2 h-5 w-5" />
+            Message Vendor
+        </Button>
+      </div>
+
+       <Dialog open={isPreChatOpen} onOpenChange={setIsPreChatOpen}>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-primary"/> Chat Guidelines</DialogTitle>
@@ -195,91 +218,22 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
                 </DialogFooter>
             </DialogContent>
         </Dialog>
-      </div>
 
-       <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
-            <DialogContent className="sm:max-w-lg h-[80vh] flex flex-col p-0">
-                 <DialogHeader className="p-4 border-b">
-                     <div className="flex items-center justify-between">
-                         <div className="flex items-center gap-4">
-                            <Avatar>
-                              <AvatarImage src={conversation.avatar} alt={conversation.vendorId} data-ai-hint="company logo" />
-                              <AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <DialogTitle>Chat with {conversation.vendorId}</DialogTitle>
-                         </div>
-                         <div className="text-sm text-muted-foreground">
-                            {remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached'}
-                        </div>
-                     </div>
-                 </DialogHeader>
-                 <ScrollArea className="flex-1" ref={scrollAreaRef}>
-                    <div className="p-4 space-y-4">
-                         {conversation.messages.map((msg, index) => (
-                             msg.sender === 'system' ? (
-                                <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
-                            ) : (
-                            <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
-                              {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={conversation.avatar} alt={conversation.vendorId} /><AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
-                              <div className={cn("max-w-xs rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
-                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                                {msg.attachments && (
-                                    <div className="grid gap-2 grid-cols-2">
-                                        {msg.attachments.map((att, i) => (
-                                            att.type === 'image' ? (
-                                                <div key={i} className="relative aspect-video rounded-md overflow-hidden">
-                                                    <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
-                                                </div>
-                                            ) : (
-                                                <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                                    <FileIcon className="h-6 w-6 text-muted-foreground"/>
-                                                    <span className="text-xs truncate">{att.name}</span>
-                                                    <Download className="h-4 w-4 ml-auto" />
-                                                </a>
-                                            )
-                                        ))}
-                                    </div>
-                                )}
-                              </div>
-                              {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="You" /><AvatarFallback>Y</AvatarFallback></Avatar>}
-                            </div>
-                            )
-                          ))}
-                    </div>
-                 </ScrollArea>
-                  <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
-                         {attachments.length > 0 && !isLocked && (
-                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                                {attachments.map((file, index) => (
-                                    <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2 bg-muted/50">
-                                        {file.type.startsWith('image/') ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileIcon className="h-5 w-5 text-muted-foreground" />}
-                                        <p className="text-xs text-muted-foreground truncate">{file.name}</p>
-                                        <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}><X className="h-3 w-3" /></Button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                                <Textarea
-                                    ref={textareaRef}
-                                    placeholder={isLocked ? "Please wait for the vendor to respond..." : "Type your message..."}
-                                    className="pr-20 resize-none max-h-48"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    maxLength={MAX_MESSAGE_LENGTH}
-                                    rows={1}
-                                    disabled={isLocked}
-                                />
-                                 {!isLocked && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
-                            </div>
-                            <Button type="button" variant="ghost" size="icon" asChild disabled={isLocked}>
-                                <label htmlFor="product-file-upload"><Paperclip className="h-5 w-5" /></label>
-                            </Button>
-                            <input id="product-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} disabled={isLocked} />
-                            <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
-                        </div>
-                      </form>
+        <Dialog open={isChatDisabledOpen} onOpenChange={setIsChatDisabledOpen}>
+             <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><MessageSquare className="text-destructive"/> Chat Limit Reached</DialogTitle>
+                </DialogHeader>
+                <DialogDescription>
+                    To prevent spam and encourage genuine interactions, we limit the number of new conversations a customer can start before making a purchase.
+                </DialogDescription>
+                <p className="text-sm text-muted-foreground">
+                    Please complete an order to re-enable the chat feature. We appreciate your understanding!
+                </p>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setIsChatDisabledOpen(false)}>Close</Button>
+                    <Button onClick={() => router.push('/cart')}>Go to Cart</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     </>

@@ -86,6 +86,11 @@ const mockPaymentMethods = [
     { id: 2, type: "Mastercard", last4: "5555", expiry: "08/25"},
 ]
 
+// Simulate tracking for chat abuse prevention
+const MAX_CHATS_WITHOUT_PURCHASE = 4;
+let hasMadePurchase = mockUserOrders.length > 0;
+let uniqueVendorChats = new Set(initialConversations.map(c => c.vendorId)).size;
+
 
 export default function AccountPage() {
   const searchParams = useSearchParams();
@@ -119,6 +124,7 @@ export default function AccountPage() {
     const vendorId = searchParams.get('vendorId');
     const productName = searchParams.get('productName');
     if (vendorId) {
+      // Logic from product interactions will prevent this if limit is reached
       let convo = conversations.find(c => c.vendorId === vendorId);
       if (!convo) {
         // Create a new conversation if one doesn't exist
@@ -131,6 +137,12 @@ export default function AccountPage() {
           awaitingVendorDecision: false,
           status: 'active',
         };
+        
+        // Update simulated global state
+        if (!new Set(conversations.map(c => c.vendorId)).has(vendorId)) {
+            uniqueVendorChats++;
+        }
+
         setConversations(prev => [...prev, newConvo]);
         convo = newConvo;
       }
