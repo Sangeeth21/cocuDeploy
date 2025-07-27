@@ -1,11 +1,11 @@
 
 "use client";
 
-import { MoreHorizontal, PlusCircle, ExternalLink } from "lucide-react";
+import { MoreHorizontal, PlusCircle, ExternalLink, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import { mockProducts } from "@/lib/mock-data";
@@ -79,6 +79,16 @@ export default function AdminProductsPage() {
                                     <DropdownMenuItem asChild>
                                         <Link href={`/products/${product.id}`} target="_blank">View Live Page <ExternalLink className="ml-auto h-3 w-3"/></Link>
                                     </DropdownMenuItem>
+                                    {product.status === 'Needs Review' && (
+                                        <>
+                                            <DropdownMenuSeparator />
+                                            <DropdownMenuItem asChild>
+                                                <Link href={`/admin/smart-pricing?productId=${product.id}`}>
+                                                    <Sparkles className="mr-2 h-4 w-4 text-accent" /> Smart Pricing
+                                                </Link>
+                                            </DropdownMenuItem>
+                                        </>
+                                    )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </TableCell>
