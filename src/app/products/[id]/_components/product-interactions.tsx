@@ -91,10 +91,7 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
 
   const handleProceedToChat = () => {
     setIsPreChatOpen(false);
-    // In a real app, you would check if a conversation with this vendor exists.
-    // If not, you'd create one and redirect. For now, we open a local chat modal.
-    // To properly sync state, we redirect to the account page to create the conversation.
-    router.push(`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`);
+    setIsChatOpen(true);
   }
 
   const handleSendMessage = useCallback((e: React.FormEvent) => {
@@ -216,6 +213,91 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
                 <DialogFooter>
                     <Button onClick={handleProceedToChat}>I Understand, Continue to Chat</Button>
                 </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+         <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
+            <DialogContent className="sm:max-w-lg h-[80vh] flex flex-col p-0">
+                 <DialogHeader className="p-4 border-b">
+                     <DialogTitle className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={conversation.avatar} alt={conversation.vendorId} data-ai-hint="company logo" />
+                            <AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        Chat with {conversation.vendorId}
+                    </DialogTitle>
+                     <DialogDescription className="ml-12 -mt-2 text-xs">
+                        {isLocked ? 'Message limit reached' : `${remaining} messages left`}
+                     </DialogDescription>
+                </DialogHeader>
+                 <div className="flex-1 overflow-hidden min-h-0">
+                    <ScrollArea className="h-full bg-muted/20" ref={scrollAreaRef}>
+                        <div className="p-4 space-y-4">
+                        {conversation.messages.map((msg, index) => (
+                             msg.sender === 'system' ? (
+                                <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                            ) : (
+                            <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
+                            {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={conversation.avatar} alt={conversation.vendorId} /><AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
+                            <div className={cn("max-w-xs rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                                {msg.attachments && (
+                                    <div className="grid gap-2 grid-cols-2">
+                                        {msg.attachments.map((att, i) => (
+                                            att.type === 'image' ? (
+                                                <div key={i} className="relative aspect-video rounded-md overflow-hidden">
+                                                    <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
+                                                </div>
+                                            ) : (
+                                                <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
+                                                    <FileIcon className="h-6 w-6 text-muted-foreground"/>
+                                                    <span className="text-xs truncate">{att.name}</span>
+                                                    <Download className="h-4 w-4 ml-auto" />
+                                                </a>
+                                            )
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="You" data-ai-hint="person face" /><AvatarFallback>Y</AvatarFallback></Avatar>}
+                            </div>
+                             )
+                        ))}
+                        </div>
+                    </ScrollArea>
+                 </div>
+                 <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
+                    {attachments.length > 0 && !isLocked && (
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                            {attachments.map((file, index) => (
+                                <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2 bg-muted/50">
+                                    {file.type.startsWith('image/') ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileIcon className="h-5 w-5 text-muted-foreground" />}
+                                    <p className="text-xs text-muted-foreground truncate">{file.name}</p>
+                                    <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}><X className="h-3 w-3" /></Button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex-1">
+                            <Textarea
+                                ref={textareaRef}
+                                placeholder={isLocked ? "Message limit reached." : "Type your message..."}
+                                className="pr-12 resize-none max-h-48"
+                                value={newMessage}
+                                onChange={(e) => setNewMessage(e.target.value)}
+                                maxLength={MAX_MESSAGE_LENGTH}
+                                rows={1}
+                                disabled={isLocked}
+                            />
+                        </div>
+                        <Button type="button" variant="ghost" size="icon" asChild disabled={isLocked}>
+                            <label htmlFor="modal-file-upload"><Paperclip className="h-5 w-5" /></label>
+                        </Button>
+                        <input id="modal-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} disabled={isLocked} />
+                        <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
+                    </div>
+                </form>
             </DialogContent>
         </Dialog>
 
