@@ -21,8 +21,8 @@ import type { DateRange } from "react-day-picker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 
 
 const getYoutubeEmbedUrl = (url: string) => {
@@ -59,6 +59,7 @@ export default function NewCampaignPage() {
     
     const [isPreviewMobile, setIsPreviewMobile] = useState(false);
     const [placement, setPlacement] = useState('hero');
+    const [previewingCreative, setPreviewingCreative] = useState<Creative | null>(null);
 
     const handleCreateCampaign = () => {
         toast({
@@ -135,6 +136,8 @@ export default function NewCampaignPage() {
         
     const mockProductForPreview = mockProducts[0];
     const mockReviewForPreview = mockReviews[0];
+    
+    const creative = previewingCreative;
 
     return (
         <div>
@@ -266,142 +269,7 @@ export default function NewCampaignPage() {
                                                  )}
                                              </div>
                                              <div className="flex justify-between items-center">
-                                                <Dialog>
-                                                    <DialogTrigger asChild>
-                                                        <Button variant="outline" size="sm"><Eye className="mr-2 h-4 w-4"/> Preview Creative</Button>
-                                                    </DialogTrigger>
-                                                    <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-                                                        <DialogHeader>
-                                                            <DialogTitle>Campaign Preview</DialogTitle>
-                                                        </DialogHeader>
-                                                        <div className="flex justify-center items-center gap-2 border-b pb-2">
-                                                            <Button variant={!isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(false)}><Laptop className="mr-2 h-4 w-4" /> Desktop</Button>
-                                                            <Button variant={isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(true)}><Smartphone className="mr-2 h-4 w-4" /> Mobile</Button>
-                                                        </div>
-                                                        <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg overflow-auto">
-                                                            <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full overflow-y-auto", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
-                                                               {/* Individual creative previews based on placement */}
-                                                                {placement === 'hero' && (
-                                                                     <div className="relative w-full h-full">
-                                                                        <div className="relative" style={{height: isPreviewMobile ? '100%' : '100%'}}>
-                                                                            {creative.image?.src && <Image src={creative.image.src} alt={creative.title} fill className="object-cover" />}
-                                                                            {creative.embedUrl && !creative.image?.src && <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
-                                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                                                            <div className="absolute inset-0 flex items-center justify-center text-center">
-                                                                                <div className="text-white p-4">
-                                                                                    <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>{creative.title}</h1>
-                                                                                    <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>{creative.description}</p>
-                                                                                    <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">{creative.cta}<ArrowRight className="ml-2 h-4 w-4" /></Button>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {placement === 'banner' && (
-                                                                    <div className="w-full h-full flex flex-col">
-                                                                        <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center justify-center relative whitespace-nowrap">
-                                                                            <div className="flex items-center gap-2 mx-4">
-                                                                                {creative.image?.src && <Image src={creative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
-                                                                                <span className="font-semibold">{creative.title}</span>
-                                                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="p-4 flex-1">
-                                                                            <header className="flex justify-between items-center p-4 border-b">
-                                                                                <div className="flex items-center gap-2"><Store className="h-6 w-6"/> <span className="font-bold">ShopSphere</span></div>
-                                                                                <div className="flex items-center gap-2"><ShoppingCart className="h-5 w-5"/> <User className="h-5 w-5"/></div>
-                                                                            </header>
-                                                                            <p className="text-sm text-center text-muted-foreground pt-8">Page content...</p>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {placement === 'popup' && (
-                                                                    <div className="w-full h-full flex items-center justify-center bg-black/50">
-                                                                        <div className="bg-background rounded-lg shadow-xl p-0 w-full max-w-sm text-center relative overflow-hidden">
-                                                                            <button className="absolute top-2 right-2 z-10 bg-background/50 rounded-full p-1"><X className="h-4 w-4"/></button>
-                                                                            <div className="flex flex-col items-center">
-                                                                                {creative.image?.src && <Image src={creative.image.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />}
-                                                                                {creative.embedUrl && !creative.image?.src && (
-                                                                                    <div className="aspect-video w-full">
-                                                                                        <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
-                                                                                    </div>
-                                                                                )}
-                                                                                <div className="p-6">
-                                                                                    <h2 className="text-lg font-bold font-headline mb-2">{creative.title}</h2>
-                                                                                    <p className="text-sm text-muted-foreground mb-4">{creative.description}</p>
-                                                                                    <Button>{creative.cta}</Button>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                 {placement === 'inline-banner' && (
-                                                                    <div className="w-full h-full p-4 md:p-8 space-y-8">
-                                                                        <div className="text-center">
-                                                                            <h1 className="text-3xl font-bold font-headline">Homepage Content</h1>
-                                                                            <p className="text-muted-foreground">This is a section of the homepage.</p>
-                                                                        </div>
-                                                                        <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
-                                                                            {creative.image?.src && <Image src={creative.image.src} alt={creative.title} fill className="object-cover" />}
-                                                                            {creative.embedUrl && !creative.image?.src && <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
-                                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
-                                                                                <div>
-                                                                                    <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>{creative.title}</h2>
-                                                                                    <p className={cn(isPreviewMobile ? "text-xs" : "text-sm", "mt-1 mb-2")}>{creative.description}</p>
-                                                                                    <Button size="sm">{creative.cta}</Button>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="text-center">
-                                                                            <h2 className="text-2xl font-bold font-headline">Another Section</h2>
-                                                                            <p className="text-muted-foreground">More content follows below.</p>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                                {placement === 'product-page-banner' && (
-                                                                    <div className="w-full h-full p-4 md:p-8 space-y-8">
-                                                                        {/* Mock Product Details */}
-                                                                        <div className={cn("grid gap-6", isPreviewMobile ? "grid-cols-1" : "grid-cols-2")}>
-                                                                            <div className="aspect-square bg-muted rounded-lg"></div>
-                                                                            <div className="space-y-3">
-                                                                                <h1 className="text-2xl font-bold font-headline">{mockProductForPreview.name}</h1>
-                                                                                <p className="text-2xl">${mockProductForPreview.price.toFixed(2)}</p>
-                                                                                <div className="flex items-center gap-1"><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-muted" /> <span className="text-xs text-muted-foreground ml-1">({mockProductForPreview.reviewCount} reviews)</span></div>
-                                                                                <p className="text-sm text-muted-foreground">{mockProductForPreview.description.substring(0, 100)}...</p>
-                                                                                <Button className="w-full">Add to Cart</Button>
-                                                                            </div>
-                                                                        </div>
-                                                                        <Separator />
-                                                                        {/* Campaign Banner */}
-                                                                         <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
-                                                                            {creative.image?.src && <Image src={creative.image.src} alt={creative.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />}
-                                                                            <div className="flex-1 text-center md:text-left">
-                                                                                <h3 className="font-bold">{creative.title}</h3>
-                                                                                <p className="text-sm text-muted-foreground">{creative.description}</p>
-                                                                            </div>
-                                                                            <Button>{creative.cta}</Button>
-                                                                        </div>
-                                                                         {/* Mock Reviews */}
-                                                                        <div>
-                                                                            <h2 className="text-xl font-bold font-headline mb-4">Customer Reviews</h2>
-                                                                             <Card>
-                                                                                <CardHeader>
-                                                                                    <div className="flex items-center gap-2">
-                                                                                        <div className="w-8 h-8 rounded-full bg-muted"></div>
-                                                                                        <p className="font-semibold text-sm">{mockReviewForPreview.author}</p>
-                                                                                    </div>
-                                                                                </CardHeader>
-                                                                                <CardContent>
-                                                                                    <p className="text-xs text-muted-foreground">{mockReviewForPreview.comment}</p>
-                                                                                </CardContent>
-                                                                            </Card>
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        </div>
-                                                    </DialogContent>
-                                                </Dialog>
+                                                <Button variant="outline" size="sm" onClick={() => setPreviewingCreative(creative)}><Eye className="mr-2 h-4 w-4"/> Preview Creative</Button>
                                                 <Button variant="destructive" size="sm" onClick={() => handleRemoveCreative(creative.id)}><Trash2 className="mr-2 h-4 w-4" /> Remove</Button>
                                              </div>
                                         </AccordionContent>
@@ -468,6 +336,210 @@ export default function NewCampaignPage() {
                     </Card>
                 </div>
             </div>
+            
+            <Dialog open={!!previewingCreative} onOpenChange={(isOpen) => !isOpen && setPreviewingCreative(null)}>
+                <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Campaign Preview: {creative?.title}</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex justify-center items-center gap-2 border-b pb-2">
+                        <Button variant={!isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(false)}><Laptop className="mr-2 h-4 w-4" /> Desktop</Button>
+                        <Button variant={isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(true)}><Smartphone className="mr-2 h-4 w-4" /> Mobile</Button>
+                    </div>
+                    <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg overflow-auto">
+                        <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full overflow-y-auto", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
+                            {creative && (
+                                <>
+                                {placement === 'hero' && (
+                                    <Carousel className="w-full h-full" opts={{loop: true}}>
+                                        <CarouselContent>
+                                            {creatives.map(c => (
+                                            <CarouselItem key={c.id}>
+                                                <div className="relative w-full h-full">
+                                                    <div className="relative" style={{height: isPreviewMobile ? '100%' : '100%'}}>
+                                                        {c.image?.src && <Image src={c.image.src} alt={c.title} fill className="object-cover" />}
+                                                        {c.embedUrl && !c.image?.src && <iframe src={c.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                                        <div className="absolute inset-0 flex items-center justify-center text-center">
+                                                            <div className="text-white p-4">
+                                                                <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>{c.title}</h1>
+                                                                <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>{c.description}</p>
+                                                                <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">{c.cta}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CarouselItem>
+                                            ))}
+                                        </CarouselContent>
+                                    </Carousel>
+                                )}
+                                {placement === 'banner' && (
+                                    <div className="w-full h-full flex flex-col">
+                                        <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center justify-center relative whitespace-nowrap overflow-hidden">
+                                            <div className="flex items-center gap-2 mx-4 animate-marquee">
+                                                {creative.image?.src && <Image src={creative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                <span className="font-semibold">{creative.title}</span>
+                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
+                                            </div>
+                                             <div className="flex items-center gap-2 mx-4 animate-marquee-2" aria-hidden="true">
+                                                {creative.image?.src && <Image src={creative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                <span className="font-semibold">{creative.title}</span>
+                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
+                                            </div>
+                                        </div>
+                                        <div className="p-4 flex-1">
+                                            <header className="flex justify-between items-center p-4 border-b">
+                                                <div className="flex items-center gap-2"><Store className="h-6 w-6"/> <span className="font-bold">ShopSphere</span></div>
+                                                <div className="flex items-center gap-2"><ShoppingCart className="h-5 w-5"/> <User className="h-5 w-5"/></div>
+                                            </header>
+                                            <p className="text-sm text-center text-muted-foreground pt-8">Page content...</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {placement === 'popup' && (
+                                    <div className="w-full h-full flex items-center justify-center bg-black/50">
+                                        <Card className="bg-background rounded-lg shadow-xl p-0 w-full max-w-sm text-center relative overflow-hidden">
+                                            <button className="absolute top-2 right-2 z-10 bg-background/50 rounded-full p-1"><X className="h-4 w-4"/></button>
+                                            <Carousel className="w-full">
+                                                <CarouselContent>
+                                                    {creatives.map(c => (
+                                                        <CarouselItem key={c.id}>
+                                                            <div className="flex flex-col items-center">
+                                                                {c.image?.src && <Image src={c.image.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />}
+                                                                {c.embedUrl && !c.image?.src && (
+                                                                    <div className="aspect-video w-full">
+                                                                        <iframe src={c.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
+                                                                    </div>
+                                                                )}
+                                                                <div className="p-6">
+                                                                    <h2 className="text-lg font-bold font-headline mb-2">{c.title}</h2>
+                                                                    <p className="text-sm text-muted-foreground mb-4">{c.description}</p>
+                                                                    <Button>{c.cta}</Button>
+                                                                </div>
+                                                            </div>
+                                                        </CarouselItem>
+                                                    ))}
+                                                </CarouselContent>
+                                                {creatives.length > 1 && <>
+                                                    <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2"/>
+                                                    <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2"/>
+                                                </>}
+                                            </Carousel>
+                                        </Card>
+                                    </div>
+                                )}
+                                 {placement === 'inline-banner' && (
+                                    <div className="w-full h-full p-4 md:p-8 space-y-8">
+                                        <div className="text-center">
+                                            <h1 className="text-3xl font-bold font-headline">Homepage Content</h1>
+                                            <p className="text-muted-foreground">This is a section of the homepage.</p>
+                                        </div>
+                                         <Carousel className="w-full" opts={{loop:true}}>
+                                            <CarouselContent>
+                                                {creatives.map(c => (
+                                                <CarouselItem key={c.id}>
+                                                    <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
+                                                        {c.image?.src && <Image src={c.image.src} alt={c.title} fill className="object-cover" />}
+                                                        {c.embedUrl && !c.image?.src && <iframe src={c.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
+                                                            <div>
+                                                                <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>{c.title}</h2>
+                                                                <p className={cn(isPreviewMobile ? "text-xs" : "text-sm", "mt-1 mb-2")}>{c.description}</p>
+                                                                <Button size="sm">{c.cta}</Button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </CarouselItem>
+                                                ))}
+                                            </CarouselContent>
+                                             {creatives.length > 1 && <>
+                                                <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2"/>
+                                                <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2"/>
+                                            </>}
+                                        </Carousel>
+                                        <div className="text-center">
+                                            <h2 className="text-2xl font-bold font-headline">Another Section</h2>
+                                            <p className="text-muted-foreground">More content follows below.</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {placement === 'product-page-banner' && (
+                                    <div className="w-full h-full p-4 md:p-8 space-y-8">
+                                        {/* Mock Product Details */}
+                                        <div className={cn("grid gap-6", isPreviewMobile ? "grid-cols-1" : "grid-cols-2")}>
+                                            <div className="aspect-square bg-muted rounded-lg"></div>
+                                            <div className="space-y-3">
+                                                <h1 className="text-2xl font-bold font-headline">{mockProductForPreview.name}</h1>
+                                                <p className="text-2xl">${mockProductForPreview.price.toFixed(2)}</p>
+                                                <div className="flex items-center gap-1"><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-muted" /> <span className="text-xs text-muted-foreground ml-1">({mockProductForPreview.reviewCount} reviews)</span></div>
+                                                <p className="text-sm text-muted-foreground">{mockProductForPreview.description.substring(0, 100)}...</p>
+                                                <Button className="w-full">Add to Cart</Button>
+                                            </div>
+                                        </div>
+                                        <Separator />
+                                        {/* Campaign Banner */}
+                                        <Carousel className="w-full" opts={{loop: true}}>
+                                            <CarouselContent>
+                                                {creatives.map(c => (
+                                                <CarouselItem key={c.id}>
+                                                    <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
+                                                        {c.image?.src && <Image src={c.image.src} alt={c.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />}
+                                                        <div className="flex-1 text-center md:text-left">
+                                                            <h3 className="font-bold">{c.title}</h3>
+                                                            <p className="text-sm text-muted-foreground">{c.description}</p>
+                                                        </div>
+                                                        <Button>{c.cta}</Button>
+                                                    </div>
+                                                </CarouselItem>
+                                                ))}
+                                            </CarouselContent>
+                                             {creatives.length > 1 && <>
+                                                <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2"/>
+                                                <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2"/>
+                                            </>}
+                                        </Carousel>
+                                         {/* Mock Reviews */}
+                                        <div>
+                                            <h2 className="text-xl font-bold font-headline mb-4">Customer Reviews</h2>
+                                             <Card>
+                                                <CardHeader>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-full bg-muted"></div>
+                                                        <p className="font-semibold text-sm">{mockReviewForPreview.author}</p>
+                                                    </div>
+                                                </CardHeader>
+                                                <CardContent>
+                                                    <p className="text-xs text-muted-foreground">{mockReviewForPreview.comment}</p>
+                                                </CardContent>
+                                            </Card>
+                                        </div>
+                                    </div>
+                                )}
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
+
+<style jsx>{`
+    @keyframes marquee {
+        from { transform: translateX(0); }
+        to { transform: translateX(-100%); }
+    }
+    .animate-marquee {
+        animation: marquee 15s linear infinite;
+        flex-shrink: 0;
+    }
+     .animate-marquee-2 {
+        animation: marquee 15s linear infinite;
+        flex-shrink: 0;
+        animation-delay: 7.5s;
+    }
+`}</style>
+
+    
