@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { mockProducts, mockReviews, mockCampaigns } from "@/lib/mock-data";
 import type { DisplayProduct, MarketingCampaign } from "@/lib/types";
 import { format, addDays, parseISO } from "date-fns";
-import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User, PlusCircle, Trash2, Clock } from "lucide-react";
+import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User, PlusCircle, Trash2, Clock, Settings } from "lucide-react";
 import Image from "next/image";
 import type { DateRange } from "react-day-picker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -79,6 +79,22 @@ const CountdownTimerPreview = () => {
     )
 }
 
+function IndependentTimerPreview({ title, description, ctaLink }: { title: string; description: string; ctaLink: string }) {
+    return (
+        <Card className="shadow-lg">
+            <CardContent className="p-4 flex flex-col md:flex-row items-center gap-4">
+                <div className="flex-1 text-center md:text-left">
+                    <p className="font-semibold">{title}</p>
+                    <p className="text-xs text-muted-foreground">{description}</p>
+                </div>
+                <CountdownTimerPreview />
+                <Button asChild size="sm">
+                    <Link href={ctaLink}>Get Offer</Link>
+                </Button>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function NewCampaignPage() {
     const router = useRouter();
@@ -93,7 +109,16 @@ export default function NewCampaignPage() {
     const [date, setDate] = useState<DateRange | undefined>(undefined);
     const [startTime, setStartTime] = useState("00:00");
     const [endTime, setEndTime] = useState("23:59");
+    
+    // Countdown state
     const [showCountdown, setShowCountdown] = useState(false);
+    const [countdownPlacement, setCountdownPlacement] = useState('on-creative');
+    const [isTimerConfigOpen, setIsTimerConfigOpen] = useState(false);
+    const [timerTitle, setTimerTitle] = useState("Limited Time Offer!");
+    const [timerDescription, setTimerDescription] = useState("Don't miss out on these amazing deals.");
+    const [timerCtaLink, setTimerCtaLink] = useState("#");
+    const [timerIndependentPlacement, setTimerIndependentPlacement] = useState("floating-banner");
+
     const [selectedProducts, setSelectedProducts] = useState<DisplayProduct[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     
@@ -217,7 +242,7 @@ export default function NewCampaignPage() {
     
     const renderMarqueeContent = (creative: Creative) => (
          <div className="flex items-center gap-2 mx-4">
-            {showCountdown && <Clock className="h-4 w-4 text-primary-foreground inline-block"/>}
+            {showCountdown && countdownPlacement === 'on-creative' && <Clock className="h-4 w-4 text-primary-foreground inline-block"/>}
             {creative.image?.src && <Image src={creative.image.src} alt={creative.title} width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
             <span className="font-semibold">{creative.title}</span>
             <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
@@ -287,7 +312,7 @@ export default function NewCampaignPage() {
                                 </div>
                             </div>
                              <div className="space-y-2">
-                                <Label htmlFor="campaign-placement">Placement</Label>
+                                <Label htmlFor="campaign-placement">Creative Placement</Label>
                                 <Select value={placement} onValueChange={setPlacement}>
                                     <SelectTrigger id="campaign-placement">
                                         <SelectValue placeholder="Select where to display" />
@@ -301,9 +326,70 @@ export default function NewCampaignPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="sm:col-span-2 flex items-center gap-4 p-4 border rounded-lg">
-                                <Switch id="show-countdown" checked={showCountdown} onCheckedChange={setShowCountdown} />
-                                 <Label htmlFor="show-countdown" className="font-medium">Show Countdown Timer</Label>
+                            <div className="sm:col-span-2 flex flex-col gap-4 p-4 border rounded-lg">
+                                <div className="flex items-center gap-4">
+                                    <Switch id="show-countdown" checked={showCountdown} onCheckedChange={setShowCountdown} />
+                                     <Label htmlFor="show-countdown" className="font-medium">Show Countdown Timer</Label>
+                                </div>
+                                {showCountdown && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center pl-10">
+                                         <div className="space-y-2">
+                                            <Label htmlFor="countdown-placement">Timer Placement</Label>
+                                            <Select value={countdownPlacement} onValueChange={setCountdownPlacement}>
+                                                <SelectTrigger id="countdown-placement">
+                                                    <SelectValue placeholder="Select timer placement" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="on-creative">On Creative</SelectItem>
+                                                    <SelectItem value="independent">Independent</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                         {countdownPlacement === 'independent' && (
+                                            <Dialog open={isTimerConfigOpen} onOpenChange={setIsTimerConfigOpen}>
+                                                <DialogTrigger asChild>
+                                                     <Button variant="outline" className="mt-auto"><Settings className="mr-2 h-4 w-4"/>Configure Timer</Button>
+                                                </DialogTrigger>
+                                                <DialogContent className="max-w-2xl">
+                                                    <DialogHeader>
+                                                        <DialogTitle>Configure Independent Timer</DialogTitle>
+                                                    </DialogHeader>
+                                                    <div className="grid md:grid-cols-2 gap-6 py-4">
+                                                        <div className="space-y-4">
+                                                            <div className="space-y-2">
+                                                                <Label>Placement</Label>
+                                                                <Select value={timerIndependentPlacement} onValueChange={setTimerIndependentPlacement}>
+                                                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="floating-banner">Floating Bottom Banner</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label htmlFor="timer-title">Title</Label>
+                                                                <Input id="timer-title" value={timerTitle} onChange={(e) => setTimerTitle(e.target.value)} />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label htmlFor="timer-desc">Description</Label>
+                                                                <Input id="timer-desc" value={timerDescription} onChange={(e) => setTimerDescription(e.target.value)} />
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                <Label htmlFor="timer-cta">CTA Link</Label>
+                                                                <Input id="timer-cta" value={timerCtaLink} onChange={(e) => setTimerCtaLink(e.target.value)} />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-4">
+                                                            <Label>Preview</Label>
+                                                            <div className="p-4 bg-muted rounded-lg h-full flex items-center justify-center">
+                                                                 <IndependentTimerPreview title={timerTitle} description={timerDescription} ctaLink={timerCtaLink} />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </DialogContent>
+                                            </Dialog>
+                                         )}
+                                    </div>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -456,7 +542,7 @@ export default function NewCampaignPage() {
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                             <div className="absolute inset-0 flex items-center justify-center text-center">
                                                 <div className="text-white p-4">
-                                                    {showCountdown && <div className="mb-4 p-2 bg-black/30 rounded-lg backdrop-blur-sm inline-block"><CountdownTimerPreview /></div>}
+                                                    {showCountdown && countdownPlacement === 'on-creative' && <div className="mb-4 p-2 bg-black/30 rounded-lg backdrop-blur-sm inline-block"><CountdownTimerPreview /></div>}
                                                     <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>{previewingCreative.title}</h1>
                                                     <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>{previewingCreative.description}</p>
                                                     <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">{previewingCreative.cta}<ArrowRight className="ml-2 h-4 w-4" /></Button>
@@ -490,7 +576,7 @@ export default function NewCampaignPage() {
                                                 <Image src={previewingCreative.image!.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />
                                                 <div className="p-6">
                                                     <h2 className="text-lg font-bold font-headline mb-2">{previewingCreative.title}</h2>
-                                                    {showCountdown && <div className="mb-4"><CountdownTimerPreview /></div>}
+                                                    {showCountdown && countdownPlacement === 'on-creative' && <div className="mb-4"><CountdownTimerPreview /></div>}
                                                     <p className="text-sm text-muted-foreground mb-4">{previewingCreative.description}</p>
                                                     <Button>{previewingCreative.cta}</Button>
                                                 </div>
@@ -509,7 +595,7 @@ export default function NewCampaignPage() {
                                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
                                                 <div>
                                                     <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>{previewingCreative.title}</h2>
-                                                    {showCountdown && <div className="my-2 p-1 bg-black/30 rounded-lg backdrop-blur-sm inline-block"><CountdownTimerPreview /></div>}
+                                                    {showCountdown && countdownPlacement === 'on-creative' && <div className="my-2 p-1 bg-black/30 rounded-lg backdrop-blur-sm inline-block"><CountdownTimerPreview /></div>}
                                                     <p className={cn(isPreviewMobile ? "text-xs" : "text-sm", "mt-1 mb-2")}>{previewingCreative.description}</p>
                                                     <Button size="sm">{previewingCreative.cta}</Button>
                                                 </div>
@@ -538,7 +624,7 @@ export default function NewCampaignPage() {
                                             <Image src={previewingCreative.image!.src} alt={previewingCreative.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />
                                             <div className="flex-1 text-center md:text-left">
                                                 <h3 className="font-bold">{previewingCreative.title}</h3>
-                                                {showCountdown && <div className="my-2"><CountdownTimerPreview /></div>}
+                                                {showCountdown && countdownPlacement === 'on-creative' && <div className="my-2"><CountdownTimerPreview /></div>}
                                                 <p className="text-sm text-muted-foreground">{previewingCreative.description}</p>
                                             </div>
                                             <Button>{previewingCreative.cta}</Button>
