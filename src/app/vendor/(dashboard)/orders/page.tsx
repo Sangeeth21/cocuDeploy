@@ -4,7 +4,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { Button } from "@/components/ui/button";
 
 const mockVendorOrders = [
@@ -18,7 +17,7 @@ const mockVendorOrders = [
 
 export default function VendorOrdersPage() {
     return (
-        <VendorSidebarLayout>
+        <div>
              <div className="mb-8">
                 <h1 className="text-3xl font-bold font-headline">Orders</h1>
                 <p className="text-muted-foreground">View and manage customer orders.</p>
@@ -59,6 +58,6 @@ export default function VendorOrdersPage() {
                     </Table>
                 </CardContent>
              </Card>
-        </VendorSidebarLayout>
+        </div>
     );
 }

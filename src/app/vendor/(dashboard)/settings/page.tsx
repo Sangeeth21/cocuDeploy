@@ -2,7 +2,6 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,7 +21,7 @@ export default function VendorSettingsPage() {
     }
 
     return (
-        <VendorSidebarLayout>
+        <div>
              <div className="mb-8">
                 <h1 className="text-3xl font-bold font-headline">Settings</h1>
                 <p className="text-muted-foreground">Manage your store and account settings.</p>
@@ -86,6 +85,6 @@ export default function VendorSettingsPage() {
                     </CardContent>
                 </Card>
             </div>
-        </VendorSidebarLayout>
+        </div>
     );
 }

@@ -2,7 +2,6 @@
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 import dynamic from "next/dynamic";
@@ -48,7 +47,7 @@ const trafficChartConfig = {
 
 export default function VendorAnalyticsPage() {
     return (
-        <VendorSidebarLayout>
+        <div>
             <div className="mb-8">
                 <h1 className="text-3xl font-bold font-headline">Analytics</h1>
                 <p className="text-muted-foreground">Track your store's performance.</p>
@@ -102,6 +101,6 @@ export default function VendorAnalyticsPage() {
                     </CardContent>
                 </Card>
             </div>
-        </VendorSidebarLayout>
+        </div>
     );
 }
