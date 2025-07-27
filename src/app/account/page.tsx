@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -118,10 +118,8 @@ export default function AccountPage() {
     const vendorId = searchParams.get('vendorId');
     const productName = searchParams.get('productName');
     if (vendorId) {
-      const existingConvo = conversations.find(c => c.vendorId === vendorId);
-      if (existingConvo) {
-        setSelectedConversationId(existingConvo.id);
-      } else {
+      let convo = conversations.find(c => c.vendorId === vendorId);
+      if (!convo) {
         // Create a new conversation if one doesn't exist
         const newConvo: Conversation = {
           id: conversations.length + 1,
@@ -130,14 +128,15 @@ export default function AccountPage() {
           messages: [],
         };
         setConversations(prev => [...prev, newConvo]);
-        setSelectedConversationId(newConvo.id);
+        convo = newConvo;
       }
+      setSelectedConversationId(convo.id);
       
       if (productName) {
         setNewMessage(`Hi, I have a question about the "${productName}"...`);
       }
       
-      // Clean up URL
+      // Clean up URL and switch to messages tab
       window.history.replaceState(null, '', '/account?tab=messages');
     } else {
         // Default to first conversation if no specific one is targeted
@@ -194,7 +193,7 @@ export default function AccountPage() {
     if (type === 'phone') setIsPhoneVerifyOpen(false);
   }
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
         const newFiles = Array.from(e.target.files);
         if (attachments.length + newFiles.length > 5) {
@@ -207,13 +206,13 @@ export default function AccountPage() {
         }
         setAttachments(prev => [...prev, ...newFiles]);
     }
-  }
+  }, [attachments.length, toast]);
 
-  const removeAttachment = (fileToRemove: File) => {
+  const removeAttachment = useCallback((fileToRemove: File) => {
     setAttachments(prev => prev.filter(file => file !== fileToRemove));
-  }
+  }, []);
   
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() && attachments.length === 0 || !selectedConversationId) return;
 
@@ -233,7 +232,7 @@ export default function AccountPage() {
     setConversations(prev =>
       prev.map(convo =>
         convo.id === selectedConversationId
-          ? { ...convo, messages: [...convo.messages, newMessageObj] }
+          ? { ...convo, messages: [...convo.messages, newMessageObj], unread: false }
           : convo
       )
     );
@@ -243,16 +242,16 @@ export default function AccountPage() {
         title: "Message Sent",
         description: "Your message has been sent to the vendor.",
     });
-  };
+  }, [attachments, newMessage, selectedConversationId, toast]);
 
-  const handleSelectConversation = (id: number) => {
+  const handleSelectConversation = useCallback((id: number) => {
     setSelectedConversationId(id);
     setConversations(prev =>
         prev.map(convo => 
             convo.id === id ? { ...convo, unread: false } : convo
         )
     );
-  }
+  }, []);
 
   const getLastMessage = (messages: Message[]) => {
       if (messages.length === 0) return "No messages yet.";
@@ -277,7 +276,7 @@ export default function AccountPage() {
                  scrollableView.scrollTop = scrollableView.scrollHeight;
              }
         }
-    }, [selectedConversation?.messages, selectedConversationId]);
+    }, [selectedConversation?.messages]);
 
   return (
     <div className="container py-12">
@@ -315,7 +314,7 @@ export default function AccountPage() {
           <TabsTrigger value="settings">Settings</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
-        <TabsContent value="profile">
+        <TabsContent value="profile" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="font-headline">Public Profile</CardTitle>
@@ -340,9 +339,9 @@ export default function AccountPage() {
             </CardContent>
           </Card>
         </TabsContent>
-         <TabsContent value="messages" className="h-[calc(100vh-22rem)]">
-             <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-full gap-4">
-                <div className="md:col-span-1 xl:col-span-1 flex flex-col border rounded-lg bg-card h-full">
+         <TabsContent value="messages" className="mt-0">
+             <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 border rounded-lg h-[calc(100vh-22rem)]">
+                <div className="md:col-span-1 xl:col-span-1 flex flex-col bg-card h-full">
                   <div className="p-4 border-b">
                     <h2 className="text-2xl font-bold font-headline">Conversations</h2>
                      <div className="relative mt-2">
@@ -355,7 +354,7 @@ export default function AccountPage() {
                       <div
                         key={convo.id}
                         className={cn(
-                          "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50",
+                          "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
                           selectedConversationId === convo.id && "bg-muted"
                         )}
                         onClick={() => handleSelectConversation(convo.id)}
@@ -375,7 +374,7 @@ export default function AccountPage() {
                     ))}
                   </ScrollArea>
                 </div>
-                <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full border rounded-lg bg-card">
+                <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full bg-card border-l">
                   {selectedConversation ? (
                     <>
                       <div className="p-4 border-b flex items-center gap-4">
@@ -385,12 +384,12 @@ export default function AccountPage() {
                         </Avatar>
                         <h2 className="text-lg font-semibold">{selectedConversation.vendorId}</h2>
                       </div>
-                      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+                      <ScrollArea className="flex-1 bg-muted/20" ref={scrollAreaRef}>
                         <div className="p-4 space-y-4">
                           {selectedConversation.messages.map((msg, index) => (
                             <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
                               {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.vendorId} /><AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
-                              <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                              <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
                                 {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
                                 {msg.attachments && (
                                     <div className="grid gap-2 grid-cols-2">
@@ -458,7 +457,7 @@ export default function AccountPage() {
                 </div>
             </div>
         </TabsContent>
-        <TabsContent value="orders">
+        <TabsContent value="orders" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="font-headline">Order History</CardTitle>
@@ -498,7 +497,7 @@ export default function AccountPage() {
             </CardContent>
           </Card>
         </TabsContent>
-        <TabsContent value="settings">
+        <TabsContent value="settings" className="mt-6">
           <Card>
             <CardHeader>
               <CardTitle className="font-headline">Account Settings</CardTitle>
@@ -638,7 +637,7 @@ export default function AccountPage() {
             </CardContent>
           </Card>
         </TabsContent>
-         <TabsContent value="billing">
+         <TabsContent value="billing" className="mt-6">
             <div className="space-y-8">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
