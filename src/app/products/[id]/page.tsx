@@ -26,7 +26,7 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
 });
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
-  const productId = params.id;
+  const { id: productId } = params;
   const product = mockProducts.find((p) => p.id === productId);
 
   if (!product) {
