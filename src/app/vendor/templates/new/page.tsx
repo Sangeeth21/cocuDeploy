@@ -128,7 +128,7 @@ export default function NewTemplatePage() {
 
             <div className="grid lg:grid-cols-3 gap-8 items-start">
                 {/* --- Controls Column --- */}
-                <div className="lg:col-span-1 space-y-8 sticky top-24">
+                <div className="lg:col-span-1 space-y-8 lg:sticky lg:top-24">
                     <Card>
                         <CardHeader>
                             <CardTitle>Template Settings</CardTitle>
