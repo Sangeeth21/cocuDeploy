@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -16,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +28,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Checkbox } from "@/components/ui/checkbox";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
@@ -38,6 +39,8 @@ type Attachment = {
     type: 'image' | 'file';
     url: string;
 }
+
+const FORBIDDEN_KEYWORDS = ['phone', 'email', 'contact', '@', '.com', 'number', 'cash', 'paypal', 'venmo'];
 
 const initialConversations: Conversation[] = [
   {
@@ -52,6 +55,7 @@ const initialConversations: Conversation[] = [
     unread: true,
     userMessageCount: 3,
     awaitingVendorDecision: false,
+    status: 'active',
   },
   {
     id: 2,
@@ -61,6 +65,7 @@ const initialConversations: Conversation[] = [
     unread: false,
     userMessageCount: 1,
     awaitingVendorDecision: false,
+    status: 'active',
   },
 ];
 
@@ -124,6 +129,7 @@ export default function AccountPage() {
           messages: [],
           userMessageCount: 0,
           awaitingVendorDecision: false,
+          status: 'active',
         };
         setConversations(prev => [...prev, newConvo]);
         convo = newConvo;
@@ -214,6 +220,21 @@ export default function AccountPage() {
     e.preventDefault();
     if (!newMessage.trim() && attachments.length === 0 || !selectedConversationId) return;
 
+    const lowerCaseMessage = newMessage.toLowerCase();
+    const hasForbiddenKeyword = FORBIDDEN_KEYWORDS.some(keyword => lowerCaseMessage.includes(keyword));
+
+    if (hasForbiddenKeyword) {
+        setConversations(prev => prev.map(c => c.id === selectedConversationId ? {...c, status: 'flagged'} : c));
+        toast({
+            variant: "destructive",
+            title: "Message Flagged",
+            description: "Your message appears to violate our policies and has been flagged for review. This chat is now disabled.",
+        });
+        setNewMessage("");
+        setAttachments([]);
+        return;
+    }
+
     const newAttachments: Attachment[] = attachments.map(file => ({
         name: file.name,
         type: file.type.startsWith("image/") ? "image" : "file",
@@ -224,6 +245,7 @@ export default function AccountPage() {
         id: Math.random().toString(),
         sender: "customer", 
         text: newMessage,
+        ...(newAttachments.length > 0 && { attachments: newAttachments })
     };
 
     setConversations(prev =>
@@ -251,7 +273,7 @@ export default function AccountPage() {
     );
     setNewMessage("");
     setAttachments([]);
-  }, [attachments, newMessage, selectedConversationId]);
+  }, [attachments, newMessage, selectedConversationId, toast]);
 
   const handleSelectConversation = useCallback((id: number) => {
     setSelectedConversationId(id);
@@ -261,6 +283,15 @@ export default function AccountPage() {
         )
     );
   }, []);
+  
+  const handleReportConversation = (id: number) => {
+    setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'flagged' } : c));
+    toast({
+        title: "Conversation Reported",
+        description: "Thank you. Our moderation team will review this chat.",
+    });
+  }
+
 
   const getLastMessage = (messages: Message[]) => {
       if (messages.length === 0) return "No messages yet.";
@@ -275,12 +306,12 @@ export default function AccountPage() {
   
   const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision } = selectedConversation;
+      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
 
       const INITIAL_LIMIT = 9;
       const EXTENDED_LIMIT = 15; // 9 initial + 6 extended
 
-      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT;
+      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
       let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
       let remaining = limit - userMessageCount;
       
@@ -382,26 +413,40 @@ export default function AccountPage() {
                   </div>
                   <ScrollArea>
                     {conversations.map(convo => (
-                      <div
-                        key={convo.id}
-                        className={cn(
-                          "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
-                          selectedConversationId === convo.id && "bg-muted"
-                        )}
-                        onClick={() => handleSelectConversation(convo.id)}
-                      >
-                        <Avatar>
-                          <AvatarImage src={convo.avatar} alt={convo.vendorId} data-ai-hint="company logo" />
-                          <AvatarFallback>{convo.vendorId.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 overflow-hidden">
-                          <div className="flex justify-between items-center">
-                            <p className="font-semibold">{convo.vendorId}</p>
-                            {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
-                          </div>
-                          <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
-                        </div>
-                      </div>
+                      <DropdownMenu key={convo.id}>
+                          <DropdownMenuTrigger asChild>
+                              <div
+                                className={cn(
+                                  "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
+                                  selectedConversationId === convo.id && "bg-muted"
+                                )}
+                                onClick={() => handleSelectConversation(convo.id)}
+                              >
+                                <Avatar>
+                                  <AvatarImage src={convo.avatar} alt={convo.vendorId} data-ai-hint="company logo" />
+                                  <AvatarFallback>{convo.vendorId.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 overflow-hidden">
+                                  <div className="flex justify-between items-center">
+                                    <p className="font-semibold">{convo.vendorId}</p>
+                                    <div className="flex items-center gap-2">
+                                        {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
+                                        {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
+                                </div>
+                              </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent>
+                              <DropdownMenuLabel>Chat Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleReportConversation(convo.id)}>
+                                <AlertTriangle className="mr-2 h-4 w-4" />
+                                Report Conversation
+                              </DropdownMenuItem>
+                          </DropdownMenuContent>
+                      </DropdownMenu>
                     ))}
                   </ScrollArea>
                 </div>
@@ -416,77 +461,96 @@ export default function AccountPage() {
                             </Avatar>
                             <h2 className="text-lg font-semibold">{selectedConversation.vendorId}</h2>
                         </div>
-                         <div className="text-sm text-muted-foreground">
-                            {remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached'}
-                        </div>
+                         <div className="flex items-center gap-4">
+                             <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => handleReportConversation(selectedConversation.id)}>
+                                 <AlertTriangle className="h-5 w-5" />
+                                 <span className="sr-only">Report Conversation</span>
+                             </Button>
+                             <div className="text-sm text-muted-foreground">
+                                {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached') : 'Chat disabled'}
+                            </div>
+                         </div>
                       </div>
-                      <ScrollArea className="flex-1 bg-muted/20" ref={scrollAreaRef}>
-                        <div className="p-4 space-y-4">
-                          {selectedConversation.messages.map((msg, index) => (
-                             msg.sender === 'system' ? (
-                                <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
-                            ) : (
-                            <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
-                              {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.vendorId} /><AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
-                              <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
-                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                                {msg.attachments && (
-                                    <div className="grid gap-2 grid-cols-2">
-                                        {msg.attachments.map((att, i) => (
-                                            att.type === 'image' ? (
-                                                <div key={i} className="relative aspect-video rounded-md overflow-hidden">
-                                                    <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
-                                                </div>
-                                            ) : (
-                                                <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                                    <FileIcon className="h-6 w-6 text-muted-foreground"/>
-                                                    <span className="text-xs truncate">{att.name}</span>
-                                                    <Download className="h-4 w-4 ml-auto" />
-                                                </a>
-                                            )
+
+                      {selectedConversation.status === 'flagged' ? (
+                          <div className="flex flex-col flex-1 items-center justify-center text-center p-8 bg-muted/20">
+                              <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
+                              <h2 className="text-xl font-bold">Chat Flagged for Review</h2>
+                              <p className="text-muted-foreground max-w-sm">
+                                  This conversation has been flagged for a potential policy violation. It is currently disabled pending review by our moderation team.
+                              </p>
+                          </div>
+                      ) : (
+                          <>
+                            <ScrollArea className="flex-1 bg-muted/20" ref={scrollAreaRef}>
+                                <div className="p-4 space-y-4">
+                                {selectedConversation.messages.map((msg, index) => (
+                                    msg.sender === 'system' ? (
+                                        <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                                    ) : (
+                                    <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
+                                    {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.vendorId} /><AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
+                                    <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                        {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                                        {msg.attachments && (
+                                            <div className="grid gap-2 grid-cols-2">
+                                                {msg.attachments.map((att, i) => (
+                                                    att.type === 'image' ? (
+                                                        <div key={i} className="relative aspect-video rounded-md overflow-hidden">
+                                                            <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
+                                                        </div>
+                                                    ) : (
+                                                        <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
+                                                            <FileIcon className="h-6 w-6 text-muted-foreground"/>
+                                                            <span className="text-xs truncate">{att.name}</span>
+                                                            <Download className="h-4 w-4 ml-auto" />
+                                                        </a>
+                                                    )
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={avatar} alt="You" /><AvatarFallback>Y</AvatarFallback></Avatar>}
+                                    </div>
+                                    )
+                                ))}
+                                </div>
+                            </ScrollArea>
+                            <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
+                                {attachments.length > 0 && !isLocked && (
+                                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                                        {attachments.map((file, index) => (
+                                            <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2 bg-muted/50">
+                                                {file.type.startsWith('image/') ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileIcon className="h-5 w-5 text-muted-foreground" />}
+                                                <p className="text-xs text-muted-foreground truncate">{file.name}</p>
+                                                <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}><X className="h-3 w-3" /></Button>
+                                            </div>
                                         ))}
                                     </div>
                                 )}
-                              </div>
-                              {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={avatar} alt="You" /><AvatarFallback>Y</AvatarFallback></Avatar>}
-                            </div>
-                            )
-                          ))}
-                        </div>
-                      </ScrollArea>
-                      <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
-                         {attachments.length > 0 && !isLocked && (
-                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                                {attachments.map((file, index) => (
-                                    <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2 bg-muted/50">
-                                        {file.type.startsWith('image/') ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileIcon className="h-5 w-5 text-muted-foreground" />}
-                                        <p className="text-xs text-muted-foreground truncate">{file.name}</p>
-                                        <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}><X className="h-3 w-3" /></Button>
+                                <div className="flex items-center gap-2">
+                                    <div className="relative flex-1">
+                                        <Textarea
+                                            ref={textareaRef}
+                                            placeholder={isLocked ? "This chat is currently disabled." : "Type your message..."}
+                                            className="pr-20 resize-none max-h-48"
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            maxLength={MAX_MESSAGE_LENGTH}
+                                            rows={1}
+                                            disabled={isLocked}
+                                        />
+                                        {!isLocked && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                                <Textarea
-                                    ref={textareaRef}
-                                    placeholder={isLocked ? "Please wait for the vendor to respond..." : "Type your message..."}
-                                    className="pr-20 resize-none max-h-48"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    maxLength={MAX_MESSAGE_LENGTH}
-                                    rows={1}
-                                    disabled={isLocked}
-                                />
-                                 {!isLocked && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
-                            </div>
-                            <Button type="button" variant="ghost" size="icon" asChild disabled={isLocked}>
-                                <label htmlFor="customer-file-upload"><Paperclip className="h-5 w-5" /></label>
-                            </Button>
-                            <input id="customer-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} disabled={isLocked} />
-                            <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
-                        </div>
-                      </form>
+                                    <Button type="button" variant="ghost" size="icon" asChild disabled={isLocked}>
+                                        <label htmlFor="customer-file-upload"><Paperclip className="h-5 w-5" /></label>
+                                    </Button>
+                                    <input id="customer-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} disabled={isLocked} />
+                                    <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
+                                </div>
+                            </form>
+                          </>
+                      )}
                     </>
                   ) : (
                      <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">

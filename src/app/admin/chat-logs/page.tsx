@@ -7,11 +7,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, MessageSquare, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Search, MessageSquare, AlertTriangle, ShieldCheck, Lock, Unlock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import Image from "next/image";
-import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import type { Message, Conversation as AdminConversation } from "@/lib/types";
 
 type Conversation = Omit<AdminConversation, 'awaitingVendorDecision' | 'userMessageCount'> & {
@@ -26,6 +25,7 @@ const initialConversations: Conversation[] = [
     vendorId: "VDR001",
     customerAvatar: "https://placehold.co/40x40.png",
     vendorAvatar: "https://placehold.co/40x40.png",
+    status: 'active',
     messages: [
       { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
       { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it." },
@@ -39,13 +39,14 @@ const initialConversations: Conversation[] = [
     vendorId: "VDR002",
     customerAvatar: "https://placehold.co/40x40.png",
     vendorAvatar: "https://placehold.co/40x40.png",
-    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada?" }],
+    status: 'flagged',
+    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada? My email is test@example.com" }],
      avatar: '',
   },
 ];
 
 export default function AdminChatLogsPage() {
-  const [conversations, setConversations] = useState(initialConversations);
+  const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(1);
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -56,15 +57,28 @@ export default function AdminChatLogsPage() {
     setSelectedConversationId(id);
   }
 
-  const handleModerationAction = (action: "warn_vendor" | "warn_customer") => {
+  const handleModerationAction = (action: "warn_vendor" | "warn_customer" | "approve" | "lock") => {
       if (!selectedConversation) return;
 
-      const user = action === 'warn_vendor' ? selectedConversation.vendorId : selectedConversation.customerId;
+      const customer = selectedConversation.customerId;
+      const vendor = selectedConversation.vendorId;
       
-      toast({
-          title: "Action Taken",
-          description: `A warning has been sent to ${user}.`,
-      });
+      switch(action) {
+        case 'warn_customer':
+            toast({ title: "Action Taken", description: `A warning has been sent to ${customer}.` });
+            break;
+        case 'warn_vendor':
+            toast({ title: "Action Taken", description: `A warning has been sent to ${vendor}.` });
+            break;
+        case 'approve':
+            setConversations(prev => prev.map(c => c.id === selectedConversation.id ? {...c, status: 'active'} : c));
+            toast({ title: "Chat Approved", description: `The conversation between ${customer} and ${vendor} has been re-enabled.` });
+            break;
+        case 'lock':
+            setConversations(prev => prev.map(c => c.id === selectedConversation.id ? {...c, status: 'locked'} : c));
+            toast({ variant: 'destructive', title: "Chat Locked", description: `The conversation between ${customer} and ${vendor} has been permanently locked.` });
+            break;
+      }
   }
 
     useEffect(() => {
@@ -102,13 +116,16 @@ export default function AdminChatLogsPage() {
                     onClick={() => handleSelectConversation(convo.id)}
                 >
                     <div className="flex justify-between items-center text-sm font-semibold">
-                        <span>{convo.customerId}</span>
+                        <span className="truncate">{convo.customerId}</span>
                         <span>&harr;</span>
-                        <span>{convo.vendorId}</span>
+                        <span className="truncate">{convo.vendorId}</span>
                     </div>
-                    <p className="text-xs text-muted-foreground truncate mt-1">
-                        {convo.messages.filter(m => m.sender !== 'system').pop()?.text}
-                    </p>
+                    <div className="flex justify-between items-center">
+                        <p className="text-xs text-muted-foreground truncate mt-1">
+                            {convo.messages.filter(m => m.sender !== 'system').pop()?.text}
+                        </p>
+                        {convo.status !== 'active' && <Badge variant={convo.status === 'flagged' ? 'destructive' : 'secondary'} className="capitalize">{convo.status}</Badge>}
+                    </div>
                 </div>
                 ))}
             </ScrollArea>
@@ -116,11 +133,22 @@ export default function AdminChatLogsPage() {
             <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full border-l">
             {selectedConversation ? (
                 <>
-                <div className="p-4 border-b flex items-center justify-between gap-4">
+                <div className="p-4 border-b flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <h2 className="text-lg font-semibold">{selectedConversation.customerId} &harr; {selectedConversation.vendorId}</h2>
+                         {selectedConversation.status !== 'active' && <Badge variant={selectedConversation.status === 'flagged' ? 'destructive' : 'secondary'} className="capitalize">{selectedConversation.status}</Badge>}
                     </div>
                     <div className="flex gap-2">
+                        {selectedConversation.status === 'flagged' && (
+                            <>
+                                <Button variant="secondary" size="sm" onClick={() => handleModerationAction('approve')}>
+                                    <Unlock className="mr-2 h-4 w-4"/> Approve Chat
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleModerationAction('lock')}>
+                                    <Lock className="mr-2 h-4 w-4"/> Lock Chat
+                                </Button>
+                            </>
+                        )}
                         <Button variant="outline" size="sm" onClick={() => handleModerationAction('warn_customer')}>
                             <AlertTriangle className="mr-2 h-4 w-4"/> Warn Customer
                         </Button>

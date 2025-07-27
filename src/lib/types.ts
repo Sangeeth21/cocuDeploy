@@ -66,6 +66,7 @@ export type Conversation = {
   unread?: boolean;
   userMessageCount: number;
   awaitingVendorDecision: boolean;
+  status: 'active' | 'flagged' | 'locked';
 };
 
 

@@ -3,13 +3,12 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { DisplayProduct, Conversation, Message } from "@/lib/types";
-import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download } from "lucide-react";
+import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -28,12 +27,14 @@ const initialConversation: Conversation = {
     messages: [],
     userMessageCount: 0,
     awaitingVendorDecision: false,
+    status: 'active',
 };
 
 
 export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const { toast } = useToast();
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isPreChatOpen, setIsPreChatOpen] = useState(false);
   const [conversation, setConversation] = useState<Conversation>({
       ...initialConversation, 
       vendorId: product.vendorId
@@ -67,6 +68,11 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
       description: `${product.name} has been added to your cart.`,
     });
   };
+
+  const handleProceedToChat = () => {
+    setIsPreChatOpen(false);
+    setIsChatOpen(true);
+  }
 
   const handleSendMessage = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -164,13 +170,34 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
     <>
       <div className="flex flex-col sm:flex-row gap-2">
         <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>Add to Cart</Button>
-        <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
+        <Dialog open={isPreChatOpen} onOpenChange={setIsPreChatOpen}>
             <DialogTrigger asChild>
                 <Button size="lg" variant="outline" className="w-full">
                     <MessageSquare className="mr-2 h-5 w-5" />
                     Message Vendor
                 </Button>
             </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-primary"/> Chat Guidelines</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 text-sm text-muted-foreground">
+                    <p>To ensure a safe and secure marketplace for everyone, please keep in mind:</p>
+                    <ul className="list-disc pl-5 space-y-2">
+                        <li><span className="font-semibold text-foreground">Do not share personal contact information</span> such as phone numbers, email addresses, or social media profiles.</li>
+                        <li>All payments must be made <span className="font-semibold text-foreground">through the platform's secure checkout</span>. Do not arrange off-site payments.</li>
+                        <li>Violating these rules may result in account suspension.</li>
+                    </ul>
+                     <p>All conversations are monitored for safety purposes.</p>
+                </div>
+                <DialogFooter>
+                    <Button onClick={handleProceedToChat}>I Understand, Continue to Chat</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+      </div>
+
+       <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
             <DialogContent className="sm:max-w-lg h-[80vh] flex flex-col p-0">
                  <DialogHeader className="p-4 border-b">
                      <div className="flex items-center justify-between">
@@ -255,8 +282,6 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
                       </form>
             </DialogContent>
         </Dialog>
-      </div>
-      <p className="text-sm text-muted-foreground mt-4">Sold by <Link href={`/vendor?vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`} className="font-semibold text-primary hover:underline">{product.vendorId}</Link></p>
     </>
   );
 }
