@@ -1,5 +1,6 @@
 
-import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign } from './types';
+
+import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order } from './types';
 
 export const mockProducts: DisplayProduct[] = [
   {
@@ -174,6 +175,72 @@ export const mockUsers: User[] = [
     { id: 'USR007', name: 'William Kim', email: 'will@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-05-30', avatar: 'https://placehold.co/40x40.png' },
     { id: 'USR008', name: 'HomeBody Decor', email: 'sales@homebody.com', role: 'Vendor', status: 'Active', joinedDate: '2024-06-01', avatar: 'https://placehold.co/40x40.png' },
 ];
+
+export const mockOrders: Order[] = [
+    {
+        id: "ORD001",
+        date: "2024-06-20",
+        customer: mockUsers[0],
+        items: [
+            { productId: '1', productName: 'Classic Leather Watch', productImage: mockProducts[0].imageUrl, quantity: 1, price: 199.99 },
+            { productId: '3', productName: 'Organic Cotton T-Shirt', productImage: mockProducts[2].imageUrl, quantity: 2, price: 29.99 }
+        ],
+        total: 259.97,
+        status: "Delivered",
+        shippingAddress: { recipient: 'Olivia Martin', line1: '123 Main St', city: 'Anytown', zip: '12345' },
+        payment: { method: 'Visa', last4: '4242' }
+    },
+    {
+        id: "ORD002",
+        date: "2024-06-18",
+        customer: mockUsers[2],
+        items: [
+            { productId: '2', productName: 'Wireless Bluetooth Headphones', productImage: mockProducts[1].imageUrl, quantity: 1, price: 149.50 }
+        ],
+        total: 149.50,
+        status: "Shipped",
+        shippingAddress: { recipient: 'Jackson Lee', line1: '456 Oak Ave', city: 'Someville', zip: '67890' },
+        payment: { method: 'Mastercard', last4: '5555' }
+    },
+    {
+        id: "ORD003",
+        date: "2024-06-15",
+        customer: mockUsers[4],
+        items: [
+            { productId: '7', productName: 'Modern Minimalist Desk', productImage: mockProducts[6].imageUrl, quantity: 1, price: 349.00 },
+             { productId: '4', productName: 'Handcrafted Ceramic Mug', productImage: mockProducts[3].imageUrl, quantity: 4, price: 24.00 }
+        ],
+        total: 445.00,
+        status: "Processing",
+        shippingAddress: { recipient: 'Isabella Nguyen', line1: '789 Pine Ln', city: 'Metropolis', zip: '10111' },
+        payment: { method: 'Visa', last4: '1111' }
+    },
+    {
+        id: "ORD004",
+        date: "2024-06-12",
+        customer: mockUsers[6],
+        items: [
+            { productId: '8', productName: 'All-Natural Skincare Set', productImage: mockProducts[7].imageUrl, quantity: 1, price: 89.99 }
+        ],
+        total: 89.99,
+        status: "Pending",
+        shippingAddress: { recipient: 'William Kim', line1: '321 Maple Dr', city: 'Townsburgh', zip: '22233' },
+        payment: { method: 'PayPal', last4: 'N/A' }
+    },
+    {
+        id: "ORD005",
+        date: "2024-06-10",
+        customer: mockUsers[0],
+        items: [
+            { productId: '9', productName: 'Hand-poured Soy Candle', productImage: mockProducts[8].imageUrl, quantity: 3, price: 22.50 }
+        ],
+        total: 67.50,
+        status: "Cancelled",
+        shippingAddress: { recipient: 'Olivia Martin', line1: '123 Main St', city: 'Anytown', zip: '12345' },
+        payment: { method: 'Visa', last4: '4242' }
+    }
+];
+
 
 // Mock data for the new marketing features
 const futureDate = new Date();

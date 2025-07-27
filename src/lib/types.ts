@@ -1,4 +1,5 @@
 
+
 export type DisplayProduct = {
   id: string;
   name: string;
@@ -55,6 +56,40 @@ export type User = {
     joinedDate: string;
     avatar: string;
 }
+
+// Order Management
+export type OrderItem = {
+    productId: string;
+    productName: string;
+    productImage: string;
+    quantity: number;
+    price: number;
+};
+
+export type Order = {
+    id: string;
+    date: string;
+    customer: {
+        id: string;
+        name: string;
+        email: string;
+        avatar: string;
+    };
+    items: OrderItem[];
+    total: number;
+    status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
+    shippingAddress: {
+        recipient: string;
+        line1: string;
+        city: string;
+        zip: string;
+    };
+    payment: {
+        method: string;
+        last4: string;
+    };
+};
+
 
 // Marketing and Promotions
 export type MarketingCampaign = {
