@@ -1,7 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ListChecks, LineChart, Package, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ListChecks, LineChart, Package, MessageSquare, Sparkles } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
+
+const previewTemplates = [
+    { name: "Modern Minimal", hint: "minimalist interior" },
+    { name: "Bold & Vibrant", hint: "vibrant abstract" },
+    { name: "Classic Elegance", hint: "classic architecture" }
+];
+
 
 export default function VendorPage() {
   return (
@@ -67,9 +76,52 @@ export default function VendorPage() {
             <p className="text-muted-foreground">
               This feature allows vendors to create new templates for product detail pages to better showcase their items.
             </p>
-            <Button variant="outline" className="mt-4" asChild>
-              <Link href="/vendor/templates">Explore Templates</Link>
-            </Button>
+             <Dialog>
+                <DialogTrigger asChild>
+                    <Button variant="outline" className="mt-4">
+                        Explore Templates
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-3xl">
+                    <DialogHeader>
+                        <DialogTitle className="font-headline">Template Gallery</DialogTitle>
+                        <DialogDescription>
+                            Here are some of the layouts available to vendors. Sign up to create your own!
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-4">
+                        {previewTemplates.map((template) => (
+                             <Card key={template.name} className="overflow-hidden group">
+                                <CardHeader className="p-0">
+                                    <div className="relative aspect-video w-full overflow-hidden">
+                                        <Image 
+                                            src={`https://placehold.co/600x400.png`} 
+                                            alt={`${template.name} Template Preview`} 
+                                            fill 
+                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                            data-ai-hint={template.hint}
+                                        />
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-4">
+                                    <CardTitle className="font-headline text-lg">{template.name}</CardTitle>
+                                </CardContent>
+                            </Card>
+                        ))}
+                         <Card className="overflow-hidden group border-primary border-2">
+                                <CardHeader className="p-0 bg-primary/10">
+                                     <div className="relative aspect-video w-full overflow-hidden flex items-center justify-center">
+                                        <Sparkles className="h-16 w-16 text-primary" />
+                                     </div>
+                                </CardHeader>
+                                <CardContent className="p-4">
+                                    <CardTitle className="font-headline text-lg">Your Custom Template</CardTitle>
+                                    <p className="text-xs text-muted-foreground mt-1">This feature allows you to fully customize the layout and components of your product page.</p>
+                                </CardContent>
+                            </Card>
+                    </div>
+                </DialogContent>
+            </Dialog>
           </CardContent>
         </Card>
       </div>
