@@ -56,6 +56,7 @@ export default function AccountPage() {
   const [isEmailVerifyOpen, setIsEmailVerifyOpen] = useState(false);
   const [isPhoneVerifyOpen, setIsPhoneVerifyOpen] = useState(false);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
+  const [isCardFormOpen, setIsCardFormOpen] = useState(false);
 
   const handleSaveChanges = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -411,7 +412,37 @@ export default function AccountPage() {
                             <CardTitle className="font-headline">Payment Methods</CardTitle>
                             <CardDescription>Manage your saved payment options.</CardDescription>
                         </div>
-                        <Button variant="outline"><PlusCircle className="mr-2"/> Add Card</Button>
+                        <Dialog open={isCardFormOpen} onOpenChange={setIsCardFormOpen}>
+                          <DialogTrigger asChild>
+                            <Button variant="outline"><PlusCircle className="mr-2"/> Add Card</Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[480px]">
+                              <DialogHeader><DialogTitle>Add New Payment Method</DialogTitle></DialogHeader>
+                              <div className="space-y-4 py-2">
+                                  <div className="space-y-2">
+                                      <Label htmlFor="card-name">Name on Card</Label>
+                                      <Input id="card-name" placeholder="John Doe" />
+                                  </div>
+                                  <div className="space-y-2">
+                                      <Label htmlFor="card-number">Card Number</Label>
+                                      <Input id="card-number" placeholder="•••• •••• •••• ••••" />
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-4">
+                                      <div className="space-y-2">
+                                          <Label htmlFor="expiry">Expiry</Label>
+                                          <Input id="expiry" placeholder="MM/YY" />
+                                      </div>
+                                      <div className="space-y-2">
+                                          <Label htmlFor="cvc">CVC</Label>
+                                          <Input id="cvc" placeholder="123" />
+                                      </div>
+                                  </div>
+                              </div>
+                              <DialogFooter>
+                                  <Button onClick={() => setIsCardFormOpen(false)}>Save Card</Button>
+                              </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
                     </CardHeader>
                     <CardContent className="space-y-4">
                        {mockPaymentMethods.map(pm => (
