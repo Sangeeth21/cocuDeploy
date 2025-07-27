@@ -17,7 +17,8 @@ type Message = {
 
 type Conversation = {
   id: number;
-  name: string;
+  customerId: string;
+  customerName: string;
   avatar: string;
   messages: Message[];
 };
@@ -25,7 +26,8 @@ type Conversation = {
 const initialConversations: Conversation[] = [
   {
     id: 1,
-    name: "Liam Johnson",
+    customerId: "CUST001",
+    customerName: "Liam Johnson",
     avatar: "https://placehold.co/40x40.png",
     messages: [
       { sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
@@ -35,13 +37,15 @@ const initialConversations: Conversation[] = [
   },
   {
     id: 2,
-    name: "Olivia Smith",
+    customerId: "CUST002",
+    customerName: "Olivia Smith",
     avatar: "https://placehold.co/40x40.png",
     messages: [{ sender: "customer", text: "Can you ship to Canada?" }],
   },
   {
     id: 3,
-    name: "Noah Williams",
+    customerId: "CUST003",
+    customerName: "Noah Williams",
     avatar: "https://placehold.co/40x40.png",
     messages: [{ sender: "vendor", text: "Thank you!" }],
   },
@@ -97,11 +101,11 @@ export default function VendorMessagesPage() {
                 onClick={() => setSelectedConversationId(convo.id)}
               >
                 <Avatar>
-                  <AvatarImage src={convo.avatar} alt={convo.name} data-ai-hint="person face" />
-                  <AvatarFallback>{convo.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={convo.avatar} alt={convo.customerName} data-ai-hint="person face" />
+                  <AvatarFallback>{convo.customerName.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
-                  <p className="font-semibold">{convo.name}</p>
+                  <p className="font-semibold">{convo.customerId}</p>
                   <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
                 </div>
               </div>
@@ -113,16 +117,16 @@ export default function VendorMessagesPage() {
             <>
               <div className="p-4 border-b flex items-center gap-4">
                 <Avatar>
-                  <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.name} data-ai-hint="person face" />
-                  <AvatarFallback>{selectedConversation.name.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerName} data-ai-hint="person face" />
+                  <AvatarFallback>{selectedConversation.customerName.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <h2 className="text-lg font-semibold">{selectedConversation.name}</h2>
+                <h2 className="text-lg font-semibold">{selectedConversation.customerId}</h2>
               </div>
               <ScrollArea className="flex-1 p-4">
                 <div className="space-y-4">
                   {selectedConversation.messages.map((msg, index) => (
                     <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
-                      {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.name} /><AvatarFallback>{selectedConversation.name.charAt(0)}</AvatarFallback></Avatar>}
+                      {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerName} /><AvatarFallback>{selectedConversation.customerName.charAt(0)}</AvatarFallback></Avatar>}
                       <div className={cn("max-w-xs md:max-w-md rounded-lg p-3 text-sm", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
                         {msg.text}
                       </div>

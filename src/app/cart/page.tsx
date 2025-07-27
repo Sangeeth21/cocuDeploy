@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -48,7 +49,7 @@ export default function CartPage() {
                   </div>
                   <div className="flex-grow p-4">
                     <Link href={`/products/${item.id}`} className="font-semibold font-headline hover:text-primary">{item.name}</Link>
-                    <p className="text-sm text-muted-foreground">{item.vendor}</p>
+                    <p className="text-sm text-muted-foreground">Vendor ID: {item.vendorId}</p>
                     <p className="text-lg font-semibold mt-2">${item.price.toFixed(2)}</p>
                   </div>
                   <div className="flex items-center gap-2 p-4">

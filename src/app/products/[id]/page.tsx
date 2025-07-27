@@ -66,7 +66,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           <p className="text-3xl font-bold font-body">${product.price.toFixed(2)}</p>
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Add to Cart</Button>
-          <p className="text-sm text-muted-foreground">Sold by <span className="font-semibold text-primary">{product.vendor}</span></p>
+          <p className="text-sm text-muted-foreground">Sold by <span className="font-semibold text-primary">Vendor ID: {product.vendorId}</span></p>
         </div>
       </div>
 

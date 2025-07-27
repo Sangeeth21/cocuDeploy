@@ -1,3 +1,4 @@
+
 export type Product = {
   id: string;
   name: string;
@@ -7,7 +8,7 @@ export type Product = {
   imageUrl: string;
   rating: number;
   reviewCount: number;
-  vendor: string;
+  vendorId: string;
   tags?: string[];
   images?: string[];
 };

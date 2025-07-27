@@ -1,3 +1,4 @@
+
 import type { Product, Review, Category } from './types';
 
 export const mockProducts: Product[] = [
@@ -10,7 +11,7 @@ export const mockProducts: Product[] = [
     imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.5,
     reviewCount: 120,
-    vendor: 'Timeless Co.',
+    vendorId: 'VDR001',
     tags: ['watch', 'leather'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
@@ -23,7 +24,7 @@ export const mockProducts: Product[] = [
     imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.8,
     reviewCount: 350,
-    vendor: 'SoundWave',
+    vendorId: 'VDR002',
     tags: ['headphones', 'audio'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
@@ -36,7 +37,7 @@ export const mockProducts: Product[] = [
     imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.2,
     reviewCount: 85,
-    vendor: 'EcoThreads',
+    vendorId: 'VDR003',
     tags: ['t-shirt', 'organic'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
@@ -49,7 +50,7 @@ export const mockProducts: Product[] = [
     imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.9,
     reviewCount: 215,
-    vendor: 'Artisan Pottery',
+    vendorId: 'VDR004',
     tags: ['mug', 'ceramic'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
@@ -62,7 +63,7 @@ export const mockProducts: Product[] = [
     imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.7,
     reviewCount: 412,
-    vendor: 'The Daily Grind',
+    vendorId: 'VDR005',
     tags: ['coffee', 'beans'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
@@ -75,7 +76,7 @@ export const mockProducts: Product[] = [
     imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.6,
     reviewCount: 198,
-    vendor: 'ZenFlow',
+    vendorId: 'VDR006',
     tags: ['yoga', 'fitness'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
@@ -88,7 +89,7 @@ export const mockProducts: Product[] = [
     imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.4,
     reviewCount: 55,
-    vendor: 'Urban Desks',
+    vendorId: 'VDR007',
     tags: ['desk', 'furniture'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },
@@ -101,7 +102,7 @@ export const mockProducts: Product[] = [
     imageUrl: 'https://placehold.co/600x600.png',
     rating: 4.8,
     reviewCount: 289,
-    vendor: 'GlowUp',
+    vendorId: 'VDR008',
     tags: ['skincare', 'beauty'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
   },

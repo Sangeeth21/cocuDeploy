@@ -8,11 +8,11 @@ import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { Button } from "@/components/ui/button";
 
 const mockVendorOrders = [
-    { id: "ORD001", date: "2024-05-20", customer: "Liam Johnson", total: 49.99, status: "Fulfilled" },
-    { id: "ORD002", date: "2024-06-11", customer: "Olivia Smith", total: 124.50, status: "Shipped" },
-    { id: "ORD003", date: "2024-06-15", customer: "Noah Williams", total: 79.99, status: "Pending" },
-    { id: "ORD004", date: "2024-06-18", customer: "Emma Brown", total: 215.00, status: "Pending" },
-    { id: "ORD005", date: "2024-06-20", customer: "Ava Jones", total: 34.50, status: "Fulfilled" },
+    { id: "ORD001", date: "2024-05-20", customerId: "CUST001", total: 49.99, status: "Fulfilled" },
+    { id: "ORD002", date: "2024-06-11", customerId: "CUST002", total: 124.50, status: "Shipped" },
+    { id: "ORD003", date: "2024-06-15", customerId: "CUST003", total: 79.99, status: "Pending" },
+    { id: "ORD004", date: "2024-06-18", customerId: "CUST004", total: 215.00, status: "Pending" },
+    { id: "ORD005", date: "2024-06-20", customerId: "CUST005", total: 34.50, status: "Fulfilled" },
 ];
 
 
@@ -29,7 +29,7 @@ export default function VendorOrdersPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Order</TableHead>
-                                <TableHead>Customer</TableHead>
+                                <TableHead>Customer ID</TableHead>
                                 <TableHead className="hidden sm:table-cell">Date</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Total</TableHead>
@@ -40,7 +40,7 @@ export default function VendorOrdersPage() {
                             {mockVendorOrders.map((order) => (
                                 <TableRow key={order.id}>
                                     <TableCell className="font-medium">{order.id}</TableCell>
-                                    <TableCell>{order.customer}</TableCell>
+                                    <TableCell>{order.customerId}</TableCell>
                                     <TableCell className="hidden sm:table-cell">{order.date}</TableCell>
                                     <TableCell>
                                         <Badge 
