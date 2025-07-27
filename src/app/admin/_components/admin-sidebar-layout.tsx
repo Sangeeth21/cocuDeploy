@@ -2,12 +2,14 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, SidebarHeader } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles } from "lucide-react";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
+import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles, ChevronsLeft, ChevronsRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockActivity } from "@/lib/mock-data";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 
 const navLinks = [
@@ -23,6 +25,25 @@ const navLinks = [
   { href: "/admin/moderation", label: "Moderation", icon: ShieldCheck, badge: "3" },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
+
+function CustomSidebarTrigger() {
+    const { open, toggleSidebar } = useSidebar();
+    
+    return (
+        <Button 
+            isIconOnly 
+            className={cn(
+                "absolute top-1/2 z-20 h-7 w-7 rounded-full -translate-y-1/2",
+                open ? "right-[-14px]" : "right-[-14px] bg-primary text-primary-foreground hover:bg-primary/90"
+            )}
+            onClick={toggleSidebar}
+            size="icon"
+            variant={open ? "outline" : "default"}
+        >
+            {open ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
+        </Button>
+    )
+}
 
 export function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -42,7 +63,6 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                                 <span className="text-lg font-semibold">Admin</span>
                             </div>
                         </div>
-                        <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
@@ -100,12 +120,12 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarFooter>
+                <CustomSidebarTrigger />
             </Sidebar>
             <div className="flex flex-col flex-1">
                  <header className="flex h-16 items-center justify-between p-4 border-b md:justify-end bg-card">
                     <div className="flex items-center gap-4">
-                        <SidebarTrigger className="md:hidden"/>
-                        <span className="font-bold hidden max-md:inline-block">Admin Portal</span>
+                         <span className="font-bold hidden max-md:inline-block">Admin Portal</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <NotificationPopover notifications={mockActivity} />
