@@ -16,6 +16,7 @@ export const mockProducts: Product[] = [
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
     sku: 'LW-001',
     stock: 25,
+    status: 'Live',
   },
   {
     id: '2',
@@ -31,6 +32,7 @@ export const mockProducts: Product[] = [
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
     sku: 'HP-202',
     stock: 50,
+    status: 'Live',
   },
   {
     id: '3',
@@ -46,6 +48,7 @@ export const mockProducts: Product[] = [
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
     sku: 'TS-ORG-M',
     stock: 150,
+    status: 'Archived',
   },
   {
     id: '4',
@@ -61,6 +64,7 @@ export const mockProducts: Product[] = [
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
     sku: 'CM-HND-BL',
     stock: 8,
+    status: 'Live',
   },
   {
     id: '5',
@@ -76,6 +80,7 @@ export const mockProducts: Product[] = [
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
     sku: 'CB-COL-12',
     stock: 0,
+    status: 'Archived',
   },
   {
     id: '6',
@@ -90,7 +95,8 @@ export const mockProducts: Product[] = [
     tags: ['yoga', 'fitness'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
     sku: 'YM-PRO-BLK',
-    stock: 35
+    stock: 35,
+    status: 'Needs Review',
   },
   {
     id: '7',
@@ -105,7 +111,8 @@ export const mockProducts: Product[] = [
     tags: ['desk', 'furniture'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
     sku: 'DSK-MIN-OAK',
-    stock: 12
+    stock: 12,
+    status: 'Live',
   },
   {
     id: '8',
@@ -120,7 +127,8 @@ export const mockProducts: Product[] = [
     tags: ['skincare', 'beauty'],
     images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
     sku: 'SKN-SET-NAT',
-    stock: 40
+    stock: 40,
+    status: 'Live',
   },
 ];
 

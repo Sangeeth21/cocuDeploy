@@ -13,6 +13,7 @@ export type Product = {
   images?: string[];
   sku?: string;
   stock?: number;
+  status?: 'Live' | 'Archived' | 'Needs Review';
 };
 
 export type Review = {
