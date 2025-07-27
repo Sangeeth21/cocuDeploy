@@ -37,7 +37,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
         <SidebarProvider>
             <Sidebar collapsible="icon" className="border-r hidden md:flex">
                 <SidebarHeader>
-                    <div className="flex flex-col gap-2 p-4">
+                    <div className="flex items-center justify-between p-2">
                         <div className="flex items-center gap-2">
                            <Avatar className="h-10 w-10">
                                 <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
@@ -48,6 +48,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                 <span className="text-lg font-bold -mt-1">{vendorName}</span>
                             </div>
                         </div>
+                        <SidebarTrigger className="group-data-[collapsible=icon]:hidden"/>
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
@@ -90,9 +91,9 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                 </SidebarFooter>
             </Sidebar>
             <div className="flex flex-col flex-1">
-                 <header className="flex items-center justify-between p-4 border-b">
+                 <header className="flex items-center justify-between p-4 border-b md:justify-end">
                     <div className="flex items-center gap-4">
-                        <SidebarTrigger/>
+                        <SidebarTrigger className="md:hidden"/>
                         <span className="font-bold hidden md:inline-block">Vendor Portal</span>
                     </div>
                  </header>
