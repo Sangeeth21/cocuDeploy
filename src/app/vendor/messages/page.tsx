@@ -6,14 +6,23 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, MessageSquare } from "lucide-react";
+import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, Image as ImageIcon, Download } from "lucide-react";
 import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import Image from "next/image";
+import { Textarea } from "@/components/ui/textarea";
+
+type Attachment = {
+    name: string;
+    type: 'image' | 'file';
+    url: string;
+}
 
 type Message = {
   sender: "customer" | "vendor";
   text: string;
+  attachments?: Attachment[];
 };
 
 type Conversation = {
@@ -34,7 +43,7 @@ const initialConversations: Conversation[] = [
     messages: [
       { sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
       { sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it." },
-      { sender: "customer", text: "That would be great, thank you!" },
+      { sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}] },
     ],
     unread: true,
   },
@@ -43,7 +52,7 @@ const initialConversations: Conversation[] = [
     customerId: "CUST002",
     customerName: "Olivia Smith",
     avatar: "https://placehold.co/40x40.png",
-    messages: [{ sender: "customer", text: "Can you ship to Canada?" }],
+    messages: [{ sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}] }],
     unread: true,
   },
   {
@@ -68,15 +77,46 @@ export default function VendorMessagesPage() {
   const [conversations, setConversations] = useState(initialConversations);
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const MAX_MESSAGE_LENGTH = 1200; // Approx 200 words
   const { toast } = useToast();
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+        const newFiles = Array.from(e.target.files);
+        if (attachments.length + newFiles.length > 5) {
+             toast({
+                variant: "destructive",
+                title: "Attachment Limit Exceeded",
+                description: "You can only attach up to 5 files.",
+            });
+            return;
+        }
+        setAttachments(prev => [...prev, ...newFiles]);
+    }
+  }
+
+  const removeAttachment = (fileToRemove: File) => {
+    setAttachments(prev => prev.filter(file => file !== fileToRemove));
+  }
+  
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConversationId) return;
+    if (!newMessage.trim() && attachments.length === 0 || !selectedConversationId) return;
 
-    const newMessageObj: Message = { sender: "vendor", text: newMessage };
+    const newAttachments: Attachment[] = attachments.map(file => ({
+        name: file.name,
+        type: file.type.startsWith("image/") ? "image" : "file",
+        url: URL.createObjectURL(file), // In a real app, this would be an upload URL
+    }));
+
+    const newMessageObj: Message = { 
+        sender: "vendor", 
+        text: newMessage,
+        ...(newAttachments.length > 0 && {attachments: newAttachments})
+    };
 
     setConversations(prev =>
       prev.map(convo =>
@@ -86,6 +126,7 @@ export default function VendorMessagesPage() {
       )
     );
     setNewMessage("");
+    setAttachments([]);
     toast({
         title: "Message Sent",
         description: "Your reply has been sent to the customer.",
@@ -94,7 +135,6 @@ export default function VendorMessagesPage() {
   
   const handleSelectConversation = (id: number) => {
     setSelectedConversationId(id);
-    // Mark conversation as read
     setConversations(prev =>
         prev.map(convo => 
             convo.id === id ? { ...convo, unread: false } : convo
@@ -104,7 +144,10 @@ export default function VendorMessagesPage() {
 
   const getLastMessage = (messages: Message[]) => {
       if (messages.length === 0) return "No messages yet.";
-      return messages[messages.length - 1].text;
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg.text) return lastMsg.text;
+      if (lastMsg.attachments && lastMsg.attachments.length > 0) return `Sent ${lastMsg.attachments.length} attachment(s)`;
+      return "No messages yet.";
   }
 
   return (
@@ -158,25 +201,61 @@ export default function VendorMessagesPage() {
                   {selectedConversation.messages.map((msg, index) => (
                     <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
                       {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerName} /><AvatarFallback>{selectedConversation.customerName.charAt(0)}</AvatarFallback></Avatar>}
-                      <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                        {msg.text}
+                      <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                        {msg.text && <p>{msg.text}</p>}
+                        {msg.attachments && (
+                            <div className="grid gap-2 grid-cols-2">
+                                {msg.attachments.map((att, i) => (
+                                    att.type === 'image' ? (
+                                        <div key={i} className="relative aspect-video rounded-md overflow-hidden">
+                                            <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
+                                        </div>
+                                    ) : (
+                                        <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
+                                            <FileIcon className="h-6 w-6 text-muted-foreground"/>
+                                            <span className="text-xs truncate">{att.name}</span>
+                                            <Download className="h-4 w-4 ml-auto" />
+                                        </a>
+                                    )
+                                ))}
+                            </div>
+                        )}
                       </div>
                       {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
                     </div>
                   ))}
                 </div>
               </ScrollArea>
-              <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto flex items-center gap-2">
-                <Input
-                  placeholder="Type your message..."
-                  className="flex-1"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                />
-                <Button type="submit">
-                  <Send className="h-4 w-4" />
-                  <span className="sr-only">Send</span>
-                </Button>
+              <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
+                 {attachments.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                        {attachments.map((file, index) => (
+                            <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2 bg-muted/50">
+                                {file.type.startsWith('image/') ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileIcon className="h-5 w-5 text-muted-foreground" />}
+                                <p className="text-xs text-muted-foreground truncate">{file.name}</p>
+                                <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}><X className="h-3 w-3" /></Button>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                        <Textarea
+                            placeholder="Type your message..."
+                            className="pr-12"
+                            value={newMessage}
+                            onChange={(e) => setNewMessage(e.target.value)}
+                            maxLength={MAX_MESSAGE_LENGTH}
+                            rows={1}
+                        />
+                         <p className="absolute bottom-1 right-2 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>
+                    </div>
+                    <Button type="button" variant="ghost" size="icon" asChild>
+                        <label htmlFor="vendor-file-upload"><Paperclip className="h-5 w-5" /></label>
+                    </Button>
+                    <input id="vendor-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} />
+                    <Button type="submit"><Send className="h-4 w-4" /></Button>
+                </div>
               </form>
             </>
           ) : (
@@ -191,3 +270,5 @@ export default function VendorMessagesPage() {
     </VendorSidebarLayout>
   );
 }
+
+    

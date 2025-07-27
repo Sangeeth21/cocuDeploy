@@ -8,7 +8,7 @@ import { mockProducts, mockReviews } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Plus, MessageSquare } from "lucide-react";
+import { Star, Plus, MessageSquare, Paperclip, X, File as FileIcon, Image as ImageIcon } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
@@ -38,16 +38,41 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   const product = mockProducts.find((p) => p.id === params.id);
   const { toast } = useToast();
   const [isMessageOpen, setIsMessageOpen] = useState(false);
+  const [message, setMessage] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const MAX_MESSAGE_LENGTH = 1200; // Approx 200 words
 
   if (!product) {
     notFound();
   }
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+        const newFiles = Array.from(e.target.files);
+        if (attachments.length + newFiles.length > 5) {
+             toast({
+                variant: "destructive",
+                title: "Attachment Limit Exceeded",
+                description: "You can only attach up to 5 files.",
+            });
+            return;
+        }
+        setAttachments(prev => [...prev, ...newFiles]);
+    }
+  }
+
+  const removeAttachment = (fileToRemove: File) => {
+    setAttachments(prev => prev.filter(file => file !== fileToRemove));
+  }
 
   const handleSendMessage = () => {
+     if (!message.trim() && attachments.length === 0) return;
     toast({
       title: "Message Sent!",
-      description: `Your question about ${product.name} has been sent to the vendor.`,
+      description: `Your message about ${product.name} has been sent to the vendor.`,
     });
+    setMessage("");
+    setAttachments([]);
     setIsMessageOpen(false);
   };
 
@@ -92,21 +117,54 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                         Message Vendor
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle>Message Vendor: {product.vendorId}</DialogTitle>
                         <DialogDescription>
                             Have a question about the "{product.name}"?
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-2">
+                    <div className="py-2 space-y-4">
                        <div className="space-y-2">
                             <Label htmlFor="message">Your Message</Label>
-                            <Textarea 
-                                id="message" 
-                                rows={5} 
-                                defaultValue={`Hi, I have a question about the ${product.name}...`}
-                            />
+                            <div className="relative">
+                                <Textarea 
+                                    id="message" 
+                                    rows={5} 
+                                    value={message}
+                                    onChange={(e) => setMessage(e.target.value)}
+                                    maxLength={MAX_MESSAGE_LENGTH}
+                                    placeholder={`Hi, I have a question about the ${product.name}...`}
+                                />
+                                <p className="text-xs text-muted-foreground text-right mt-1">
+                                    {message.length} / {MAX_MESSAGE_LENGTH}
+                                </p>
+                            </div>
+                       </div>
+                       <div className="space-y-2">
+                            <Label>Attachments ({attachments.length}/5)</Label>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {attachments.map((file, index) => (
+                                    <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2">
+                                        {file.type.startsWith('image/') ? (
+                                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                                        ) : (
+                                            <FileIcon className="h-6 w-6 text-muted-foreground" />
+                                        )}
+                                        <p className="text-xs text-muted-foreground truncate">{file.name}</p>
+                                        <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                {attachments.length < 5 && (
+                                    <Label htmlFor="file-upload" className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                        <Paperclip className="h-6 w-6 text-muted-foreground"/>
+                                        <span className="text-xs text-muted-foreground mt-1">Add File</span>
+                                    </Label>
+                                )}
+                            </div>
+                            <input id="file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} />
                        </div>
                     </div>
                     <DialogFooter>
@@ -199,3 +257,5 @@ function ProductCardMini({ product }: { product: typeof mockProducts[0] }) {
     </div>
   );
 }
+
+    
