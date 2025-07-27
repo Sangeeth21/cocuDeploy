@@ -36,6 +36,7 @@ const prompt = ai.definePrompt({
 Given a user's search query, provide a list of up to 5 suggestions.
 These suggestions should include auto-completions of the current query and recommendations for related searches.
 Do not suggest categories, only specific product searches.
+Keep the suggestions concise and relevant.
 
 Original Search Query: {{{searchQuery}}}
 `,

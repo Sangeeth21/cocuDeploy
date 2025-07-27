@@ -17,7 +17,7 @@ export function SearchBar() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const debouncedQuery = useDebounce(query, 300);
+  const debouncedQuery = useDebounce(query, 150);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
 
@@ -42,7 +42,11 @@ export function SearchBar() {
   }, [toast]);
 
   useEffect(() => {
-    fetchSuggestions(debouncedQuery);
+    if (debouncedQuery) {
+        fetchSuggestions(debouncedQuery);
+    } else {
+        setSuggestions([]);
+    }
   }, [debouncedQuery, fetchSuggestions]);
 
   const handleSearch = (searchQuery: string) => {
