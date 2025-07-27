@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { mockProducts } from "@/lib/mock-data";
 import type { DisplayProduct } from "@/lib/types";
 import { format, addDays } from "date-fns";
-import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop } from "lucide-react";
+import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import type { DateRange } from "react-day-picker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -40,6 +40,7 @@ export default function NewCampaignPage() {
     const [image, setImage] = useState<{file: File, src: string} | null>(null);
     const [videoUrl, setVideoUrl] = useState("");
     const [isPreviewMobile, setIsPreviewMobile] = useState(false);
+    const [placement, setPlacement] = useState('hero');
 
     const embedUrl = getYoutubeEmbedUrl(videoUrl);
 
@@ -141,6 +142,19 @@ export default function NewCampaignPage() {
                                         <Calendar mode="range" selected={date} onSelect={setDate} numberOfMonths={2} />
                                     </PopoverContent>
                                 </Popover>
+                            </div>
+                            <div className="sm:col-span-2 space-y-2">
+                                <Label htmlFor="campaign-placement">Placement</Label>
+                                <Select value={placement} onValueChange={setPlacement}>
+                                    <SelectTrigger id="campaign-placement">
+                                        <SelectValue placeholder="Select where to display" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="hero">Homepage Hero Carousel</SelectItem>
+                                        <SelectItem value="banner">Top Banner</SelectItem>
+                                        <SelectItem value="popup">Popup Modal</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                              <div className="sm:col-span-2 space-y-2">
                                 <Label htmlFor="campaign-description">Description (Optional)</Label>
@@ -247,12 +261,50 @@ export default function NewCampaignPage() {
                                             <Button variant={!isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(false)}><Laptop className="mr-2 h-4 w-4" /> Desktop</Button>
                                             <Button variant={isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(true)}><Smartphone className="mr-2 h-4 w-4" /> Mobile</Button>
                                         </div>
-                                        <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg">
-                                            <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out", isPreviewMobile ? "w-[375px] h-[667px]" : "w-full h-full")}>
-                                                <div className="relative w-full h-full">
-                                                    {image && <Image src={image.src} alt="Campaign Preview" fill className="object-contain" />}
-                                                    {embedUrl && !image && <iframe src={embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
-                                                </div>
+                                        <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg overflow-auto">
+                                            <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
+                                               {placement === 'hero' && (
+                                                    <div className="relative w-full h-full">
+                                                        <div className="relative" style={{height: isPreviewMobile ? '30vh' : '40vh'}}>
+                                                             {image && <Image src={image.src} alt="Campaign Preview" fill className="object-cover" />}
+                                                             {embedUrl && !image && <iframe src={embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                                            <div className="absolute inset-0 flex items-center justify-center text-center">
+                                                                <div className="text-white p-4">
+                                                                    <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>
+                                                                        Campaign Title
+                                                                    </h1>
+                                                                    <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>
+                                                                        Campaign description goes here.
+                                                                    </p>
+                                                                    <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">
+                                                                        Shop Now <ArrowRight className="ml-2 h-4 w-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="p-4"><p className="text-sm text-center text-muted-foreground">Rest of page content...</p></div>
+                                                    </div>
+                                                )}
+                                                {placement === 'banner' && (
+                                                    <div className="w-full h-full flex flex-col">
+                                                         <div className="bg-primary text-primary-foreground p-2 text-center text-sm">
+                                                            Your advertisement banner here!
+                                                        </div>
+                                                         <div className="p-4 flex-1"><p className="text-sm text-center text-muted-foreground">Page content...</p></div>
+                                                    </div>
+                                                )}
+                                                {placement === 'popup' && (
+                                                    <div className="w-full h-full flex items-center justify-center bg-black/50">
+                                                        <div className="bg-background rounded-lg shadow-xl p-6 w-full max-w-sm text-center relative">
+                                                            <button className="absolute top-2 right-2"><X className="h-4 w-4"/></button>
+                                                            <h2 className="text-lg font-bold font-headline mb-2">Special Offer!</h2>
+                                                            <p className="text-sm text-muted-foreground mb-4">A great deal just for you.</p>
+                                                            {image && <Image src={image.src} alt="Popup Image" width={300} height={150} className="rounded-md object-cover mx-auto mb-4" />}
+                                                            <Button>Claim Offer</Button>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </DialogContent>
@@ -266,5 +318,3 @@ export default function NewCampaignPage() {
         </div>
     );
 }
-
-    
