@@ -1,9 +1,6 @@
-
-"use client";
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, LayoutDashboard } from "lucide-react";
+import { ListChecks, LineChart, Package, MessageSquare, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 

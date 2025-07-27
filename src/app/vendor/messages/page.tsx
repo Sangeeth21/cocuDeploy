@@ -12,18 +12,13 @@ import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { Textarea } from "@/components/ui/textarea";
+import type { Message } from "@/lib/types";
 
 type Attachment = {
     name: string;
     type: 'image' | 'file';
     url: string;
 }
-
-type Message = {
-  sender: "customer" | "vendor";
-  text: string;
-  attachments?: Attachment[];
-};
 
 type Conversation = {
   id: number;
@@ -39,9 +34,9 @@ const initialConversations: Conversation[] = [
     customerId: "CUST001",
     avatar: "https://placehold.co/40x40.png",
     messages: [
-      { sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
-      { sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it." },
-      { sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}] },
+      { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
+      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it." },
+      { id: 'msg3', sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}] },
     ],
     unread: true,
   },
@@ -49,21 +44,21 @@ const initialConversations: Conversation[] = [
     id: 2,
     customerId: "CUST002",
     avatar: "https://placehold.co/40x40.png",
-    messages: [{ sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}] }],
+    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}] }],
     unread: true,
   },
   {
     id: 3,
     customerId: "CUST003",
     avatar: "https://placehold.co/40x40.png",
-    messages: [{ sender: "vendor", text: "Thank you!" }],
+    messages: [{ id: 'msg5', sender: "vendor", text: "Thank you!" }],
     unread: false,
   },
    {
     id: 4,
     customerId: "CUST004",
     avatar: "https://placehold.co/40x40.png",
-    messages: [{ sender: "customer", text: "What is the return policy?" }],
+    messages: [{ id: 'msg6', sender: "customer", text: "What is the return policy?" }],
     unread: true,
   },
 ];
@@ -110,6 +105,7 @@ export default function VendorMessagesPage() {
     }));
 
     const newMessageObj: Message = { 
+        id: Math.random().toString(),
         sender: "vendor", 
         text: newMessage,
         ...(newAttachments.length > 0 && {attachments: newAttachments})

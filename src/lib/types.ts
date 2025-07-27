@@ -36,6 +36,7 @@ export type Attachment = {
 };
 
 export type Message = {
+  id: string;
   sender: "customer" | "vendor";
   text: string;
   attachments?: Attachment[];
