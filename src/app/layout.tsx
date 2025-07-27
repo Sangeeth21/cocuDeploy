@@ -8,6 +8,7 @@ import { Footer } from '@/components/layout/footer';
 import { cn } from '@/lib/utils';
 import { CartProvider } from '@/context/cart-context';
 import { UserProvider } from '@/context/user-context';
+import { WishlistProvider } from '@/context/wishlist-context';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -30,10 +31,12 @@ export default function RootLayout({
       <body className={cn('min-h-screen bg-background font-body antialiased flex flex-col', ptSans.variable)}>
         <UserProvider>
           <CartProvider>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <Toaster />
+            <WishlistProvider>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <Toaster />
+            </WishlistProvider>
           </CartProvider>
         </UserProvider>
       </body>

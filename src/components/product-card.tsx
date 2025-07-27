@@ -6,10 +6,11 @@ import Link from 'next/link';
 import type { DisplayProduct } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star } from 'lucide-react';
+import { Heart, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/context/cart-context';
+import { useWishlist } from '@/context/wishlist-context';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -18,7 +19,8 @@ interface ProductCardProps {
 export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const { addToCart } = useCart();
-
+  const { isWishlisted, toggleWishlist } = useWishlist();
+  
   const handleAddToCart = () => {
     addToCart(product);
     toast({
@@ -26,6 +28,16 @@ export function ProductCard({ product }: ProductCardProps) {
       description: `${product.name} has been added to your cart.`,
     });
   };
+
+  const handleWishlistClick = (e: React.MouseEvent) => {
+    e.preventDefault(); // prevent navigation when clicking the heart
+    e.stopPropagation();
+    toggleWishlist(product);
+    toast({
+        title: isWishlisted(product.id) ? "Removed from Wishlist" : "Added to Wishlist",
+        description: product.name,
+    });
+  }
 
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
@@ -39,6 +51,14 @@ export function ProductCard({ product }: ProductCardProps) {
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`}
             />
+            <Button 
+                size="icon" 
+                variant="secondary" 
+                className="absolute top-2 right-2 rounded-full h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={handleWishlistClick}
+              >
+                <Heart className={cn("h-4 w-4", isWishlisted(product.id) && "fill-destructive text-destructive")} />
+            </Button>
           </div>
         </Link>
       </CardHeader>

@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown, ShoppingCart } from "lucide-react";
+import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown, ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchBar } from "@/components/search-bar";
@@ -19,6 +19,7 @@ import {
 import { CartPreview } from "@/components/cart-preview";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/context/user-context";
+import { useWishlist } from "@/context/wishlist-context";
 
 
 const navLinks = [
@@ -30,7 +31,7 @@ const navLinks = [
 export function Header() {
   const pathname = usePathname();
   const { avatar, isLoggedIn, logout } = useUser();
-
+  const { wishlistItems } = useWishlist();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -90,6 +91,16 @@ export function Header() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <SearchBar />
           </div>
+          <Button variant="ghost" size="icon" aria-label="Open wishlist" asChild>
+            <Link href="/account?tab=wishlist" className="relative">
+              <Heart className="h-5 w-5" />
+              {wishlistItems.length > 0 && (
+                <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                  {wishlistItems.length}
+                </span>
+              )}
+            </Link>
+          </Button>
           <CartPreview />
           {isLoggedIn ? (
             <div className="flex items-center rounded-md hover:bg-accent focus-within:bg-accent">
@@ -120,6 +131,9 @@ export function Header() {
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/account?tab=orders"><ListChecks className="mr-2 h-4 w-4"/> Order History</Link>
+                  </DropdownMenuItem>
+                   <DropdownMenuItem asChild>
+                    <Link href="/account?tab=wishlist"><Heart className="mr-2 h-4 w-4"/> Wishlist</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
                     <Link href="/account?tab=settings"><Settings className="mr-2 h-4 w-4"/> Settings</Link>

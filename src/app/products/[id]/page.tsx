@@ -6,7 +6,7 @@ import { notFound, useParams } from "next/navigation";
 import { mockProducts, mockReviews } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Plus } from "lucide-react";
+import { Star, Plus, Heart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
@@ -15,6 +15,7 @@ import { ProductInteractions } from "./_components/product-interactions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { useWishlist } from "@/context/wishlist-context";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -37,6 +38,8 @@ export default function ProductDetailPage() {
   const id = params.id as string;
   const product = mockProducts.find((p) => p.id === id);
 
+  const { isWishlisted, toggleWishlist } = useWishlist();
+
   if (!product) {
     notFound();
   }
@@ -52,12 +55,28 @@ export default function ProductDetailPage() {
     });
   }
 
+  const handleWishlistClick = () => {
+      toggleWishlist(product);
+      toast({
+          title: isWishlisted(product.id) ? "Removed from Wishlist" : "Added to Wishlist",
+          description: product.name,
+      });
+  }
+
   return (
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12 items-start">
         <div>
           <div className="aspect-square relative w-full overflow-hidden rounded-lg shadow-lg">
             <Image src={product.imageUrl} alt={product.name} fill className="object-cover" data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+             <Button 
+                size="icon" 
+                variant="secondary" 
+                className="absolute top-4 right-4 rounded-full h-10 w-10"
+                onClick={handleWishlistClick}
+              >
+                <Heart className={cn("h-5 w-5", isWishlisted(product.id) && "fill-destructive text-destructive")} />
+            </Button>
           </div>
           <div className="grid grid-cols-4 gap-2 mt-2">
             {product.images?.slice(0,4).map((img, index) => (

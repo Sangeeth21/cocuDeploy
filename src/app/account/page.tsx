@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,9 +32,12 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import Link from "next/link";
-import type { Message, Conversation } from "@/lib/types";
-import { mockUserOrders } from "@/lib/mock-data";
+import type { Message, Conversation, DisplayProduct } from "@/lib/types";
+import { mockUserOrders, mockProducts } from "@/lib/mock-data";
 import { useUser } from "@/context/user-context";
+import { useWishlist } from "@/context/wishlist-context";
+import { ProductCard } from "@/components/product-card";
+import { useCart } from "@/context/cart-context";
 
 type Attachment = {
     name: string;
@@ -86,6 +89,50 @@ const mockPaymentMethods = [
 const MAX_CHATS_WITHOUT_PURCHASE = 4;
 let hasMadePurchase = mockUserOrders.length > 0;
 let uniqueVendorChats = new Set(initialConversations.map(c => c.vendorId)).size;
+
+
+function WishlistTabContent() {
+    const { wishlistItems, removeFromWishlist } = useWishlist();
+    const { addToCart } = useCart();
+    const { toast } = useToast();
+
+    const handleMoveToCart = (product: DisplayProduct) => {
+        addToCart(product);
+        removeFromWishlist(product.id);
+        toast({
+            title: "Moved to Cart",
+            description: `${product.name} has been moved to your cart.`,
+        });
+    }
+
+    if (wishlistItems.length === 0) {
+        return (
+            <div className="text-center py-16">
+                <h2 className="text-2xl font-semibold mb-2">Your wishlist is empty</h2>
+                <p className="text-muted-foreground mb-6">Explore products and save your favorites here.</p>
+                <Button asChild>
+                    <Link href="/products">Start Shopping</Link>
+                </Button>
+            </div>
+        )
+    }
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {wishlistItems.map(product => (
+                <Card key={product.id} className="relative group">
+                    <ProductCard product={product} />
+                    <div className="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Button size="sm" variant="secondary" onClick={() => handleMoveToCart(product)}>
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            Move to Cart
+                        </Button>
+                    </div>
+                </Card>
+            ))}
+        </div>
+    )
+}
 
 
 export default function AccountPage() {
@@ -377,8 +424,9 @@ export default function AccountPage() {
         </div>
       </div>
       <Tabs value={tab} onValueChange={(value) => window.history.pushState(null, '', `?tab=${value}`)} className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile">Profile</TabsTrigger>
+          <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
           <TabsTrigger value="messages">Messages</TabsTrigger>
           <TabsTrigger value="orders">Order History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -439,6 +487,17 @@ export default function AccountPage() {
                         </Button>
                   </div>
               </CardContent>
+          </Card>
+        </TabsContent>
+         <TabsContent value="wishlist" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-headline">My Wishlist</CardTitle>
+              <CardDescription>Your saved products for future purchases.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <WishlistTabContent />
+            </CardContent>
           </Card>
         </TabsContent>
          <TabsContent value="messages" className="mt-0">
