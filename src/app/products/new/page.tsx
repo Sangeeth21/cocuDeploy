@@ -9,11 +9,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, DollarSign, PackageCheck, Box } from "lucide-react"
+import { Upload, X, DollarSign, PackageCheck, Box, Rotate3d } from "lucide-react"
 import Image from "next/image"
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 
 type ImagePreview = {
     src: string;
@@ -21,10 +22,44 @@ type ImagePreview = {
 };
 
 function ImagePreview3D({ src, alt }: { src: string, alt: string }) {
+    const [rotation, setRotation] = useState({ x: 15, y: -30 });
+    const isDragging = useRef(false);
+    const prevMousePos = useRef({ x: 0, y: 0 });
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        isDragging.current = true;
+        prevMousePos.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleMouseUp = () => {
+        isDragging.current = false;
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDragging.current) return;
+
+        const deltaX = e.clientX - prevMousePos.current.x;
+        const deltaY = e.clientY - prevMousePos.current.y;
+
+        setRotation(prev => ({
+            x: prev.x - deltaY * 0.5,
+            y: prev.y + deltaX * 0.5,
+        }));
+
+        prevMousePos.current = { x: e.clientX, y: e.clientY };
+    };
+    
     return (
-        <div className="w-full h-full flex items-center justify-center bg-muted/20 rounded-md" style={{ perspective: '1000px' }}>
-            <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d', transform: 'rotateY(-30deg) rotateX(15deg)' }}>
-                <Image src={src} alt={alt} fill className="object-cover rounded-md shadow-lg border" />
+        <div 
+            className="w-full h-full flex items-center justify-center bg-muted/10 rounded-lg cursor-grab active:cursor-grabbing" 
+            style={{ perspective: '1000px' }}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onMouseMove={handleMouseMove}
+            onMouseLeave={handleMouseUp}
+        >
+            <div className="relative w-4/5 h-4/5 transition-transform duration-75 ease-out" style={{ transformStyle: 'preserve-3d', transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)` }}>
+                <Image src={src} alt={alt} fill className="object-contain rounded-md shadow-2xl border" />
             </div>
         </div>
     );
@@ -33,6 +68,8 @@ function ImagePreview3D({ src, alt }: { src: string, alt: string }) {
 export default function NewProductPage() {
     const [images, setImages] = useState<ImagePreview[]>([]);
     const [status, setStatus] = useState(false);
+    const [previewedImage, setPreviewedImage] = useState<ImagePreview | null>(null);
+
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
@@ -54,6 +91,7 @@ export default function NewProductPage() {
     };
 
   return (
+    <>
     <div className="container py-12">
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -90,17 +128,21 @@ export default function NewProductPage() {
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {images.map((img, index) => (
                             <div key={index} className="space-y-2">
-                                <div className="relative group aspect-square">
-                                    {img.is3D ? (
-                                        <ImagePreview3D src={img.src} alt={`Product image ${index + 1} 3D preview`} />
-                                    ) : (
-                                        <Image src={img.src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md" />
+                                <div 
+                                    className="relative group aspect-square rounded-md border"
+                                    onClick={() => img.is3D && setPreviewedImage(img)}
+                                >
+                                    <Image src={img.src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md" />
+                                    {img.is3D && (
+                                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer rounded-md">
+                                            <Rotate3d className="h-8 w-8 text-white" />
+                                        </div>
                                     )}
                                     <Button
                                         variant="destructive"
                                         size="icon"
                                         className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                        onClick={() => removeImage(index)}
+                                        onClick={(e) => { e.stopPropagation(); removeImage(index); }}
                                     >
                                         <X className="h-4 w-4" />
                                     </Button>
@@ -182,5 +224,14 @@ export default function NewProductPage() {
         </Button>
       </div>
     </div>
+    <Dialog open={!!previewedImage} onOpenChange={(isOpen) => !isOpen && setPreviewedImage(null)}>
+        <DialogContent className="max-w-3xl h-3/4 flex flex-col">
+            <DialogHeader>
+                <DialogTitle>3D Rotatable Preview</DialogTitle>
+            </DialogHeader>
+            {previewedImage && <ImagePreview3D src={previewedImage.src} alt="3D preview" />}
+        </DialogContent>
+    </Dialog>
+    </>
   );
 }
