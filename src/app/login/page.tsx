@@ -21,7 +21,13 @@ export default function LoginPage() {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === "vendor@example.com" && password === "vendorpass") {
+    if (email === "admin@example.com" && password === "adminpass") {
+      toast({
+        title: "Login Successful",
+        description: "Redirecting to the admin dashboard.",
+      });
+      router.push("/admin");
+    } else if (email === "vendor@example.com" && password === "vendorpass") {
       toast({
         title: "Login Successful",
         description: "Redirecting to your vendor dashboard.",
