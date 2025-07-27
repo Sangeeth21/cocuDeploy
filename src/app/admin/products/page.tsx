@@ -45,7 +45,7 @@ export default function AdminProductsPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                   {mockProducts.slice(0, 6).map(product => (
+                   {mockProducts.slice(0, 8).map(product => (
                      <TableRow key={product.id}>
                         <TableCell className="hidden sm:table-cell p-2">
                              <div className="relative w-16 h-16 rounded-md overflow-hidden">
