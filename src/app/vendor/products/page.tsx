@@ -58,10 +58,10 @@ export default function VendorProductsPage() {
                         </TableCell>
                         <TableCell className="font-medium">{product.name}</TableCell>
                         <TableCell>
-                            <Badge variant="outline">Active</Badge>
+                            <Badge variant="outline">{product.stock && product.stock > 0 ? 'Active' : 'Archived'}</Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">${product.price.toFixed(2)}</TableCell>
-                        <TableCell className="hidden md:table-cell">25 in stock</TableCell>
+                        <TableCell className="hidden md:table-cell">{product.stock} in stock</TableCell>
                         <TableCell>
                              <DropdownMenu>
                                 <DropdownMenuTrigger asChild>

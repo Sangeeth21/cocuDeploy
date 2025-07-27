@@ -13,7 +13,9 @@ export const mockProducts: Product[] = [
     reviewCount: 120,
     vendorId: 'VDR001',
     tags: ['watch', 'leather'],
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
+    sku: 'LW-001',
+    stock: 25,
   },
   {
     id: '2',
@@ -26,7 +28,9 @@ export const mockProducts: Product[] = [
     reviewCount: 350,
     vendorId: 'VDR002',
     tags: ['headphones', 'audio'],
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
+    sku: 'HP-202',
+    stock: 50,
   },
   {
     id: '3',
@@ -39,7 +43,9 @@ export const mockProducts: Product[] = [
     reviewCount: 85,
     vendorId: 'VDR003',
     tags: ['t-shirt', 'organic'],
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
+    sku: 'TS-ORG-M',
+    stock: 150,
   },
   {
     id: '4',
@@ -52,7 +58,9 @@ export const mockProducts: Product[] = [
     reviewCount: 215,
     vendorId: 'VDR004',
     tags: ['mug', 'ceramic'],
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
+    sku: 'CM-HND-BL',
+    stock: 8,
   },
   {
     id: '5',
@@ -65,7 +73,9 @@ export const mockProducts: Product[] = [
     reviewCount: 412,
     vendorId: 'VDR005',
     tags: ['coffee', 'beans'],
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
+    sku: 'CB-COL-12',
+    stock: 0,
   },
   {
     id: '6',
@@ -78,7 +88,9 @@ export const mockProducts: Product[] = [
     reviewCount: 198,
     vendorId: 'VDR006',
     tags: ['yoga', 'fitness'],
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
+    sku: 'YM-PRO-BLK',
+    stock: 35
   },
   {
     id: '7',
@@ -91,7 +103,9 @@ export const mockProducts: Product[] = [
     reviewCount: 55,
     vendorId: 'VDR007',
     tags: ['desk', 'furniture'],
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
+    sku: 'DSK-MIN-OAK',
+    stock: 12
   },
   {
     id: '8',
@@ -104,7 +118,9 @@ export const mockProducts: Product[] = [
     reviewCount: 289,
     vendorId: 'VDR008',
     tags: ['skincare', 'beauty'],
-    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png']
+    images: ['https://placehold.co/600x600.png', 'https://placehold.co/600x400.png', 'https://placehold.co/400x600.png'],
+    sku: 'SKN-SET-NAT',
+    stock: 40
   },
 ];
 

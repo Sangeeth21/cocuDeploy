@@ -11,6 +11,8 @@ export type Product = {
   vendorId: string;
   tags?: string[];
   images?: string[];
+  sku?: string;
+  stock?: number;
 };
 
 export type Review = {
