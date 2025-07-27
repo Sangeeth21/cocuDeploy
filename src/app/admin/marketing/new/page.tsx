@@ -15,9 +15,21 @@ import { useToast } from "@/hooks/use-toast";
 import { mockProducts } from "@/lib/mock-data";
 import type { DisplayProduct } from "@/lib/types";
 import { format, addDays } from "date-fns";
-import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X } from "lucide-react";
+import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop } from "lucide-react";
 import Image from "next/image";
 import type { DateRange } from "react-day-picker";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+
+const getYoutubeEmbedUrl = (url: string) => {
+    let embedUrl = null;
+    const youtubeRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(youtubeRegex);
+    if (match && match[1]) {
+        embedUrl = `https://www.youtube.com/embed/${match[1]}`;
+    }
+    return embedUrl;
+}
 
 export default function NewCampaignPage() {
     const router = useRouter();
@@ -25,6 +37,11 @@ export default function NewCampaignPage() {
     const [date, setDate] = useState<DateRange | undefined>({ from: new Date(), to: addDays(new Date(), 7) });
     const [selectedProducts, setSelectedProducts] = useState<DisplayProduct[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
+    const [image, setImage] = useState<{file: File, src: string} | null>(null);
+    const [videoUrl, setVideoUrl] = useState("");
+    const [isPreviewMobile, setIsPreviewMobile] = useState(false);
+
+    const embedUrl = getYoutubeEmbedUrl(videoUrl);
 
     const handleCreateCampaign = () => {
         toast({
@@ -44,6 +61,30 @@ export default function NewCampaignPage() {
     const removeProduct = (productId: string) => {
         setSelectedProducts(prev => prev.filter(p => p.id !== productId));
     }
+
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            const src = URL.createObjectURL(file);
+            setImage({ file, src });
+            setVideoUrl(""); // Can't have both image and video
+        }
+    };
+    
+    const removeImage = () => {
+        if (image) {
+            URL.revokeObjectURL(image.src);
+            setImage(null);
+        }
+    }
+
+    const handleVideoUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setVideoUrl(e.target.value);
+        if(e.target.value) {
+            removeImage();
+        }
+    }
+
 
     const searchResults = searchTerm
         ? mockProducts.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -108,6 +149,41 @@ export default function NewCampaignPage() {
                         </CardContent>
                     </Card>
 
+                     <Card>
+                        <CardHeader>
+                            <CardTitle>Campaign Media</CardTitle>
+                            <CardDescription>Upload an image or provide a video link for the campaign banner.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                             <div className="space-y-2">
+                                <Label>Campaign Image</Label>
+                                {image ? (
+                                    <div className="relative group aspect-video rounded-md border">
+                                        <Image src={image.src} alt="Campaign preview" fill className="object-contain rounded-md" />
+                                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={removeImage}>
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                ) : (
+                                    <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                        <ImageIcon className="h-8 w-8 text-muted-foreground"/>
+                                        <span className="text-sm text-muted-foreground text-center mt-1">Click to upload an image</span>
+                                        <input id="image-upload" type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} />
+                                    </label>
+                                )}
+                             </div>
+                             <div className="space-y-2">
+                                 <Label htmlFor="video-url">Video URL (YouTube, Vimeo)</Label>
+                                 <Input id="video-url" placeholder="https://www.youtube.com/watch?v=..." value={videoUrl} onChange={handleVideoUrlChange} />
+                                 {embedUrl && (
+                                     <div className="aspect-video rounded-md overflow-hidden border">
+                                         <iframe src={embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
+                                     </div>
+                                 )}
+                             </div>
+                        </CardContent>
+                    </Card>
+
                     <Card>
                         <CardHeader>
                             <CardTitle>Associated Products</CardTitle>
@@ -159,6 +235,28 @@ export default function NewCampaignPage() {
                             <p className="text-sm text-muted-foreground mb-4">Review your campaign settings before saving or publishing.</p>
                             <div className="flex flex-col gap-2">
                                 <Button onClick={handleCreateCampaign}><Save className="mr-2 h-4 w-4" /> Save Campaign</Button>
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                         <Button variant="outline" disabled={!image && !embedUrl}><Eye className="mr-2 h-4 w-4" /> Preview</Button>
+                                    </DialogTrigger>
+                                    <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+                                        <DialogHeader>
+                                            <DialogTitle>Campaign Preview</DialogTitle>
+                                        </DialogHeader>
+                                        <div className="flex justify-center items-center gap-2 border-b pb-2">
+                                            <Button variant={!isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(false)}><Laptop className="mr-2 h-4 w-4" /> Desktop</Button>
+                                            <Button variant={isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(true)}><Smartphone className="mr-2 h-4 w-4" /> Mobile</Button>
+                                        </div>
+                                        <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg">
+                                            <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out", isPreviewMobile ? "w-[375px] h-[667px]" : "w-full h-full")}>
+                                                <div className="relative w-full h-full">
+                                                    {image && <Image src={image.src} alt="Campaign Preview" fill className="object-contain" />}
+                                                    {embedUrl && !image && <iframe src={embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </DialogContent>
+                                </Dialog>
                                 <Button variant="secondary">Save as Draft</Button>
                             </div>
                         </CardContent>
@@ -168,3 +266,5 @@ export default function NewCampaignPage() {
         </div>
     );
 }
+
+    
