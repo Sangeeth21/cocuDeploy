@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from 'next/image';
@@ -10,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { useCart } from '@/context/cart-context';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -17,13 +17,14 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
+  const { addToCart } = useCart();
 
   const handleAddToCart = () => {
+    addToCart(product);
     toast({
       title: "Added to cart!",
       description: `${product.name} has been added to your cart.`,
     });
-    // Here you would typically also update a global cart state
   };
 
   return (

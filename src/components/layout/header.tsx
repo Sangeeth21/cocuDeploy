@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { CartPreview } from "@/components/cart-preview";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
 const navLinks = [
@@ -95,9 +96,12 @@ export function Header() {
           <CartPreview />
           {isLoggedIn ? (
             <div className="flex items-center rounded-md hover:bg-accent focus-within:bg-accent">
-               <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-transparent" asChild>
+               <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-transparent rounded-full" asChild>
                   <Link href="/account">
-                    <User className="h-5 w-5" />
+                     <Avatar className="h-8 w-8">
+                      <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="person face" />
+                      <AvatarFallback>JD</AvatarFallback>
+                    </Avatar>
                     <span className="sr-only">User Account</span>
                   </Link>
               </Button>

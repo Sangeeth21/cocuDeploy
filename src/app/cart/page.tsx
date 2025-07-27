@@ -6,33 +6,13 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockProducts } from "@/lib/mock-data";
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
-import { useState } from "react";
-import type { DisplayProduct } from "@/lib/types";
 import { Separator } from "@/components/ui/separator";
-
-type CartItem = DisplayProduct & { quantity: number };
+import { useCart } from "@/context/cart-context";
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>(
-    mockProducts.slice(0, 3).map(p => ({ ...p, quantity: 1 }))
-  );
-
-  const handleQuantityChange = (id: string, delta: number) => {
-    setCartItems(currentItems =>
-      currentItems.map(item =>
-        item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-      ).filter(item => item.quantity > 0)
-    );
-  };
-  
-  const removeItem = (id: string) => {
-    setCartItems(currentItems => currentItems.filter(item => item.id !== id));
-  }
-
-  const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-  const shipping = 5.00;
+  const { cartItems, updateQuantity, removeFromCart, subtotal } = useCart();
+  const shipping = cartItems.length > 0 ? 5.00 : 0;
   const total = subtotal + shipping;
 
   return (
@@ -53,14 +33,14 @@ export default function CartPage() {
                     <p className="text-lg font-semibold mt-2">${item.price.toFixed(2)}</p>
                   </div>
                   <div className="flex items-center gap-2 p-4">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleQuantityChange(item.id, -1)}>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, -1)}>
                       <Minus className="h-4 w-4" />
                     </Button>
                     <Input type="number" value={item.quantity} className="w-14 h-8 text-center" readOnly />
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleQuantityChange(item.id, 1)}>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, 1)}>
                       <Plus className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => removeItem(item.id)}>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => removeFromCart(item.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
