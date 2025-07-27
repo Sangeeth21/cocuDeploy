@@ -199,7 +199,7 @@ export default function AccountPage() {
                     </TableBody>
                 </Table>
                 ) : (
-                    <p className="text-muted-foreground text-center py-8">You have no past orders.</p>
+                    <div className="text-muted-foreground text-center py-8">You have no past orders.</div>
                 )}
             </CardContent>
           </Card>
@@ -217,7 +217,7 @@ export default function AccountPage() {
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <Label className="font-medium">Email Address</Label>
-                        <p className="text-sm text-muted-foreground">john.doe@example.com <Badge variant="secondary" className="ml-2">Verified</Badge></p>
+                        <div className="text-sm text-muted-foreground">john.doe@example.com <Badge variant="secondary" className="ml-2">Verified</Badge></div>
                       </div>
                       <Dialog open={isEmailVerifyOpen} onOpenChange={setIsEmailVerifyOpen}>
                         <DialogTrigger asChild><Button variant="outline">Change</Button></DialogTrigger>
@@ -245,7 +245,7 @@ export default function AccountPage() {
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <Label className="font-medium">Primary Phone</Label>
-                        <p className="text-sm text-muted-foreground">+1 (555) 123-4567 <Badge variant="secondary" className="ml-2">Verified</Badge></p>
+                        <div className="text-sm text-muted-foreground">+1 (555) 123-4567 <Badge variant="secondary" className="ml-2">Verified</Badge></div>
                       </div>
                        <Dialog open={isPhoneVerifyOpen} onOpenChange={setIsPhoneVerifyOpen}>
                          <DialogTrigger asChild><Button variant="outline">Change</Button></DialogTrigger>
@@ -273,7 +273,7 @@ export default function AccountPage() {
                      <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <Label className="font-medium">Secondary Phone</Label>
-                        <p className="text-sm text-muted-foreground">Not provided</p>
+                        <div className="text-sm text-muted-foreground">Not provided</div>
                       </div>
                       <Button variant="outline">Add</Button>
                     </div>
@@ -387,10 +387,10 @@ export default function AccountPage() {
                             <div className="flex items-start gap-4">
                                 <Home className="h-6 w-6 text-muted-foreground mt-1"/>
                                 <div>
-                                    <p className="font-semibold">{address.type} {address.isDefault && <Badge className="ml-2">Default</Badge>}</p>
-                                    <p className="text-sm text-muted-foreground">{address.recipient}</p>
-                                    <p className="text-sm text-muted-foreground">{address.line1}, {address.city}, {address.zip}</p>
-                                    {address.phone && <p className="text-sm text-muted-foreground">Phone: {address.phone}</p>}
+                                    <div className="font-semibold">{address.type} {address.isDefault && <Badge className="ml-2">Default</Badge>}</div>
+                                    <div className="text-sm text-muted-foreground">{address.recipient}</div>
+                                    <div className="text-sm text-muted-foreground">{address.line1}, {address.city}, {address.zip}</div>
+                                    {address.phone && <div className="text-sm text-muted-foreground">Phone: {address.phone}</div>}
                                 </div>
                             </div>
                             <DropdownMenu>
@@ -419,8 +419,8 @@ export default function AccountPage() {
                            <div className="flex items-center gap-4">
                                 <CreditCard className="h-6 w-6 text-muted-foreground"/>
                                 <div>
-                                    <p className="font-semibold">{pm.type} ending in {pm.last4}</p>
-                                    <p className="text-sm text-muted-foreground">Expires {pm.expiry}</p>
+                                    <div className="font-semibold">{pm.type} ending in {pm.last4}</div>
+                                    <div className="text-sm text-muted-foreground">Expires {pm.expiry}</div>
                                 </div>
                            </div>
                            <Button variant="ghost" size="sm" className="text-destructive">Remove</Button>
@@ -434,5 +434,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    
