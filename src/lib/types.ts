@@ -45,4 +45,12 @@ export type Message = {
   status?: 'sent' | 'delivered' | 'read';
 };
 
-    
+export type User = {
+    id: string;
+    name: string;
+    email: string;
+    role: 'Customer' | 'Vendor' | 'Admin';
+    status: 'Active' | 'Suspended';
+    joinedDate: string;
+    avatar: string;
+}

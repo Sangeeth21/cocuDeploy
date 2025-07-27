@@ -1,5 +1,5 @@
 
-import type { Product, Review, Category } from './types';
+import type { Product, Review, Category, User } from './types';
 
 export const mockProducts: Product[] = [
   {
@@ -138,4 +138,15 @@ export const mockCategories: Category[] = [
     { name: 'Books', imageUrl: 'https://placehold.co/400x300.png', productCount: 80 },
     { name: 'Sports', imageUrl: 'https://placehold.co/400x300.png', productCount: 120 },
     { name: 'Beauty', imageUrl: 'https://placehold.co/400x300.png', productCount: 180 },
+];
+
+export const mockUsers: User[] = [
+    { id: 'USR001', name: 'Olivia Martin', email: 'olivia.martin@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-01-15', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'USR002', name: 'Timeless Co.', email: 'contact@timeless.co', role: 'Vendor', status: 'Active', joinedDate: '2024-02-20', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'USR003', name: 'Jackson Lee', email: 'jackson.lee@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-03-10', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'USR004', name: 'Crafty Creations', email: 'hello@crafty.com', role: 'Vendor', status: 'Suspended', joinedDate: '2024-03-15', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'USR005', name: 'Isabella Nguyen', email: 'isabella.nguyen@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-04-05', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'USR006', name: 'Gadget Guru', email: 'support@gadgetguru.io', role: 'Vendor', status: 'Active', joinedDate: '2024-04-22', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'USR007', name: 'William Kim', email: 'will@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-05-30', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'USR008', name: 'HomeBody Decor', email: 'sales@homebody.com', role: 'Vendor', status: 'Active', joinedDate: '2024-06-01', avatar: 'https://placehold.co/40x40.png' },
 ];
