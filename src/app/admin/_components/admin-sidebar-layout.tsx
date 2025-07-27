@@ -2,8 +2,8 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone } from "lucide-react";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, SidebarHeader } from "@/components/ui/sidebar";
+import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -44,9 +44,17 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                 </SidebarHeader>
                 <SidebarContent className="p-2">
                      <SidebarMenu>
+                        <SidebarMenuItem>
+                             <SidebarMenuButton asChild tooltip={{children: 'Create Campaign'}}>
+                                <Link href="/admin/marketing/new">
+                                    <PlusCircle/>
+                                    <span>New Campaign</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
                         {navLinks.map(link => (
                             <SidebarMenuItem key={link.href}>
-                                <SidebarMenuButton 
+                                <SidebarMenuButton
                                     asChild
                                     isActive={pathname.startsWith(link.href) && (link.href !== "/admin" || pathname === "/admin")}
                                     tooltip={{children: link.label}}

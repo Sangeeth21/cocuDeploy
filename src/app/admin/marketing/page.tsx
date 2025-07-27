@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { MarketingCampaign } from "@/lib/types";
+import Link from "next/link";
 
 const mockCampaigns: MarketingCampaign[] = [
     {
@@ -61,8 +62,10 @@ export default function AdminMarketingPage() {
                     <h1 className="text-3xl font-bold font-headline">Marketing Campaigns</h1>
                     <p className="text-muted-foreground">Create and manage your site-wide promotions and sales.</p>
                 </div>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Create Campaign
+                <Button asChild>
+                    <Link href="/admin/marketing/new">
+                        <PlusCircle className="mr-2 h-4 w-4" /> Create Campaign
+                    </Link>
                 </Button>
             </div>
             <Card>
