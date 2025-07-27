@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send } from "lucide-react";
+import { Search, Send, MessageSquare } from "lucide-react";
 import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
