@@ -127,7 +127,9 @@ export default function VendorTemplatesPage() {
                                         <TemplatePreview templateName={template.name} />
                                     </DialogContent>
                                </Dialog>
-                                <Button variant="secondary" size="sm">Edit</Button>
+                                <Button variant="secondary" size="sm" asChild>
+                                  <Link href="/vendor/templates/new">Edit</Link>
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
