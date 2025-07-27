@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, ImageIcon, Download, Check, EyeOff, Eye, AlertTriangle } from "lucide-react";
+import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, ImageIcon, Download, Check, EyeOff, Eye, AlertTriangle, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -227,7 +227,7 @@ export default function VendorMessagesPage() {
           case 'read':
               return <Eye className="h-4 w-4 text-primary-foreground" />;
           case 'delivered':
-              return <EyeOff className="h-4 w-4 text-primary-foreground" />;
+              return <CheckCheck className="h-4 w-4 text-primary-foreground" />;
           case 'sent':
               return <Check className="h-4 w-4 text-primary-foreground" />;
           default:
@@ -268,9 +268,9 @@ export default function VendorMessagesPage() {
     }, [selectedConversation?.messages, selectedConversationId]);
 
   return (
-    <>
-      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 border rounded-lg bg-card h-[calc(100vh-11rem)]">
-        <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full border-r">
+    <div className="flex h-full flex-col">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 flex-1 h-full">
+        <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full border-r bg-card">
           <div className="p-4 border-b">
             <h1 className="text-2xl font-bold font-headline">Inbox</h1>
             <div className="relative mt-2">
@@ -305,7 +305,7 @@ export default function VendorMessagesPage() {
         </div>
         <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full">
           {selectedConversation ? (
-            <>
+            <div className="flex flex-col h-full bg-card">
               <div className="p-4 border-b flex flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <Avatar>
@@ -318,7 +318,7 @@ export default function VendorMessagesPage() {
                     {remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached'}
                 </div>
               </div>
-              <ScrollArea className="flex-1 bg-muted/20" ref={scrollAreaRef}>
+              <ScrollArea className="flex-1 bg-muted/20" ref={scrollAreaRef} style={{minHeight: 0}}>
                   <div className="p-4 space-y-4">
                   {selectedConversation.messages.map((msg, index) => (
                       msg.sender === 'system' ? (
@@ -346,7 +346,7 @@ export default function VendorMessagesPage() {
                               </div>
                           )}
                           {msg.sender === 'vendor' && (
-                              <div className="flex justify-end items-center gap-1 h-4">
+                              <div className="flex justify-end items-center gap-1 h-4 mt-1">
                                   {getStatusIcon(msg.status)}
                               </div>
                           )}
@@ -390,9 +390,9 @@ export default function VendorMessagesPage() {
                     <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
                 </div>
               </form>
-            </>
+            </div>
           ) : (
-             <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
+             <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center bg-card">
                 <MessageSquare className="h-16 w-16 mb-4"/>
                 <h2 className="text-xl font-semibold">Select a conversation</h2>
                 <p>Choose a conversation from the left panel to view messages and reply to your customers.</p>
@@ -406,6 +406,8 @@ export default function VendorMessagesPage() {
         onContinue={handleContinueChat}
         onEnd={handleEndChat}
       />
-    </>
+    </div>
   );
 }
+
+    
