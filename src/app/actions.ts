@@ -2,10 +2,10 @@
 
 import { aiSearchAssistant } from "@/ai/flows/ai-search-assistant";
 
-export async function handleSearch(input: { searchQuery: string }): Promise<{ enhancedSearchQuery?: string, error?: string }> {
+export async function getSearchSuggestions(input: { searchQuery: string }): Promise<{ suggestions?: string[], error?: string }> {
   try {
     const result = await aiSearchAssistant(input);
-    return result;
+    return { suggestions: result.suggestions };
   } catch (e) {
     console.error(e);
     const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";

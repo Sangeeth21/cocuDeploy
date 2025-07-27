@@ -17,13 +17,14 @@ const AiSearchAssistantInputSchema = z.object({
 export type AiSearchAssistantInput = z.infer<typeof AiSearchAssistantInputSchema>;
 
 const AiSearchAssistantOutputSchema = z.object({
-  enhancedSearchQuery: z
-    .string()    
-    .describe("An alternative, potentially better, search query."),
+  suggestions: z.array(z.string()).describe('A list of up to 5 search suggestions, including auto-complete and recommendations.'),
 });
 export type AiSearchAssistantOutput = z.infer<typeof AiSearchAssistantOutputSchema>;
 
 export async function aiSearchAssistant(input: AiSearchAssistantInput): Promise<AiSearchAssistantOutput> {
+  if (!input.searchQuery.trim()) {
+    return { suggestions: [] };
+  }
   return aiSearchAssistantFlow(input);
 }
 
@@ -31,13 +32,13 @@ const prompt = ai.definePrompt({
   name: 'aiSearchAssistantPrompt',
   input: {schema: AiSearchAssistantInputSchema},
   output: {schema: AiSearchAssistantOutputSchema},
-  prompt: `You are an AI assistant designed to enhance search query.
-  The goal is to generate alternative formulations of the original search query to improve search result relevance.
-  Consider synonyms, related terms, and common misspellings.
+  prompt: `You are an AI assistant for an e-commerce site called ShopSphere. You are designed to provide search suggestions.
+Given a user's search query, provide a list of up to 5 suggestions.
+These suggestions should include auto-completions of the current query and recommendations for related searches.
+Do not suggest categories, only specific product searches.
 
-  Original Search Query: {{{searchQuery}}}
-
-  Enhanced Search Query:`,
+Original Search Query: {{{searchQuery}}}
+`,
 });
 
 const aiSearchAssistantFlow = ai.defineFlow(

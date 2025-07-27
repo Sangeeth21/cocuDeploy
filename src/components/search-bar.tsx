@@ -1,61 +1,62 @@
 "use client";
 
-import { useState } from "react";
-import { useFormStatus } from "react-dom";
+import { useState, useEffect, useCallback } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { handleSearch } from "@/app/actions";
+import { getSearchSuggestions } from "@/app/actions";
 import { useRouter } from "next/navigation";
-
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <Button type="submit" size="icon" aria-label="Search" disabled={pending} className="bg-accent hover:bg-accent/90 h-8 w-8">
-      {pending ? <Loader2 className="animate-spin h-4 w-4" /> : <Search className="h-4 w-4" />}
-    </Button>
-  );
-}
+import { useDebounce } from "@/hooks/use-debounce";
 
 export function SearchBar() {
   const { toast } = useToast();
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  const debouncedQuery = useDebounce(query, 300);
 
-  const searchAction = async (formData: FormData) => {
-    const searchQuery = formData.get("searchQuery") as string;
-    if (!searchQuery?.trim()) {
-      return;
-    }
-
-    toast({
-        title: "Searching...",
-        description: `Looking for "${searchQuery}"`,
-    });
-
-    const result = await handleSearch({ searchQuery });
-    
-    if (result.error) {
-      toast({
-        variant: "destructive",
-        title: "Search Error",
-        description: result.error,
-      });
-    } else if (result.enhancedSearchQuery) {
+  const fetchSuggestions = useCallback(async (searchQuery: string) => {
+    if (searchQuery.length > 1) {
+      setLoading(true);
+      const result = await getSearchSuggestions({ searchQuery });
+      if (result.error) {
         toast({
-            title: "AI Search Assistant",
-            description: `We enhanced your search to: "${result.enhancedSearchQuery}"`,
+          variant: "destructive",
+          title: "Suggestion Error",
+          description: result.error,
         });
-        router.push(`/products?q=${encodeURIComponent(result.enhancedSearchQuery)}`);
+        setSuggestions([]);
+      } else if (result.suggestions) {
+        setSuggestions(result.suggestions);
+      }
+      setLoading(false);
     } else {
-        router.push(`/products?q=${encodeURIComponent(searchQuery)}`);
+      setSuggestions([]);
     }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchSuggestions(debouncedQuery);
+  }, [debouncedQuery, fetchSuggestions]);
+
+  const handleSearch = (searchQuery: string) => {
+    if (!searchQuery.trim()) return;
+    setQuery(searchQuery);
+    setSuggestions([]);
+    router.push(`/products?q=${encodeURIComponent(searchQuery)}`);
+  };
+  
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      handleSearch(query);
   };
 
   return (
-    <form action={searchAction} className="relative w-full">
-      <div className="relative flex items-center">
+    <div className="relative w-full">
+      <form onSubmit={handleFormSubmit} className="relative flex items-center">
         <Input
           type="search"
           name="searchQuery"
@@ -63,11 +64,40 @@ export function SearchBar() {
           className="pr-10 h-9"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setTimeout(() => setIsFocused(false), 100)}
+          autoComplete="off"
         />
         <div className="absolute right-1 top-1/2 -translate-y-1/2">
-            <SubmitButton />
+            <Button type="submit" size="icon" aria-label="Search" className="bg-accent hover:bg-accent/90 h-8 w-8">
+              <Search className="h-4 w-4" />
+            </Button>
         </div>
-      </div>
-    </form>
+      </form>
+      {isFocused && (query.length > 1) && (
+        <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg">
+          {loading && <div className="p-2 text-sm text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading...</div>}
+          {!loading && suggestions.length > 0 && (
+            <ul>
+              {suggestions.map((suggestion, index) => (
+                <li 
+                    key={index} 
+                    className="px-3 py-2 text-sm hover:bg-accent cursor-pointer"
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                        handleSearch(suggestion);
+                    }}
+                >
+                  {suggestion}
+                </li>
+              ))}
+            </ul>
+          )}
+          {!loading && suggestions.length === 0 && debouncedQuery.length > 1 && (
+             <div className="p-2 text-sm text-muted-foreground">No suggestions found.</div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
