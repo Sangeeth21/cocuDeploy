@@ -8,12 +8,58 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import type { DisplayProduct } from "@/lib/types";
-import { MessageSquare } from "lucide-react";
+import type { DisplayProduct, Conversation, Message } from "@/lib/types";
+import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { Textarea } from "@/components/ui/textarea";
+
+type Attachment = {
+    name: string;
+    type: 'image' | 'file';
+    url: string;
+}
+
+const initialConversation: Conversation = {
+    id: 1,
+    vendorId: "VDR001",
+    avatar: "https://placehold.co/40x40.png",
+    messages: [],
+    userMessageCount: 0,
+    awaitingVendorDecision: false,
+};
 
 
 export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const { toast } = useToast();
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [conversation, setConversation] = useState<Conversation>({
+      ...initialConversation, 
+      vendorId: product.vendorId
+  });
+  const [newMessage, setNewMessage] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const MAX_MESSAGE_LENGTH = 1500;
+
+  useEffect(() => {
+    if (isChatOpen && conversation.messages.length === 0) {
+        // Create initial message from vendor
+        const initialVendorMessage: Message = {
+            id: 'init-vendor',
+            sender: 'vendor',
+            text: `Hi! Thanks for your interest in the "${product.name}". How can I help you today?`
+        };
+        const autoReply: Message = {
+            id: 'init-autoreply',
+            sender: 'vendor',
+            text: `Thanks for your message! We'll get back to you shortly.`
+        }
+        setConversation(prev => ({...prev, messages: [initialVendorMessage, autoReply]}))
+    }
+  }, [isChatOpen, product.name, conversation.messages.length])
 
   const handleAddToCart = () => {
     toast({
@@ -21,19 +67,196 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
       description: `${product.name} has been added to your cart.`,
     });
   };
+
+  const handleSendMessage = useCallback((e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessage.trim() && attachments.length === 0) return;
+
+    const newAttachments: Attachment[] = attachments.map(file => ({
+        name: file.name,
+        type: file.type.startsWith("image/") ? "image" : "file",
+        url: URL.createObjectURL(file),
+    }));
+
+    const newMessageObj: Message = { 
+        id: Math.random().toString(),
+        sender: "customer", 
+        text: newMessage,
+        ...(newAttachments.length > 0 && { attachments: newAttachments })
+    };
+    
+    setConversation(prev => {
+        const updatedConvo = {
+            ...prev,
+            messages: [...prev.messages, newMessageObj],
+            userMessageCount: prev.userMessageCount + 1
+        };
+
+        if (updatedConvo.userMessageCount === 9) {
+            updatedConvo.awaitingVendorDecision = true;
+            updatedConvo.messages.push({
+                id: 'system-wait',
+                sender: 'system',
+                text: 'You have reached the initial message limit. Please wait for the vendor to respond.'
+            });
+        }
+        return updatedConvo;
+    });
+
+    setNewMessage("");
+    setAttachments([]);
+  }, [attachments, newMessage]);
+  
+   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+        const newFiles = Array.from(e.target.files);
+        if (attachments.length + newFiles.length > 5) {
+             toast({
+                variant: "destructive",
+                title: "Attachment Limit Exceeded",
+                description: "You can only attach up to 5 files.",
+            });
+            return;
+        }
+        setAttachments(prev => [...prev, ...newFiles]);
+    }
+  }, [attachments.length, toast]);
+
+  const removeAttachment = useCallback((fileToRemove: File) => {
+    setAttachments(prev => prev.filter(file => file !== fileToRemove));
+  }, []);
+  
+  const getChatLimit = () => {
+      const { userMessageCount, awaitingVendorDecision } = conversation;
+      const INITIAL_LIMIT = 9;
+      const EXTENDED_LIMIT = 15; // Placeholder for when vendor extends
+
+      const isLocked = awaitingVendorDecision || userMessageCount >= INITIAL_LIMIT;
+      let limit = INITIAL_LIMIT;
+      let remaining = limit - userMessageCount;
+      
+      if(awaitingVendorDecision) {
+        remaining = 0;
+      }
+      
+      return { limit, remaining: Math.max(0, remaining), isLocked };
+  }
+
+  const { remaining, isLocked } = getChatLimit();
+
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [newMessage]);
+
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+             if(scrollableView){
+                 scrollableView.scrollTop = scrollableView.scrollHeight;
+             }
+        }
+    }, [conversation.messages]);
   
   return (
     <>
       <div className="flex flex-col sm:flex-row gap-2">
         <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>Add to Cart</Button>
-        <Button size="lg" variant="outline" className="w-full" asChild>
-            <Link href={`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`}>
-                <MessageSquare className="mr-2 h-5 w-5" />
-                Message Vendor
-            </Link>
-        </Button>
+        <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
+            <DialogTrigger asChild>
+                <Button size="lg" variant="outline" className="w-full">
+                    <MessageSquare className="mr-2 h-5 w-5" />
+                    Message Vendor
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-lg h-[80vh] flex flex-col p-0">
+                 <DialogHeader className="p-4 border-b">
+                     <div className="flex items-center justify-between">
+                         <div className="flex items-center gap-4">
+                            <Avatar>
+                              <AvatarImage src={conversation.avatar} alt={conversation.vendorId} data-ai-hint="company logo" />
+                              <AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <DialogTitle>Chat with {conversation.vendorId}</DialogTitle>
+                         </div>
+                         <div className="text-sm text-muted-foreground">
+                            {remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached'}
+                        </div>
+                     </div>
+                 </DialogHeader>
+                 <ScrollArea className="flex-1" ref={scrollAreaRef}>
+                    <div className="p-4 space-y-4">
+                         {conversation.messages.map((msg, index) => (
+                             msg.sender === 'system' ? (
+                                <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                            ) : (
+                            <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
+                              {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={conversation.avatar} alt={conversation.vendorId} /><AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
+                              <div className={cn("max-w-xs rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                                {msg.attachments && (
+                                    <div className="grid gap-2 grid-cols-2">
+                                        {msg.attachments.map((att, i) => (
+                                            att.type === 'image' ? (
+                                                <div key={i} className="relative aspect-video rounded-md overflow-hidden">
+                                                    <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
+                                                </div>
+                                            ) : (
+                                                <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
+                                                    <FileIcon className="h-6 w-6 text-muted-foreground"/>
+                                                    <span className="text-xs truncate">{att.name}</span>
+                                                    <Download className="h-4 w-4 ml-auto" />
+                                                </a>
+                                            )
+                                        ))}
+                                    </div>
+                                )}
+                              </div>
+                              {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="You" /><AvatarFallback>Y</AvatarFallback></Avatar>}
+                            </div>
+                            )
+                          ))}
+                    </div>
+                 </ScrollArea>
+                  <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
+                         {attachments.length > 0 && !isLocked && (
+                            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                                {attachments.map((file, index) => (
+                                    <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2 bg-muted/50">
+                                        {file.type.startsWith('image/') ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileIcon className="h-5 w-5 text-muted-foreground" />}
+                                        <p className="text-xs text-muted-foreground truncate">{file.name}</p>
+                                        <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}><X className="h-3 w-3" /></Button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                                <Textarea
+                                    ref={textareaRef}
+                                    placeholder={isLocked ? "Please wait for the vendor to respond..." : "Type your message..."}
+                                    className="pr-20 resize-none max-h-48"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    maxLength={MAX_MESSAGE_LENGTH}
+                                    rows={1}
+                                    disabled={isLocked}
+                                />
+                                 {!isLocked && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
+                            </div>
+                            <Button type="button" variant="ghost" size="icon" asChild disabled={isLocked}>
+                                <label htmlFor="product-file-upload"><Paperclip className="h-5 w-5" /></label>
+                            </Button>
+                            <input id="product-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} disabled={isLocked} />
+                            <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
+                        </div>
+                      </form>
+            </DialogContent>
+        </Dialog>
       </div>
-      <p className="text-sm text-muted-foreground">Sold by <Link href={`/vendor?vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`} className="font-semibold text-primary hover:underline">{product.vendorId}</Link></p>
+      <p className="text-sm text-muted-foreground mt-4">Sold by <Link href={`/vendor?vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`} className="font-semibold text-primary hover:underline">{product.vendorId}</Link></p>
     </>
   );
 }
