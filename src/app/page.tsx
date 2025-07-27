@@ -91,6 +91,38 @@ function FlashDealTimer({ endDate }: { endDate: string }) {
     return timerComponents.length ? <div className="flex gap-4">{timerComponents}</div> : <span>Deal has ended!</span>;
 }
 
+function WhyShopSphere() {
+  return (
+    <section className="py-16">
+        <div className="container mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-8 font-headline">Why ShopSphere?</h2>
+          <div className="grid md:grid-cols-3 gap-8 text-center">
+            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm">
+              <div className="bg-primary/10 text-primary p-4 rounded-full mb-4">
+                <CheckCircle className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 font-headline">Quality Guaranteed</h3>
+              <p className="text-muted-foreground">Every product is vetted for quality and authenticity by our team.</p>
+            </div>
+            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm">
+              <div className="bg-primary/10 text-primary p-4 rounded-full mb-4">
+                <Truck className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 font-headline">Fast Shipping</h3>
+              <p className="text-muted-foreground">Reliable and fast shipping to your doorstep, wherever you are.</p>
+            </div>
+            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm">
+              <div className="bg-primary/10 text-primary p-4 rounded-full mb-4">
+                <Gift className="h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2 font-headline">Support Creators</h3>
+              <p className="text-muted-foreground">Your purchase directly supports independent vendors and creators.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+  )
+}
 
 export default function Home() {
   return (
@@ -218,34 +250,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="py-16">
-        <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8 font-headline">Why ShopSphere?</h2>
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm">
-              <div className="bg-primary/10 text-primary p-4 rounded-full mb-4">
-                <CheckCircle className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2 font-headline">Quality Guaranteed</h3>
-              <p className="text-muted-foreground">Every product is vetted for quality and authenticity by our team.</p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm">
-              <div className="bg-primary/10 text-primary p-4 rounded-full mb-4">
-                <Truck className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2 font-headline">Fast Shipping</h3>
-              <p className="text-muted-foreground">Reliable and fast shipping to your doorstep, wherever you are.</p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm">
-              <div className="bg-primary/10 text-primary p-4 rounded-full mb-4">
-                <Gift className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2 font-headline">Support Creators</h3>
-              <p className="text-muted-foreground">Your purchase directly supports independent vendors and creators.</p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <WhyShopSphere />
     </div>
   );
 }
