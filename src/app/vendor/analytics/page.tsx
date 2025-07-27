@@ -1,3 +1,5 @@
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
