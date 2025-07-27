@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -20,7 +21,11 @@ import { ReviewsPreview } from "./_components/reviews-preview";
 import { SimilarProductsPreview } from "./_components/similar-products-preview";
 import { FrequentlyBoughtTogetherPreview } from "./_components/frequently-bought-together-preview";
 
-const componentMap: Record<string, { name: string; component: React.FC }> = {
+type ComponentMap = {
+    [key: string]: { name: string; component: React.FC<any> };
+}
+
+const componentMap: ComponentMap = {
     'details': { name: "Product Details", component: ProductDetailsPreview },
     'reviews': { name: "Customer Reviews", component: ReviewsPreview },
     'similar': { name: "Similar Products", component: SimilarProductsPreview },
@@ -189,12 +194,17 @@ export default function NewTemplatePage() {
                             <CardTitle>Live Preview</CardTitle>
                         </CardHeader>
                         <CardContent className="bg-muted/20 p-4 sm:p-8 rounded-lg border">
-                           <div className={cn("space-y-12", layout === "minimalist" && "max-w-4xl mx-auto text-center")}>
+                           <div className="space-y-12">
                              {components.map((id, index) => {
                                 const { component: Component } = componentMap[id];
+                                const componentProps = id === 'details' ? { layout } : {};
+                                
                                 return (
-                                    <div key={id}>
-                                        <Component />
+                                    <div key={id} className={cn(
+                                        layout === 'minimalist' && "max-w-4xl mx-auto",
+                                        layout === 'full-width-image' && id === 'details' && "max-w-full"
+                                    )}>
+                                        <Component {...componentProps} />
                                         {index < components.length -1 && <Separator className="my-12" />}
                                     </div>
                                 )
