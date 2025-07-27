@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from "next/image";
@@ -11,6 +10,7 @@ import { mockProducts } from "@/lib/mock-data";
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import type { DisplayProduct } from "@/lib/types";
+import { Separator } from "@/components/ui/separator";
 
 type CartItem = DisplayProduct & { quantity: number };
 
