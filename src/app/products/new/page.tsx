@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -8,26 +9,49 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, DollarSign, PackageCheck } from "lucide-react"
+import { Upload, X, DollarSign, PackageCheck, Box } from "lucide-react"
 import Image from "next/image"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
+
+type ImagePreview = {
+    src: string;
+    is3D: boolean;
+};
+
+function ImagePreview3D({ src, alt }: { src: string, alt: string }) {
+    return (
+        <div className="w-full h-full flex items-center justify-center bg-muted/20 rounded-md" style={{ perspective: '1000px' }}>
+            <div className="relative w-full h-full" style={{ transformStyle: 'preserve-3d', transform: 'rotateY(-30deg) rotateX(15deg)' }}>
+                <Image src={src} alt={alt} fill className="object-cover rounded-md shadow-lg border" />
+            </div>
+        </div>
+    );
+}
 
 export default function NewProductPage() {
-    const [images, setImages] = useState<string[]>([]);
+    const [images, setImages] = useState<ImagePreview[]>([]);
     const [status, setStatus] = useState(false);
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files) {
             const files = Array.from(event.target.files);
-            const newImageUrls = files.map(file => URL.createObjectURL(file));
-            setImages(prev => [...prev, ...newImageUrls]);
+            const newImagePreviews = files.map(file => ({
+                src: URL.createObjectURL(file),
+                is3D: false,
+            }));
+            setImages(prev => [...prev, ...newImagePreviews]);
         }
     };
 
     const removeImage = (index: number) => {
         setImages(prev => prev.filter((_, i) => i !== index));
-    }
+    };
+
+    const toggle3D = (index: number) => {
+        setImages(prev => prev.map((img, i) => i === index ? { ...img, is3D: !img.is3D } : img));
+    };
 
   return (
     <div className="container py-12">
@@ -63,18 +87,28 @@ export default function NewProductPage() {
                     <CardDescription>Upload high-quality images of your product.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                        {images.map((src, index) => (
-                            <div key={index} className="relative group aspect-square">
-                                <Image src={src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md" />
-                                <Button
-                                    variant="destructive"
-                                    size="icon"
-                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={() => removeImage(index)}
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {images.map((img, index) => (
+                            <div key={index} className="space-y-2">
+                                <div className="relative group aspect-square">
+                                    {img.is3D ? (
+                                        <ImagePreview3D src={img.src} alt={`Product image ${index + 1} 3D preview`} />
+                                    ) : (
+                                        <Image src={img.src} alt={`Product image ${index + 1}`} fill className="object-cover rounded-md" />
+                                    )}
+                                    <Button
+                                        variant="destructive"
+                                        size="icon"
+                                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                        onClick={() => removeImage(index)}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                                <div className="flex items-center justify-center space-x-2">
+                                    <Label htmlFor={`3d-toggle-${index}`} className="text-xs">3D</Label>
+                                    <Switch id={`3d-toggle-${index}`} checked={img.is3D} onCheckedChange={() => toggle3D(index)} />
+                                </div>
                             </div>
                         ))}
                          <label htmlFor="image-upload" className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted-foreground rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
