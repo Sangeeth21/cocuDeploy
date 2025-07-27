@@ -137,8 +137,6 @@ export default function NewCampaignPage() {
         
     const mockProductForPreview = mockProducts[0];
     const mockReviewForPreview = mockReviews[0];
-    
-    const creative = previewingCreative;
 
     return (
         <div>
@@ -219,7 +217,7 @@ export default function NewCampaignPage() {
                             <Button variant="outline" size="sm" onClick={handleAddCreative}><PlusCircle className="mr-2 h-4 w-4"/>Add Creative</Button>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {creatives.map((creative, index) => (
+                            {creatives.map((creative) => (
                                 <Accordion key={creative.id} type="single" collapsible defaultValue="item-1" className="border rounded-md px-4">
                                     <AccordionItem value="item-1">
                                         <AccordionTrigger className="hover:no-underline">
@@ -270,7 +268,7 @@ export default function NewCampaignPage() {
                                                  )}
                                              </div>
                                              <div className="flex justify-between items-center">
-                                                <Button variant="outline" size="sm" onClick={() => setPreviewingCreative(creative)}><Eye className="mr-2 h-4 w-4"/> Preview Creative</Button>
+                                                <Button variant="outline" size="sm" onClick={() => setPreviewingCreative(creative)} disabled={!creative.image}><Eye className="mr-2 h-4 w-4"/> Preview Creative</Button>
                                                 <Button variant="destructive" size="sm" onClick={() => handleRemoveCreative(creative.id)}><Trash2 className="mr-2 h-4 w-4" /> Remove</Button>
                                              </div>
                                         </AccordionContent>
@@ -341,7 +339,7 @@ export default function NewCampaignPage() {
             <Dialog open={!!previewingCreative} onOpenChange={(isOpen) => !isOpen && setPreviewingCreative(null)}>
                 <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
                     <DialogHeader>
-                        <DialogTitle>Campaign Preview: {creative?.title}</DialogTitle>
+                        <DialogTitle>Campaign Preview: {previewingCreative?.title}</DialogTitle>
                     </DialogHeader>
                     <div className="flex justify-center items-center gap-2 border-b pb-2">
                         <Button variant={!isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(false)}><Laptop className="mr-2 h-4 w-4" /> Desktop</Button>
@@ -349,7 +347,7 @@ export default function NewCampaignPage() {
                     </div>
                     <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg overflow-auto">
                         <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full overflow-y-auto", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
-                            {creative && (
+                            {previewingCreative && (
                                 <>
                                 {placement === 'hero' && (
                                     <Carousel className="w-full h-full" opts={{loop: true}}>
@@ -379,14 +377,14 @@ export default function NewCampaignPage() {
                                     <div className="w-full h-full flex flex-col">
                                         <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center justify-center relative whitespace-nowrap overflow-hidden">
                                             <div className="flex items-center gap-2 mx-4 animate-marquee">
-                                                {creative.image?.src && <Image src={creative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
-                                                <span className="font-semibold">{creative.title}</span>
-                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
+                                                {previewingCreative.image?.src && <Image src={previewingCreative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                <span className="font-semibold">{previewingCreative.title}</span>
+                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{previewingCreative.cta}</Button>
                                             </div>
                                              <div className="flex items-center gap-2 mx-4 animate-marquee-2" aria-hidden="true">
-                                                {creative.image?.src && <Image src={creative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
-                                                <span className="font-semibold">{creative.title}</span>
-                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
+                                                {previewingCreative.image?.src && <Image src={previewingCreative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                <span className="font-semibold">{previewingCreative.title}</span>
+                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{previewingCreative.cta}</Button>
                                             </div>
                                         </div>
                                         <div className="p-4 flex-1">
@@ -541,4 +539,3 @@ export default function NewCampaignPage() {
         </div>
     );
 }
-
