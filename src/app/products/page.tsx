@@ -1,3 +1,8 @@
+
+"use client";
+
+import { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { ProductCard } from "@/components/product-card";
 import { mockProducts, mockCategories } from "@/lib/mock-data";
 import { Card, CardContent } from "@/components/ui/card";
@@ -5,9 +10,73 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import type { Product } from "@/lib/types";
 
-export default function ProductsPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
-  const query = searchParams?.q ?? '';
+export default function ProductsPage() {
+  const searchParams = useSearchParams();
+  const query = searchParams.get('q') ?? '';
+
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
+  const [sortOption, setSortOption] = useState('featured');
+
+  const handleCategoryChange = (categoryName: string) => {
+    setSelectedCategories(prev =>
+      prev.includes(categoryName)
+        ? prev.filter(c => c !== categoryName)
+        : [...prev, categoryName]
+    );
+  };
+
+  const handleRatingChange = (rating: number) => {
+    setSelectedRatings(prev =>
+      prev.includes(rating)
+        ? prev.filter(r => r !== rating)
+        : [...prev, rating]
+    );
+  };
+
+  const filteredAndSortedProducts = useMemo(() => {
+    let products: Product[] = mockProducts;
+
+    if (query) {
+      products = products.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));
+    }
+
+    if (selectedCategories.length > 0) {
+      products = products.filter(p => selectedCategories.includes(p.category));
+    }
+
+    if (selectedRatings.length > 0) {
+      products = products.filter(p => {
+        const minRating = Math.min(...selectedRatings);
+        return p.rating >= minRating;
+      });
+    }
+
+    switch (sortOption) {
+      case 'price-asc':
+        products.sort((a, b) => a.price - b.price);
+        break;
+      case 'price-desc':
+        products.sort((a, b) => b.price - a.price);
+        break;
+      case 'newest':
+        // Assuming higher ID means newer, for mock data
+        products.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+        break;
+      case 'rating':
+        products.sort((a, b) => b.rating - a.rating);
+        break;
+      case 'featured':
+      default:
+        // Default sort or could be based on a specific property
+        break;
+    }
+
+    return products;
+  }, [query, selectedCategories, selectedRatings, sortOption]);
+
 
   return (
     <div className="container py-8">
@@ -28,7 +97,7 @@ export default function ProductsPage({ searchParams }: { searchParams?: { [key: 
                     <div className="space-y-2 pt-2">
                       {mockCategories.map(category => (
                         <div key={category.name} className="flex items-center space-x-2">
-                          <Checkbox id={category.name} />
+                          <Checkbox id={category.name} onCheckedChange={() => handleCategoryChange(category.name)} />
                           <Label htmlFor={category.name} className="font-normal">{category.name}</Label>
                         </div>
                       ))}
@@ -41,7 +110,7 @@ export default function ProductsPage({ searchParams }: { searchParams?: { [key: 
                     <div className="space-y-2 pt-2">
                       {[4, 3, 2, 1].map(rating => (
                         <div key={rating} className="flex items-center space-x-2">
-                          <Checkbox id={`rating-${rating}`} />
+                          <Checkbox id={`rating-${rating}`} onCheckedChange={() => handleRatingChange(rating)} />
                           <Label htmlFor={`rating-${rating}`} className="font-normal">{rating} stars & up</Label>
                         </div>
                       ))}
@@ -55,8 +124,8 @@ export default function ProductsPage({ searchParams }: { searchParams?: { [key: 
 
         <main className="md:col-span-3">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-muted-foreground">{mockProducts.length} products</p>
-            <Select>
+            <p className="text-muted-foreground">{filteredAndSortedProducts.length} products</p>
+            <Select onValueChange={setSortOption} defaultValue="featured">
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
@@ -71,7 +140,7 @@ export default function ProductsPage({ searchParams }: { searchParams?: { [key: 
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockProducts.map((product) => (
+            {filteredAndSortedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

@@ -1,3 +1,6 @@
+
+"use client";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,9 +9,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { DeleteAccountDialog } from "@/components/delete-account-dialog";
+import { useSearchParams } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
-export default function AccountPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
-  const tab = typeof searchParams?.tab === 'string' ? searchParams.tab : 'profile';
+export default function AccountPage() {
+  const searchParams = useSearchParams();
+  const tab = searchParams.get('tab') || 'profile';
+  const { toast } = useToast();
+
+  const handleSaveChanges = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    toast({
+        title: "Profile Updated",
+        description: "Your changes have been saved successfully.",
+    });
+  }
+  
+  const handleUpdatePassword = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    toast({
+        title: "Password Updated",
+        description: "Your password has been changed.",
+    });
+  }
 
   return (
     <div className="container py-12">
@@ -22,7 +45,7 @@ export default function AccountPage({ searchParams }: { searchParams?: { [key: s
           <p className="text-muted-foreground">Manage your profile, orders, and settings.</p>
         </div>
       </div>
-      <Tabs defaultValue={tab}>
+      <Tabs value={tab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="orders">Order History</TabsTrigger>
@@ -43,7 +66,7 @@ export default function AccountPage({ searchParams }: { searchParams?: { [key: s
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" defaultValue="john.doe@example.com" />
               </div>
-              <Button>Save Changes</Button>
+              <Button onClick={handleSaveChanges}>Save Changes</Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -73,7 +96,7 @@ export default function AccountPage({ searchParams }: { searchParams?: { [key: s
                         <Label htmlFor="new-password">New Password</Label>
                         <Input id="new-password" type="password" />
                     </div>
-                    <Button className="mt-4">Update Password</Button>
+                    <Button className="mt-4" onClick={handleUpdatePassword}>Update Password</Button>
                 </div>
                 <Separator/>
                 <div>
