@@ -46,6 +46,7 @@ export default function SmartPricingPage() {
     const { toast } = useToast();
     const productId = searchParams.get('productId');
 
+    // Find the product immediately. If not found, we will call notFound().
     const product = useMemo(() => {
         if (!productId) return null;
         return mockProducts.find(p => p.id === productId) || null;
@@ -55,7 +56,7 @@ export default function SmartPricingPage() {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedFreebies, setSelectedFreebies] = useState<string[]>([]);
     
-    // Form State
+    // Form State - Initialize with default values
     const [vendorSP, setVendorSP] = useState(0);
     const [platformBuffer, setPlatformBuffer] = useState(15);
     const [discount, setDiscount] = useState(0);
@@ -69,26 +70,28 @@ export default function SmartPricingPage() {
     const razorpayFee = 15;
     const platformCommissionRate = 0.05; // 5%
 
+    // Effect to set initial state once product is loaded
     useEffect(() => {
         if (product) {
             setVendorSP(product.price || 0);
+            setNeedsRecalculation(true);
         }
     }, [product]);
 
+    // Effect to calculate Final SP when dependencies change
     useEffect(() => {
         if (product) {
             const mrp = vendorSP * (1 + platformBuffer / 100);
             const newFinalSP = mrp * (1 - discount / 100);
             setFinalSP(newFinalSP);
-            setNeedsRecalculation(true);
         }
     }, [product, vendorSP, platformBuffer, discount]);
-
     
-     const handleInputChange = useCallback((setter: React.Dispatch<React.SetStateAction<any>>) => (value: any) => {
-        setter(value);
+    // Use a separate effect to flag for recalculation
+    useEffect(() => {
         setNeedsRecalculation(true);
-    }, []);
+    }, [vendorSP, platformBuffer, discount, selectedFreebies]);
+
 
     const freebieCost = useMemo(() => {
         return selectedFreebies.reduce((total, fbId) => {
@@ -139,6 +142,8 @@ export default function SmartPricingPage() {
     const isMarginLow = calculations.netMargin < 11;
     const isApproveDisabled = isMarginLow || needsRecalculation;
 
+    // Guard clause: If no product is found, render the 404 page.
+    // This is the most important part of the fix.
     if (!product) {
         return notFound();
     }
@@ -224,7 +229,7 @@ export default function SmartPricingPage() {
                              </div>
                              <div className="sm:col-span-2 space-y-2">
                                  <Label>Freebie Selection</Label>
-                                <Select onValueChange={(value) => handleInputChange(setSelectedFreebies)([value])}>
+                                <Select onValueChange={(value) => setSelectedFreebies([value])}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select freebies to offer" />
                                     </SelectTrigger>
@@ -288,11 +293,11 @@ export default function SmartPricingPage() {
                                 <TableBody>
                                     <TableRow>
                                         <TableCell>Vendor SP</TableCell>
-                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={vendorSP} onChange={e => handleInputChange(setVendorSP)(Number(e.target.value))} /></TableCell>
+                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={vendorSP} onChange={e => setVendorSP(Number(e.target.value))} /></TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Platform Buffer (%)</TableCell>
-                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={platformBuffer} onChange={e => handleInputChange(setPlatformBuffer)(Number(e.target.value))} /></TableCell>
+                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={platformBuffer} onChange={e => setPlatformBuffer(Number(e.target.value))} /></TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>MRP (Auto-calculated)</TableCell>
@@ -300,7 +305,7 @@ export default function SmartPricingPage() {
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Discount (%)</TableCell>
-                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={discount} onChange={e => handleInputChange(setDiscount)(Number(e.target.value))}/></TableCell>
+                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={discount} onChange={e => setDiscount(Number(e.target.value))}/></TableCell>
                                     </TableRow>
                                     <TableRow className="bg-muted/50">
                                         <TableCell>Final Selling Price</TableCell>
@@ -329,7 +334,7 @@ export default function SmartPricingPage() {
                                     <TableRow className="font-bold border-t-2">
                                         <TableCell>Net Margin</TableCell>
                                         <TableCell className={cn("text-right", isMarginLow ? "text-destructive" : "text-green-600")}>
-                                            {calculations.netMargin.toFixed(2)}%
+                                            {needsRecalculation ? '...' : `${calculations.netMargin.toFixed(2)}%`}
                                         </TableCell>
                                     </TableRow>
                                 </TableBody>
