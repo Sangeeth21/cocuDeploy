@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 const getStatusVariant = (status: Order['status']) => {
   switch (status) {
@@ -36,9 +38,21 @@ const getStatusVariant = (status: Order['status']) => {
 
 export default function AdminOrdersPage() {
     const { toast } = useToast();
+    const searchParams = useSearchParams();
     const [orders, setOrders] = useState<Order[]>(mockOrders);
-    const [searchTerm, setSearchTerm] = useState("");
+    
+    // Search and filter state
+    const customerIdQuery = searchParams.get('customerId');
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('search') ?? "");
     const [activeTab, setActiveTab] = useState("all");
+    
+    // Effect to set search term from URL if customerId is present, giving it priority
+    useEffect(() => {
+        if(customerIdQuery){
+            setSearchTerm(customerIdQuery);
+        }
+    }, [customerIdQuery]);
+
 
     const handleUpdateStatus = (orderId: string, status: Order['status']) => {
         setOrders(prev => prev.map(o => o.id === orderId ? {...o, status} : o));
@@ -56,10 +70,12 @@ export default function AdminOrdersPage() {
         }
 
         if (searchTerm) {
+             const lowercasedFilter = searchTerm.toLowerCase();
             filtered = filtered.filter(order =>
-                order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                order.customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                order.customer.email.toLowerCase().includes(searchTerm.toLowerCase())
+                order.id.toLowerCase().includes(lowercasedFilter) ||
+                order.customer.name.toLowerCase().includes(lowercasedFilter) ||
+                order.customer.email.toLowerCase().includes(lowercasedFilter) ||
+                order.customer.id.toLowerCase().includes(lowercasedFilter)
             );
         }
 
@@ -136,7 +152,7 @@ export default function AdminOrdersPage() {
                     <div className="relative">
                         <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         <Input
-                            placeholder="Search orders..."
+                            placeholder="Search by Order ID, Customer..."
                             className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
