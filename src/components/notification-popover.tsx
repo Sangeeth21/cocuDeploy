@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, PackageWarning, MessageSquare, ListChecks, ShieldAlert, User, CheckCircle, X, Truck } from "lucide-react";
+import { Bell, Package, MessageSquare, ListChecks, ShieldAlert, User, CheckCircle, X, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "./ui/badge";
@@ -18,10 +18,10 @@ type Notification = {
 const notificationIcons: { [key: string]: React.ElementType } = {
     'order': ListChecks,
     'message': MessageSquare,
-    'stock': PackageWarning,
+    'stock': Package,
     'confirmation': Bell,
     'user_report': ShieldAlert,
-    'product_review': PackageWarning,
+    'product_review': Package,
     'new_vendor': User,
     'order_shipped': Truck,
     'request_approved': CheckCircle,

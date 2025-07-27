@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign, PackageWarning } from "lucide-react";
+import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { mockVendorActivity } from "@/lib/mock-data";
@@ -70,7 +70,7 @@ export default function VendorDashboardPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             {mockVendorActivity.map(item => {
-                const Icon = item.type === 'stock' ? PackageWarning : item.type === 'message' ? MessageSquare : ListChecks;
+                const Icon = item.type === 'stock' ? Package : item.type === 'message' ? MessageSquare : ListChecks;
                 return (
                      <div key={item.id} className="flex items-start gap-4">
                         <div className="p-2 bg-primary/10 rounded-full">
