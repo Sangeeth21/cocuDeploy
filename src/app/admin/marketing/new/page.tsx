@@ -12,14 +12,15 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { mockProducts } from "@/lib/mock-data";
+import { mockProducts, mockReviews } from "@/lib/mock-data";
 import type { DisplayProduct } from "@/lib/types";
 import { format, addDays } from "date-fns";
-import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight } from "lucide-react";
+import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star } from "lucide-react";
 import Image from "next/image";
 import type { DateRange } from "react-day-picker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 const getYoutubeEmbedUrl = (url: string) => {
     let embedUrl = null;
@@ -90,6 +91,10 @@ export default function NewCampaignPage() {
     const searchResults = searchTerm
         ? mockProducts.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
         : [];
+        
+    const mockProductForPreview = mockProducts[0];
+    const mockReviewForPreview = mockReviews[0];
+
 
     return (
         <div>
@@ -151,8 +156,10 @@ export default function NewCampaignPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="hero">Homepage Hero Carousel</SelectItem>
-                                        <SelectItem value="banner">Top Banner</SelectItem>
+                                        <SelectItem value="banner">Top Announcement Banner</SelectItem>
                                         <SelectItem value="popup">Popup Modal</SelectItem>
+                                        <SelectItem value="inline-banner">Inline Homepage Banner</SelectItem>
+                                        <SelectItem value="product-page-banner">Product Page Banner</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -262,7 +269,7 @@ export default function NewCampaignPage() {
                                             <Button variant={isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(true)}><Smartphone className="mr-2 h-4 w-4" /> Mobile</Button>
                                         </div>
                                         <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg overflow-auto">
-                                            <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
+                                            <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full overflow-y-auto", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
                                                {placement === 'hero' && (
                                                     <div className="relative w-full h-full">
                                                         <div className="relative" style={{height: isPreviewMobile ? '30vh' : '40vh'}}>
@@ -288,8 +295,8 @@ export default function NewCampaignPage() {
                                                 )}
                                                 {placement === 'banner' && (
                                                     <div className="w-full h-full flex flex-col">
-                                                         <div className="bg-primary text-primary-foreground p-2 text-center text-sm">
-                                                            Your advertisement banner here!
+                                                         <div className="bg-primary text-primary-foreground p-2 text-center text-sm flex items-center justify-center gap-2">
+                                                            <span>Your advertisement banner here!</span> <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs">Learn More</Button>
                                                         </div>
                                                          <div className="p-4 flex-1"><p className="text-sm text-center text-muted-foreground">Page content...</p></div>
                                                     </div>
@@ -302,6 +309,69 @@ export default function NewCampaignPage() {
                                                             <p className="text-sm text-muted-foreground mb-4">A great deal just for you.</p>
                                                             {image && <Image src={image.src} alt="Popup Image" width={300} height={150} className="rounded-md object-cover mx-auto mb-4" />}
                                                             <Button>Claim Offer</Button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {placement === 'inline-banner' && (
+                                                    <div className="w-full h-full p-4 md:p-8 space-y-8">
+                                                        <div className="text-center">
+                                                            <h1 className="text-3xl font-bold font-headline">Homepage Content</h1>
+                                                            <p className="text-muted-foreground">This is a section of the homepage.</p>
+                                                        </div>
+                                                        <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
+                                                            {image && <Image src={image.src} alt="Inline Campaign" fill className="object-cover" />}
+                                                             {embedUrl && !image && <iframe src={embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
+                                                                <div>
+                                                                    <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>Inline Campaign Title</h2>
+                                                                    <p className={cn(isPreviewMobile ? "text-xs" : "text-sm", "mt-1 mb-2")}>Short and catchy description.</p>
+                                                                    <Button size="sm">Shop Collection</Button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-center">
+                                                            <h2 className="text-2xl font-bold font-headline">Another Section</h2>
+                                                            <p className="text-muted-foreground">More content follows below.</p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                {placement === 'product-page-banner' && (
+                                                    <div className="w-full h-full p-4 md:p-8 space-y-8">
+                                                        {/* Mock Product Details */}
+                                                        <div className={cn("grid gap-6", isPreviewMobile ? "grid-cols-1" : "grid-cols-2")}>
+                                                            <div className="aspect-square bg-muted rounded-lg"></div>
+                                                            <div className="space-y-3">
+                                                                <h1 className="text-2xl font-bold font-headline">{mockProductForPreview.name}</h1>
+                                                                <p className="text-2xl">${mockProductForPreview.price.toFixed(2)}</p>
+                                                                <div className="flex items-center gap-1"><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-muted" /> <span className="text-xs text-muted-foreground ml-1">({mockProductForPreview.reviewCount} reviews)</span></div>
+                                                                <p className="text-sm text-muted-foreground">{mockProductForPreview.description.substring(0, 100)}...</p>
+                                                                <Button className="w-full">Add to Cart</Button>
+                                                            </div>
+                                                        </div>
+                                                        <Separator />
+                                                        {/* Campaign Banner */}
+                                                        <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
+                                                             {image && <Image src={image.src} alt="Product Page Campaign" width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />}
+                                                             <div className="flex-1 text-center md:text-left">
+                                                                <h3 className="font-bold">Save 15% on your next order!</h3>
+                                                                <p className="text-sm text-muted-foreground">Use code <span className="font-mono bg-background p-1 rounded-sm">SAVE15</span> at checkout.</p>
+                                                             </div>
+                                                             <Button>Copy Code</Button>
+                                                        </div>
+                                                         {/* Mock Reviews */}
+                                                        <div>
+                                                            <h2 className="text-xl font-bold font-headline mb-4">Customer Reviews</h2>
+                                                             <Card>
+                                                                <CardHeader>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-8 h-8 rounded-full bg-muted"></div>
+                                                                        <p className="font-semibold text-sm">{mockReviewForPreview.author}</p>
+                                                                    </div>
+                                                                </CardHeader>
+                                                                <CardContent>
+                                                                    <p className="text-xs text-muted-foreground">{mockReviewForPreview.comment}</p>
+                                                                </CardContent>
+                                                            </Card>
                                                         </div>
                                                     </div>
                                                 )}
