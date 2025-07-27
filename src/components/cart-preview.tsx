@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { mockProducts } from "@/lib/mock-data";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import type { DisplayProduct } from "@/lib/types";
 import { Input } from "./ui/input";
 
@@ -20,19 +20,25 @@ export function CartPreview() {
     );
 
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    
-    const handleQuantityChange = (id: string, delta: number) => {
-        setCartItems(currentItems =>
-          currentItems.map(item =>
-            item.id === id ? { ...item, quantity: Math.max(1, item.quantity + delta) } : item
-          ).filter(item => item.quantity > 0)
-        );
-    };
 
-     const removeItem = (id: string) => {
+    const handleQuantityChange = useCallback((id: string, delta: number) => {
+      setCartItems(currentItems => {
+        const newItems = currentItems.map(item => {
+          if (item.id === id) {
+            const newQuantity = item.quantity + delta;
+            return { ...item, quantity: newQuantity };
+          }
+          return item;
+        });
+
+        // Filter out items with quantity 0 or less
+        return newItems.filter(item => item.quantity > 0);
+      });
+    }, []);
+
+    const removeItem = useCallback((id: string) => {
         setCartItems(currentItems => currentItems.filter(item => item.id !== id));
-    }
-
+    }, []);
 
     return (
         <Popover>
@@ -70,7 +76,7 @@ export function CartPreview() {
                                                 <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleQuantityChange(item.id, -1)}>
                                                     <Minus className="h-3 w-3" />
                                                 </Button>
-                                                <Input type="number" value={item.quantity} className="w-12 h-6 text-center" readOnly />
+                                                <Input type="text" value={item.quantity} className="w-12 h-6 text-center" readOnly />
                                                 <Button variant="outline" size="icon" className="h-6 w-6" onClick={() => handleQuantityChange(item.id, 1)}>
                                                     <Plus className="h-3 w-3" />
                                                 </Button>
