@@ -2,7 +2,7 @@
 "use client";
 
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, useParams } from "next/navigation";
 import { mockProducts, mockReviews } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -31,8 +31,10 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
     </div>,
 });
 
-export default function ProductDetailPage({ params: { id } }: { params: { id: string } }) {
+export default function ProductDetailPage() {
   const { toast } = useToast();
+  const params = useParams();
+  const id = params.id as string;
   const product = mockProducts.find((p) => p.id === id);
 
   if (!product) {
