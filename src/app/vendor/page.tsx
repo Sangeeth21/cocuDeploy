@@ -176,12 +176,9 @@ export default function VendorPage() {
                                     </Card>
                                 </DialogTrigger>
                                 <DialogContent className="max-w-6xl h-[90vh] p-0">
-                                    <DialogHeader className="p-4 border-b flex-row items-center justify-between">
+                                     <DialogHeader className="p-4 border-b">
                                         <DialogTitle>Preview: {template.name}</DialogTitle>
-                                        <DialogClose asChild>
-                                            <Button variant="ghost" size="icon"><X/></Button>
-                                        </DialogClose>
-                                    </DialogHeader>
+                                     </DialogHeader>
                                     <TemplatePreview templateName={template.name} />
                                 </DialogContent>
                             </Dialog>
