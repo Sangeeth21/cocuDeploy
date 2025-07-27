@@ -80,7 +80,7 @@ export default function VendorDashboardPage() {
               Create beautiful, custom landing pages for your products with our easy-to-use template generator.
             </p>
             <Button asChild>
-                <Link href="/vendor/templates/new">
+                <Link href="/vendor/templates">
                     Manage Templates <ArrowRight className="ml-2"/>
                 </Link>
             </Button>
@@ -90,3 +90,5 @@ export default function VendorDashboardPage() {
       </div>
   );
 }
+
+    
