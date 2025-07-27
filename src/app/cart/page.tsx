@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -8,11 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { mockProducts } from "@/lib/mock-data";
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
-import type { Product } from "@/lib/types";
+import type { DisplayProduct } from "@/lib/types";
 
-type CartItem = Product & { quantity: number };
+type CartItem = DisplayProduct & { quantity: number };
 
 export default function CartPage() {
   const [cartItems, setCartItems] = useState<CartItem[]>(

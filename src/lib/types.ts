@@ -1,5 +1,6 @@
 
-export type Product = {
+
+export type DisplayProduct = {
   id: string;
   name: string;
   description: string;
@@ -55,3 +56,70 @@ export type User = {
     joinedDate: string;
     avatar: string;
 }
+
+// --- Smart Pricing Engine (SPE) Types ---
+
+type AIReview = {
+    suggestedSP: number;
+    discount: number;
+    reasoning: string;
+};
+
+export type SPE_Product = {
+    vendorSP: number;
+    vendorInputs: {
+        description: string;
+        images: string[];
+        keywords: string[];
+    };
+    status: "Under Review" | "Live" | "Rejected";
+    aiReviews?: {
+        chatgpt?: AIReview;
+        claude?: AIReview;
+        gemini?: AIReview;
+    };
+    adminInputs?: {
+        competitorPriceRange?: string;
+        discountPercent?: string;
+        edt?: string;
+        offerType?: "Festival" | "Launch" | "Clearance" | "Limited Stock" | "None";
+        selectedFreebies?: string[];
+    };
+    marginSummary?: {
+        customerPrice: number;
+        vendorSP: number;
+        buffer: number;
+        logisticsCost: number;
+        pgFees: number;
+        payoutFees: number;
+        platformCommission: number;
+        freebieCost: number;
+        finalMargin: number;
+    };
+    audit?: {
+        approvalStatus: "Pending" | "Approved" | "Rejected";
+        editedAfterAI: boolean;
+        approvalDisabled: boolean;
+        lastRecalculated: any; // Firestore Timestamp
+    };
+};
+
+export type SPE_Freebie = {
+    name: string;
+    cost: number;
+    available: boolean;
+    aliasFreebies: string[];
+    imageURL: string;
+};
+
+export type SPE_AIRequest = {
+    productId: string;
+    requestTime: any; // Firestore Timestamp
+    modelsQueried: ("chatgpt" | "claude" | "gemini")[];
+    totalCost: number;
+    tokensUsed?: {
+        chatgpt?: number;
+        claude?: number;
+        gemini?: number;
+    };
+};

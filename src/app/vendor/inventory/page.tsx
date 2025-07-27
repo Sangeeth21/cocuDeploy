@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -10,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { mockProducts } from "@/lib/mock-data";
-import type { Product } from "@/lib/types";
+import type { DisplayProduct } from "@/lib/types";
 
 function getStockStatus(stock: number): { text: string; variant: "default" | "secondary" | "destructive" } {
     if (stock === 0) return { text: "Out of Stock", variant: "destructive" };
@@ -20,7 +21,7 @@ function getStockStatus(stock: number): { text: string; variant: "default" | "se
 
 export default function VendorInventoryPage() {
     const { toast } = useToast();
-    const [products, setProducts] = useState<Product[]>(mockProducts);
+    const [products, setProducts] = useState<DisplayProduct[]>(mockProducts);
     const [editingQuantities, setEditingQuantities] = useState<{ [key: string]: string }>({});
 
     const handleQuantityChange = (productId: string, value: string) => {

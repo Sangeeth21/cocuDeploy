@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -9,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import type { Product } from "@/lib/types";
+import type { DisplayProduct } from "@/lib/types";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -53,7 +54,7 @@ export default function ProductsPage() {
   };
 
   const filteredAndSortedProducts = useMemo(() => {
-    let products: Product[] = mockProducts;
+    let products: DisplayProduct[] = mockProducts;
 
     if (query) {
       products = products.filter(p => p.name.toLowerCase().includes(query.toLowerCase()));

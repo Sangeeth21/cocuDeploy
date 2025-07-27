@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import Image from 'next/image';
 import Link from 'next/link';
-import type { Product } from '@/lib/types';
+import type { DisplayProduct } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
@@ -11,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
-  product: Product;
+  product: DisplayProduct;
 }
 
 export function ProductCard({ product }: ProductCardProps) {

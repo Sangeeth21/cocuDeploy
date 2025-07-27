@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -10,12 +11,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { Attachment, Message, Product } from "@/lib/types";
+import type { Attachment, Message, DisplayProduct } from "@/lib/types";
 import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, Check, Eye, EyeOff } from "lucide-react";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 
-export function ProductInteractions({ product }: { product: Product }) {
+export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const { toast } = useToast();
 
   // Chat state
@@ -237,5 +238,3 @@ export function ProductInteractions({ product }: { product: Product }) {
     </>
   );
 }
-
-    

@@ -1,7 +1,8 @@
 
-import type { Product, Review, Category, User } from './types';
 
-export const mockProducts: Product[] = [
+import type { DisplayProduct, Review, Category, User } from './types';
+
+export const mockProducts: DisplayProduct[] = [
   {
     id: '1',
     name: 'Classic Leather Watch',
