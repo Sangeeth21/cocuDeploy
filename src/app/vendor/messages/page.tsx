@@ -165,11 +165,11 @@ export default function VendorMessagesPage() {
     const getStatusIcon = (status?: 'sent' | 'delivered' | 'read') => {
       switch(status) {
           case 'read':
-              return <Eye className="h-4 w-4 text-primary" />;
+              return <Eye className="h-4 w-4 text-primary-foreground" />;
           case 'delivered':
-              return <EyeOff className="h-4 w-4" />;
+              return <EyeOff className="h-4 w-4 text-primary-foreground" />;
           case 'sent':
-              return <Check className="h-4 w-4" />;
+              return <Check className="h-4 w-4 text-primary-foreground" />;
           default:
               return null;
       }
@@ -317,5 +317,7 @@ export default function VendorMessagesPage() {
     </VendorSidebarLayout>
   );
 }
+
+    
 
     

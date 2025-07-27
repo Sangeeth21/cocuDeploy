@@ -30,6 +30,7 @@ export function ProductInteractions({ product }: { product: Product }) {
   const initializeChat = useCallback(() => {
     setMessages([
         { 
+            id: 'init-msg',
             sender: "vendor",
             text: `Hi! Thanks for your interest in the "${product?.name}". How can I help you today?`,
             status: "read",
@@ -75,6 +76,7 @@ export function ProductInteractions({ product }: { product: Product }) {
     }));
 
     const sentMessage: Message = { 
+        id: Math.random().toString(),
         sender: "customer", 
         text: newMessage,
         status: "sent",
@@ -93,11 +95,12 @@ export function ProductInteractions({ product }: { product: Product }) {
         setTimeout(() => {
              // Only update the last 'delivered' message to 'read'
              setMessages(prev => {
-                const updatedMessages = [...prev];
-                const messageIndex = updatedMessages.findIndex(m => m.id === sentMessage.id);
-                if (messageIndex !== -1 && updatedMessages[messageIndex].status === 'delivered') {
-                    updatedMessages[messageIndex] = { ...updatedMessages[messageIndex], status: 'read' };
-                }
+                const updatedMessages = prev.map(m => {
+                    if (m.id === sentMessage.id && m.status === 'delivered') {
+                        return { ...m, status: 'read' };
+                    }
+                    return m;
+                });
                 return updatedMessages;
             });
 
@@ -118,11 +121,11 @@ export function ProductInteractions({ product }: { product: Product }) {
   const getStatusIcon = (status?: 'sent' | 'delivered' | 'read') => {
       switch(status) {
           case 'read':
-              return <Eye className="h-4 w-4 text-primary" />;
+              return <Eye className="h-4 w-4 text-primary-foreground" />;
           case 'delivered':
-              return <EyeOff className="h-4 w-4" />;
+              return <EyeOff className="h-4 w-4 text-primary-foreground" />;
           case 'sent':
-              return <Check className="h-4 w-4" />;
+              return <Check className="h-4 w-4 text-primary-foreground" />;
           default:
               return null;
       }
@@ -163,7 +166,7 @@ export function ProductInteractions({ product }: { product: Product }) {
              <ScrollArea className="flex-1" ref={scrollAreaRef}>
                 <div className="p-4 space-y-4">
                     {messages.map((msg, index) => (
-                    <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
+                    <div key={msg.id || index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
                         {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt={product.vendorId} /><AvatarFallback>{product.vendorId.charAt(0)}</AvatarFallback></Avatar>}
                         <div className={cn("max-w-xs rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
                         {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
@@ -230,7 +233,9 @@ export function ProductInteractions({ product }: { product: Product }) {
           </DialogContent>
         </Dialog>
       </div>
-      <p className="text-sm text-muted-foreground">Sold by <Link href={`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`} className="font-semibold text-primary hover:underline">Vendor ID: {product.vendorId}</Link></p>
+      <p className="text-sm text-muted-foreground">Sold by <Link href={`/vendor?vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`} className="font-semibold text-primary hover:underline">Vendor ID: {product.vendorId}</Link></p>
     </>
   );
 }
+
+    
