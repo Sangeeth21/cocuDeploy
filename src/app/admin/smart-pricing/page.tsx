@@ -91,8 +91,7 @@ export default function SmartPricingPage() {
         setNeedsRecalculation(true);
     }, [vendorSP, platformBuffer, discount, selectedFreebies]);
 
-    if (!product) {
-        // If no product is found for the given ID, or if no ID is provided, show 404.
+    if (!productId || !product) {
         notFound();
     }
 
@@ -176,7 +175,7 @@ export default function SmartPricingPage() {
                                         <DialogContent className="sm:max-w-2xl">
                                             <DialogHeader><DialogTitle>Full Product Details</DialogTitle></DialogHeader>
                                             <div className="grid md:grid-cols-2 gap-4">
-                                                 <Image src={product.imageUrl} alt={product.name} width={300} height={300} className="rounded-lg" />
+                                                 <Image src={product.imageUrl} alt={product.name} width={300} height={300} className="rounded-lg" data-ai-hint="product image" />
                                                  <div>
                                                      <h3 className="font-bold">{product.name}</h3>
                                                      <p className="text-sm text-muted-foreground">{product.description}</p>
