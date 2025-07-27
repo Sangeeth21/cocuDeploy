@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingCart, User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle } from "lucide-react";
+import { ShoppingCart, User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchBar } from "@/components/search-bar";
@@ -98,11 +98,18 @@ export function Header() {
             </Link>
           </Button>
           {isLoggedIn ? (
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
+            <div className="flex items-center rounded-md hover:bg-accent focus-within:bg-accent">
+               <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-transparent" asChild>
+                  <Link href="/account">
                     <User className="h-5 w-5" />
                     <span className="sr-only">User Account</span>
+                  </Link>
+              </Button>
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-10 w-6 hover:bg-transparent">
+                    <ChevronDown className="h-4 w-4" />
+                     <span className="sr-only">Open user menu</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -129,6 +136,7 @@ export function Header() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+            </div>
             ) : (
                 <Button variant="ghost" asChild>
                     <Link href="/login">Login</Link>
