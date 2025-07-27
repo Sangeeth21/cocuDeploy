@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { mockProducts, mockReviews } from "@/lib/mock-data";
 import type { DisplayProduct } from "@/lib/types";
 import { format, addDays } from "date-fns";
-import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star } from "lucide-react";
+import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User } from "lucide-react";
 import Image from "next/image";
 import type { DateRange } from "react-day-picker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -294,11 +294,20 @@ export default function NewCampaignPage() {
                                                     </div>
                                                 )}
                                                 {placement === 'banner' && (
-                                                    <div className="w-full h-full flex flex-col">
-                                                         <div className="bg-primary text-primary-foreground p-2 text-center text-sm flex items-center justify-center gap-2">
-                                                            <span>Your advertisement banner here!</span> <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs">Learn More</Button>
+                                                     <div className="w-full h-full flex flex-col">
+                                                        <div className="bg-primary text-primary-foreground p-2 text-center text-sm flex items-center justify-center gap-4">
+                                                            {image && <Image src={image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto"/>}
+                                                            <span>Your advertisement banner here!</span>
+                                                            <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">Learn More</Button>
+                                                            <X className="h-4 w-4 cursor-pointer absolute right-4 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100" />
                                                         </div>
-                                                         <div className="p-4 flex-1"><p className="text-sm text-center text-muted-foreground">Page content...</p></div>
+                                                        <div className="p-4 flex-1">
+                                                            <header className="flex justify-between items-center p-4 border-b">
+                                                                <div className="flex items-center gap-2"><Store className="h-6 w-6"/> <span className="font-bold">ShopSphere</span></div>
+                                                                <div className="flex items-center gap-2"><ShoppingCart className="h-5 w-5"/> <User className="h-5 w-5"/></div>
+                                                            </header>
+                                                            <p className="text-sm text-center text-muted-foreground pt-8">Page content...</p>
+                                                        </div>
                                                     </div>
                                                 )}
                                                 {placement === 'popup' && (
