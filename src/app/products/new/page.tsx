@@ -9,12 +9,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
@@ -129,6 +130,7 @@ export default function NewProductPage() {
     const [show3DPreview, setShow3DPreview] = useState(false);
     const [is3DEnabled, setIs3DEnabled] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isConfirmationAlertOpen, setIsConfirmationAlertOpen] = useState(false);
     
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
@@ -208,6 +210,23 @@ export default function NewProductPage() {
     const canPreview3D = useMemo(() => {
        return is3DEnabled && images.front?.src && images.left?.src && images.right?.src;
     }, [images, is3DEnabled]);
+
+    const handleConfirmationChange = (checked: boolean) => {
+        if (checked) {
+            setIsConfirmationAlertOpen(true);
+        } else {
+            setRequiresConfirmation(false);
+        }
+    };
+
+    const handleConfirmAndEnable = () => {
+        setRequiresConfirmation(true);
+        toast({
+            title: "Pre-Order Check Enabled",
+            description: "You will be notified to confirm new orders for this product.",
+        });
+        setIsConfirmationAlertOpen(false);
+    };
 
   return (
     <>
@@ -350,7 +369,7 @@ export default function NewProductPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex items-start gap-4 p-2 border rounded-md">
-                        <Switch id="requires-confirmation" checked={requiresConfirmation} onCheckedChange={setRequiresConfirmation} />
+                        <Switch id="requires-confirmation" checked={requiresConfirmation} onCheckedChange={handleConfirmationChange} />
                         <div className="grid gap-1.5">
                             <Label htmlFor="requires-confirmation" className="font-medium">Pre-Order Check</Label>
                             <p className="text-xs text-muted-foreground">If enabled, you must confirm that this product is deliverable on time before a customer can complete their purchase.</p>
@@ -381,6 +400,22 @@ export default function NewProductPage() {
             <ImagePreview3D images={images} />
         </DialogContent>
     </Dialog>
+    <AlertDialog open={isConfirmationAlertOpen} onOpenChange={setIsConfirmationAlertOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2"><ShieldCheck className="text-primary"/> Enable Pre-Order Check?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmAndEnable}>I Understand &amp; Enable</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }
+
+    
