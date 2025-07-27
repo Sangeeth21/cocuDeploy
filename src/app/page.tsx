@@ -30,38 +30,59 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
 
 
 function FlashDealTimer({ endDate }: { endDate: string }) {
+    const [isMounted, setIsMounted] = useState(false);
+    const [timeLeft, setTimeLeft] = useState({});
+
     const calculateTimeLeft = () => {
         const difference = +new Date(endDate) - +new Date();
-        let timeLeft = {};
+        let newTimeLeft = {};
 
         if (difference > 0) {
-            timeLeft = {
+            newTimeLeft = {
                 days: Math.floor(difference / (1000 * 60 * 60 * 24)),
                 hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
                 minutes: Math.floor((difference / 1000 / 60) % 60),
                 seconds: Math.floor((difference / 1000) % 60),
             };
         }
-        return timeLeft;
+        return newTimeLeft;
     };
-
-    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-
+    
     useEffect(() => {
-        const timer = setTimeout(() => {
+        setIsMounted(true);
+        setTimeLeft(calculateTimeLeft());
+
+        const timer = setInterval(() => {
             setTimeLeft(calculateTimeLeft());
         }, 1000);
-        return () => clearTimeout(timer);
-    });
+
+        return () => clearInterval(timer);
+    }, [endDate]);
+
+    if (!isMounted) {
+        return (
+            <div className="flex gap-4">
+                 <div className="flex flex-col items-center"><Skeleton className="h-6 w-8" /><Skeleton className="h-3 w-8 mt-1" /></div>
+                 <div className="flex flex-col items-center"><Skeleton className="h-6 w-8" /><Skeleton className="h-3 w-8 mt-1" /></div>
+                 <div className="flex flex-col items-center"><Skeleton className="h-6 w-8" /><Skeleton className="h-3 w-8 mt-1" /></div>
+                 <div className="flex flex-col items-center"><Skeleton className="h-6 w-8" /><Skeleton className="h-3 w-8 mt-1" /></div>
+            </div>
+        )
+    }
 
     const timerComponents: any[] = [];
     Object.keys(timeLeft).forEach((interval) => {
-        if (!timeLeft[interval as keyof typeof timeLeft]) {
-            return;
+        if (!timeLeft[interval as keyof typeof timeLeft] && interval !== 'seconds') { // always show seconds if others are 0
+            const value = timeLeft[interval as keyof typeof timeLeft];
+             if(value === 0 && (interval === 'days' || interval === 'hours' || interval === 'minutes')) {
+                // keep it
+             } else if (!value) {
+                return;
+             }
         }
         timerComponents.push(
             <div key={interval} className="flex flex-col items-center">
-                <span className="font-bold text-lg">{timeLeft[interval as keyof typeof timeLeft]}</span>
+                <span className="font-bold text-lg">{String(timeLeft[interval as keyof typeof timeLeft]).padStart(2, '0')}</span>
                 <span className="text-xs uppercase">{interval}</span>
             </div>
         );
