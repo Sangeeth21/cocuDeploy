@@ -114,7 +114,7 @@ export default function AccountPage() {
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
-  const MAX_MESSAGE_LENGTH = 1200; // Approx 200 words
+  const MAX_MESSAGE_LENGTH = 1500; // Approx 250 words
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 

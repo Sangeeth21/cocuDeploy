@@ -18,6 +18,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import type { Attachment, Message } from "@/lib/types";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import Link from "next/link";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -47,7 +48,7 @@ export default function ProductDetailPage() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const MAX_MESSAGE_LENGTH = 1200; // Approx 200 words
+  const MAX_MESSAGE_LENGTH = 1500; // Approx 250 words
 
   const initializeChat = () => {
     setMessages([
@@ -65,7 +66,7 @@ export default function ProductDetailPage() {
     if (isChatOpen) {
       initializeChat();
     }
-  }, [isChatOpen]);
+  }, [isChatOpen, product?.name]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -277,7 +278,7 @@ export default function ProductDetailPage() {
               </DialogContent>
             </Dialog>
           </div>
-          <p className="text-sm text-muted-foreground">Sold by <span className="font-semibold text-primary">Vendor ID: {product.vendorId}</span></p>
+          <p className="text-sm text-muted-foreground">Sold by <Link href={`/account?tab=messages&vendorId=${product.vendorId}`} className="font-semibold text-primary hover:underline">Vendor ID: {product.vendorId}</Link></p>
         </div>
       </div>
 
@@ -361,7 +362,3 @@ function ProductCardMini({ product }: { product: typeof mockProducts[0] }) {
     </div>
   );
 }
-
-    
-
-    
