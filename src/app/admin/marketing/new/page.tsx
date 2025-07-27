@@ -295,11 +295,21 @@ export default function NewCampaignPage() {
                                                 )}
                                                 {placement === 'banner' && (
                                                      <div className="w-full h-full flex flex-col">
-                                                        <div className="bg-primary text-primary-foreground p-2 text-center text-sm flex items-center justify-center gap-4">
-                                                            {image && <Image src={image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto"/>}
-                                                            <span>Your advertisement banner here!</span>
-                                                            <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">Learn More</Button>
-                                                            <X className="h-4 w-4 cursor-pointer absolute right-4 top-1/2 -translate-y-1/2 opacity-70 hover:opacity-100" />
+                                                         <style>
+                                                            {`@keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }`}
+                                                        </style>
+                                                        <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center relative overflow-hidden">
+                                                             <div className="flex-shrink-0 absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-primary"><X className="h-4 w-4 cursor-pointer opacity-70 hover:opacity-100" /></div>
+                                                            <div className="flex-1 flex items-center gap-4 whitespace-nowrap animate-[marquee_15s_linear_infinite]">
+                                                                {image && <Image src={image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                                <span className="font-semibold">Your advertisement banner here!</span>
+                                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">Learn More</Button>
+                                                                <span className="mx-4">&bull;</span>
+                                                                {image && <Image src={image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                                <span className="font-semibold">Another great offer!</span>
+                                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">Click Here</Button>
+                                                            </div>
+                                                            
                                                         </div>
                                                         <div className="p-4 flex-1">
                                                             <header className="flex justify-between items-center p-4 border-b">
@@ -397,3 +407,5 @@ export default function NewCampaignPage() {
         </div>
     );
 }
+
+    
