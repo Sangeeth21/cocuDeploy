@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2 } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -125,6 +125,7 @@ export default function NewProductPage() {
     const { toast } = useToast();
     const [images, setImages] = useState<ProductImages>({});
     const [status, setStatus] = useState(false);
+    const [requiresConfirmation, setRequiresConfirmation] = useState(false);
     const [show3DPreview, setShow3DPreview] = useState(false);
     const [is3DEnabled, setIs3DEnabled] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -343,6 +344,20 @@ export default function NewProductPage() {
                     </div>
                 </CardContent>
             </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Confirmation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex items-start gap-4 p-2 border rounded-md">
+                        <Switch id="requires-confirmation" checked={requiresConfirmation} onCheckedChange={setRequiresConfirmation} />
+                        <div className="grid gap-1.5">
+                            <Label htmlFor="requires-confirmation" className="font-medium">Pre-Order Check</Label>
+                            <p className="text-xs text-muted-foreground">If enabled, you must confirm that this product is deliverable on time before a customer can complete their purchase.</p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </aside>
       </div>
       <div className="mt-8 flex justify-end gap-4">
@@ -369,4 +384,3 @@ export default function NewProductPage() {
     </>
   );
 }
-

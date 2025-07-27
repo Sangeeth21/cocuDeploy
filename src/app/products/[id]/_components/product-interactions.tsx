@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { DisplayProduct, Conversation, Message } from "@/lib/types";
-import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle } from "lucide-react";
+import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, BellRing } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -49,6 +49,8 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPreChatOpen, setIsPreChatOpen] = useState(false);
   const [isChatDisabledOpen, setIsChatDisabledOpen] = useState(false);
+  const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
+
 
   const [conversation, setConversation] = useState<Conversation>({
       ...initialConversation, 
@@ -80,6 +82,15 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   }, [isChatOpen, product.name, conversation.messages.length])
 
   const handleAddToCart = () => {
+    if (product.requiresConfirmation) {
+        setIsConfirmationOpen(true);
+        // Here you would also trigger a backend notification to the vendor
+        toast({
+            title: "Vendor Notified",
+            description: "The vendor will confirm availability within 5 hours.",
+        });
+        return;
+    }
     toast({
       title: "Added to cart!",
       description: `${product.name} has been added to your cart.`,
@@ -222,7 +233,9 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   return (
     <>
       <div className="flex flex-col sm:flex-row gap-2">
-        <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>Add to Cart</Button>
+        <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>
+            {product.requiresConfirmation ? 'Request to Buy' : 'Add to Cart'}
+        </Button>
         <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendorClick} disabled={isChatDisabled}>
             <MessageSquare className="mr-2 h-5 w-5" />
             Message Vendor
@@ -348,6 +361,23 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setIsChatDisabledOpen(false)}>Close</Button>
                     <Button onClick={() => router.push('/cart')}>Go to Cart</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog open={isConfirmationOpen} onOpenChange={setIsConfirmationOpen}>
+             <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><BellRing className="text-primary"/> Notified Vendor</DialogTitle>
+                </DialogHeader>
+                <DialogDescription>
+                    The vendor has been notified to confirm this item is available and can be delivered on time. Please wait for their confirmation. You will be notified here and can complete your purchase once they respond.
+                </DialogDescription>
+                <p className="text-sm text-muted-foreground">
+                    The vendor has up to 5 hours to respond.
+                </p>
+                <DialogFooter>
+                    <Button onClick={() => setIsConfirmationOpen(false)}>OK</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>

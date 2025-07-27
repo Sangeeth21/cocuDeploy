@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, DollarSign, Users, CreditCard, Activity } from "lucide-react";
+import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X } from "lucide-react";
 import Link from "next/link";
 
 
@@ -14,6 +14,11 @@ const mockRecentSales = [
     { id: '3', name: 'Isabella Nguyen', email: 'isabella.nguyen@email.com', amount: 299.00, avatar: 'https://placehold.co/40x40.png' },
     { id: '4', name: 'William Kim', email: 'will@email.com', amount: 99.00, avatar: 'https://placehold.co/40x40.png' },
     { id: '5', name: 'Sofia Davis', email: 'sofia.davis@email.com', amount: 39.00, avatar: 'https://placehold.co/40x40.png' },
+]
+
+const mockConfirmationRequests = [
+    { id: 'REQ001', customerName: 'Alice Johnson', productName: 'Professional Yoga Mat', requestedAt: '2h ago' },
+    { id: 'REQ002', customerName: 'Bob Williams', productName: 'Modern Minimalist Desk', requestedAt: '4h ago' }
 ]
 
 export default function AdminDashboardPage() {
@@ -122,55 +127,73 @@ export default function AdminDashboardPage() {
                 </Table>
             </CardContent>
         </Card>
-        <Card>
-            <CardHeader className="flex flex-row items-center">
-                 <div className="grid gap-2">
-                    <CardTitle>New Users</CardTitle>
-                    <CardDescription>A list of recent user and vendor sign-ups.</CardDescription>
-                </div>
-                 <Button asChild size="sm" className="ml-auto gap-1">
-                    <Link href="/admin/users">
-                        View All
-                        <ArrowUpRight className="h-4 w-4" />
-                    </Link>
-                </Button>
-            </CardHeader>
-            <CardContent className="grid gap-8">
-                <div className="flex items-center gap-4">
-                    <Avatar className="h-9 w-9">
-                        <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar" data-ai-hint="person face" />
-                        <AvatarFallback>OM</AvatarFallback>
-                    </Avatar>
-                    <div className="grid gap-1">
-                        <p className="text-sm font-medium leading-none">Olivia Martin</p>
-                        <p className="text-sm text-muted-foreground">olivia.martin@email.com</p>
+        <div className="space-y-4">
+            <Card>
+                <CardHeader className="flex flex-row items-center">
+                     <div className="grid gap-2">
+                        <CardTitle>New Users</CardTitle>
+                        <CardDescription>A list of recent user and vendor sign-ups.</CardDescription>
                     </div>
-                    <div className="ml-auto font-medium"><Badge>Customer</Badge></div>
-                </div>
-                <div className="flex items-center gap-4">
-                    <Avatar className="h-9 w-9">
-                        <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar" data-ai-hint="company logo" />
-                        <AvatarFallback>TC</AvatarFallback>
-                    </Avatar>
-                    <div className="grid gap-1">
-                        <p className="text-sm font-medium leading-none">Timeless Co.</p>
-                        <p className="text-sm text-muted-foreground">contact@timeless.co</p>
+                     <Button asChild size="sm" className="ml-auto gap-1">
+                        <Link href="/admin/users">
+                            View All
+                            <ArrowUpRight className="h-4 w-4" />
+                        </Link>
+                    </Button>
+                </CardHeader>
+                <CardContent className="grid gap-8">
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-9 w-9">
+                            <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar" data-ai-hint="person face" />
+                            <AvatarFallback>OM</AvatarFallback>
+                        </Avatar>
+                        <div className="grid gap-1">
+                            <p className="text-sm font-medium leading-none">Olivia Martin</p>
+                            <p className="text-sm text-muted-foreground">olivia.martin@email.com</p>
+                        </div>
+                        <div className="ml-auto font-medium"><Badge>Customer</Badge></div>
                     </div>
-                    <div className="ml-auto font-medium"><Badge variant="secondary">Vendor</Badge></div>
-                </div>
-                 <div className="flex items-center gap-4">
-                    <Avatar className="h-9 w-9">
-                        <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar" data-ai-hint="person face" />
-                        <AvatarFallback>JL</AvatarFallback>
-                    </Avatar>
-                    <div className="grid gap-1">
-                        <p className="text-sm font-medium leading-none">Jackson Lee</p>
-                        <p className="text-sm text-muted-foreground">jackson.lee@email.com</p>
+                    <div className="flex items-center gap-4">
+                        <Avatar className="h-9 w-9">
+                            <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar" data-ai-hint="company logo" />
+                            <AvatarFallback>TC</AvatarFallback>
+                        </Avatar>
+                        <div className="grid gap-1">
+                            <p className="text-sm font-medium leading-none">Timeless Co.</p>
+                            <p className="text-sm text-muted-foreground">contact@timeless.co</p>
+                        </div>
+                        <div className="ml-auto font-medium"><Badge variant="secondary">Vendor</Badge></div>
                     </div>
-                    <div className="ml-auto font-medium"><Badge>Customer</Badge></div>
-                </div>
-            </CardContent>
-        </Card>
+                </CardContent>
+            </Card>
+             <Card>
+                <CardHeader className="flex flex-row items-center">
+                    <div className="grid gap-2">
+                        <CardTitle>Confirmation Requests</CardTitle>
+                        <CardDescription>Vendors must confirm these before purchase.</CardDescription>
+                    </div>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    {mockConfirmationRequests.map(req => (
+                    <div key={req.id} className="flex items-center gap-4">
+                         <div className="p-2 bg-primary/10 rounded-full">
+                            <BellRing className="h-5 w-5 text-primary"/>
+                        </div>
+                        <div className="grid gap-1 flex-1">
+                            <p className="text-sm font-medium leading-none">
+                                {req.customerName} requests <span className="font-bold">{req.productName}</span>
+                            </p>
+                            <p className="text-sm text-muted-foreground">{req.requestedAt}</p>
+                        </div>
+                        <div className="flex gap-1">
+                            <Button variant="outline" size="icon" className="h-7 w-7"><Check className="h-4 w-4"/></Button>
+                            <Button variant="destructive" size="icon" className="h-7 w-7"><X className="h-4 w-4"/></Button>
+                        </div>
+                    </div>
+                    ))}
+                </CardContent>
+            </Card>
+        </div>
       </div>
     </>
   );

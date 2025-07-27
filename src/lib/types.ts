@@ -15,6 +15,7 @@ export type DisplayProduct = {
   sku?: string;
   stock?: number;
   status?: 'Live' | 'Archived' | 'Needs Review';
+  requiresConfirmation?: boolean;
 };
 
 export type Review = {

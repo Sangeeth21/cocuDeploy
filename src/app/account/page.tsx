@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,6 +32,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
+import Link from "next/link";
 import type { Message, Conversation } from "@/lib/types";
 import { mockUserOrders } from "@/lib/mock-data";
 
@@ -406,6 +407,38 @@ export default function AccountPage() {
               </div>
               <Button onClick={handleSaveChanges}>Save Changes</Button>
             </CardContent>
+          </Card>
+           <Card className="mt-6">
+              <CardHeader>
+                  <CardTitle className="font-headline">Order Confirmations</CardTitle>
+                  <CardDescription>Notifications from vendors regarding your purchase requests.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  <div className="flex items-center gap-4 p-4 border rounded-lg bg-green-50 dark:bg-green-950">
+                        <div className="p-2 bg-green-100 rounded-full dark:bg-green-900">
+                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400"/>
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-semibold text-green-800 dark:text-green-200">Your request for "Classic Leather Watch" was approved!</p>
+                            <p className="text-sm text-green-600 dark:text-green-400">The vendor has confirmed availability. You can now complete your purchase.</p>
+                        </div>
+                        <Button size="sm" asChild>
+                            <Link href="/cart">Go to Cart</Link>
+                        </Button>
+                  </div>
+                  <div className="flex items-center gap-4 p-4 border rounded-lg bg-red-50 dark:bg-red-950">
+                       <div className="p-2 bg-red-100 rounded-full dark:bg-red-900">
+                            <X className="h-5 w-5 text-red-600 dark:text-red-400"/>
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-semibold text-red-800 dark:text-red-200">"Modern Minimalist Desk" is unavailable.</p>
+                            <p className="text-sm text-red-600 dark:text-red-400">We're sorry, the vendor could not confirm your request in time.</p>
+                        </div>
+                        <Button size="sm" variant="secondary" asChild>
+                           <Link href="/products?category=Furniture">View Similar</Link>
+                        </Button>
+                  </div>
+              </CardContent>
           </Card>
         </TabsContent>
          <TabsContent value="messages" className="mt-0">
