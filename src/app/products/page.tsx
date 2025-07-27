@@ -3,7 +3,6 @@
 
 import { useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { ProductCard } from "@/components/product-card";
 import { mockProducts, mockCategories } from "@/lib/mock-data";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -11,6 +10,23 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { Product } from "@/lib/types";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+
+const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
+  loading: () => <div className="flex flex-col space-y-3">
+      <Skeleton className="h-[225px] w-full rounded-xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+       <div className="flex justify-between items-center">
+        <Skeleton className="h-6 w-1/4" />
+        <Skeleton className="h-10 w-2/4" />
+      </div>
+    </div>,
+});
 
 export default function ProductsPage() {
   const searchParams = useSearchParams();

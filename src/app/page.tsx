@@ -1,9 +1,28 @@
+
+"use client"
+
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { mockProducts, mockCategories } from "@/lib/mock-data";
-import { ProductCard } from "@/components/product-card";
 import { ArrowRight, CheckCircle, Truck, Gift } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+
+const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
+  loading: () => <div className="flex flex-col space-y-3">
+      <Skeleton className="h-[225px] w-full rounded-xl" />
+      <div className="space-y-2">
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="h-4 w-1/2" />
+      </div>
+       <div className="flex justify-between items-center">
+        <Skeleton className="h-6 w-1/4" />
+        <Skeleton className="h-10 w-2/4" />
+      </div>
+    </div>,
+});
 
 export default function Home() {
   return (
