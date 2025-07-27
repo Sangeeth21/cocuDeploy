@@ -42,7 +42,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                                 <span className="text-lg font-semibold">Admin</span>
                             </div>
                         </div>
-                         <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
+                        <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
