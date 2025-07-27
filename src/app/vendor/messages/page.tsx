@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, Image as ImageIcon, Download } from "lucide-react";
+import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, ImageIcon, Download } from "lucide-react";
 import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -28,7 +28,6 @@ type Message = {
 type Conversation = {
   id: number;
   customerId: string;
-  customerName: string;
   avatar: string;
   messages: Message[];
   unread?: boolean;
@@ -38,7 +37,6 @@ const initialConversations: Conversation[] = [
   {
     id: 1,
     customerId: "CUST001",
-    customerName: "Liam Johnson",
     avatar: "https://placehold.co/40x40.png",
     messages: [
       { sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
@@ -50,7 +48,6 @@ const initialConversations: Conversation[] = [
   {
     id: 2,
     customerId: "CUST002",
-    customerName: "Olivia Smith",
     avatar: "https://placehold.co/40x40.png",
     messages: [{ sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}] }],
     unread: true,
@@ -58,7 +55,6 @@ const initialConversations: Conversation[] = [
   {
     id: 3,
     customerId: "CUST003",
-    customerName: "Noah Williams",
     avatar: "https://placehold.co/40x40.png",
     messages: [{ sender: "vendor", text: "Thank you!" }],
     unread: false,
@@ -66,7 +62,6 @@ const initialConversations: Conversation[] = [
    {
     id: 4,
     customerId: "CUST004",
-    customerName: "Emma Brown",
     avatar: "https://placehold.co/40x40.png",
     messages: [{ sender: "customer", text: "What is the return policy?" }],
     unread: true,
@@ -80,6 +75,8 @@ export default function VendorMessagesPage() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1200; // Approx 200 words
   const { toast } = useToast();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
@@ -150,6 +147,22 @@ export default function VendorMessagesPage() {
       return "No messages yet.";
   }
 
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [newMessage]);
+
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+             if(scrollableView){
+                 scrollableView.scrollTop = scrollableView.scrollHeight;
+             }
+        }
+    }, [selectedConversation?.messages, selectedConversationId]);
+
   return (
     <VendorSidebarLayout>
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-[calc(100vh-11rem)] gap-4">
@@ -172,8 +185,8 @@ export default function VendorMessagesPage() {
                 onClick={() => handleSelectConversation(convo.id)}
               >
                 <Avatar>
-                  <AvatarImage src={convo.avatar} alt={convo.customerName} data-ai-hint="person face" />
-                  <AvatarFallback>{convo.customerName.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
+                  <AvatarFallback>{convo.customerId.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
                   <div className="flex justify-between items-center">
@@ -191,18 +204,18 @@ export default function VendorMessagesPage() {
             <>
               <div className="p-4 border-b flex items-center gap-4">
                 <Avatar>
-                  <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerName} data-ai-hint="person face" />
-                  <AvatarFallback>{selectedConversation.customerName.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} data-ai-hint="person face" />
+                  <AvatarFallback>{selectedConversation.customerId.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <h2 className="text-lg font-semibold">{selectedConversation.customerId}</h2>
               </div>
-              <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
+              <ScrollArea className="flex-1" ref={scrollAreaRef}>
+                 <div className="p-4 space-y-4">
                   {selectedConversation.messages.map((msg, index) => (
                     <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
-                      {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerName} /><AvatarFallback>{selectedConversation.customerName.charAt(0)}</AvatarFallback></Avatar>}
+                      {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId.charAt(0)}</AvatarFallback></Avatar>}
                       <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                        {msg.text && <p>{msg.text}</p>}
+                        {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
                         {msg.attachments && (
                             <div className="grid gap-2 grid-cols-2">
                                 {msg.attachments.map((att, i) => (
@@ -224,7 +237,7 @@ export default function VendorMessagesPage() {
                       {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
                     </div>
                   ))}
-                </div>
+                  </div>
               </ScrollArea>
               <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
                  {attachments.length > 0 && (
@@ -241,20 +254,21 @@ export default function VendorMessagesPage() {
                 <div className="flex items-center gap-2">
                     <div className="relative flex-1">
                         <Textarea
+                            ref={textareaRef}
                             placeholder="Type your message..."
-                            className="pr-12"
+                            className="pr-20 resize-none max-h-48"
                             value={newMessage}
                             onChange={(e) => setNewMessage(e.target.value)}
                             maxLength={MAX_MESSAGE_LENGTH}
                             rows={1}
                         />
-                         <p className="absolute bottom-1 right-2 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>
+                         <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>
                     </div>
                     <Button type="button" variant="ghost" size="icon" asChild>
                         <label htmlFor="vendor-file-upload"><Paperclip className="h-5 w-5" /></label>
                     </Button>
                     <input id="vendor-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} />
-                    <Button type="submit"><Send className="h-4 w-4" /></Button>
+                    <Button type="submit" size="icon"><Send className="h-4 w-4" /></Button>
                 </div>
               </form>
             </>

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -97,6 +97,8 @@ export default function AccountPage() {
   const { toast } = useToast();
   const [avatar, setAvatar] = useState("https://placehold.co/100x100.png");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   
   const [isEmailVerifyOpen, setIsEmailVerifyOpen] = useState(false);
   const [isPhoneVerifyOpen, setIsPhoneVerifyOpen] = useState(false);
@@ -231,6 +233,22 @@ export default function AccountPage() {
       return "No messages yet.";
   }
 
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [newMessage]);
+
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+             if(scrollableView){
+                 scrollableView.scrollTop = scrollableView.scrollHeight;
+             }
+        }
+    }, [selectedConversation?.messages, selectedConversationId]);
+
   return (
     <div className="container py-12">
       <div className="flex items-center gap-6 mb-8">
@@ -337,13 +355,13 @@ export default function AccountPage() {
                         </Avatar>
                         <h2 className="text-lg font-semibold">{selectedConversation.vendorId}</h2>
                       </div>
-                      <ScrollArea className="flex-1 p-4">
-                        <div className="space-y-4">
+                      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+                        <div className="p-4 space-y-4">
                           {selectedConversation.messages.map((msg, index) => (
                             <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
                               {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.vendorId} /><AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
                               <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                                {msg.text && <p>{msg.text}</p>}
+                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
                                 {msg.attachments && (
                                     <div className="grid gap-2 grid-cols-2">
                                         {msg.attachments.map((att, i) => (
@@ -382,20 +400,21 @@ export default function AccountPage() {
                         <div className="flex items-center gap-2">
                             <div className="relative flex-1">
                                 <Textarea
+                                    ref={textareaRef}
                                     placeholder="Type your message..."
-                                    className="pr-12"
+                                    className="pr-20 resize-none max-h-48"
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     maxLength={MAX_MESSAGE_LENGTH}
                                     rows={1}
                                 />
-                                 <p className="absolute bottom-1 right-2 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>
+                                 <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>
                             </div>
                             <Button type="button" variant="ghost" size="icon" asChild>
                                 <label htmlFor="customer-file-upload"><Paperclip className="h-5 w-5" /></label>
                             </Button>
                             <input id="customer-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} />
-                            <Button type="submit"><Send className="h-4 w-4" /></Button>
+                            <Button type="submit" size="icon"><Send className="h-4 w-4" /></Button>
                         </div>
                       </form>
                     </>
