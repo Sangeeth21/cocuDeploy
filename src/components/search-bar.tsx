@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ export function SearchBar() {
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const debouncedQuery = useDebounce(query, 300);
+  const searchContainerRef = useRef<HTMLDivElement>(null);
+
 
   const fetchSuggestions = useCallback(async (searchQuery: string) => {
     if (searchQuery.length > 1) {
@@ -46,6 +48,7 @@ export function SearchBar() {
     if (!searchQuery.trim()) return;
     setQuery(searchQuery);
     setSuggestions([]);
+    setIsFocused(false);
     router.push(`/products?q=${encodeURIComponent(searchQuery)}`);
   };
   
@@ -53,9 +56,21 @@ export function SearchBar() {
       event.preventDefault();
       handleSearch(query);
   };
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchContainerRef.current && !searchContainerRef.current.contains(event.target as Node)) {
+        setIsFocused(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" ref={searchContainerRef}>
       <form onSubmit={handleFormSubmit} className="relative flex items-center">
         <Input
           type="search"
@@ -65,7 +80,6 @@ export function SearchBar() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsFocused(true)}
-          onBlur={() => setTimeout(() => setIsFocused(false), 100)}
           autoComplete="off"
         />
         <div className="absolute right-1 top-1/2 -translate-y-1/2">
@@ -93,7 +107,7 @@ export function SearchBar() {
               ))}
             </ul>
           )}
-          {!loading && suggestions.length === 0 && debouncedQuery.length > 1 && (
+          {!loading && debouncedQuery && suggestions.length === 0 && (
              <div className="p-2 text-sm text-muted-foreground">No suggestions found.</div>
           )}
         </div>
