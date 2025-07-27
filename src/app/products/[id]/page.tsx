@@ -1,15 +1,23 @@
 
+
+"use client";
+
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { mockProducts, mockReviews } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Plus } from "lucide-react";
+import { Star, Plus, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -28,10 +36,20 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
   const product = mockProducts.find((p) => p.id === params.id);
+  const { toast } = useToast();
+  const [isMessageOpen, setIsMessageOpen] = useState(false);
 
   if (!product) {
     notFound();
   }
+
+  const handleSendMessage = () => {
+    toast({
+      title: "Message Sent!",
+      description: `Your question about ${product.name} has been sent to the vendor.`,
+    });
+    setIsMessageOpen(false);
+  };
 
   const similarProducts = mockProducts.filter(p => p.category === product.category && p.id !== product.id).slice(0, 3);
   const frequentlyBoughtTogether = mockProducts.filter(p => p.id !== product.id).slice(0, 2);
@@ -65,7 +83,38 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
           </div>
           <p className="text-3xl font-bold font-body">${product.price.toFixed(2)}</p>
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
-          <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Add to Cart</Button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Add to Cart</Button>
+            <Dialog open={isMessageOpen} onOpenChange={setIsMessageOpen}>
+                <DialogTrigger asChild>
+                    <Button size="lg" variant="outline" className="w-full">
+                        <MessageSquare className="mr-2 h-5 w-5" />
+                        Message Vendor
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Message Vendor: {product.vendorId}</DialogTitle>
+                        <DialogDescription>
+                            Have a question about the "{product.name}"?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-2">
+                       <div className="space-y-2">
+                            <Label htmlFor="message">Your Message</Label>
+                            <Textarea 
+                                id="message" 
+                                rows={5} 
+                                defaultValue={`Hi, I have a question about the ${product.name}...`}
+                            />
+                       </div>
+                    </div>
+                    <DialogFooter>
+                        <Button onClick={handleSendMessage}>Send Message</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+          </div>
           <p className="text-sm text-muted-foreground">Sold by <span className="font-semibold text-primary">Vendor ID: {product.vendorId}</span></p>
         </div>
       </div>
