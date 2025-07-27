@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Save, X, Smartphone } from "lucide-react";
+import { GripVertical, Save, X, Smartphone, Laptop } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -129,7 +129,11 @@ export default function NewTemplatePage() {
                         <X className="mr-2 h-4 w-4" /> Cancel
                     </Button>
                    <Button variant="outline" onClick={() => setIsPreviewMobile(!isPreviewMobile)} className="w-full sm:w-auto">
-                        <Smartphone className="mr-2 h-4 w-4" />
+                        {isPreviewMobile ? (
+                            <Laptop className="mr-2 h-4 w-4" />
+                        ) : (
+                            <Smartphone className="mr-2 h-4 w-4" />
+                        )}
                         {isPreviewMobile ? 'Desktop View' : 'Mobile View'}
                     </Button>
                    <Button className="w-full sm:w-auto" onClick={handleSave}>
@@ -203,8 +207,8 @@ export default function NewTemplatePage() {
                              isPreviewMobile && "mx-auto"
                         )}>
                            <div className={cn(
-                                "space-y-12 transition-all duration-300", 
-                                isPreviewMobile && "max-w-sm w-full mx-auto"
+                                "transition-all duration-300 prose prose-sm max-w-none prose-headings:font-headline", 
+                                isPreviewMobile ? "max-w-sm w-full mx-auto" : "space-y-12"
                             )}>
                              {components.map((id, index) => {
                                 const { component: Component } = componentMap[id];
@@ -212,11 +216,12 @@ export default function NewTemplatePage() {
                                 
                                 return (
                                     <div key={id} className={cn(
-                                        layout === 'minimalist' && "max-w-4xl mx-auto",
-                                        layout === 'full-width-image' && id === 'details' && "max-w-full"
+                                        !isPreviewMobile && layout === 'minimalist' && "max-w-4xl mx-auto",
+                                        !isPreviewMobile && layout === 'full-width-image' && id === 'details' && "max-w-full",
+                                        "py-6"
                                     )}>
                                         <Component {...componentProps} />
-                                        {index < components.length -1 && <Separator className="my-12" />}
+                                        {index < components.length -1 && !isPreviewMobile && <Separator className="my-12" />}
                                     </div>
                                 )
                              })}
