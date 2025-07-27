@@ -7,7 +7,9 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { DeleteAccountDialog } from "@/components/delete-account-dialog";
 
-export default function AccountPage() {
+export default function AccountPage({ searchParams }: { searchParams?: { [key: string]: string | string[] | undefined } }) {
+  const tab = typeof searchParams?.tab === 'string' ? searchParams.tab : 'profile';
+
   return (
     <div className="container py-12">
       <div className="flex items-center gap-6 mb-8">
@@ -20,7 +22,7 @@ export default function AccountPage() {
           <p className="text-muted-foreground">Manage your profile, orders, and settings.</p>
         </div>
       </div>
-      <Tabs defaultValue="profile">
+      <Tabs defaultValue={tab}>
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="orders">Order History</TabsTrigger>
