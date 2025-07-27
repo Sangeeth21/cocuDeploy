@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, Active } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Save, X } from "lucide-react";
@@ -18,11 +18,13 @@ import { useToast } from "@/hooks/use-toast";
 import { ProductDetailsPreview } from "./_components/product-details-preview";
 import { ReviewsPreview } from "./_components/reviews-preview";
 import { SimilarProductsPreview } from "./_components/similar-products-preview";
+import { FrequentlyBoughtTogetherPreview } from "./_components/frequently-bought-together-preview";
 
 const componentMap: Record<string, { name: string; component: React.FC }> = {
     'details': { name: "Product Details", component: ProductDetailsPreview },
     'reviews': { name: "Customer Reviews", component: ReviewsPreview },
     'similar': { name: "Similar Products", component: SimilarProductsPreview },
+    'frequently-bought': { name: "Frequently Bought Together", component: FrequentlyBoughtTogetherPreview },
 };
 
 
@@ -62,7 +64,7 @@ export default function NewTemplatePage() {
     const { toast } = useToast();
     const [templateName, setTemplateName] = useState("");
     const [layout, setLayout] = useState('standard');
-    const [components, setComponents] = useState(['details', 'reviews', 'similar']);
+    const [components, setComponents] = useState(['details', 'frequently-bought', 'reviews', 'similar']);
     const [activeId, setActiveId] = useState<string | null>(null);
     
     const sensors = useSensors(
