@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, ImageIcon, Download, Check, EyeOff, Eye, AlertTriangle } from "lucide-react";
-import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -273,45 +272,47 @@ export default function VendorMessagesPage() {
     }, [selectedConversation?.messages, selectedConversationId]);
 
   return (
-    <VendorSidebarLayout>
+    <>
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-[calc(100vh-11rem)] gap-4">
-        <div className="md:col-span-1 xl:col-span-1 flex flex-col border rounded-lg bg-card">
-          <div className="p-4 border-b">
+        <Card className="md:col-span-1 xl:col-span-1 flex flex-col">
+          <CardHeader className="p-4 border-b">
             <h1 className="text-2xl font-bold font-headline">Inbox</h1>
             <div className="relative mt-2">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search conversations..." className="pl-8" />
             </div>
-          </div>
-          <ScrollArea>
-            {conversations.map(convo => (
-              <div
-                key={convo.id}
-                className={cn(
-                  "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50",
-                  selectedConversationId === convo.id && "bg-muted"
-                )}
-                onClick={() => handleSelectConversation(convo.id)}
-              >
-                <Avatar>
-                  <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
-                  <AvatarFallback>{convo.customerId?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 overflow-hidden">
-                  <div className="flex justify-between items-center">
-                    <p className="font-semibold">{convo.customerId}</p>
-                    {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
-                  </div>
-                  <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
+          </CardHeader>
+          <CardContent className="p-0 flex-1">
+            <ScrollArea className="h-full">
+                {conversations.map(convo => (
+                <div
+                    key={convo.id}
+                    className={cn(
+                    "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
+                    selectedConversationId === convo.id && "bg-muted"
+                    )}
+                    onClick={() => handleSelectConversation(convo.id)}
+                >
+                    <Avatar>
+                    <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
+                    <AvatarFallback>{convo.customerId?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 overflow-hidden">
+                    <div className="flex justify-between items-center">
+                        <p className="font-semibold">{convo.customerId}</p>
+                        {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
+                    </div>
                 </div>
-              </div>
-            ))}
-          </ScrollArea>
-        </div>
-        <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full border rounded-lg bg-card">
+                ))}
+            </ScrollArea>
+          </CardContent>
+        </Card>
+        <Card className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full">
           {selectedConversation ? (
             <>
-              <div className="p-4 border-b flex items-center justify-between gap-4">
+              <CardHeader className="p-4 border-b flex items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <Avatar>
                     <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} data-ai-hint="person face" />
@@ -322,46 +323,48 @@ export default function VendorMessagesPage() {
                  <div className="text-sm text-muted-foreground">
                     {remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached'}
                 </div>
-              </div>
-              <ScrollArea className="flex-1" ref={scrollAreaRef}>
-                 <div className="p-4 space-y-4">
-                  {selectedConversation.messages.map((msg, index) => (
-                    msg.sender === 'system' ? (
-                        <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
-                    ) : (
-                    <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
-                      {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
-                      <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                        {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                        {msg.attachments && (
-                            <div className="grid gap-2 grid-cols-2">
-                                {msg.attachments.map((att, i) => (
-                                    att.type === 'image' ? (
-                                        <div key={i} className="relative aspect-video rounded-md overflow-hidden">
-                                            <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
-                                        </div>
-                                    ) : (
-                                        <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                            <FileIcon className="h-6 w-6 text-muted-foreground"/>
-                                            <span className="text-xs truncate">{att.name}</span>
-                                            <Download className="h-4 w-4 ml-auto" />
-                                        </a>
-                                    )
-                                ))}
-                            </div>
-                        )}
-                        {msg.sender === 'vendor' && (
-                            <div className="flex justify-end items-center gap-1 h-4">
-                                {getStatusIcon(msg.status)}
-                            </div>
-                        )}
-                      </div>
-                      {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
+              </CardHeader>
+              <CardContent className="flex-1 p-0">
+                <ScrollArea className="h-full" ref={scrollAreaRef}>
+                    <div className="p-4 space-y-4">
+                    {selectedConversation.messages.map((msg, index) => (
+                        msg.sender === 'system' ? (
+                            <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                        ) : (
+                        <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
+                        {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
+                        <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                            {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                            {msg.attachments && (
+                                <div className="grid gap-2 grid-cols-2">
+                                    {msg.attachments.map((att, i) => (
+                                        att.type === 'image' ? (
+                                            <div key={i} className="relative aspect-video rounded-md overflow-hidden">
+                                                <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
+                                            </div>
+                                        ) : (
+                                            <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
+                                                <FileIcon className="h-6 w-6 text-muted-foreground"/>
+                                                <span className="text-xs truncate">{att.name}</span>
+                                                <Download className="h-4 w-4 ml-auto" />
+                                            </a>
+                                        )
+                                    ))}
+                                </div>
+                            )}
+                            {msg.sender === 'vendor' && (
+                                <div className="flex justify-end items-center gap-1 h-4">
+                                    {getStatusIcon(msg.status)}
+                                </div>
+                            )}
+                        </div>
+                        {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
+                        </div>
+                        )
+                    ))}
                     </div>
-                    )
-                  ))}
-                  </div>
-              </ScrollArea>
+                </ScrollArea>
+              </CardContent>
               <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
                  {attachments.length > 0 && !isLocked && (
                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -403,7 +406,7 @@ export default function VendorMessagesPage() {
                 <p>Choose a conversation from the left panel to view messages and reply to your customers.</p>
              </div>
           )}
-        </div>
+        </Card>
       </div>
       <ConversionCheckDialog 
         open={isConversionDialogOpen} 
@@ -411,6 +414,6 @@ export default function VendorMessagesPage() {
         onContinue={handleContinueChat}
         onEnd={handleEndChat}
       />
-    </VendorSidebarLayout>
+    </>
   );
 }
