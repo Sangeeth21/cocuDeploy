@@ -292,7 +292,7 @@ export default function AccountPage() {
                             <Label htmlFor="current-password">Current Password</Label>
                             <div className="relative">
                                 <Input id="current-password" type={showCurrentPassword ? "text" : "password"} />
-                                <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
+                                <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
                                     {showCurrentPassword ? <EyeOff /> : <Eye />}
                                 </Button>
                             </div>
@@ -302,7 +302,7 @@ export default function AccountPage() {
                                 <Label htmlFor="new-password">New Password</Label>
                                 <div className="relative">
                                     <Input id="new-password" type={showNewPassword ? "text" : "password"} />
-                                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2" onClick={() => setShowNewPassword(!showNewPassword)}>
+                                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowNewPassword(!showNewPassword)}>
                                         {showNewPassword ? <EyeOff /> : <Eye />}
                                     </Button>
                                 </div>
@@ -311,7 +311,7 @@ export default function AccountPage() {
                                 <Label htmlFor="confirm-password">Confirm New Password</Label>
                                 <div className="relative">
                                     <Input id="confirm-password" type={showConfirmPassword ? "text" : "password"} />
-                                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                                         {showConfirmPassword ? <EyeOff /> : <Eye />}
                                     </Button>
                                 </div>
@@ -484,5 +484,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    

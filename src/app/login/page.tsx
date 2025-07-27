@@ -64,7 +64,7 @@ export default function LoginPage() {
               </div>
               <div className="relative">
                 <Input id="password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
-                <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2" onClick={() => setShowPassword(!showPassword)}>
+                <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? <EyeOff /> : <Eye />}
                 </Button>
               </div>
@@ -90,5 +90,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
