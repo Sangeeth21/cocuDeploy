@@ -1,5 +1,4 @@
 
-
 export type DisplayProduct = {
   id: string;
   name: string;
@@ -55,4 +54,31 @@ export type User = {
     status: 'Active' | 'Suspended';
     joinedDate: string;
     avatar: string;
+}
+
+// Marketing and Promotions
+export type MarketingCampaign = {
+    id: string;
+    name: string;
+    type: 'Sale' | 'Promotion' | 'Flash Sale' | 'Freebie' | 'Combo Offer';
+    status: 'Active' | 'Scheduled' | 'Finished' | 'Draft';
+    startDate: string;
+    endDate: string;
+}
+
+export type FlashDeal = {
+    product: DisplayProduct;
+    discountPercentage: number;
+    endDate: string;
+    stock: number;
+    sold: number;
+}
+
+export type HeroCampaign = {
+    title: string;
+    description: string;
+    link: string;
+    cta: string;
+    imageUrl: string;
+    hint: string;
 }

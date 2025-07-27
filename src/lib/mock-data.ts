@@ -1,6 +1,5 @@
 
-
-import type { DisplayProduct, Review, Category, User } from './types';
+import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign } from './types';
 
 export const mockProducts: DisplayProduct[] = [
   {
@@ -175,3 +174,65 @@ export const mockUsers: User[] = [
     { id: 'USR007', name: 'William Kim', email: 'will@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-05-30', avatar: 'https://placehold.co/40x40.png' },
     { id: 'USR008', name: 'HomeBody Decor', email: 'sales@homebody.com', role: 'Vendor', status: 'Active', joinedDate: '2024-06-01', avatar: 'https://placehold.co/40x40.png' },
 ];
+
+// Mock data for the new marketing features
+const futureDate = new Date();
+futureDate.setDate(futureDate.getDate() + 3);
+
+export const mockFlashDeals: FlashDeal[] = [
+    {
+        product: mockProducts[1],
+        discountPercentage: 25,
+        endDate: futureDate.toISOString(),
+        stock: 100,
+        sold: 45,
+    },
+    {
+        product: mockProducts[6],
+        discountPercentage: 30,
+        endDate: futureDate.toISOString(),
+        stock: 50,
+        sold: 12,
+    },
+    {
+        product: mockProducts[7],
+        discountPercentage: 20,
+        endDate: futureDate.toISOString(),
+        stock: 80,
+        sold: 60,
+    },
+    {
+        product: mockProducts[0],
+        discountPercentage: 15,
+        endDate: futureDate.toISOString(),
+        stock: 40,
+        sold: 5,
+    },
+]
+
+export const mockHeroCampaigns: HeroCampaign[] = [
+    {
+        title: "Summer Collection is Here!",
+        description: "Fresh looks for sunny days. Explore our new arrivals in apparel and accessories.",
+        link: "/products?category=Apparel",
+        cta: "Shop Now",
+        imageUrl: "https://placehold.co/1920x1080.png",
+        hint: "summer fashion"
+    },
+    {
+        title: "Upgrade Your Workspace",
+        description: "Find the perfect gear to boost your productivity. Desks, chairs, and tech gadgets.",
+        link: "/products?category=Furniture",
+        cta: "Explore Home Office",
+        imageUrl: "https://placehold.co/1920x1080.png",
+        hint: "modern office"
+    },
+    {
+        title: "Save Big on Electronics",
+        description: "Limited-time deals on headphones, smart watches, and more.",
+        link: "/products?category=Electronics",
+        cta: "View Deals",
+        imageUrl: "https://placehold.co/1920x1080.png",
+        hint: "tech gadgets"
+    }
+]
