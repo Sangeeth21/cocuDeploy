@@ -47,14 +47,19 @@ export default function SmartPricingPage() {
     const { toast } = useToast();
 
     const productId = searchParams.get('productId');
-    const product = mockProducts.find(p => p.id === productId);
+    
+    // Find the product after ensuring productId exists.
+    const product = useMemo(() => {
+        if (!productId) return null;
+        return mockProducts.find(p => p.id === productId) || null;
+    }, [productId]);
 
     const [isCalculating, setIsCalculating] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedFreebies, setSelectedFreebies] = useState<string[]>([]);
     
     // Form State
-    const [vendorSP, setVendorSP] = useState(product?.price || 0);
+    const [vendorSP, setVendorSP] = useState(0);
     const [platformBuffer, setPlatformBuffer] = useState(15);
     const [discount, setDiscount] = useState(0);
     const [finalSP, setFinalSP] = useState(0);
@@ -69,6 +74,12 @@ export default function SmartPricingPage() {
     const [needsRecalculation, setNeedsRecalculation] = useState(false);
 
     useEffect(() => {
+        if (product) {
+            setVendorSP(product.price || 0);
+        }
+    }, [product]);
+
+    useEffect(() => {
         if(product) {
             const initialMRP = vendorSP * (1 + platformBuffer / 100);
             const initialFinalSP = initialMRP * (1 - discount / 100);
@@ -80,8 +91,10 @@ export default function SmartPricingPage() {
         setNeedsRecalculation(true);
     }, [vendorSP, platformBuffer, discount, selectedFreebies]);
 
-
-    if (!product) notFound();
+    if (!product) {
+        // If no product is found for the given ID, or if no ID is provided, show 404.
+        notFound();
+    }
 
     const freebieCost = useMemo(() => {
         return selectedFreebies.reduce((total, fbId) => {
@@ -358,4 +371,3 @@ export default function SmartPricingPage() {
         </div>
     )
 }
-
