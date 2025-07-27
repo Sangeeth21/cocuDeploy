@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, ImageIcon, Download } from "lucide-react";
+import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, ImageIcon, Download, Check, EyeOff, Eye } from "lucide-react";
 import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
@@ -35,7 +35,7 @@ const initialConversations: Conversation[] = [
     avatar: "https://placehold.co/40x40.png",
     messages: [
       { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
-      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it." },
+      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it.", status: 'read' },
       { id: 'msg3', sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}] },
     ],
     unread: true,
@@ -51,7 +51,7 @@ const initialConversations: Conversation[] = [
     id: 3,
     customerId: "CUST003",
     avatar: "https://placehold.co/40x40.png",
-    messages: [{ id: 'msg5', sender: "vendor", text: "Thank you!" }],
+    messages: [{ id: 'msg5', sender: "vendor", text: "Thank you!", status: 'delivered' }],
     unread: false,
   },
    {
@@ -101,13 +101,14 @@ export default function VendorMessagesPage() {
     const newAttachments: Attachment[] = attachments.map(file => ({
         name: file.name,
         type: file.type.startsWith("image/") ? "image" : "file",
-        url: URL.createObjectURL(file), // In a real app, this would be an upload URL
+        url: URL.createObjectURL(file), 
     }));
 
     const newMessageObj: Message = { 
         id: Math.random().toString(),
         sender: "vendor", 
         text: newMessage,
+        status: 'sent',
         ...(newAttachments.length > 0 && {attachments: newAttachments})
     };
 
@@ -120,6 +121,23 @@ export default function VendorMessagesPage() {
     );
     setNewMessage("");
     setAttachments([]);
+    
+    // Simulate message delivery and read receipt
+    setTimeout(() => {
+        setConversations(prev => prev.map(convo => convo.id === selectedConversationId ? {
+            ...convo,
+            messages: convo.messages.map(m => m.id === newMessageObj.id ? {...m, status: 'delivered'} : m)
+        } : convo));
+        
+        // Simulate customer seeing the message
+        setTimeout(() => {
+             setConversations(prev => prev.map(convo => convo.id === selectedConversationId ? {
+                ...convo,
+                messages: convo.messages.map(m => m.id === newMessageObj.id ? {...m, status: 'read'} : m)
+             } : convo));
+        }, 1500);
+    }, 500);
+
     toast({
         title: "Message Sent",
         description: "Your reply has been sent to the customer.",
@@ -138,10 +156,24 @@ export default function VendorMessagesPage() {
   const getLastMessage = (messages: Message[]) => {
       if (messages.length === 0) return "No messages yet.";
       const lastMsg = messages[messages.length - 1];
-      if (lastMsg.text) return lastMsg.text;
-      if (lastMsg.attachments && lastMsg.attachments.length > 0) return `Sent ${lastMsg.attachments.length} attachment(s)`;
+      const prefix = lastMsg.sender === 'vendor' ? 'You: ' : '';
+      if (lastMsg.text) return `${prefix}${lastMsg.text}`;
+      if (lastMsg.attachments && lastMsg.attachments.length > 0) return `${prefix}Sent ${lastMsg.attachments.length} attachment(s)`;
       return "No messages yet.";
   }
+  
+    const getStatusIcon = (status?: 'sent' | 'delivered' | 'read') => {
+      switch(status) {
+          case 'read':
+              return <Eye className="h-4 w-4 text-primary" />;
+          case 'delivered':
+              return <EyeOff className="h-4 w-4" />;
+          case 'sent':
+              return <Check className="h-4 w-4" />;
+          default:
+              return null;
+      }
+    }
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -229,6 +261,11 @@ export default function VendorMessagesPage() {
                                 ))}
                             </div>
                         )}
+                        {msg.sender === 'vendor' && (
+                            <div className="flex justify-end items-center gap-1 h-4">
+                                {getStatusIcon(msg.status)}
+                            </div>
+                        )}
                       </div>
                       {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
                     </div>
@@ -280,3 +317,5 @@ export default function VendorMessagesPage() {
     </VendorSidebarLayout>
   );
 }
+
+    
