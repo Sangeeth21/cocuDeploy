@@ -91,8 +91,14 @@ export function NotificationPopover({ notifications: initialNotifications }: { n
                                              {item.actions && (
                                                 <div className="flex gap-2">
                                                     {item.actions.map((action, index) => (
-                                                        <Button key={index} size="sm" variant={action.variant || "secondary"} asChild={!!action.href}>
-                                                           {action.href ? <Link href={action.href}>{action.label}</Link> : <button onClick={action.onClick}>{action.label}</button>}
+                                                        <Button
+                                                            key={index}
+                                                            size="sm"
+                                                            variant={action.variant || "secondary"}
+                                                            asChild={!!action.href}
+                                                            onClick={action.onClick}
+                                                        >
+                                                           {action.href ? <Link href={action.href}>{action.label}</Link> : action.label}
                                                         </Button>
                                                     ))}
                                                 </div>
