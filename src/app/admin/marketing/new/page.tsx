@@ -522,24 +522,23 @@ export default function NewCampaignPage() {
                     </div>
                 </DialogContent>
             </Dialog>
+            <style jsx>{`
+                @keyframes marquee {
+                    from { transform: translateX(0); }
+                    to { transform: translateX(-100%); }
+                }
+                .animate-marquee {
+                    animation: marquee 15s linear infinite;
+                    flex-shrink: 0;
+                }
+                .animate-marquee-2 {
+                    animation: marquee 15s linear infinite;
+                    flex-shrink: 0;
+                    animation-delay: 7.5s;
+                }
+            `}</style>
         </div>
     );
 }
-
-<style jsx>{`
-    @keyframes marquee {
-        from { transform: translateX(0); }
-        to { transform: translateX(-100%); }
-    }
-    .animate-marquee {
-        animation: marquee 15s linear infinite;
-        flex-shrink: 0;
-    }
-     .animate-marquee-2 {
-        animation: marquee 15s linear infinite;
-        flex-shrink: 0;
-        animation-delay: 7.5s;
-    }
-`}</style>
 
     
