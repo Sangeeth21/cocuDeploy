@@ -52,7 +52,7 @@ export default function Home() {
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                         <div className="absolute inset-0 flex items-center justify-center text-center">
-                             <div className="container mx-auto text-white">
+                             <div className="container mx-auto text-white p-4">
                                 <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 drop-shadow-lg">
                                     {campaign.title}
                                 </h1>

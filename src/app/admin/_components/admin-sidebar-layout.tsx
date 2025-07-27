@@ -131,7 +131,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                         <NotificationPopover notifications={mockActivity} />
                     </div>
                  </header>
-                 <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40">
+                 <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-x-hidden">
                     {children}
                 </main>
             </div>

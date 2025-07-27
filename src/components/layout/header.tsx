@@ -94,7 +94,7 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="flex flex-1 items-center justify-end gap-2">
+        <div className="flex flex-1 items-center justify-end gap-1 sm:gap-2">
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <SearchBar />
           </div>
