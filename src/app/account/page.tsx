@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +57,10 @@ export default function AccountPage() {
   const [isPhoneVerifyOpen, setIsPhoneVerifyOpen] = useState(false);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [isCardFormOpen, setIsCardFormOpen] = useState(false);
+
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleSaveChanges = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -286,16 +290,31 @@ export default function AccountPage() {
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="current-password">Current Password</Label>
-                            <Input id="current-password" type="password" />
+                            <div className="relative">
+                                <Input id="current-password" type={showCurrentPassword ? "text" : "password"} />
+                                <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
+                                    {showCurrentPassword ? <EyeOff /> : <Eye />}
+                                </Button>
+                            </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label htmlFor="new-password">New Password</Label>
-                                <Input id="new-password" type="password" />
+                                <div className="relative">
+                                    <Input id="new-password" type={showNewPassword ? "text" : "password"} />
+                                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2" onClick={() => setShowNewPassword(!showNewPassword)}>
+                                        {showNewPassword ? <EyeOff /> : <Eye />}
+                                    </Button>
+                                </div>
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                <Input id="confirm-password" type="password" />
+                                <div className="relative">
+                                    <Input id="confirm-password" type={showConfirmPassword ? "text" : "password"} />
+                                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                                        {showConfirmPassword ? <EyeOff /> : <Eye />}
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -465,3 +484,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    
