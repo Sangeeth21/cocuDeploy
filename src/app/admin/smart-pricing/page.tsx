@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { mockProducts } from "@/lib/mock-data";
-import { useSearchParams, notFound, useRouter } from "next/navigation";
-import { AlertCircle, ArrowLeft, Bot, Check, Info, Loader2, Save, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { AlertCircle, ArrowLeft, Bot, Check, Info, Loader2, Save, ThumbsDown, ThumbsUp, X, Sparkles, Search } from "lucide-react";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,6 +17,7 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import type { DisplayProduct } from "@/lib/types";
 
 const mockFreebies = [
     { id: 'fb001', name: 'Branded Keychain', cost: 15, stock: 100 },
@@ -38,17 +39,9 @@ const mockAISuggestions: AISuggestion[] = [
     { model: 'Claude', suggestedSP: 479, suggestedDiscount: 5, reasoning: 'Aggressive pricing to capture market share quickly. Lower discount maintains perceived value.' },
 ];
 
-export default function SmartPricingPage() {
-    const searchParams = useSearchParams();
+function SmartPricingCalculator({ product, clearProduct }: { product: DisplayProduct, clearProduct: () => void }) {
     const router = useRouter();
     const { toast } = useToast();
-    const productId = searchParams.get('productId');
-
-    // Find product immediately. If not found, this will be null.
-    const product = useMemo(() => {
-        if (!productId) return null;
-        return mockProducts.find(p => p.id === productId) || null;
-    }, [productId]);
 
     // Form State with safe defaults
     const [vendorSP, setVendorSP] = useState<number>(0);
@@ -137,21 +130,11 @@ export default function SmartPricingPage() {
     const isMarginLow = calculations.netMargin < 11;
     const isApproveDisabled = isMarginLow || needsRecalculation;
 
-    // Guard clause: If product isn't found, render the 404 page.
-    if (!product) {
-        return notFound();
-    }
-
     return (
         <div>
-            <Button variant="outline" size="sm" className="mb-4" onClick={() => router.back()}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Products
+            <Button variant="outline" size="sm" className="mb-4" onClick={clearProduct}>
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Product Selection
             </Button>
-            <div className="mb-4">
-                <h1 className="text-3xl font-bold font-headline">Smart Pricing Engine</h1>
-                <p className="text-muted-foreground">Review and set the optimal price for products.</p>
-            </div>
-
             <div className="grid lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-2 flex flex-col gap-8">
                     <Card>
@@ -364,3 +347,103 @@ export default function SmartPricingPage() {
         </div>
     )
 }
+
+function ProductSelector({ onProductSelect }: { onProductSelect: (product: DisplayProduct) => void }) {
+    const [searchTerm, setSearchTerm] = useState("");
+    const productsForReview = useMemo(() => {
+        const reviewable = mockProducts.filter(p => p.status === 'Needs Review');
+        if (!searchTerm) {
+            return reviewable;
+        }
+        return reviewable.filter(p =>
+            p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            p.id.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [searchTerm]);
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Select a Product</CardTitle>
+                <CardDescription>Search for a product that needs a pricing review.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search by name or ID..."
+                        className="pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                <div className="mt-4 space-y-2 max-h-96 overflow-y-auto">
+                    {productsForReview.length > 0 ? (
+                        productsForReview.map(product => (
+                            <div
+                                key={product.id}
+                                className="flex items-center justify-between p-2 border rounded-md hover:bg-muted cursor-pointer"
+                                onClick={() => onProductSelect(product)}
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="rounded" />
+                                    <div>
+                                        <p className="text-sm font-medium">{product.name}</p>
+                                        <p className="text-xs text-muted-foreground">{product.id}</p>
+                                    </div>
+                                </div>
+                                <Badge variant="destructive">{product.status}</Badge>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-sm text-muted-foreground text-center py-4">No products found or needing review.</p>
+                    )}
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+
+export default function SmartPricingPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const productId = searchParams.get('productId');
+
+    const [selectedProduct, setSelectedProduct] = useState<DisplayProduct | null>(null);
+
+    useEffect(() => {
+        if (productId) {
+            const product = mockProducts.find(p => p.id === productId);
+            setSelectedProduct(product || null);
+        } else {
+            setSelectedProduct(null);
+        }
+    }, [productId]);
+    
+    const handleProductSelect = (product: DisplayProduct) => {
+        setSelectedProduct(product);
+        router.push(`/admin/smart-pricing?productId=${product.id}`, { scroll: false });
+    };
+
+    const handleClearProduct = () => {
+        setSelectedProduct(null);
+        router.push('/admin/smart-pricing', { scroll: false });
+    }
+
+    return (
+        <div>
+            <div className="mb-4">
+                <h1 className="text-3xl font-bold font-headline">Smart Pricing Engine</h1>
+                <p className="text-muted-foreground">Review and set the optimal price for products.</p>
+            </div>
+            
+            {selectedProduct ? (
+                <SmartPricingCalculator product={selectedProduct} clearProduct={handleClearProduct} />
+            ) : (
+                <ProductSelector onProductSelect={handleProductSelect} />
+            )}
+        </div>
+    );
+}
+
