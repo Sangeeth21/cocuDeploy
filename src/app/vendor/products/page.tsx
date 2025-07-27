@@ -1,6 +1,4 @@
 
-"use client"
-
 import { MoreHorizontal, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,13 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import Link from "next/link";
 import { mockProducts } from "@/lib/mock-data";
 import Image from "next/image";
-import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 
 
 export default function VendorProductsPage() {
     
     return (
-      <VendorSidebarLayout>
+      <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div>
                 <h1 className="text-3xl font-bold font-headline">Products</h1>
@@ -86,6 +83,6 @@ export default function VendorProductsPage() {
             </Table>
           </CardContent>
         </Card>
-      </VendorSidebarLayout>
+      </div>
     );
 }

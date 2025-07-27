@@ -2,11 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { ListChecks, LineChart, Package, MessageSquare, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 
 export default function VendorDashboardPage() {
   return (
-    <VendorSidebarLayout>
+      <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
         <div>
             <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
@@ -81,13 +80,13 @@ export default function VendorDashboardPage() {
               Create beautiful, custom landing pages for your products with our easy-to-use template generator.
             </p>
             <Button asChild>
-                <Link href="/vendor/templates">
+                <Link href="/vendor/templates/new">
                     Manage Templates <ArrowRight className="ml-2"/>
                 </Link>
             </Button>
           </CardContent>
         </Card>
       </div>
-    </VendorSidebarLayout>
+      </div>
   );
 }
