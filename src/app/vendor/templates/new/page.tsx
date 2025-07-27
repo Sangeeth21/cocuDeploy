@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, Active } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Save, X } from "lucide-react";
@@ -25,25 +25,35 @@ const componentMap: Record<string, { name: string; component: React.FC }> = {
     'similar': { name: "Similar Products", component: SimilarProductsPreview },
 };
 
-// --- Draggable Item Component ---
 
-function SortableItem({ id }: { id: string }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-    const style = {
-        transform: CSS.Transform.toString(transform),
-        transition,
-    };
+// --- Draggable Item Components ---
+
+function DraggableItem({ id, isOverlay = false }: { id: string, isOverlay?: boolean }) {
     const { name } = componentMap[id];
-
     return (
-        <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm">
-            <button {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground hover:bg-muted/50 rounded-md">
-                <GripVertical className="h-5 w-5" />
-            </button>
+        <div className={cn("flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm", isOverlay && "shadow-lg scale-105 rotate-1")}>
+             <GripVertical className="h-5 w-5 text-muted-foreground" />
             <span className="font-medium flex-1">{name}</span>
         </div>
     );
 }
+
+function SortableItem({ id }: { id: string }) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm cursor-grab active:cursor-grabbing">
+             <GripVertical className="h-5 w-5 text-muted-foreground" />
+            <span className="font-medium flex-1">{componentMap[id].name}</span>
+        </div>
+    );
+}
+
 
 // --- Main Page Component ---
 
@@ -53,6 +63,7 @@ export default function NewTemplatePage() {
     const [templateName, setTemplateName] = useState("");
     const [layout, setLayout] = useState('standard');
     const [components, setComponents] = useState(['details', 'reviews', 'similar']);
+    const [activeId, setActiveId] = useState<string | null>(null);
     
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -60,6 +71,11 @@ export default function NewTemplatePage() {
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+    
+    function handleDragStart(event: any) {
+        setActiveId(event.active.id);
+    }
+
 
     function handleDragEnd(event: DragEndEvent) {
         const { active, over } = event;
@@ -70,6 +86,11 @@ export default function NewTemplatePage() {
                 return arrayMove(items, oldIndex, newIndex);
             });
         }
+        setActiveId(null);
+    }
+    
+    function handleDragCancel() {
+        setActiveId(null);
     }
 
     const handleSave = () => {
@@ -139,12 +160,21 @@ export default function NewTemplatePage() {
                              <CardDescription>Drag and drop to reorder the sections of your product page.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                             <DndContext 
+                                sensors={sensors} 
+                                collisionDetection={closestCenter} 
+                                onDragStart={handleDragStart}
+                                onDragEnd={handleDragEnd}
+                                onDragCancel={handleDragCancel}
+                            >
                                 <SortableContext items={components} strategy={verticalListSortingStrategy}>
                                     <div className="space-y-2">
                                         {components.map(id => <SortableItem key={id} id={id} />)}
                                     </div>
                                 </SortableContext>
+                                 <DragOverlay>
+                                    {activeId ? <DraggableItem id={activeId} isOverlay /> : null}
+                                </DragOverlay>
                             </DndContext>
                         </CardContent>
                     </Card>
