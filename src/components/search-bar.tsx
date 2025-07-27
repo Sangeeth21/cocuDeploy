@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
@@ -21,7 +22,7 @@ export function SearchBar() {
 
 
   const fetchSuggestions = useCallback(async (searchQuery: string) => {
-    if (searchQuery.length > 1) {
+    if (searchQuery.length > 0) {
       setLoading(true);
       const result = await getSearchSuggestions({ searchQuery });
       if (result.error) {
@@ -88,7 +89,7 @@ export function SearchBar() {
             </Button>
         </div>
       </form>
-      {isFocused && (query.length > 1) && (
+      {isFocused && (query.length > 0) && (
         <div className="absolute z-10 w-full mt-1 bg-background border border-border rounded-md shadow-lg">
           {loading && <div className="p-2 text-sm text-muted-foreground flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" />Loading...</div>}
           {!loading && suggestions.length > 0 && (
