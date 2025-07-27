@@ -31,10 +31,9 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
     </div>,
 });
 
-export default function ProductDetailPage({ params }: { params: { id: string } }) {
+export default function ProductDetailPage({ params: { id } }: { params: { id: string } }) {
   const { toast } = useToast();
-  const { id: productId } = params;
-  const product = mockProducts.find((p) => p.id === productId);
+  const product = mockProducts.find((p) => p.id === id);
 
   if (!product) {
     notFound();
