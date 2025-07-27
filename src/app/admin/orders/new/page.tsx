@@ -33,6 +33,7 @@ export default function NewOrderPage() {
     const [shippingCost, setShippingCost] = useState(0);
     const [isFetchingShipping, setIsFetchingShipping] = useState(false);
     const [isSameAsShipping, setIsSameAsShipping] = useState(true);
+    const [referralCommission, setReferralCommission] = useState(0);
 
     // Memos and Calculations
     const customerSearchResults = useMemo(() => {
@@ -55,6 +56,12 @@ export default function NewOrderPage() {
     const subtotal = useMemo(() => {
         return orderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
     }, [orderItems]);
+
+    const fees = useMemo(() => {
+        const razorpayFee = 15; // placeholder
+        const platformCommission = subtotal * 0.05; // 5% placeholder
+        return razorpayFee + platformCommission;
+    }, [subtotal])
 
     const total = useMemo(() => {
         return subtotal + shippingCost;
@@ -341,9 +348,13 @@ export default function NewOrderPage() {
                                 <Label>Subtotal</Label>
                                 <span className="font-medium">${subtotal.toFixed(2)}</span>
                             </div>
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="shipping-cost">Shipping</Label>
+                            <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                <Label>Shipping</Label>
                                 <span className="font-medium">${shippingCost.toFixed(2)}</span>
+                            </div>
+                             <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                <Label>Fees (Razorpay, Commission)</Label>
+                                <span className="font-medium">${fees.toFixed(2)}</span>
                             </div>
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="referral-commission">Referral Commission</Label>
@@ -353,7 +364,9 @@ export default function NewOrderPage() {
                                         id="referral-commission" 
                                         type="number" 
                                         placeholder="0.00"
-                                        className="w-24 h-8 pl-5" 
+                                        className="w-24 h-8 pl-5"
+                                        value={referralCommission || ""}
+                                        onChange={(e) => setReferralCommission(parseFloat(e.target.value) || 0)}
                                     />
                                 </div>
                             </div>
