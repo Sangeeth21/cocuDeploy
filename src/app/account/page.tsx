@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { DeleteAccountDialog } from "@/components/delete-account-dialog";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -92,6 +92,7 @@ let uniqueVendorChats = new Set(initialConversations.map(c => c.vendorId)).size;
 
 
 function WishlistTabContent() {
+    const router = useRouter();
     const { wishlistItems, removeFromWishlist } = useWishlist();
     const { addToCart } = useCart();
     const { toast } = useToast();
@@ -103,6 +104,12 @@ function WishlistTabContent() {
             title: "Moved to Cart",
             description: `${product.name} has been moved to your cart.`,
         });
+    }
+
+    const handleBuyNow = (product: DisplayProduct) => {
+        addToCart(product);
+        removeFromWishlist(product.id);
+        router.push('/checkout');
     }
 
     if (wishlistItems.length === 0) {
@@ -120,12 +127,17 @@ function WishlistTabContent() {
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {wishlistItems.map(product => (
-                <Card key={product.id} className="relative group">
-                    <ProductCard product={product} />
-                    <div className="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <Button size="sm" variant="secondary" onClick={() => handleMoveToCart(product)}>
+                <Card key={product.id} className="relative group flex flex-col">
+                    <div className="flex-grow">
+                      <ProductCard product={product} />
+                    </div>
+                    <div className="p-2 border-t flex flex-col gap-2">
+                         <Button size="sm" variant="outline" onClick={() => handleMoveToCart(product)}>
                             <ShoppingCart className="h-4 w-4 mr-2" />
                             Move to Cart
+                        </Button>
+                        <Button size="sm" onClick={() => handleBuyNow(product)}>
+                            Buy Now
                         </Button>
                     </div>
                 </Card>
@@ -231,11 +243,17 @@ export default function AccountPage() {
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      updateAvatar(URL.createObjectURL(file));
-       toast({
-        title: "Avatar Updated",
-        description: "Your new profile picture has been set. Click 'Save Changes' to apply.",
-    });
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+            updateAvatar(e.target.result as string);
+            toast({
+                title: "Avatar Updated",
+                description: "Your new profile picture has been set.",
+            });
+        }
+      }
+      reader.readAsDataURL(file);
     }
   };
 

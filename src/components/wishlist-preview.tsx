@@ -3,14 +3,35 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, X } from "lucide-react";
+import { Heart, X, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { useWishlist } from "@/context/wishlist-context";
+import { useCart } from "@/context/cart-context";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
 
 export function WishlistPreview() {
+    const router = useRouter();
+    const { toast } = useToast();
     const { wishlistItems, removeFromWishlist } = useWishlist();
+    const { addToCart } = useCart();
+
+    const handleAddToCart = (item: (typeof wishlistItems)[0]) => {
+        addToCart(item);
+        removeFromWishlist(item.id);
+        toast({
+            title: "Added to cart!",
+            description: `${item.name} has been moved from your wishlist to your cart.`,
+        });
+    };
+
+    const handleBuyNow = (item: (typeof wishlistItems)[0]) => {
+        addToCart(item);
+        removeFromWishlist(item.id);
+        router.push('/checkout');
+    };
 
     return (
         <Popover>
@@ -41,13 +62,22 @@ export function WishlistPreview() {
                                         <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
                                             <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="product image" />
                                         </div>
-                                        <div className="flex-1 space-y-1">
-                                            <Link href={`/products/${item.id}`} className="text-sm font-medium leading-tight hover:text-primary">{item.name}</Link>
+                                        <div className="flex-1 space-y-2">
+                                            <div className="flex justify-between">
+                                                <Link href={`/products/${item.id}`} className="text-sm font-medium leading-tight hover:text-primary pr-2">{item.name}</Link>
+                                                 <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground" onClick={() => removeFromWishlist(item.id)}>
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                             <p className="text-sm font-semibold">${item.price.toFixed(2)}</p>
+                                             <div className="flex items-center gap-2">
+                                                <Button size="sm" variant="outline" className="w-full" onClick={() => handleAddToCart(item)}>
+                                                    <ShoppingCart className="h-4 w-4 mr-2"/>
+                                                    Add to Cart
+                                                </Button>
+                                                <Button size="sm" className="w-full" onClick={() => handleBuyNow(item)}>Buy Now</Button>
+                                            </div>
                                         </div>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => removeFromWishlist(item.id)}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
                                     </div>
                                 ))}
                                 </div>
