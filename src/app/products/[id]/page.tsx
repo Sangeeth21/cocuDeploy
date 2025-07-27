@@ -1,3 +1,4 @@
+
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { mockProducts, mockReviews } from "@/lib/mock-data";
@@ -9,6 +10,7 @@ import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductInteractions } from "./_components/product-interactions";
+import { Button } from "@/components/ui/button";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
