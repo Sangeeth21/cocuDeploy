@@ -36,8 +36,8 @@ const mockUserOrders = [
 ];
 
 const mockAddresses = [
-    { id: 1, type: "Home", line1: "123 Main St", city: "Anytown", zip: "12345", isDefault: true },
-    { id: 2, type: "Work", line1: "456 Office Ave", city: "Busytown", zip: "54321", isDefault: false },
+    { id: 1, type: "Home", recipient: "John Doe", line1: "123 Main St", city: "Anytown", zip: "12345", isDefault: true, phone: "+1 (555) 111-2222" },
+    { id: 2, type: "Work", recipient: "Jane Smith", line1: "456 Office Ave", city: "Busytown", zip: "54321", isDefault: false, phone: null },
 ]
 
 const mockPaymentMethods = [
@@ -335,36 +335,44 @@ export default function AccountPage() {
                     <CardHeader className="flex flex-row items-center justify-between">
                         <div>
                             <CardTitle className="font-headline">Shipping Addresses</CardTitle>
-                            <CardDescription>Manage your saved addresses.</CardDescription>
+                            <CardDescription>Manage your saved delivery addresses.</CardDescription>
                         </div>
                          <Dialog open={isAddressFormOpen} onOpenChange={setIsAddressFormOpen}>
                             <DialogTrigger asChild>
                                 <Button><PlusCircle className="mr-2"/> Add Address</Button>
                             </DialogTrigger>
-                            <DialogContent>
-                                <DialogHeader><DialogTitle>Add New Address</DialogTitle></DialogHeader>
+                            <DialogContent className="sm:max-w-[480px]">
+                                <DialogHeader><DialogTitle>Add New Shipping Address</DialogTitle></DialogHeader>
                                 <div className="space-y-4 py-2">
                                     <div className="space-y-2">
                                         <Label>Address Nickname</Label>
                                         <Input placeholder="e.g. Home, Work" />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>Address Line 1</Label>
+                                        <Label>Full Name</Label>
+                                        <Input placeholder="John Doe" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Address</Label>
                                         <Input placeholder="123 Main St" />
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
+                                    <div className="grid grid-cols-3 gap-4">
+                                        <div className="space-y-2 col-span-2">
                                             <Label>City</Label>
                                             <Input placeholder="Anytown" />
                                         </div>
-                                         <div className="space-y-2">
+                                         <div className="space-y-2 col-span-1">
                                             <Label>ZIP Code</Label>
                                             <Input placeholder="12345" />
                                         </div>
                                     </div>
+                                    <div className="space-y-2">
+                                        <Label>Phone Number (Optional)</Label>
+                                        <Input type="tel" placeholder="For delivery updates or gifts" />
+                                    </div>
                                      <div className="flex items-center space-x-2">
                                         <Checkbox id="default-address"/>
-                                        <Label htmlFor="default-address" className="font-normal">Set as default address</Label>
+                                        <Label htmlFor="default-address" className="font-normal">Set as default shipping address</Label>
                                     </div>
                                 </div>
                                 <DialogFooter>
@@ -380,8 +388,9 @@ export default function AccountPage() {
                                 <Home className="h-6 w-6 text-muted-foreground mt-1"/>
                                 <div>
                                     <p className="font-semibold">{address.type} {address.isDefault && <Badge className="ml-2">Default</Badge>}</p>
-                                    <p className="text-sm text-muted-foreground">{address.line1}</p>
-                                    <p className="text-sm text-muted-foreground">{address.city}, {address.zip}</p>
+                                    <p className="text-sm text-muted-foreground">{address.recipient}</p>
+                                    <p className="text-sm text-muted-foreground">{address.line1}, {address.city}, {address.zip}</p>
+                                    {address.phone && <p className="text-sm text-muted-foreground">Phone: {address.phone}</p>}
                                 </div>
                             </div>
                             <DropdownMenu>
@@ -425,7 +434,5 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    
 
     
