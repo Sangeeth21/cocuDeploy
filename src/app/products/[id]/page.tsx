@@ -7,7 +7,7 @@ import { mockProducts, mockReviews } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Plus, MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, Check, CheckCheck } from "lucide-react";
+import { Star, Plus, MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, Check, Eye, EyeOff } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
@@ -131,9 +131,9 @@ export default function ProductDetailPage() {
   const getStatusIcon = (status?: 'sent' | 'delivered' | 'read') => {
       switch(status) {
           case 'read':
-              return <CheckCheck className="h-4 w-4 text-primary" />;
+              return <Eye className="h-4 w-4 text-primary" />;
           case 'delivered':
-              return <CheckCheck className="h-4 w-4" />;
+              return <EyeOff className="h-4 w-4" />;
           case 'sent':
               return <Check className="h-4 w-4" />;
           default:
@@ -361,5 +361,7 @@ function ProductCardMini({ product }: { product: typeof mockProducts[0] }) {
     </div>
   );
 }
+
+    
 
     
