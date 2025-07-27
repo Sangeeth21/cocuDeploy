@@ -1,9 +1,18 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const Chart = dynamic(() => import('recharts').then(mod => mod.BarChart), {
+    loading: () => <Skeleton className="h-[300px] w-full" />,
+    ssr: false,
+});
+
 
 const salesData = [
   { month: "Jan", revenue: 4000 },

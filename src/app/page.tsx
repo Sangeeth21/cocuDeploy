@@ -28,102 +28,6 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
     </div>,
 });
 
-
-function FlashDealTimer({ endDate }: { endDate: string }) {
-    const [isMounted, setIsMounted] = useState(false);
-    const [timeLeft, setTimeLeft] = useState({});
-
-    const calculateTimeLeft = () => {
-        const difference = +new Date(endDate) - +new Date();
-        let newTimeLeft = {};
-
-        if (difference > 0) {
-            newTimeLeft = {
-                days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-                hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-                minutes: Math.floor((difference / 1000 / 60) % 60),
-                seconds: Math.floor((difference / 1000) % 60),
-            };
-        }
-        return newTimeLeft;
-    };
-    
-    useEffect(() => {
-        setIsMounted(true);
-        setTimeLeft(calculateTimeLeft());
-
-        const timer = setInterval(() => {
-            setTimeLeft(calculateTimeLeft());
-        }, 1000);
-
-        return () => clearInterval(timer);
-    }, [endDate]);
-
-    if (!isMounted) {
-        return (
-            <div className="flex gap-4">
-                 <div className="flex flex-col items-center"><Skeleton className="h-6 w-8" /><Skeleton className="h-3 w-8 mt-1" /></div>
-                 <div className="flex flex-col items-center"><Skeleton className="h-6 w-8" /><Skeleton className="h-3 w-8 mt-1" /></div>
-                 <div className="flex flex-col items-center"><Skeleton className="h-6 w-8" /><Skeleton className="h-3 w-8 mt-1" /></div>
-                 <div className="flex flex-col items-center"><Skeleton className="h-6 w-8" /><Skeleton className="h-3 w-8 mt-1" /></div>
-            </div>
-        )
-    }
-
-    const timerComponents: any[] = [];
-    Object.keys(timeLeft).forEach((interval) => {
-        if (!timeLeft[interval as keyof typeof timeLeft] && interval !== 'seconds') { // always show seconds if others are 0
-            const value = timeLeft[interval as keyof typeof timeLeft];
-             if(value === 0 && (interval === 'days' || interval === 'hours' || interval === 'minutes')) {
-                // keep it
-             } else if (!value) {
-                return;
-             }
-        }
-        timerComponents.push(
-            <div key={interval} className="flex flex-col items-center">
-                <span className="font-bold text-lg">{String(timeLeft[interval as keyof typeof timeLeft]).padStart(2, '0')}</span>
-                <span className="text-xs uppercase">{interval}</span>
-            </div>
-        );
-    });
-
-    return timerComponents.length ? <div className="flex gap-4">{timerComponents}</div> : <span>Deal has ended!</span>;
-}
-
-function WhyShopSphere() {
-  return (
-    <section className="py-16">
-        <div className="container mx-auto">
-          <h2 className="text-3xl font-bold text-center mb-8 font-headline">Why ShopSphere?</h2>
-          <div className="grid md:grid-cols-3 gap-8 text-center">
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm">
-              <div className="bg-primary/10 text-primary p-4 rounded-full mb-4">
-                <CheckCircle className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2 font-headline">Quality Guaranteed</h3>
-              <p className="text-muted-foreground">Every product is vetted for quality and authenticity by our team.</p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm">
-              <div className="bg-primary/10 text-primary p-4 rounded-full mb-4">
-                <Truck className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2 font-headline">Fast Shipping</h3>
-              <p className="text-muted-foreground">Reliable and fast shipping to your doorstep, wherever you are.</p>
-            </div>
-            <div className="flex flex-col items-center p-6 bg-card rounded-lg shadow-sm">
-              <div className="bg-primary/10 text-primary p-4 rounded-full mb-4">
-                <Gift className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2 font-headline">Support Creators</h3>
-              <p className="text-muted-foreground">Your purchase directly supports independent vendors and creators.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-  )
-}
-
 export default function Home() {
   return (
     <div className="flex flex-col">
@@ -178,7 +82,6 @@ export default function Home() {
                 <h2 className="text-3xl font-bold font-headline flex items-center gap-2"><Zap className="text-accent"/> Flash Deals</h2>
                 <p className="text-muted-foreground">Limited time offers, grab them before they're gone!</p>
              </div>
-             <FlashDealTimer endDate={mockFlashDeals[0].endDate} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {mockFlashDeals.map((deal) => (
@@ -249,8 +152,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <WhyShopSphere />
     </div>
   );
 }

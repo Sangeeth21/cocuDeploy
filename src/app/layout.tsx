@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { PT_Sans, Playfair_Display } from 'next/font/google';
+import { PT_Sans } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Header } from '@/components/layout/header';
@@ -10,12 +10,6 @@ const ptSans = PT_Sans({
   subsets: ['latin'],
   weight: ['400', '700'],
   variable: '--font-pt-sans',
-});
-
-const playfairDisplay = Playfair_Display({
-  subsets: ['latin'],
-  weight: ['400', '700'],
-  variable: '--font-playfair-display',
 });
 
 export const metadata: Metadata = {
@@ -30,7 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn('min-h-screen bg-background font-body antialiased flex flex-col', ptSans.variable, playfairDisplay.variable)}>
+      <body className={cn('min-h-screen bg-background font-body antialiased flex flex-col', ptSans.variable)}>
         <Header />
         <main className="flex-1">{children}</main>
         <Footer />
