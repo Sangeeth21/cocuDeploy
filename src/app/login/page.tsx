@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -24,8 +25,7 @@ export default function LoginPage() {
         description: "Redirecting to your vendor dashboard.",
       });
       router.push("/vendor/dashboard");
-    } else if (email && password) {
-      // For any other credentials, redirect to customer account
+    } else if (email === "customer@example.com" && password === "customerpass") {
       toast({
         title: "Login Successful",
         description: "Redirecting to your account.",
@@ -35,7 +35,7 @@ export default function LoginPage() {
         toast({
             variant: "destructive",
             title: "Login Failed",
-            description: "Please enter both email and password.",
+            description: "Invalid email or password. Please try again.",
         });
     }
   };
