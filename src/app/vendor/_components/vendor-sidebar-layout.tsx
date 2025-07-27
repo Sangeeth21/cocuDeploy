@@ -48,7 +48,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                 <span className="text-lg font-bold -mt-1">{vendorName}</span>
                             </div>
                         </div>
-                        <SidebarTrigger className="group-data-[collapsible=icon]:hidden"/>
+                        <SidebarTrigger />
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
