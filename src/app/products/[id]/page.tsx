@@ -34,9 +34,10 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
   if (!product) {
     notFound();
   }
-
-  const similarProducts = mockProducts.filter(p => p.category === product.category && p.id !== product.id).slice(0, 3);
-  const frequentlyBoughtTogether = mockProducts.filter(p => p.id !== product.id).slice(0, 2);
+  
+  const otherProducts = mockProducts.filter(p => p.id !== product.id);
+  const similarProducts = otherProducts.filter(p => p.category === product.category).slice(0, 4);
+  const frequentlyBoughtTogether = otherProducts.slice(0, 2);
 
   return (
     <div className="container py-12">
@@ -118,7 +119,7 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
                         <ProductCardMini product={frequentlyBoughtTogether[0]} />
                     </div>
                     <div className="text-center mt-4">
-                        <p className="text-lg font-semibold">Total Price: $223.99</p>
+                        <p className="text-lg font-semibold">Total Price: ${(product.price + frequentlyBoughtTogether[0].price).toFixed(2)}</p>
                         <Button className="mt-2" size="sm">Add Both to Cart</Button>
                     </div>
                 </CardContent>
@@ -132,7 +133,6 @@ export default function ProductDetailPage({ params }: { params: { id: string } }
         <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
-          <ProductCard product={mockProducts[0]}/>
         </div>
       </div>
     </div>
