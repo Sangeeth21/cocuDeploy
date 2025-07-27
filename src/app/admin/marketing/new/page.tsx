@@ -15,12 +15,14 @@ import { useToast } from "@/hooks/use-toast";
 import { mockProducts, mockReviews } from "@/lib/mock-data";
 import type { DisplayProduct } from "@/lib/types";
 import { format, addDays } from "date-fns";
-import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User } from "lucide-react";
+import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User, PlusCircle, Trash2 } from "lucide-react";
 import Image from "next/image";
 import type { DateRange } from "react-day-picker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+
 
 const getYoutubeEmbedUrl = (url: string) => {
     let embedUrl = null;
@@ -32,18 +34,30 @@ const getYoutubeEmbedUrl = (url: string) => {
     return embedUrl;
 }
 
+type Creative = {
+    id: number;
+    title: string;
+    description: string;
+    cta: string;
+    image: { file: File, src: string } | null;
+    videoUrl: string;
+    embedUrl: string | null;
+};
+
+
 export default function NewCampaignPage() {
     const router = useRouter();
     const { toast } = useToast();
     const [date, setDate] = useState<DateRange | undefined>({ from: new Date(), to: addDays(new Date(), 7) });
     const [selectedProducts, setSelectedProducts] = useState<DisplayProduct[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
-    const [image, setImage] = useState<{file: File, src: string} | null>(null);
-    const [videoUrl, setVideoUrl] = useState("");
+    
+    const [creatives, setCreatives] = useState<Creative[]>([
+        { id: 1, title: 'Campaign Title', description: 'Campaign description goes here.', cta: 'Shop Now', image: null, videoUrl: '', embedUrl: null }
+    ]);
+    
     const [isPreviewMobile, setIsPreviewMobile] = useState(false);
     const [placement, setPlacement] = useState('hero');
-
-    const embedUrl = getYoutubeEmbedUrl(videoUrl);
 
     const handleCreateCampaign = () => {
         toast({
@@ -63,30 +77,56 @@ export default function NewCampaignPage() {
     const removeProduct = (productId: string) => {
         setSelectedProducts(prev => prev.filter(p => p.id !== productId));
     }
+    
+    const handleAddCreative = () => {
+        setCreatives(prev => [...prev, {
+            id: Date.now(),
+            title: `Creative #${prev.length + 1}`,
+            description: 'A new creative description.',
+            cta: 'Learn More',
+            image: null,
+            videoUrl: '',
+            embedUrl: null
+        }]);
+    };
+    
+    const handleRemoveCreative = (id: number) => {
+        if (creatives.length > 1) {
+            setCreatives(prev => prev.filter(c => c.id !== id));
+        } else {
+            toast({ variant: "destructive", title: "Cannot remove the last creative." });
+        }
+    };
 
-    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleCreativeChange = (id: number, field: keyof Omit<Creative, 'id' | 'embedUrl'>, value: any) => {
+        setCreatives(prev => prev.map(c => {
+            if (c.id === id) {
+                const updatedCreative = { ...c, [field]: value };
+                if (field === 'image' && value !== null) {
+                    updatedCreative.videoUrl = '';
+                    updatedCreative.embedUrl = null;
+                }
+                if (field === 'videoUrl') {
+                    if (value) {
+                       updatedCreative.image = null;
+                       updatedCreative.embedUrl = getYoutubeEmbedUrl(value);
+                    } else {
+                       updatedCreative.embedUrl = null;
+                    }
+                }
+                return updatedCreative;
+            }
+            return c;
+        }));
+    };
+
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, id: number) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
             const src = URL.createObjectURL(file);
-            setImage({ file, src });
-            setVideoUrl(""); // Can't have both image and video
+            handleCreativeChange(id, 'image', { file, src });
         }
     };
-    
-    const removeImage = () => {
-        if (image) {
-            URL.revokeObjectURL(image.src);
-            setImage(null);
-        }
-    }
-
-    const handleVideoUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setVideoUrl(e.target.value);
-        if(e.target.value) {
-            removeImage();
-        }
-    }
-
 
     const searchResults = searchTerm
         ? mockProducts.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -94,6 +134,7 @@ export default function NewCampaignPage() {
         
     const mockProductForPreview = mockProducts[0];
     const mockReviewForPreview = mockReviews[0];
+    const canPreview = creatives.some(c => c.image || c.embedUrl);
 
 
     return (
@@ -163,45 +204,75 @@ export default function NewCampaignPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                             <div className="sm:col-span-2 space-y-2">
-                                <Label htmlFor="campaign-description">Description (Optional)</Label>
-                                <Textarea id="campaign-description" placeholder="Briefly describe the campaign's goals or details." />
-                            </div>
                         </CardContent>
                     </Card>
 
-                     <Card>
-                        <CardHeader>
-                            <CardTitle>Campaign Media</CardTitle>
-                            <CardDescription>Upload an image or provide a video link for the campaign banner.</CardDescription>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Campaign Creatives</CardTitle>
+                                <CardDescription>Add one or more visuals for your campaign.</CardDescription>
+                            </div>
+                            <Button variant="outline" size="sm" onClick={handleAddCreative}><PlusCircle className="mr-2 h-4 w-4"/>Add Creative</Button>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                             <div className="space-y-2">
-                                <Label>Campaign Image</Label>
-                                {image ? (
-                                    <div className="relative group aspect-video rounded-md border">
-                                        <Image src={image.src} alt="Campaign preview" fill className="object-contain rounded-md" />
-                                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={removeImage}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ) : (
-                                    <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                                        <ImageIcon className="h-8 w-8 text-muted-foreground"/>
-                                        <span className="text-sm text-muted-foreground text-center mt-1">Click to upload an image</span>
-                                        <input id="image-upload" type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} />
-                                    </label>
-                                )}
-                             </div>
-                             <div className="space-y-2">
-                                 <Label htmlFor="video-url">Video URL (YouTube, Vimeo)</Label>
-                                 <Input id="video-url" placeholder="https://www.youtube.com/watch?v=..." value={videoUrl} onChange={handleVideoUrlChange} />
-                                 {embedUrl && (
-                                     <div className="aspect-video rounded-md overflow-hidden border">
-                                         <iframe src={embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
-                                     </div>
-                                 )}
-                             </div>
+                            {creatives.map((creative, index) => (
+                                <Accordion key={creative.id} type="single" collapsible defaultValue="item-1" className="border rounded-md px-4">
+                                    <AccordionItem value="item-1">
+                                        <AccordionTrigger className="hover:no-underline">
+                                            <div className="flex items-center gap-4">
+                                                <div className="flex-shrink-0 w-12 h-12 rounded-md bg-muted flex items-center justify-center">
+                                                    {creative.image ? <Image src={creative.image.src} alt="thumbnail" width={48} height={48} className="rounded-md object-cover"/> : <ImageIcon className="h-6 w-6 text-muted-foreground"/>}
+                                                </div>
+                                                <span className="font-semibold text-lg">{creative.title}</span>
+                                            </div>
+                                        </AccordionTrigger>
+                                        <AccordionContent className="space-y-4 pt-4">
+                                            <div className="space-y-2">
+                                                <Label>Creative Title</Label>
+                                                <Input value={creative.title} onChange={(e) => handleCreativeChange(creative.id, 'title', e.target.value)} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Creative Description</Label>
+                                                <Input value={creative.description} onChange={(e) => handleCreativeChange(creative.id, 'description', e.target.value)} />
+                                            </div>
+                                             <div className="space-y-2">
+                                                <Label>CTA Text</Label>
+                                                <Input value={creative.cta} onChange={(e) => handleCreativeChange(creative.id, 'cta', e.target.value)} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Creative Image</Label>
+                                                {creative.image ? (
+                                                    <div className="relative group aspect-video rounded-md border">
+                                                        <Image src={creative.image.src} alt="Creative preview" fill className="object-contain rounded-md" />
+                                                        <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={() => handleCreativeChange(creative.id, 'image', null)}>
+                                                            <X className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <label htmlFor={`image-upload-${creative.id}`} className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                                        <ImageIcon className="h-8 w-8 text-muted-foreground"/>
+                                                        <span className="text-sm text-muted-foreground text-center mt-1">Click to upload an image</span>
+                                                        <input id={`image-upload-${creative.id}`} type="file" accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e, creative.id)} />
+                                                    </label>
+                                                )}
+                                             </div>
+                                             <div className="space-y-2">
+                                                 <Label>Video URL (YouTube)</Label>
+                                                 <Input placeholder="https://www.youtube.com/watch?v=..." value={creative.videoUrl} onChange={(e) => handleCreativeChange(creative.id, 'videoUrl', e.target.value)} />
+                                                 {creative.embedUrl && (
+                                                     <div className="aspect-video rounded-md overflow-hidden border">
+                                                         <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
+                                                     </div>
+                                                 )}
+                                             </div>
+                                             <div className="flex justify-end">
+                                                <Button variant="destructive" size="sm" onClick={() => handleRemoveCreative(creative.id)}><Trash2 className="mr-2 h-4 w-4" /> Remove</Button>
+                                             </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
+                            ))}
                         </CardContent>
                     </Card>
 
@@ -258,7 +329,7 @@ export default function NewCampaignPage() {
                                 <Button onClick={handleCreateCampaign}><Save className="mr-2 h-4 w-4" /> Save Campaign</Button>
                                 <Dialog>
                                     <DialogTrigger asChild>
-                                         <Button variant="outline" disabled={!image && !embedUrl}><Eye className="mr-2 h-4 w-4" /> Preview</Button>
+                                         <Button variant="outline" disabled={!canPreview}><Eye className="mr-2 h-4 w-4" /> Preview</Button>
                                     </DialogTrigger>
                                     <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
                                         <DialogHeader>
@@ -271,45 +342,49 @@ export default function NewCampaignPage() {
                                         <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg overflow-auto">
                                             <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full overflow-y-auto", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
                                                {placement === 'hero' && (
-                                                    <div className="relative w-full h-full">
-                                                        <div className="relative" style={{height: isPreviewMobile ? '30vh' : '40vh'}}>
-                                                             {image && <Image src={image.src} alt="Campaign Preview" fill className="object-cover" />}
-                                                             {embedUrl && !image && <iframe src={embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                                            <div className="absolute inset-0 flex items-center justify-center text-center">
-                                                                <div className="text-white p-4">
-                                                                    <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>
-                                                                        Campaign Title
-                                                                    </h1>
-                                                                    <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>
-                                                                        Campaign description goes here.
-                                                                    </p>
-                                                                    <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                                                                        Shop Now <ArrowRight className="ml-2 h-4 w-4" />
-                                                                    </Button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="p-4"><p className="text-sm text-center text-muted-foreground">Rest of page content...</p></div>
-                                                    </div>
+                                                    <Carousel className="w-full h-full" opts={{loop: true}}>
+                                                        <CarouselContent>
+                                                            {creatives.map((creative) => (
+                                                                <CarouselItem key={creative.id}>
+                                                                    <div className="relative w-full h-full">
+                                                                        <div className="relative" style={{height: isPreviewMobile ? '100%' : '100%'}}>
+                                                                            {creative.image && <Image src={creative.image.src} alt={creative.title} fill className="object-cover" />}
+                                                                            {creative.embedUrl && !creative.image && <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                                                            <div className="absolute inset-0 flex items-center justify-center text-center">
+                                                                                <div className="text-white p-4">
+                                                                                    <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>{creative.title}</h1>
+                                                                                    <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>{creative.description}</p>
+                                                                                    <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">{creative.cta}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </CarouselItem>
+                                                            ))}
+                                                        </CarouselContent>
+                                                        {creatives.length > 1 && <>
+                                                          <CarouselPrevious className="left-4" />
+                                                          <CarouselNext className="right-4" />
+                                                        </>}
+                                                    </Carousel>
                                                 )}
                                                 {placement === 'banner' && (
                                                      <div className="w-full h-full flex flex-col">
                                                          <style>
-                                                            {`@keyframes marquee { 0% { transform: translateX(100%); } 100% { transform: translateX(-100%); } }`}
+                                                            {`@keyframes marquee { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }`}
                                                         </style>
-                                                        <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center relative overflow-hidden">
+                                                        <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center relative overflow-hidden whitespace-nowrap">
                                                              <div className="flex-shrink-0 absolute right-4 top-1/2 -translate-y-1/2 z-10 bg-primary"><X className="h-4 w-4 cursor-pointer opacity-70 hover:opacity-100" /></div>
-                                                            <div className="flex-1 flex items-center gap-4 whitespace-nowrap animate-[marquee_15s_linear_infinite]">
-                                                                {image && <Image src={image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
-                                                                <span className="font-semibold">Your advertisement banner here!</span>
-                                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">Learn More</Button>
-                                                                <span className="mx-4">&bull;</span>
-                                                                {image && <Image src={image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
-                                                                <span className="font-semibold">Another great offer!</span>
-                                                                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">Click Here</Button>
+                                                            <div className="flex items-center gap-4 animate-[marquee_25s_linear_infinite]">
+                                                               {creatives.concat(creatives).map((creative, index) => (
+                                                                    <div key={`${creative.id}-${index}`} className="flex items-center gap-2 mx-4">
+                                                                        {creative.image && <Image src={creative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                                        <span className="font-semibold">{creative.title}</span>
+                                                                        <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
+                                                                    </div>
+                                                                ))}
                                                             </div>
-                                                            
                                                         </div>
                                                         <div className="p-4 flex-1">
                                                             <header className="flex justify-between items-center p-4 border-b">
@@ -324,10 +399,15 @@ export default function NewCampaignPage() {
                                                     <div className="w-full h-full flex items-center justify-center bg-black/50">
                                                         <div className="bg-background rounded-lg shadow-xl p-6 w-full max-w-sm text-center relative">
                                                             <button className="absolute top-2 right-2"><X className="h-4 w-4"/></button>
-                                                            <h2 className="text-lg font-bold font-headline mb-2">Special Offer!</h2>
-                                                            <p className="text-sm text-muted-foreground mb-4">A great deal just for you.</p>
-                                                            {image && <Image src={image.src} alt="Popup Image" width={300} height={150} className="rounded-md object-cover mx-auto mb-4" />}
-                                                            <Button>Claim Offer</Button>
+                                                            <h2 className="text-lg font-bold font-headline mb-2">{creatives[0].title}</h2>
+                                                            <p className="text-sm text-muted-foreground mb-4">{creatives[0].description}</p>
+                                                            {creatives[0].image && <Image src={creatives[0].image.src} alt="Popup Image" width={300} height={150} className="rounded-md object-cover mx-auto mb-4" />}
+                                                             {creatives[0].embedUrl && !creatives[0].image && (
+                                                                <div className="aspect-video rounded-md overflow-hidden border mb-4">
+                                                                    <iframe src={creatives[0].embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
+                                                                </div>
+                                                             )}
+                                                            <Button>{creatives[0].cta}</Button>
                                                         </div>
                                                     </div>
                                                 )}
@@ -337,17 +417,29 @@ export default function NewCampaignPage() {
                                                             <h1 className="text-3xl font-bold font-headline">Homepage Content</h1>
                                                             <p className="text-muted-foreground">This is a section of the homepage.</p>
                                                         </div>
-                                                        <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
-                                                            {image && <Image src={image.src} alt="Inline Campaign" fill className="object-cover" />}
-                                                             {embedUrl && !image && <iframe src={embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
-                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
-                                                                <div>
-                                                                    <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>Inline Campaign Title</h2>
-                                                                    <p className={cn(isPreviewMobile ? "text-xs" : "text-sm", "mt-1 mb-2")}>Short and catchy description.</p>
-                                                                    <Button size="sm">Shop Collection</Button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                        <Carousel className="w-full max-w-4xl mx-auto" opts={{loop: true}}>
+                                                            <CarouselContent>
+                                                                {creatives.map(creative => (
+                                                                     <CarouselItem key={creative.id}>
+                                                                        <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
+                                                                            {creative.image && <Image src={creative.image.src} alt={creative.title} fill className="object-cover" />}
+                                                                            {creative.embedUrl && !creative.image && <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
+                                                                                <div>
+                                                                                    <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>{creative.title}</h2>
+                                                                                    <p className={cn(isPreviewMobile ? "text-xs" : "text-sm", "mt-1 mb-2")}>{creative.description}</p>
+                                                                                    <Button size="sm">{creative.cta}</Button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                     </CarouselItem>
+                                                                ))}
+                                                            </CarouselContent>
+                                                             {creatives.length > 1 && <>
+                                                                <CarouselPrevious className="left-[-50px]" />
+                                                                <CarouselNext className="right-[-50px]" />
+                                                             </>}
+                                                        </Carousel>
                                                         <div className="text-center">
                                                             <h2 className="text-2xl font-bold font-headline">Another Section</h2>
                                                             <p className="text-muted-foreground">More content follows below.</p>
@@ -368,14 +460,14 @@ export default function NewCampaignPage() {
                                                             </div>
                                                         </div>
                                                         <Separator />
-                                                        {/* Campaign Banner */}
+                                                        {/* Campaign Banner - shows first creative */}
                                                         <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
-                                                             {image && <Image src={image.src} alt="Product Page Campaign" width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />}
+                                                             {creatives[0].image && <Image src={creatives[0].image.src} alt="Product Page Campaign" width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />}
                                                              <div className="flex-1 text-center md:text-left">
-                                                                <h3 className="font-bold">Save 15% on your next order!</h3>
-                                                                <p className="text-sm text-muted-foreground">Use code <span className="font-mono bg-background p-1 rounded-sm">SAVE15</span> at checkout.</p>
+                                                                <h3 className="font-bold">{creatives[0].title}</h3>
+                                                                <p className="text-sm text-muted-foreground">{creatives[0].description}</p>
                                                              </div>
-                                                             <Button>Copy Code</Button>
+                                                             <Button>{creatives[0].cta}</Button>
                                                         </div>
                                                          {/* Mock Reviews */}
                                                         <div>
@@ -407,5 +499,3 @@ export default function NewCampaignPage() {
         </div>
     );
 }
-
-    
