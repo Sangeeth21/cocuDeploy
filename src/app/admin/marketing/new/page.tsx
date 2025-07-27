@@ -80,9 +80,49 @@ const CountdownTimerPreview = () => {
     )
 }
 
-function IndependentTimerPreview({ title, description, ctaLink }: { title: string; description: string; ctaLink: string }) {
+function IndependentTimerPreview({ title, description, ctaLink, placement }: { title: string; description: string; ctaLink: string, placement: string }) {
+    
+    if (placement === 'top-banner') {
+        return (
+             <div className="w-full h-full flex flex-col items-center justify-center bg-muted/20">
+                <div className="w-full max-w-3xl bg-background shadow-md">
+                     <div className="bg-primary text-primary-foreground p-2 text-sm text-center flex items-center justify-center gap-4">
+                        <p className="font-semibold">{title}</p>
+                        <CountdownTimerPreview />
+                        <Button variant="link" asChild size="sm" className="text-primary-foreground h-auto p-0 hover:underline">
+                            <Link href={ctaLink}>{description}</Link>
+                        </Button>
+                    </div>
+                     <header className="flex justify-between items-center p-4 border-b">
+                        <div className="flex items-center gap-2"><Store className="h-6 w-6"/> <span className="font-bold">ShopSphere</span></div>
+                        <div className="flex items-center gap-2"><ShoppingCart className="h-5 w-5"/> <User className="h-5 w-5"/></div>
+                    </header>
+                    <div className="p-4"><p className="text-sm text-muted-foreground text-center">Page content...</p></div>
+                </div>
+            </div>
+        )
+    }
+    
+     if (placement === 'inline-banner') {
+        return (
+            <Card className="shadow-lg border-primary border-2">
+                 <CardContent className="p-4 flex flex-col md:flex-row items-center gap-4">
+                    <div className="flex-1 text-center md:text-left">
+                        <p className="font-semibold">{title}</p>
+                        <p className="text-xs text-muted-foreground">{description}</p>
+                    </div>
+                    <CountdownTimerPreview />
+                    <Button asChild size="sm">
+                        <Link href={ctaLink}>Get Offer</Link>
+                    </Button>
+                </CardContent>
+            </Card>
+        )
+     }
+
+    // Default: floating-banner
     return (
-        <Card className="shadow-lg">
+        <Card className="shadow-lg fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-xl">
             <CardContent className="p-4 flex flex-col md:flex-row items-center gap-4">
                 <div className="flex-1 text-center md:text-left">
                     <p className="font-semibold">{title}</p>
@@ -363,6 +403,8 @@ export default function NewCampaignPage() {
                                                                     <SelectTrigger><SelectValue/></SelectTrigger>
                                                                     <SelectContent>
                                                                         <SelectItem value="floating-banner">Floating Bottom Banner</SelectItem>
+                                                                        <SelectItem value="top-banner">Top Announcement Banner</SelectItem>
+                                                                        <SelectItem value="inline-banner">Inline Content Banner</SelectItem>
                                                                     </SelectContent>
                                                                 </Select>
                                                             </div>
@@ -371,7 +413,7 @@ export default function NewCampaignPage() {
                                                                 <Input id="timer-title" value={timerTitle} onChange={(e) => setTimerTitle(e.target.value)} />
                                                             </div>
                                                             <div className="space-y-2">
-                                                                <Label htmlFor="timer-desc">Description</Label>
+                                                                <Label htmlFor="timer-desc">Description / CTA Text</Label>
                                                                 <Input id="timer-desc" value={timerDescription} onChange={(e) => setTimerDescription(e.target.value)} />
                                                             </div>
                                                             <div className="space-y-2">
@@ -381,8 +423,8 @@ export default function NewCampaignPage() {
                                                         </div>
                                                         <div className="space-y-4">
                                                             <Label>Preview</Label>
-                                                            <div className="p-4 bg-muted rounded-lg h-full flex items-center justify-center">
-                                                                 <IndependentTimerPreview title={timerTitle} description={timerDescription} ctaLink={timerCtaLink} />
+                                                            <div className="p-4 bg-muted rounded-lg h-full flex items-center justify-center relative overflow-hidden">
+                                                                 <IndependentTimerPreview title={timerTitle} description={timerDescription} ctaLink={timerCtaLink} placement={timerIndependentPlacement} />
                                                             </div>
                                                         </div>
                                                     </div>
