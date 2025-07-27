@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Camera } from "lucide-react";
 
 const mockUserOrders = [
     { id: "ORD001", date: "2024-05-20", status: "Delivered", total: 49.99 },
@@ -26,6 +28,8 @@ export default function AccountPage() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab') || 'profile';
   const { toast } = useToast();
+  const [avatar, setAvatar] = useState("https://placehold.co/100x100.png");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveChanges = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -50,13 +54,44 @@ export default function AccountPage() {
     });
   }
 
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      setAvatar(URL.createObjectURL(file));
+       toast({
+        title: "Avatar Updated",
+        description: "Your new profile picture has been set. Click 'Save Changes' to apply.",
+    });
+    }
+  };
+
+  const handleAvatarClick = () => {
+      fileInputRef.current?.click();
+  }
+
   return (
     <div className="container py-12">
       <div className="flex items-center gap-6 mb-8">
-        <Avatar className="h-24 w-24">
-          <AvatarImage src="https://placehold.co/100x100.png" alt="User Avatar" data-ai-hint="person face" />
-          <AvatarFallback>JD</AvatarFallback>
-        </Avatar>
+        <div className="relative group">
+            <Avatar className="h-24 w-24">
+            <AvatarImage src={avatar} alt="User Avatar" data-ai-hint="person face" />
+            <AvatarFallback>JD</AvatarFallback>
+            </Avatar>
+            <button 
+                onClick={handleAvatarClick} 
+                className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Change profile picture"
+            >
+                <Camera className="h-8 w-8 text-white" />
+            </button>
+            <input 
+                type="file"
+                ref={fileInputRef}
+                onChange={handleAvatarChange}
+                className="hidden"
+                accept="image/*"
+            />
+        </div>
         <div>
           <h1 className="text-3xl font-bold font-headline">John Doe's Account</h1>
           <p className="text-muted-foreground">Manage your profile, orders, and settings.</p>
