@@ -88,8 +88,10 @@ export default function VendorDashboardPage() {
                                 </div>
                             )}
                              {item.type === 'message' && (
-                                <Button size="sm" variant="outline">
-                                    Reply <ArrowRight className="ml-2 h-4 w-4"/>
+                                <Button size="sm" variant="outline" asChild>
+                                    <Link href={item.href}>
+                                        Reply <ArrowRight className="ml-2 h-4 w-4"/>
+                                    </Link>
                                 </Button>
                              )}
                         </div>
