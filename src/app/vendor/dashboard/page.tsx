@@ -10,7 +10,7 @@ import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 export default function VendorDashboardPage() {
   return (
     <VendorSidebarLayout>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
         <div>
             <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
             <p className="text-muted-foreground">Welcome back, Timeless Co.</p>
@@ -67,7 +67,7 @@ export default function VendorDashboardPage() {
           <CardHeader>
             <CardTitle className="font-headline">Quick Actions</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Button variant="outline" asChild><Link href="/vendor/products"><Package className="mr-2"/> Manage Products</Link></Button>
               <Button variant="outline" asChild><Link href="/vendor/orders"><ListChecks className="mr-2"/> View Orders</Link></Button>
               <Button variant="outline" asChild><Link href="/vendor/analytics"><LineChart className="mr-2"/> View Analytics</Link></Button>

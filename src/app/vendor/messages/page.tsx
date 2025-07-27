@@ -24,7 +24,7 @@ const mockMessages = [
 export default function VendorMessagesPage() {
     return (
         <VendorSidebarLayout>
-             <div className="grid grid-cols-1 md:grid-cols-3 h-[calc(100vh-8rem)] gap-4">
+             <div className="grid grid-cols-1 lg:grid-cols-3 h-[calc(100vh-8rem)] gap-4">
                 <div className="col-span-1 flex flex-col border rounded-lg bg-card">
                     <div className="p-4 border-b">
                          <h1 className="text-2xl font-bold font-headline">Inbox</h1>
@@ -48,7 +48,7 @@ export default function VendorMessagesPage() {
                         ))}
                     </ScrollArea>
                 </div>
-                <div className="col-span-1 md:col-span-2 flex flex-col h-full border rounded-lg bg-card">
+                <div className="col-span-1 lg:col-span-2 flex flex-col h-full border rounded-lg bg-card">
                     <div className="p-4 border-b flex items-center gap-4">
                         <Avatar>
                             <AvatarImage src={mockConversations[0].avatar} alt={mockConversations[0].name} data-ai-hint="person face" />
@@ -81,4 +81,3 @@ export default function VendorMessagesPage() {
         </VendorSidebarLayout>
     );
 }
-

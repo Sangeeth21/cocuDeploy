@@ -17,7 +17,7 @@ export default function VendorProductsPage() {
     
     return (
       <VendorSidebarLayout>
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div>
                 <h1 className="text-3xl font-bold font-headline">Products</h1>
                 <p className="text-muted-foreground">Manage your product listings.</p>
@@ -38,7 +38,7 @@ export default function VendorProductsPage() {
                         </TableHead>
                         <TableHead>Name</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Price</TableHead>
+                        <TableHead className="hidden md:table-cell">Price</TableHead>
                         <TableHead className="hidden md:table-cell">Inventory</TableHead>
                         <TableHead>
                             <span className="sr-only">Actions</span>
@@ -63,7 +63,7 @@ export default function VendorProductsPage() {
                         <TableCell>
                             <Badge variant="outline">Active</Badge>
                         </TableCell>
-                        <TableCell>${product.price.toFixed(2)}</TableCell>
+                        <TableCell className="hidden md:table-cell">${product.price.toFixed(2)}</TableCell>
                         <TableCell className="hidden md:table-cell">25 in stock</TableCell>
                         <TableCell>
                              <DropdownMenu>
@@ -89,4 +89,3 @@ export default function VendorProductsPage() {
       </VendorSidebarLayout>
     );
 }
-
