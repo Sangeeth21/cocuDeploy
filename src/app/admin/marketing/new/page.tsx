@@ -60,7 +60,7 @@ export default function NewCampaignPage() {
     
     const [isPreviewMobile, setIsPreviewMobile] = useState(false);
     const [placement, setPlacement] = useState('hero');
-    const [previewingCreative, setPreviewingCreative] = useState<Creative | null>(null);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     const handleCreateCampaign = () => {
         toast({
@@ -137,6 +137,8 @@ export default function NewCampaignPage() {
         
     const mockProductForPreview = mockProducts[0];
     const mockReviewForPreview = mockReviews[0];
+    
+    const canPreview = creatives.some(c => c.title || c.description || c.image || c.videoUrl);
 
     const renderMarqueeContent = () => (
         creatives.map(c => (
@@ -277,10 +279,7 @@ export default function NewCampaignPage() {
                                                      </div>
                                                  )}
                                              </div>
-                                             <div className="flex justify-between items-center">
-                                                <Button variant="outline" size="sm" onClick={() => setPreviewingCreative(creative)} disabled={!creative.image}>
-                                                    <Eye className="mr-2 h-4 w-4"/> Preview Creative
-                                                </Button>
+                                             <div className="flex justify-end items-center">
                                                 <Button variant="destructive" size="sm" onClick={() => handleRemoveCreative(creative.id)}><Trash2 className="mr-2 h-4 w-4" /> Remove</Button>
                                              </div>
                                         </AccordionContent>
@@ -341,17 +340,19 @@ export default function NewCampaignPage() {
                             <p className="text-sm text-muted-foreground mb-4">Review your campaign settings before saving or publishing.</p>
                             <div className="flex flex-col gap-2">
                                 <Button onClick={handleCreateCampaign}><Save className="mr-2 h-4 w-4" /> Save Campaign</Button>
-                                <Button variant="secondary">Save as Draft</Button>
+                                <Button variant="secondary" onClick={() => setIsPreviewOpen(true)} disabled={!canPreview}>
+                                    <Eye className="mr-2 h-4 w-4"/> Preview Campaign
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
                 </div>
             </div>
             
-            <Dialog open={!!previewingCreative} onOpenChange={(isOpen) => !isOpen && setPreviewingCreative(null)}>
+            <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
                     <DialogHeader>
-                        <DialogTitle>Campaign Preview: {previewingCreative?.title}</DialogTitle>
+                        <DialogTitle>Campaign Preview</DialogTitle>
                     </DialogHeader>
                     <div className="flex justify-center items-center gap-2 border-b pb-2">
                         <Button variant={!isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(false)}><Laptop className="mr-2 h-4 w-4" /> Desktop</Button>
@@ -359,7 +360,6 @@ export default function NewCampaignPage() {
                     </div>
                     <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg overflow-auto">
                         <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full overflow-y-auto", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
-                            {previewingCreative && (
                                 <>
                                 {placement === 'hero' && (
                                     <Carousel className="w-full h-full" opts={{loop: true}}>
@@ -382,14 +382,18 @@ export default function NewCampaignPage() {
                                                 </CarouselItem>
                                             ))}
                                         </CarouselContent>
+                                         {creatives.filter(c => c.image?.src).length > 1 && <>
+                                            <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2"/>
+                                            <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2"/>
+                                        </>}
                                     </Carousel>
                                 )}
                                 {placement === 'banner' && (
                                      <div className="w-full h-full flex flex-col">
                                         <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center relative whitespace-nowrap overflow-x-hidden">
-                                            <div className="flex items-center gap-4 animate-marquee">
-                                                {renderMarqueeContent()}
-                                                {renderMarqueeContent()}
+                                            <div className="flex animate-marquee">
+                                                <div className="flex shrink-0">{renderMarqueeContent()}</div>
+                                                <div className="flex shrink-0">{renderMarqueeContent()}</div>
                                             </div>
                                         </div>
                                         <div className="p-4 flex-1">
@@ -515,7 +519,6 @@ export default function NewCampaignPage() {
                                     </div>
                                 )}
                                 </>
-                            )}
                         </div>
                     </div>
                 </DialogContent>
@@ -526,10 +529,9 @@ export default function NewCampaignPage() {
                     to { transform: translateX(-50%); }
                 }
                 .animate-marquee {
-                    animation: marquee 30s linear infinite;
+                    animation: marquee 60s linear infinite;
                     display: flex;
-                    flex-shrink: 0;
-                    justify-content: around;
+                    width: 200%;
                 }
             `}</style>
         </div>
