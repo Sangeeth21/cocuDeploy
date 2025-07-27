@@ -32,7 +32,11 @@ const imageSides: { key: ImageSide; label: string }[] = [
 ];
 
 type ProductImages = {
-    [key in ImageSide]?: string;
+    [key in ImageSide]?: {
+        file?: File;
+        src: string;
+        isGenerated?: boolean;
+    };
 };
 
 function ImagePreview3D({ images }: { images: ProductImages }) {
@@ -40,8 +44,8 @@ function ImagePreview3D({ images }: { images: ProductImages }) {
     const isDragging = useRef(false);
     const prevMousePos = useRef({ x: 0, y: 0 });
 
-    const hasTopAndBottom = images.top && images.bottom;
-    const hasSides = images.left && images.right;
+    const hasTopAndBottom = images.top?.src && images.bottom?.src;
+    const hasSides = images.left?.src && images.right?.src;
 
     const handleMouseDown = (e: React.MouseEvent) => {
         isDragging.current = true;
@@ -93,12 +97,12 @@ function ImagePreview3D({ images }: { images: ProductImages }) {
                 onMouseMove={handleMouseMove}
             >
                 <div className="relative transition-transform duration-75 ease-out" style={{ width: `${cubeSize}px`, height: `${cubeSize}px`, transformStyle: 'preserve-3d', transform: getTransform() }}>
-                    {images.front && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.front})`, transform: `rotateY(0deg) translateZ(${cubeSize / 2}px)` }} />}
-                    {images.back && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.back})`, transform: `rotateY(180deg) translateZ(${cubeSize / 2}px)` }} />}
-                    {images.right && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.right})`, transform: `rotateY(90deg) translateZ(${cubeSize / 2}px)` }} />}
-                    {images.left && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.left})`, transform: `rotateY(-90deg) translateZ(${cubeSize / 2}px)` }} />}
-                    {images.top && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.top})`, transform: `rotateX(90deg) translateZ(${cubeSize / 2}px)` }} />}
-                    {images.bottom && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.bottom})`, transform: `rotateX(-90deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.front?.src && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.front.src})`, transform: `rotateY(0deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.back?.src && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.back.src})`, transform: `rotateY(180deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.right?.src && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.right.src})`, transform: `rotateY(90deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.left?.src && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.left.src})`, transform: `rotateY(-90deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.top?.src && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.top.src})`, transform: `rotateX(90deg) translateZ(${cubeSize / 2}px)` }} />}
+                    {images.bottom?.src && <div className="absolute w-full h-full bg-cover bg-center" style={{ backgroundImage: `url(${images.bottom.src})`, transform: `rotateX(-90deg) translateZ(${cubeSize / 2}px)` }} />}
                 </div>
             </div>
             <div className="w-full px-8">
@@ -128,16 +132,27 @@ export default function NewProductPage() {
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
 
-    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, side: ImageSide) => {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
             const src = URL.createObjectURL(file);
-            setImages({ front: src });
+            setImages(prev => ({ ...prev, [side]: { file, src } }));
         }
     };
 
+    const removeImage = (side: ImageSide) => {
+        setImages(prev => {
+            const newImages = {...prev};
+            if (newImages[side]?.src.startsWith('blob:')) {
+                URL.revokeObjectURL(newImages[side]!.src);
+            }
+            delete newImages[side];
+            return newImages;
+        })
+    }
+
     const handleGenerate = useCallback(async () => {
-        if (!images.front) {
+        if (!images.front?.src) {
             toast({ variant: 'destructive', title: 'Please upload a front image first.' });
             return;
         }
@@ -148,7 +163,7 @@ export default function NewProductPage() {
 
         setIsGenerating(true);
         try {
-            const response = await fetch(images.front);
+            const response = await fetch(images.front.src);
             const blob = await response.blob();
             const reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -165,15 +180,16 @@ export default function NewProductPage() {
                 }
 
                 if (result.images) {
-                    const generatedImages: ProductImages = { front: images.front };
-                    if(result.images.back) generatedImages.back = result.images.back;
-                    if(result.images.left) generatedImages.left = result.images.left;
-                    if(result.images.right) generatedImages.right = result.images.right;
-                    setImages(generatedImages);
+                    const generatedImages: ProductImages = {};
+                    if(result.images.back && !images.back) generatedImages.back = {src: result.images.back, isGenerated: true};
+                    if(result.images.left && !images.left) generatedImages.left = {src: result.images.left, isGenerated: true};
+                    if(result.images.right && !images.right) generatedImages.right = {src: result.images.right, isGenerated: true};
+                    
+                    setImages(prev => ({...prev, ...generatedImages}));
 
                     toast({
                         title: 'Generation Complete',
-                        description: '3D model assets have been generated.',
+                        description: 'Missing product views have been generated.',
                     });
                 }
             };
@@ -186,10 +202,10 @@ export default function NewProductPage() {
         } finally {
             setIsGenerating(false);
         }
-    }, [images.front, productName, productDescription, toast]);
+    }, [images, productName, productDescription, toast]);
     
     const canPreview3D = useMemo(() => {
-       return is3DEnabled && images.front && images.left && images.right;
+       return is3DEnabled && images.front?.src && images.left?.src && images.right?.src;
     }, [images, is3DEnabled]);
 
   return (
@@ -224,43 +240,49 @@ export default function NewProductPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Media</CardTitle>
-                    <CardDescription>Upload a main product image, and our AI will generate a 3D preview.</CardDescription>
+                    <CardDescription>Upload images for each side of your product, or use AI to generate them.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        <div className="sm:col-span-1">
-                             <Label className="text-xs font-medium text-muted-foreground">Main Image</Label>
-                             {images.front ? (
-                                <div className="relative group aspect-square rounded-md border">
-                                    <Image src={images.front} alt="Main product image" fill className="object-cover rounded-md" />
-                                     <Button
-                                        variant="destructive"
-                                        size="icon"
-                                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                        onClick={() => setImages({})}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            ) : (
-                                <label htmlFor="image-upload-front" className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                                    <Upload className="h-8 w-8 text-muted-foreground"/>
-                                    <span className="text-xs text-muted-foreground text-center mt-1">Upload Image</span>
-                                    <input id="image-upload-front" type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} />
-                                </label>
-                            )}
-                        </div>
-                        <div className="col-span-2 sm:col-span-2 flex flex-col items-center justify-center bg-muted/20 p-6 rounded-lg border-dashed border-2">
-                            <Wand2 className="h-10 w-10 text-primary mb-4"/>
-                            <h3 className="text-lg font-semibold text-center">AI-Powered 3D Preview</h3>
-                            <p className="text-sm text-muted-foreground text-center mb-4">Upload a main image and a product name, then click generate.</p>
-                             <Button onClick={handleGenerate} disabled={isGenerating || !images.front || !productName.trim()}>
-                                {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
-                                {isGenerating ? 'Generating...' : 'Generate 3D Preview'}
-                            </Button>
-                        </div>
+                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                        {imageSides.map(side => (
+                           <div key={side.key}>
+                                <Label className="text-xs font-medium text-muted-foreground">{side.label}</Label>
+                                {images[side.key]?.src ? (
+                                    <div className="relative group aspect-square rounded-md border mt-1">
+                                        <Image src={images[side.key]!.src} alt={`${side.label} product image`} fill className="object-cover rounded-md" />
+                                        <Button
+                                            variant="destructive"
+                                            size="icon"
+                                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            onClick={() => removeImage(side.key)}
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                         {images[side.key]!.isGenerated && (
+                                            <div className="absolute bottom-0 w-full bg-primary/80 text-primary-foreground text-xs text-center py-0.5 rounded-b-md">AI</div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <label htmlFor={`image-upload-${side.key}`} className="mt-1 flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                        <Upload className="h-6 w-6 text-muted-foreground"/>
+                                        <span className="text-xs text-muted-foreground text-center mt-1">Upload</span>
+                                        <input id={`image-upload-${side.key}`} type="file" accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e, side.key)} />
+                                    </label>
+                                )}
+                           </div>
+                        ))}
                     </div>
-                     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg bg-muted/40">
+                    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg bg-muted/40">
+                       <div className="text-center sm:text-left">
+                           <h3 className="text-base font-semibold">AI-Powered 3D Preview</h3>
+                           <p className="text-sm text-muted-foreground">Upload a Front image, then click to generate missing views.</p>
+                       </div>
+                        <Button onClick={handleGenerate} disabled={isGenerating || !images.front?.src || !productName.trim()}>
+                            {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
+                            {isGenerating ? 'Generating...' : 'Generate Views'}
+                        </Button>
+                    </div>
+                     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg">
                         <div className="flex items-center space-x-3">
                             <Switch id="3d-toggle" checked={is3DEnabled} onCheckedChange={setIs3DEnabled} />
                             <Label htmlFor="3d-toggle" className="font-medium">Enable 3D Experience</Label>
@@ -270,7 +292,7 @@ export default function NewProductPage() {
                             Preview 3D Model
                         </Button>
                     </div>
-                     {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Generate images or upload Front, Left, & Right images manually to enable the 3D preview.</p>}
+                     {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, & Right images to enable the 3D preview.</p>}
                 </CardContent>
             </Card>
         </div>
@@ -348,4 +370,3 @@ export default function NewProductPage() {
   );
 }
 
-    
