@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Save, X } from "lucide-react";
+import { GripVertical, Save, X, Smartphone } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -27,9 +27,9 @@ type ComponentMap = {
 
 const componentMap: ComponentMap = {
     'details': { name: "Product Details", component: ProductDetailsPreview },
+    'frequently-bought': { name: "Frequently Bought Together", component: FrequentlyBoughtTogetherPreview },
     'reviews': { name: "Customer Reviews", component: ReviewsPreview },
     'similar': { name: "Similar Products", component: SimilarProductsPreview },
-    'frequently-bought': { name: "Frequently Bought Together", component: FrequentlyBoughtTogetherPreview },
 };
 
 
@@ -71,6 +71,7 @@ export default function NewTemplatePage() {
     const [layout, setLayout] = useState('standard');
     const [components, setComponents] = useState(['details', 'frequently-bought', 'reviews', 'similar']);
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [isPreviewMobile, setIsPreviewMobile] = useState(false);
     
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -126,6 +127,10 @@ export default function NewTemplatePage() {
                 <div className="flex gap-2 w-full sm:w-auto">
                    <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push('/vendor/templates')}>
                         <X className="mr-2 h-4 w-4" /> Cancel
+                    </Button>
+                   <Button variant="outline" onClick={() => setIsPreviewMobile(!isPreviewMobile)} className="w-full sm:w-auto">
+                        <Smartphone className="mr-2 h-4 w-4" />
+                        {isPreviewMobile ? 'Desktop View' : 'Mobile View'}
                     </Button>
                    <Button className="w-full sm:w-auto" onClick={handleSave}>
                         <Save className="mr-2 h-4 w-4" /> Save Template
@@ -193,8 +198,14 @@ export default function NewTemplatePage() {
                         <CardHeader>
                             <CardTitle>Live Preview</CardTitle>
                         </CardHeader>
-                        <CardContent className="bg-muted/20 p-4 sm:p-8 rounded-lg border">
-                           <div className="space-y-12">
+                        <CardContent className={cn(
+                            "bg-muted/20 p-4 sm:p-8 rounded-lg border transition-all duration-300",
+                             isPreviewMobile && "mx-auto"
+                        )}>
+                           <div className={cn(
+                                "space-y-12 transition-all duration-300", 
+                                isPreviewMobile && "max-w-sm w-full mx-auto"
+                            )}>
                              {components.map((id, index) => {
                                 const { component: Component } = componentMap[id];
                                 const componentProps = id === 'details' ? { layout } : {};
