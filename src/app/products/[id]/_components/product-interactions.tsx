@@ -38,6 +38,11 @@ const MAX_CHATS_WITHOUT_PURCHASE = 4;
 let hasMadePurchase = mockUserOrders.length > 0;
 let uniqueVendorChats = 2; // Starting with 2 from the initial mock data in account page
 
+// localStorage keys
+const VIEWED_WARNINGS_KEY = 'shopsphere_viewed_chat_warnings';
+const WARNING_COUNT_KEY = 'shopsphere_chat_warning_count';
+const MAX_WARNING_COUNT = 5;
+
 export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const { toast } = useToast();
   const router = useRouter();
@@ -84,6 +89,19 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const handleMessageVendorClick = () => {
     if (isChatDisabled) {
         setIsChatDisabledOpen(true);
+        return;
+    }
+    
+    // Check localStorage for warning status
+    const viewedWarnings: string[] = JSON.parse(localStorage.getItem(VIEWED_WARNINGS_KEY) || '[]');
+    const warningCount: number = parseInt(localStorage.getItem(WARNING_COUNT_KEY) || '0');
+    
+    const hasSeenForThisProduct = viewedWarnings.includes(product.id);
+    const hasReachedMaxWarnings = warningCount >= MAX_WARNING_COUNT;
+
+    if (hasSeenForThisProduct || hasReachedMaxWarnings) {
+        // Skip pre-chat dialog and open chat directly
+        setIsChatOpen(true);
     } else {
         setIsPreChatOpen(true);
     }
@@ -92,6 +110,21 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const handleProceedToChat = () => {
     setIsPreChatOpen(false);
     setIsChatOpen(true);
+
+    // Update localStorage
+    try {
+        const viewedWarnings: string[] = JSON.parse(localStorage.getItem(VIEWED_WARNINGS_KEY) || '[]');
+        if (!viewedWarnings.includes(product.id)) {
+            viewedWarnings.push(product.id);
+            localStorage.setItem(VIEWED_WARNINGS_KEY, JSON.stringify(viewedWarnings));
+        }
+        
+        const warningCount: number = parseInt(localStorage.getItem(WARNING_COUNT_KEY) || '0');
+        localStorage.setItem(WARNING_COUNT_KEY, (warningCount + 1).toString());
+
+    } catch (error) {
+        console.error("Failed to update localStorage:", error);
+    }
   }
 
   const handleSendMessage = useCallback((e: React.FormEvent) => {
