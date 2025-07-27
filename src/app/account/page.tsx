@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { DeleteAccountDialog } from "@/components/delete-account-dialog";
 
 export default function AccountPage() {
   return (
@@ -76,7 +77,7 @@ export default function AccountPage() {
                 <div>
                     <h3 className="font-semibold text-destructive mb-2">Delete Account</h3>
                     <p className="text-sm text-muted-foreground mb-4">Permanently delete your account and all of your content.</p>
-                    <Button variant="destructive">Delete My Account</Button>
+                    <DeleteAccountDialog />
                 </div>
             </CardContent>
           </Card>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Store, Twitter, Facebook, Instagram } from "lucide-react";
+import { ContactDialog } from "@/components/contact-dialog";
 
 export function Footer() {
   return (
@@ -13,9 +14,9 @@ export function Footer() {
             </Link>
             <p className="text-sm text-muted-foreground">Your one-stop online marketplace for everything you need.</p>
             <div className="flex gap-4 mt-2">
-                <Link href="#" className="text-muted-foreground hover:text-primary"><Twitter className="h-5 w-5"/></Link>
-                <Link href="#" className="text-muted-foreground hover:text-primary"><Facebook className="h-5 w-5"/></Link>
-                <Link href="#" className="text-muted-foreground hover:text-primary"><Instagram className="h-5 w-5"/></Link>
+                <Link href="https://x.com" target="_blank" className="text-muted-foreground hover:text-primary"><Twitter className="h-5 w-5"/></Link>
+                <Link href="https://facebook.com" target="_blank" className="text-muted-foreground hover:text-primary"><Facebook className="h-5 w-5"/></Link>
+                <Link href="https://instagram.com" target="_blank" className="text-muted-foreground hover:text-primary"><Instagram className="h-5 w-5"/></Link>
             </div>
           </div>
           <div>
@@ -37,9 +38,9 @@ export function Footer() {
           <div>
             <h3 className="font-semibold mb-4 font-headline">Support</h3>
             <ul className="space-y-2">
-              <li><Link href="#" className="text-sm text-muted-foreground hover:text-primary">Contact Us</Link></li>
+              <li><ContactDialog /></li>
               <li><Link href="#" className="text-sm text-muted-foreground hover:text-primary">FAQ</Link></li>
-              <li><Link href="#" className="text-sm text-muted-foreground hover:text-primary">Shipping & Returns</Link></li>
+              <li><Link href="/account?tab=orders" className="text-sm text-muted-foreground hover:text-primary">Shipping & Returns</Link></li>
             </ul>
           </div>
         </div>
