@@ -44,20 +44,22 @@ export default function SmartPricingPage() {
     const { toast } = useToast();
     const productId = searchParams.get('productId');
 
+    // Find product immediately. If not found, this will be null.
     const product = useMemo(() => {
         if (!productId) return null;
         return mockProducts.find(p => p.id === productId) || null;
     }, [productId]);
 
-    const [isCalculating, setIsCalculating] = useState(false);
-    const [showSuggestions, setShowSuggestions] = useState(false);
-    const [selectedFreebies, setSelectedFreebies] = useState<string[]>([]);
-    
-    // Form State
+    // Form State with safe defaults
     const [vendorSP, setVendorSP] = useState<number>(0);
     const [platformBuffer, setPlatformBuffer] = useState<number>(15);
     const [discount, setDiscount] = useState<number>(0);
     const [finalSP, setFinalSP] = useState<number>(0);
+    const [selectedFreebies, setSelectedFreebies] = useState<string[]>([]);
+    
+    // Control flow state
+    const [isCalculating, setIsCalculating] = useState(false);
+    const [showSuggestions, setShowSuggestions] = useState(false);
     const [needsRecalculation, setNeedsRecalculation] = useState(true);
 
     // Costs
@@ -67,22 +69,26 @@ export default function SmartPricingPage() {
     const razorpayFee = 15;
     const platformCommissionRate = 0.05; // 5%
 
-    // Effect to set initial state once product is loaded
+    // Effect to safely set initial state once product is loaded
     useEffect(() => {
         if (product) {
             setVendorSP(product.price || 0);
-            setNeedsRecalculation(true); // Flag for initial calculation
+            setNeedsRecalculation(true); 
         }
     }, [product]);
 
-    // Recalculate finalSP whenever its core dependencies change
-     useEffect(() => {
-        if (product) {
-            const mrp = vendorSP * (1 + platformBuffer / 100);
-            const newFinalSP = mrp * (1 - discount / 100);
-            setFinalSP(newFinalSP);
-        }
-    }, [vendorSP, platformBuffer, discount, product]);
+     // Recalculate finalSP whenever its core dependencies change
+    useEffect(() => {
+        const mrp = vendorSP * (1 + platformBuffer / 100);
+        const newFinalSP = mrp * (1 - discount / 100);
+        setFinalSP(newFinalSP);
+    }, [vendorSP, platformBuffer, discount]);
+
+
+    // Effect to flag for recalculation anytime a pricing input changes
+    useEffect(() => {
+        setNeedsRecalculation(true);
+    }, [vendorSP, platformBuffer, discount, selectedFreebies]);
 
     const freebieCost = useMemo(() => {
         return selectedFreebies.reduce((total, fbId) => {
@@ -100,12 +106,6 @@ export default function SmartPricingPage() {
         const netMargin = finalSP > 0 ? (platformProfit / finalSP) * 100 : 0;
         return { mrp, finalPrice: finalSP, pgFee, platformCommission, totalExpenses, platformProfit, netMargin };
     }, [vendorSP, platformBuffer, finalSP, freebieCost, platformCommissionRate]);
-    
-    // Effect to flag for recalculation anytime a pricing input changes
-    useEffect(() => {
-        setNeedsRecalculation(true);
-    }, [vendorSP, platformBuffer, discount, selectedFreebies]);
-
 
     const handleSendToAI = () => {
         if(selectedFreebies.length === 0) {
@@ -137,12 +137,9 @@ export default function SmartPricingPage() {
     const isMarginLow = calculations.netMargin < 11;
     const isApproveDisabled = isMarginLow || needsRecalculation;
 
-    if (!productId) {
-         return notFound();
-    }
-    
+    // Guard clause: If product isn't found, render the 404 page.
     if (!product) {
-       return notFound();
+        return notFound();
     }
 
     return (
