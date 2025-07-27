@@ -22,7 +22,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
 
     return (
-        <div className="md:flex min-h-screen">
+        <div className="flex min-h-screen">
         <SidebarProvider>
             <Sidebar collapsible="icon" className="border-r hidden md:flex">
                 <SidebarHeader>
@@ -77,9 +77,11 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                 </SidebarFooter>
             </Sidebar>
             <div className="flex flex-col flex-1">
-                 <header className="md:hidden flex items-center justify-between p-4 border-b">
-                    <SidebarTrigger/>
-                    <span className="font-bold">Vendor Portal</span>
+                 <header className="flex items-center justify-between p-4 border-b">
+                    <div className="flex items-center gap-4">
+                        <SidebarTrigger/>
+                        <span className="font-bold hidden md:inline-block">Vendor Portal</span>
+                    </div>
                  </header>
                  <main className="flex-1 p-4 sm:p-8 bg-muted/40">
                     {children}
