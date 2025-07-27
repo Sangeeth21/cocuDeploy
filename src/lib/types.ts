@@ -28,3 +28,18 @@ export type Category = {
   imageUrl: string;
   productCount: number;
 };
+
+export type Attachment = {
+  name: string;
+  type: 'image' | 'file';
+  url: string;
+};
+
+export type Message = {
+  sender: "customer" | "vendor";
+  text: string;
+  attachments?: Attachment[];
+  status?: 'sent' | 'delivered' | 'read';
+};
+
+    
