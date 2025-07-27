@@ -31,7 +31,6 @@ function CustomSidebarTrigger() {
     
     return (
         <Button 
-            isIconOnly 
             className={cn(
                 "absolute top-1/2 z-20 h-7 w-7 rounded-full -translate-y-1/2",
                 open ? "right-[-14px]" : "right-[-14px] bg-primary text-primary-foreground hover:bg-primary/90"
