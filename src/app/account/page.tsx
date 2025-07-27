@@ -33,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import type { Message, Conversation } from "@/lib/types";
+import { mockUserOrders } from "@/lib/mock-data";
 
 type Attachment = {
     name: string;
@@ -69,12 +70,6 @@ const initialConversations: Conversation[] = [
   },
 ];
 
-
-const mockUserOrders = [
-    { id: "ORD001", date: "2024-05-20", status: "Delivered", total: 49.99 },
-    { id: "ORD002", date: "2024-06-11", status: "Shipped", total: 124.50 },
-    { id: "ORD003", date: "2024-06-15", status: "Processing", total: 79.99 },
-];
 
 const mockAddresses = [
     { id: 1, type: "Home", recipient: "John Doe", line1: "123 Main St", city: "Anytown", zip: "12345", isDefault: true, phone: "+1 (555) 111-2222" },

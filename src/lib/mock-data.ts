@@ -241,6 +241,12 @@ export const mockOrders: Order[] = [
     }
 ];
 
+export const mockUserOrders = [
+    { id: "ORD001", date: "2024-05-20", status: "Delivered", total: 49.99 },
+    { id: "ORD002", date: "2024-06-11", status: "Shipped", total: 124.50 },
+    { id: "ORD003", date: "2024-06-15", status: "Processing", total: 79.99 },
+];
+
 
 // Mock data for the new marketing features
 const futureDate = new Date();
