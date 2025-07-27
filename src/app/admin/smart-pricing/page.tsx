@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { mockProducts } from "@/lib/mock-data";
 import { useSearchParams, notFound, useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, Bot, Check, Info, Loader2, Save, ThumbsDown, ThumbsUp, X } from "lucide-react";
@@ -17,7 +17,6 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-
 
 const mockFreebies = [
     { id: 'fb001', name: 'Branded Keychain', cost: 15, stock: 100 },
@@ -39,14 +38,12 @@ const mockAISuggestions: AISuggestion[] = [
     { model: 'Claude', suggestedSP: 479, suggestedDiscount: 5, reasoning: 'Aggressive pricing to capture market share quickly. Lower discount maintains perceived value.' },
 ];
 
-
 export default function SmartPricingPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { toast } = useToast();
     const productId = searchParams.get('productId');
 
-    // Find the product immediately. If not found, we will call notFound().
     const product = useMemo(() => {
         if (!productId) return null;
         return mockProducts.find(p => p.id === productId) || null;
@@ -56,11 +53,11 @@ export default function SmartPricingPage() {
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [selectedFreebies, setSelectedFreebies] = useState<string[]>([]);
     
-    // Form State - Initialize with default values
-    const [vendorSP, setVendorSP] = useState(0);
-    const [platformBuffer, setPlatformBuffer] = useState(15);
-    const [discount, setDiscount] = useState(0);
-    const [finalSP, setFinalSP] = useState(0);
+    // Form State
+    const [vendorSP, setVendorSP] = useState<number>(0);
+    const [platformBuffer, setPlatformBuffer] = useState<number>(15);
+    const [discount, setDiscount] = useState<number>(0);
+    const [finalSP, setFinalSP] = useState<number>(0);
     const [needsRecalculation, setNeedsRecalculation] = useState(true);
 
     // Costs
@@ -74,24 +71,18 @@ export default function SmartPricingPage() {
     useEffect(() => {
         if (product) {
             setVendorSP(product.price || 0);
-            setNeedsRecalculation(true);
+            setNeedsRecalculation(true); // Flag for initial calculation
         }
     }, [product]);
 
-    // Effect to calculate Final SP when dependencies change
-    useEffect(() => {
+    // Recalculate finalSP whenever its core dependencies change
+     useEffect(() => {
         if (product) {
             const mrp = vendorSP * (1 + platformBuffer / 100);
             const newFinalSP = mrp * (1 - discount / 100);
             setFinalSP(newFinalSP);
         }
-    }, [product, vendorSP, platformBuffer, discount]);
-    
-    // Use a separate effect to flag for recalculation
-    useEffect(() => {
-        setNeedsRecalculation(true);
-    }, [vendorSP, platformBuffer, discount, selectedFreebies]);
-
+    }, [vendorSP, platformBuffer, discount, product]);
 
     const freebieCost = useMemo(() => {
         return selectedFreebies.reduce((total, fbId) => {
@@ -109,6 +100,11 @@ export default function SmartPricingPage() {
         const netMargin = finalSP > 0 ? (platformProfit / finalSP) * 100 : 0;
         return { mrp, finalPrice: finalSP, pgFee, platformCommission, totalExpenses, platformProfit, netMargin };
     }, [vendorSP, platformBuffer, finalSP, freebieCost, platformCommissionRate]);
+    
+    // Effect to flag for recalculation anytime a pricing input changes
+    useEffect(() => {
+        setNeedsRecalculation(true);
+    }, [vendorSP, platformBuffer, discount, selectedFreebies]);
 
 
     const handleSendToAI = () => {
@@ -131,7 +127,6 @@ export default function SmartPricingPage() {
         
         setFinalSP(suggestedFinalSP);
         setDiscount(parseFloat(suggestedDiscount.toFixed(2)));
-        setNeedsRecalculation(true);
     }
 
     const handleRecalculate = () => {
@@ -142,10 +137,12 @@ export default function SmartPricingPage() {
     const isMarginLow = calculations.netMargin < 11;
     const isApproveDisabled = isMarginLow || needsRecalculation;
 
-    // Guard clause: If no product is found, render the 404 page.
-    // This is the most important part of the fix.
+    if (!productId) {
+         return notFound();
+    }
+    
     if (!product) {
-        return notFound();
+       return notFound();
     }
 
     return (
@@ -160,7 +157,6 @@ export default function SmartPricingPage() {
 
             <div className="grid lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-2 flex flex-col gap-8">
-                     {/* Section A */}
                     <Card>
                         <CardHeader>
                             <CardTitle>Product Overview</CardTitle>
@@ -201,7 +197,6 @@ export default function SmartPricingPage() {
                         </CardContent>
                     </Card>
                     
-                    {/* Section B */}
                     <Card>
                         <CardHeader>
                              <CardTitle>Admin Inputs</CardTitle>
@@ -253,7 +248,6 @@ export default function SmartPricingPage() {
                          </CardFooter>
                     </Card>
                     
-                    {/* Section C */}
                     {showSuggestions && (
                          <Card>
                             <CardHeader>
@@ -281,7 +275,6 @@ export default function SmartPricingPage() {
                     )}
                 </div>
 
-                 {/* Section D */}
                 <div className="lg:col-span-1 lg:sticky top-24 space-y-4">
                      <Card>
                         <CardHeader>
@@ -309,7 +302,7 @@ export default function SmartPricingPage() {
                                     </TableRow>
                                     <TableRow className="bg-muted/50">
                                         <TableCell>Final Selling Price</TableCell>
-                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right font-bold" value={finalSP.toFixed(2)} readOnly /></TableCell>
+                                        <TableCell className="text-right font-bold">${finalSP.toFixed(2)}</TableCell>
                                     </TableRow>
                                      <TableRow>
                                         <TableCell className="text-muted-foreground text-xs">PG Fees (3%)</TableCell>
@@ -371,9 +364,6 @@ export default function SmartPricingPage() {
                      </div>
                 </div>
             </div>
-
         </div>
     )
 }
-
-    
