@@ -22,7 +22,7 @@ export default function AdminProductsPage() {
                 <p className="text-muted-foreground">Manage all product listings on the platform.</p>
             </div>
             <Button asChild>
-                <Link href="/products/new">
+                <Link href="/admin/products/new">
                     <PlusCircle className="mr-2"/> Add Product
                 </Link>
             </Button>
