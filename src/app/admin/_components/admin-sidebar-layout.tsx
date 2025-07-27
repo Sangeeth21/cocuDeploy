@@ -46,9 +46,17 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                 <SidebarContent className="p-2">
                      <SidebarMenu>
                         <SidebarMenuItem>
+                             <SidebarMenuButton asChild tooltip={{children: 'Create Order'}}>
+                                <Link href="/admin/orders/new">
+                                    <PlusCircle/>
+                                    <span>New Order</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                        <SidebarMenuItem>
                              <SidebarMenuButton asChild tooltip={{children: 'Create Campaign'}}>
                                 <Link href="/admin/marketing/new">
-                                    <PlusCircle/>
+                                    <Megaphone/>
                                     <span>New Campaign</span>
                                 </Link>
                             </SidebarMenuButton>

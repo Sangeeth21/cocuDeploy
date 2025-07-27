@@ -12,11 +12,12 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockOrders } from "@/lib/mock-data";
 import type { Order } from "@/lib/types";
-import { MoreHorizontal, PackageCheck, Truck, ListChecks, DollarSign, Search, File, User, CreditCard } from "lucide-react";
+import { MoreHorizontal, PackageCheck, Truck, ListChecks, DollarSign, Search, File, User, CreditCard, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 
 const getStatusVariant = (status: Order['status']) => {
   switch (status) {
@@ -80,6 +81,11 @@ export default function AdminOrdersPage() {
           <h1 className="text-3xl font-bold font-headline">Orders</h1>
           <p className="text-muted-foreground">Manage all orders across the platform.</p>
         </div>
+         <Button asChild>
+            <Link href="/admin/orders/new">
+                <PlusCircle className="mr-2 h-4 w-4" /> Create Order
+            </Link>
+        </Button>
       </div>
 
        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3 mb-8">
@@ -282,4 +288,3 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
-
