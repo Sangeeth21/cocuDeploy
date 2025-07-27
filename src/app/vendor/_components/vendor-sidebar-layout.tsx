@@ -3,7 +3,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge } from "@/components/ui/sidebar";
 import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -15,7 +15,7 @@ const navLinks = [
   { href: "/vendor/products", label: "Products", icon: Package },
   { href: "/vendor/orders", label: "Orders", icon: ListChecks },
   { href: "/vendor/analytics", label: "Analytics", icon: LineChart },
-  { href: "/vendor/messages", label: "Messages", icon: MessageSquare },
+  { href: "/vendor/messages", label: "Messages", icon: MessageSquare, badge: "5" },
   { href: "/vendor/settings", label: "Settings", icon: Settings },
 ];
 
@@ -48,7 +48,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                 <span className="text-lg font-bold -mt-1">{vendorName}</span>
                             </div>
                         </div>
-                        <SidebarTrigger />
+                         <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
@@ -63,6 +63,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                     <Link href={link.href}>
                                         <link.icon />
                                         <span>{link.label}</span>
+                                        {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -92,10 +93,12 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
             </Sidebar>
             <div className="flex flex-col flex-1">
                  <header className="flex h-16 items-center justify-between p-4 border-b md:justify-end">
-                    <SidebarTrigger className="md:hidden"/>
-                    <span className="font-bold hidden md:inline-block">Vendor Portal</span>
+                    <div className="flex items-center gap-4">
+                        <SidebarTrigger className="md:hidden"/>
+                        <span className="font-bold hidden max-md:inline-block">Vendor Portal</span>
+                    </div>
                  </header>
-                 <main className="flex-1 p-4 sm:p-8 bg-muted/40">
+                 <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40">
                     {children}
                 </main>
             </div>

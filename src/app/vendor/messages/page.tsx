@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, Send } from "lucide-react";
 import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 type Message = {
   sender: "customer" | "vendor";
@@ -21,6 +22,7 @@ type Conversation = {
   customerName: string;
   avatar: string;
   messages: Message[];
+  unread?: boolean;
 };
 
 const initialConversations: Conversation[] = [
@@ -34,6 +36,7 @@ const initialConversations: Conversation[] = [
       { sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it." },
       { sender: "customer", text: "That would be great, thank you!" },
     ],
+    unread: true,
   },
   {
     id: 2,
@@ -41,6 +44,7 @@ const initialConversations: Conversation[] = [
     customerName: "Olivia Smith",
     avatar: "https://placehold.co/40x40.png",
     messages: [{ sender: "customer", text: "Can you ship to Canada?" }],
+    unread: true,
   },
   {
     id: 3,
@@ -48,13 +52,23 @@ const initialConversations: Conversation[] = [
     customerName: "Noah Williams",
     avatar: "https://placehold.co/40x40.png",
     messages: [{ sender: "vendor", text: "Thank you!" }],
+    unread: false,
+  },
+   {
+    id: 4,
+    customerId: "CUST004",
+    customerName: "Emma Brown",
+    avatar: "https://placehold.co/40x40.png",
+    messages: [{ sender: "customer", text: "What is the return policy?" }],
+    unread: true,
   },
 ];
 
 export default function VendorMessagesPage() {
   const [conversations, setConversations] = useState(initialConversations);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(1);
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
+  const { toast } = useToast();
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
@@ -72,8 +86,22 @@ export default function VendorMessagesPage() {
       )
     );
     setNewMessage("");
+    toast({
+        title: "Message Sent",
+        description: "Your reply has been sent to the customer.",
+    });
   };
   
+  const handleSelectConversation = (id: number) => {
+    setSelectedConversationId(id);
+    // Mark conversation as read
+    setConversations(prev =>
+        prev.map(convo => 
+            convo.id === id ? { ...convo, unread: false } : convo
+        )
+    );
+  }
+
   const getLastMessage = (messages: Message[]) => {
       if (messages.length === 0) return "No messages yet.";
       return messages[messages.length - 1].text;
@@ -81,8 +109,8 @@ export default function VendorMessagesPage() {
 
   return (
     <VendorSidebarLayout>
-      <div className="grid grid-cols-1 lg:grid-cols-3 h-[calc(100vh-8rem)] gap-4">
-        <div className="col-span-1 flex flex-col border rounded-lg bg-card">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-[calc(100vh-11rem)] gap-4">
+        <div className="md:col-span-1 xl:col-span-1 flex flex-col border rounded-lg bg-card">
           <div className="p-4 border-b">
             <h1 className="text-2xl font-bold font-headline">Inbox</h1>
             <div className="relative mt-2">
@@ -98,21 +126,24 @@ export default function VendorMessagesPage() {
                   "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50",
                   selectedConversationId === convo.id && "bg-muted"
                 )}
-                onClick={() => setSelectedConversationId(convo.id)}
+                onClick={() => handleSelectConversation(convo.id)}
               >
                 <Avatar>
                   <AvatarImage src={convo.avatar} alt={convo.customerName} data-ai-hint="person face" />
                   <AvatarFallback>{convo.customerName.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
-                  <p className="font-semibold">{convo.customerId}</p>
+                  <div className="flex justify-between items-center">
+                    <p className="font-semibold">{convo.customerId}</p>
+                    {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
+                  </div>
                   <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
                 </div>
               </div>
             ))}
           </ScrollArea>
         </div>
-        <div className="col-span-1 lg:col-span-2 flex flex-col h-full border rounded-lg bg-card">
+        <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full border rounded-lg bg-card">
           {selectedConversation ? (
             <>
               <div className="p-4 border-b flex items-center gap-4">
@@ -127,10 +158,10 @@ export default function VendorMessagesPage() {
                   {selectedConversation.messages.map((msg, index) => (
                     <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
                       {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerName} /><AvatarFallback>{selectedConversation.customerName.charAt(0)}</AvatarFallback></Avatar>}
-                      <div className={cn("max-w-xs md:max-w-md rounded-lg p-3 text-sm", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                      <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
                         {msg.text}
                       </div>
-                      {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarFallback>V</AvatarFallback></Avatar>}
+                      {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
                     </div>
                   ))}
                 </div>
@@ -149,8 +180,10 @@ export default function VendorMessagesPage() {
               </form>
             </>
           ) : (
-             <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                <p>Select a conversation to start chatting.</p>
+             <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
+                <MessageSquare className="h-16 w-16 mb-4"/>
+                <h2 className="text-xl font-semibold">Select a conversation</h2>
+                <p>Choose a conversation from the left panel to view messages and reply to your customers.</p>
              </div>
           )}
         </div>
