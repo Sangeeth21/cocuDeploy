@@ -114,7 +114,8 @@ export default function ProductDetailPage() {
         
         // Simulate vendor seeing the message
         setTimeout(() => {
-             setMessages(prev => prev.map(m => m.status === 'delivered' ? {...m, status: 'read'} : m));
+            // Only update the last 'delivered' message to 'read'
+             setMessages(prev => prev.map(m => (m === sentMessage && m.status === 'delivered') ? {...m, status: 'read'} : m));
 
              // Simulate vendor reply
              setTimeout(() => {
@@ -278,7 +279,7 @@ export default function ProductDetailPage() {
               </DialogContent>
             </Dialog>
           </div>
-          <p className="text-sm text-muted-foreground">Sold by <Link href={`/account?tab=messages&vendorId=${product.vendorId}`} className="font-semibold text-primary hover:underline">Vendor ID: {product.vendorId}</Link></p>
+          <p className="text-sm text-muted-foreground">Sold by <Link href={`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`} className="font-semibold text-primary hover:underline">Vendor ID: {product.vendorId}</Link></p>
         </div>
       </div>
 
@@ -362,3 +363,5 @@ function ProductCardMini({ product }: { product: typeof mockProducts[0] }) {
     </div>
   );
 }
+
+    
