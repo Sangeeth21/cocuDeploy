@@ -7,12 +7,20 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "./ui/badge";
 
+type NotificationAction = {
+    label: string;
+    href?: string;
+    variant?: "default" | "destructive" | "outline" | "secondary";
+    onClick?: () => void;
+}
+
 type Notification = {
     type: string;
     id: string;
     text: string;
     time: string;
     href: string;
+    actions?: NotificationAction[];
 };
 
 const notificationIcons: { [key: string]: React.ElementType } = {
@@ -58,9 +66,18 @@ export function NotificationPopover({ notifications }: { notifications: Notifica
                                         <div className="p-2 bg-primary/10 rounded-full mt-1">
                                             <Icon className="h-5 w-5 text-primary"/>
                                         </div>
-                                        <div className="flex-1">
+                                        <div className="flex-1 space-y-2">
                                             <p className="text-sm"><Link href={item.href} className="font-medium hover:underline">{item.text}</Link></p>
                                             <p className="text-xs text-muted-foreground">{item.time}</p>
+                                             {item.actions && (
+                                                <div className="flex gap-2">
+                                                    {item.actions.map((action, index) => (
+                                                        <Button key={index} size="sm" variant={action.variant || "secondary"} asChild={!!action.href}>
+                                                           {action.href ? <Link href={action.href}>{action.label}</Link> : <button onClick={action.onClick}>{action.label}</button>}
+                                                        </Button>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )

@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign } from "lucide-react";
+import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign, Check, X } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { mockVendorActivity } from "@/lib/mock-data";
@@ -68,17 +68,30 @@ export default function VendorDashboardPage() {
           <CardHeader>
             <CardTitle className="font-headline">Recent Activity</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             {mockVendorActivity.map(item => {
-                const Icon = item.type === 'stock' ? Package : item.type === 'message' ? MessageSquare : ListChecks;
+                const Icon = item.type === 'stock' ? Package : item.type === 'message' ? MessageSquare : item.type === 'confirmation' ? Bell : ListChecks;
                 return (
                      <div key={item.id} className="flex items-start gap-4">
                         <div className="p-2 bg-primary/10 rounded-full">
                             <Icon className="h-5 w-5 text-primary"/>
                         </div>
-                        <div className="flex-1">
-                            <p className="text-sm"><Link href={item.href} className="font-semibold hover:underline">{item.text}</Link></p>
-                            <p className="text-xs text-muted-foreground">{item.time}</p>
+                        <div className="flex-1 space-y-2">
+                            <div className="grid gap-1">
+                                <p className="text-sm"><Link href={item.href} className="font-semibold hover:underline">{item.text}</Link></p>
+                                <p className="text-xs text-muted-foreground">{item.time}</p>
+                            </div>
+                            {item.type === 'confirmation' && (
+                                <div className="flex gap-2">
+                                    <Button size="sm"><Check className="mr-2 h-4 w-4"/> Approve</Button>
+                                    <Button size="sm" variant="destructive"><X className="mr-2 h-4 w-4"/> Reject</Button>
+                                </div>
+                            )}
+                             {item.type === 'message' && (
+                                <Button size="sm" variant="outline">
+                                    Reply <ArrowRight className="ml-2 h-4 w-4"/>
+                                </Button>
+                             )}
                         </div>
                     </div>
                 )

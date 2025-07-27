@@ -17,7 +17,7 @@ const mockRecentSales = [
 ]
 
 const mockActivity = [
-    { type: 'user_report', id: 'REP003', text: 'User reported for inappropriate language', time: '1h ago', icon: ShieldAlert, variant: 'destructive', href: '/admin/moderation' },
+    { type: 'user_report', id: 'REP003', text: 'User "Crafty Creations" reported for inappropriate language', time: '1h ago', icon: ShieldAlert, variant: 'destructive', href: '/admin/moderation' },
     { type: 'product_review', id: 'PROD006', text: 'Product needs pricing review', time: '3h ago', icon: Package, variant: 'default', href: '/admin/smart-pricing?productId=6' },
     { type: 'new_vendor', id: 'USR008', text: 'New vendor "HomeBody Decor" signed up', time: '8h ago', icon: User, variant: 'default', href: '/admin/vendors' },
     { type: 'confirmation_request', id: 'REQ001', text: 'Confirmation needed for "Professional Yoga Mat"', time: '1d ago', icon: BellRing, variant: 'default', href: '/admin/orders' },
@@ -136,19 +136,27 @@ export default function AdminDashboardPage() {
                     <CardTitle>Activity & Moderation</CardTitle>
                     <CardDescription>Recent events across the platform.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4">
+                <CardContent className="grid gap-6">
                     {mockActivity.map(item => {
                         const Icon = item.icon
                         return (
-                            <div key={item.id} className="flex items-center gap-4">
+                            <div key={item.id} className="flex items-start gap-4">
                                 <div className={`p-2 rounded-full ${item.variant === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'}`}>
                                     <Icon className={`h-5 w-5 ${item.variant === 'destructive' ? 'text-destructive' : 'text-primary'}`}/>
                                 </div>
-                                <div className="grid gap-1 flex-1">
-                                    <p className="text-sm font-medium leading-none">
-                                        <Link href={item.href} className="hover:underline">{item.text}</Link>
-                                    </p>
-                                    <p className="text-sm text-muted-foreground">{item.time}</p>
+                                <div className="flex-1 space-y-2">
+                                    <div className="grid gap-1">
+                                      <p className="text-sm font-medium leading-none">
+                                          <Link href={item.href} className="hover:underline">{item.text}</Link>
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">{item.time}</p>
+                                    </div>
+                                    {item.type === 'user_report' && (
+                                        <div className="flex gap-2">
+                                            <Button size="sm" variant="outline">Dismiss</Button>
+                                            <Button size="sm" variant="destructive">Warn User</Button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )

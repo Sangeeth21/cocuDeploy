@@ -486,9 +486,11 @@ export default function AccountPage() {
                         </div>
                         <div className="flex-1">
                             <p className="font-semibold text-blue-800 dark:text-blue-200">Your order #ORD002 has shipped!</p>
-                            <p className="text-sm text-blue-600 dark:text-blue-400">Estimated delivery: June 25, 2024. <Link href="#" className="font-bold hover:underline">Track</Link></p>
+                            <p className="text-sm text-blue-600 dark:text-blue-400">Estimated delivery: June 25, 2024.</p>
                         </div>
-                        <span className="text-xs text-muted-foreground">1d ago</span>
+                         <Button size="sm" asChild variant="outline" className="bg-white">
+                            <Link href="/account?tab=orders&tracking=ORD002">Track</Link>
+                        </Button>
                   </div>
                   <div className="flex items-center gap-4 p-4 border rounded-lg bg-green-50 dark:bg-green-950">
                         <div className="p-2 bg-green-100 rounded-full dark:bg-green-900">

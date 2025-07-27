@@ -250,16 +250,16 @@ export const mockUserOrders = [
 
 export const mockVendorActivity = [
     { type: 'order', id: 'ORD004', text: 'New order #ORD004 from CUST004 for $215.00', time: '30m ago', href: '/vendor/orders' },
-    { type: 'message', id: 'MSG012', text: 'New message from CUST001 about "Classic Leather Watch"', time: '2h ago', href: '/vendor/messages' },
+    { type: 'message', id: 'MSG012', text: 'New message from CUST001 about "Classic Leather Watch"', time: '2h ago', href: '/vendor/messages', actions: [{label: "Reply", href: "/vendor/messages"}] },
     { type: 'stock', id: 'CM-HND-BL', text: '"Handcrafted Ceramic Mug" is low on stock (8 left)', time: '1d ago', href: '/vendor/inventory' },
-    { type: 'confirmation', id: 'REQ001', text: 'Confirmation requested for "Professional Yoga Mat"', time: '2d ago', href: '/vendor/orders' },
+    { type: 'confirmation', id: 'REQ001', text: 'Confirmation requested for "Professional Yoga Mat"', time: '2d ago', href: '/vendor/orders', actions: [{label: "Approve"}, {label: "Reject", variant: "destructive"}] },
 ];
 
 export const mockActivity = [
-    { type: 'user_report', id: 'REP003', text: 'User reported for inappropriate language', time: '1h ago', href: '/admin/moderation' },
+    { type: 'user_report', id: 'REP003', text: 'User "Crafty Creations" reported for inappropriate language', time: '1h ago', href: '/admin/moderation', actions: [{label: "Warn User", variant: "destructive"}, {label: "Dismiss", variant: "outline"}] },
     { type: 'product_review', id: 'PROD006', text: 'Product needs pricing review', time: '3h ago', href: '/admin/smart-pricing?productId=6' },
     { type: 'new_vendor', id: 'USR008', text: 'New vendor "HomeBody Decor" signed up', time: '8h ago', href: '/admin/vendors' },
-    { type: 'confirmation', id: 'REQ001', text: 'Confirmation needed for "Professional Yoga Mat"', time: '1d ago', href: '/admin/orders' },
+    { type: 'confirmation_request', id: 'REQ001', text: 'Confirmation needed for "Professional Yoga Mat"', time: '1d ago', href: '/admin/orders' },
 ];
 
 
