@@ -106,6 +106,15 @@ export type Order = {
 
 
 // Marketing and Promotions
+export type Creative = {
+    id: number;
+    title: string;
+    description: string;
+    cta: string;
+    imageUrl: string | null;
+    videoUrl?: string;
+};
+
 export type MarketingCampaign = {
     id: string;
     name: string;
@@ -115,7 +124,16 @@ export type MarketingCampaign = {
     endDate: string;
     startTime?: string;
     endTime?: string;
+    placement?: 'hero' | 'banner' | 'popup' | 'inline-banner' | 'product-page-banner';
+    creatives?: Creative[];
     showCountdown?: boolean;
+    countdownPlacement?: 'on-creative' | 'independent';
+    timerDetails?: {
+      placement: 'floating-banner' | 'top-banner' | 'inline-banner';
+      title: string;
+      description: string;
+      ctaLink: string;
+    }
 }
 
 export type FlashDeal = {

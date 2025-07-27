@@ -274,10 +274,15 @@ export const mockCampaigns: MarketingCampaign[] = [
         type: "Sale",
         status: "Active",
         startDate: "2024-06-01",
-        endDate: "2024-06-30",
-        startTime: "09:00",
-        endTime: "23:59",
-        showCountdown: true,
+        endDate: "2024-08-30",
+        placement: "hero",
+        creatives: [{
+            id: 1,
+            title: "Summer Collection is Here!",
+            description: "Fresh looks for sunny days. Explore our new arrivals in apparel and accessories.",
+            cta: "Shop Now",
+            imageUrl: "https://placehold.co/1920x1080.png",
+        }]
     },
     {
         id: "CAMP002",
@@ -285,21 +290,39 @@ export const mockCampaigns: MarketingCampaign[] = [
         type: "Promotion",
         status: "Active",
         startDate: "2024-06-15",
-        endDate: "2024-07-15",
-        startTime: "00:00",
-        endTime: "23:59",
-        showCountdown: false,
+        endDate: "2024-07-30",
+        placement: "hero",
+        creatives: [{
+            id: 1,
+            title: "Upgrade Your Workspace",
+            description: "Find the perfect gear to boost your productivity. Desks, chairs, and tech gadgets.",
+            cta: "Explore Home Office",
+            imageUrl: "https://placehold.co/1920x1080.png",
+        }]
     },
      {
         id: "CAMP003",
         name: "Weekend Flash Deals",
         type: "Flash Sale",
-        status: "Scheduled",
+        status: "Active",
         startDate: "2024-06-22",
-        endDate: "2024-06-23",
-        startTime: "18:00",
-        endTime: "23:59",
+        endDate: "2024-08-23",
+        placement: "banner",
         showCountdown: true,
+        countdownPlacement: 'independent',
+        timerDetails: {
+            placement: 'top-banner',
+            title: "Weekend Flash Sale!",
+            description: "Up to 50% off select items. Ends Sunday!",
+            ctaLink: "/products?tags=flash-sale"
+        },
+        creatives: [{
+            id: 1,
+            title: "Flash Sale!",
+            description: "Up to 50% off select items. Ends Sunday!",
+            cta: "Shop Deals",
+            imageUrl: null,
+        }]
     },
     {
         id: "CAMP004",
@@ -316,6 +339,38 @@ export const mockCampaigns: MarketingCampaign[] = [
         status: "Draft",
         startDate: "2024-08-01",
         endDate: "2024-08-31",
+    },
+    {
+        id: "CAMP006",
+        name: "Back to School",
+        type: "Sale",
+        status: "Active",
+        startDate: "2024-08-01",
+        endDate: "2024-08-31",
+        placement: "popup",
+        creatives: [{
+            id: 1,
+            title: "Back to School Savings!",
+            description: "Get everything you need for the new school year.",
+            cta: "Shop Now",
+            imageUrl: "https://placehold.co/600x400.png"
+        }]
+    },
+     {
+        id: "CAMP007",
+        name: "Home Goods Special",
+        type: "Promotion",
+        status: "Active",
+        startDate: "2024-08-01",
+        endDate: "2024-08-31",
+        placement: "inline-banner",
+        creatives: [{
+            id: 1,
+            title: "Cozy Up Your Home",
+            description: "Save on home goods and decor.",
+            cta: "Shop Home",
+            imageUrl: "https://placehold.co/1200x500.png"
+        }]
     }
 ]
 
