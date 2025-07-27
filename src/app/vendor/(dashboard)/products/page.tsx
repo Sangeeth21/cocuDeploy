@@ -20,7 +20,7 @@ export default function VendorProductsPage() {
                 <p className="text-muted-foreground">Manage your product listings.</p>
             </div>
             <Button asChild>
-                <Link href="/products/new">
+                <Link href="/vendor/products/new">
                     <PlusCircle className="mr-2"/> Add Product
                 </Link>
             </Button>

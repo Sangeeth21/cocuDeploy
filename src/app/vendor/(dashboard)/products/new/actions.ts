@@ -18,5 +18,3 @@ export async function generateProductImages(input: {
     return { error: `AI image generation failed: ${errorMessage}` };
   }
 }
-
-    

@@ -131,3 +131,27 @@ export type HeroCampaign = {
     imageUrl: string;
     hint: string;
 }
+
+// Product Combos
+export type OrderedCombo = {
+  id: string;
+  products: DisplayProduct[];
+  orderCount: number;
+  orders: {
+    orderId: string;
+    customer: User;
+    date: string;
+    vendorId: string;
+  }[];
+};
+
+export type WishlistedCombo = {
+  id: string;
+  products: DisplayProduct[];
+  wishlistCount: number;
+  customers: {
+    customer: User;
+    date: string;
+    vendorId: string;
+  }[];
+};

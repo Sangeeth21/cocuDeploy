@@ -1,6 +1,5 @@
 
-
-import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order } from './types';
+import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo } from './types';
 
 export const mockProducts: DisplayProduct[] = [
   {
@@ -324,3 +323,43 @@ export const mockHeroCampaigns: HeroCampaign[] = [
         hint: "tech gadgets"
     }
 ]
+
+export const mockOrderedCombos: OrderedCombo[] = [
+  {
+    id: 'OC001',
+    products: [mockProducts[6], mockProducts[3]],
+    orderCount: 18,
+    orders: [
+      { orderId: 'ORD003', customer: mockUsers[4], date: '2024-06-15', vendorId: 'VDR007' },
+      { orderId: 'ORD006', customer: mockUsers[0], date: '2024-06-14', vendorId: 'VDR004' },
+    ],
+  },
+  {
+    id: 'OC002',
+    products: [mockProducts[7], mockProducts[8]],
+    orderCount: 12,
+    orders: [
+      { orderId: 'ORD004', customer: mockUsers[6], date: '2024-06-12', vendorId: 'VDR008' },
+    ],
+  },
+];
+
+export const mockWishlistedCombos: WishlistedCombo[] = [
+  {
+    id: 'WC001',
+    products: [mockProducts[0], mockProducts[2]],
+    wishlistCount: 25,
+    customers: [
+      { customer: mockUsers[0], date: '2024-06-21', vendorId: 'VDR001' },
+      { customer: mockUsers[2], date: '2024-06-20', vendorId: 'VDR003' },
+    ],
+  },
+  {
+    id: 'WC002',
+    products: [mockProducts[4], mockProducts[3]],
+    wishlistCount: 21,
+    customers: [
+      { customer: mockUsers[4], date: '2024-06-19', vendorId: 'VDR005' },
+    ],
+  },
+];
