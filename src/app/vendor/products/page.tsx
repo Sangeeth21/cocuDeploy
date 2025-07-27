@@ -45,7 +45,7 @@ export default function VendorProductsPage() {
                 <TableBody>
                    {mockProducts.slice(0, 5).map(product => (
                      <TableRow key={product.id}>
-                        <TableCell className="hidden sm:table-cell">
+                        <TableCell className="hidden sm:table-cell p-2">
                              <div className="relative w-16 h-16 rounded-md overflow-hidden">
                                 <Image
                                 src={product.imageUrl}

@@ -101,8 +101,8 @@ export default function ProductsPage() {
         {query && <p className="text-lg text-muted-foreground mt-2">Showing results for: "{query}"</p>}
       </div>
 
-      <div className="grid md:grid-cols-4 gap-8">
-        <aside className="md:col-span-1">
+      <div className="grid lg:grid-cols-4 gap-8">
+        <aside className="lg:col-span-1">
           <Card>
             <CardContent className="p-4">
               <h2 className="text-xl font-semibold font-headline mb-4">Filters</h2>
@@ -138,11 +138,11 @@ export default function ProductsPage() {
           </Card>
         </aside>
 
-        <main className="md:col-span-3">
-          <div className="flex justify-between items-center mb-4">
-            <p className="text-muted-foreground">{filteredAndSortedProducts.length} products</p>
+        <main className="lg:col-span-3">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+            <p className="text-muted-foreground w-full sm:w-auto text-center sm:text-left">{filteredAndSortedProducts.length} products</p>
             <Select onValueChange={setSortOption} defaultValue="featured">
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Sort by" />
               </SelectTrigger>
               <SelectContent>
@@ -155,7 +155,7 @@ export default function ProductsPage() {
             </Select>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredAndSortedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
