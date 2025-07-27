@@ -22,7 +22,7 @@ function TemplatePreview({ templateName }: { templateName: string }) {
     const product = mockProducts[0]; 
 
     return (
-        <div className="bg-background text-foreground h-full overflow-y-auto">
+        <div className="bg-background text-foreground h-full overflow-y-auto scale-[0.8] origin-top">
             <div className={cn("container py-8", 
                 templateName === "Bold & Vibrant" && "grid md:grid-cols-2 gap-12 items-center",
                 templateName === "Classic Elegance" && "max-w-6xl"
@@ -175,7 +175,7 @@ export default function VendorPage() {
                                         </CardContent>
                                     </Card>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-6xl h-[90vh] p-0">
+                                <DialogContent className="sm:max-w-xl p-0">
                                      <DialogHeader className="p-4 border-b">
                                         <DialogTitle>Preview: {template.name}</DialogTitle>
                                      </DialogHeader>
