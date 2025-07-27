@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -27,6 +28,54 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
       </div>
     </div>,
 });
+
+
+const CountdownTimer = ({ endDate }: { endDate: string }) => {
+  const calculateTimeLeft = () => {
+    const difference = +new Date(endDate) - +new Date();
+    let timeLeft = { days: 0, hours: 0, minutes: 0, seconds: 0 };
+
+    if (difference > 0) {
+      timeLeft = {
+        days: Math.floor(difference / (1000 * 60 * 60 * 24)),
+        hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
+        minutes: Math.floor((difference / 1000 / 60) % 60),
+        seconds: Math.floor((difference / 1000) % 60),
+      };
+    }
+    return timeLeft;
+  };
+
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setTimeLeft(calculateTimeLeft());
+    }, 1000);
+    return () => clearTimeout(timer);
+  });
+  
+  const timerComponents = Object.entries(timeLeft).map(([interval, value]) => {
+      if (value < 0) return null;
+      return (
+          <div key={interval} className="flex flex-col items-center">
+            <span className="text-2xl font-bold font-mono">{String(value).padStart(2, '0')}</span>
+            <span className="text-xs text-muted-foreground capitalize">{interval}</span>
+          </div>
+      )
+  });
+
+  return (
+    <div className="flex items-center gap-2">
+        {timerComponents.map((component, index) => (
+            <div key={index} className="flex items-center gap-2">
+                {component}
+                {index < timerComponents.length - 1 && <span className="text-2xl font-bold">:</span>}
+            </div>
+        ))}
+    </div>
+  );
+};
 
 export default function Home() {
   return (
@@ -82,6 +131,7 @@ export default function Home() {
                 <h2 className="text-3xl font-bold font-headline flex items-center gap-2"><Zap className="text-accent"/> Flash Deals</h2>
                 <p className="text-muted-foreground">Limited time offers, grab them before they're gone!</p>
              </div>
+             <CountdownTimer endDate={mockFlashDeals[0].endDate} />
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {mockFlashDeals.map((deal) => (

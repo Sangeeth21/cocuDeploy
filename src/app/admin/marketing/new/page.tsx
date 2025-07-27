@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { mockProducts, mockReviews, mockCampaigns } from "@/lib/mock-data";
 import type { DisplayProduct, MarketingCampaign } from "@/lib/types";
 import { format, addDays, parseISO } from "date-fns";
-import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User, PlusCircle, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User, PlusCircle, Trash2, Clock } from "lucide-react";
 import Image from "next/image";
 import type { DateRange } from "react-day-picker";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -24,6 +24,7 @@ import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Switch } from "@/components/ui/switch";
 
 
 const getYoutubeEmbedUrl = (url: string) => {
@@ -46,6 +47,32 @@ type Creative = {
     embedUrl: string | null;
 };
 
+const CountdownTimerPreview = () => {
+    return (
+        <div className="flex items-center gap-2 justify-center">
+            <div className="flex flex-col items-center">
+                <span className="text-2xl font-bold font-mono">15</span>
+                <span className="text-xs text-muted-foreground">Days</span>
+            </div>
+            <span className="text-2xl font-bold">:</span>
+            <div className="flex flex-col items-center">
+                <span className="text-2xl font-bold font-mono">10</span>
+                <span className="text-xs text-muted-foreground">Hours</span>
+            </div>
+             <span className="text-2xl font-bold">:</span>
+            <div className="flex flex-col items-center">
+                <span className="text-2xl font-bold font-mono">32</span>
+                <span className="text-xs text-muted-foreground">Mins</span>
+            </div>
+             <span className="text-2xl font-bold">:</span>
+            <div className="flex flex-col items-center">
+                <span className="text-2xl font-bold font-mono">54</span>
+                <span className="text-xs text-muted-foreground">Secs</span>
+            </div>
+        </div>
+    )
+}
+
 
 export default function NewCampaignPage() {
     const router = useRouter();
@@ -58,6 +85,9 @@ export default function NewCampaignPage() {
     const [campaignName, setCampaignName] = useState("");
     const [campaignType, setCampaignType] = useState<MarketingCampaign['type'] | ''>('');
     const [date, setDate] = useState<DateRange | undefined>({ from: new Date(), to: addDays(new Date(), 7) });
+    const [startTime, setStartTime] = useState("00:00");
+    const [endTime, setEndTime] = useState("23:59");
+    const [showCountdown, setShowCountdown] = useState(false);
     const [selectedProducts, setSelectedProducts] = useState<DisplayProduct[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     
@@ -83,6 +113,9 @@ export default function NewCampaignPage() {
                     from: parseISO(existingCampaign.startDate),
                     to: parseISO(existingCampaign.endDate),
                 });
+                setStartTime(existingCampaign.startTime || "00:00");
+                setEndTime(existingCampaign.endTime || "23:59");
+                setShowCountdown(existingCampaign.showCountdown || false);
             }
         }
     }, [searchParams]);
@@ -174,7 +207,8 @@ export default function NewCampaignPage() {
     }
     
     const renderMarqueeContent = (creative: Creative) => (
-        <div className="flex items-center gap-2 mx-4">
+         <div className="flex items-center gap-2 mx-4">
+            {showCountdown && <Clock className="h-4 w-4 text-primary-foreground inline-block"/>}
             {creative.image?.src && <Image src={creative.image.src} alt={creative.title} width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
             <span className="font-semibold">{creative.title}</span>
             <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
@@ -218,7 +252,7 @@ export default function NewCampaignPage() {
                                 </Select>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="date-range">Date Range</Label>
+                                <Label>Date Range</Label>
                                 <Popover>
                                     <PopoverTrigger asChild>
                                         <Button id="date-range" variant="outline" className="w-full justify-start text-left font-normal">
@@ -233,7 +267,17 @@ export default function NewCampaignPage() {
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                            <div className="sm:col-span-2 space-y-2">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="start-time">Start Time</Label>
+                                    <Input id="start-time" type="time" value={startTime} onChange={e => setStartTime(e.target.value)} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label htmlFor="end-time">End Time</Label>
+                                    <Input id="end-time" type="time" value={endTime} onChange={e => setEndTime(e.target.value)} />
+                                </div>
+                            </div>
+                             <div className="space-y-2">
                                 <Label htmlFor="campaign-placement">Placement</Label>
                                 <Select value={placement} onValueChange={setPlacement}>
                                     <SelectTrigger id="campaign-placement">
@@ -247,6 +291,10 @@ export default function NewCampaignPage() {
                                         <SelectItem value="product-page-banner">Product Page Banner</SelectItem>
                                     </SelectContent>
                                 </Select>
+                            </div>
+                            <div className="sm:col-span-2 flex items-center gap-4 p-4 border rounded-lg">
+                                <Switch id="show-countdown" checked={showCountdown} onCheckedChange={setShowCountdown} />
+                                 <Label htmlFor="show-countdown" className="font-medium">Show Countdown Timer</Label>
                             </div>
                         </CardContent>
                     </Card>
@@ -399,6 +447,7 @@ export default function NewCampaignPage() {
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                             <div className="absolute inset-0 flex items-center justify-center text-center">
                                                 <div className="text-white p-4">
+                                                    {showCountdown && <div className="mb-4 p-2 bg-black/30 rounded-lg backdrop-blur-sm inline-block"><CountdownTimerPreview /></div>}
                                                     <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>{previewingCreative.title}</h1>
                                                     <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>{previewingCreative.description}</p>
                                                     <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">{previewingCreative.cta}<ArrowRight className="ml-2 h-4 w-4" /></Button>
@@ -432,6 +481,7 @@ export default function NewCampaignPage() {
                                                 <Image src={previewingCreative.image!.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />
                                                 <div className="p-6">
                                                     <h2 className="text-lg font-bold font-headline mb-2">{previewingCreative.title}</h2>
+                                                    {showCountdown && <div className="mb-4"><CountdownTimerPreview /></div>}
                                                     <p className="text-sm text-muted-foreground mb-4">{previewingCreative.description}</p>
                                                     <Button>{previewingCreative.cta}</Button>
                                                 </div>
@@ -450,6 +500,7 @@ export default function NewCampaignPage() {
                                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
                                                 <div>
                                                     <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>{previewingCreative.title}</h2>
+                                                    {showCountdown && <div className="my-2 p-1 bg-black/30 rounded-lg backdrop-blur-sm inline-block"><CountdownTimerPreview /></div>}
                                                     <p className={cn(isPreviewMobile ? "text-xs" : "text-sm", "mt-1 mb-2")}>{previewingCreative.description}</p>
                                                     <Button size="sm">{previewingCreative.cta}</Button>
                                                 </div>
@@ -478,6 +529,7 @@ export default function NewCampaignPage() {
                                             <Image src={previewingCreative.image!.src} alt={previewingCreative.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />
                                             <div className="flex-1 text-center md:text-left">
                                                 <h3 className="font-bold">{previewingCreative.title}</h3>
+                                                {showCountdown && <div className="my-2"><CountdownTimerPreview /></div>}
                                                 <p className="text-sm text-muted-foreground">{previewingCreative.description}</p>
                                             </div>
                                             <Button>{previewingCreative.cta}</Button>
@@ -520,3 +572,4 @@ export default function NewCampaignPage() {
         </div>
     );
 }
+

@@ -113,6 +113,9 @@ export type MarketingCampaign = {
     status: 'Active' | 'Scheduled' | 'Finished' | 'Draft';
     startDate: string;
     endDate: string;
+    startTime?: string;
+    endTime?: string;
+    showCountdown?: boolean;
 }
 
 export type FlashDeal = {

@@ -275,6 +275,9 @@ export const mockCampaigns: MarketingCampaign[] = [
         status: "Active",
         startDate: "2024-06-01",
         endDate: "2024-06-30",
+        startTime: "09:00",
+        endTime: "23:59",
+        showCountdown: true,
     },
     {
         id: "CAMP002",
@@ -283,6 +286,9 @@ export const mockCampaigns: MarketingCampaign[] = [
         status: "Active",
         startDate: "2024-06-15",
         endDate: "2024-07-15",
+        startTime: "00:00",
+        endTime: "23:59",
+        showCountdown: false,
     },
      {
         id: "CAMP003",
@@ -291,6 +297,9 @@ export const mockCampaigns: MarketingCampaign[] = [
         status: "Scheduled",
         startDate: "2024-06-22",
         endDate: "2024-06-23",
+        startTime: "18:00",
+        endTime: "23:59",
+        showCountdown: true,
     },
     {
         id: "CAMP004",
