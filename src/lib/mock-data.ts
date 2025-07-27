@@ -130,6 +130,22 @@ export const mockProducts: Product[] = [
     stock: 40,
     status: 'Live',
   },
+  {
+    id: '9',
+    name: 'Hand-poured Soy Candle',
+    description: 'A beautiful soy wax candle in a reusable glass jar. Lavender and vanilla scent. 40+ hour burn time.',
+    price: 22.50,
+    category: 'Home Goods',
+    imageUrl: 'https://placehold.co/600x600.png',
+    rating: 4.9,
+    reviewCount: 150,
+    vendorId: 'VDR004',
+    tags: ['candle', 'home'],
+    images: ['https://placehold.co/600x600.png'],
+    sku: 'CNDL-SOY-LV',
+    stock: 60,
+    status: 'Live',
+  },
 ];
 
 export const mockReviews: Review[] = [
