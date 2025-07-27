@@ -11,10 +11,12 @@ import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
 import { Upload, X, DollarSign, PackageCheck, Box, Rotate3d } from "lucide-react"
 import Image from "next/image"
-import { useState, useMemo, useRef } from "react"
+import { useState, useMemo, useRef, useEffect } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Slider } from "@/components/ui/slider"
+
 
 type ImagePreview = {
     src: string;
@@ -49,17 +51,43 @@ function ImagePreview3D({ src, alt }: { src: string, alt: string }) {
         prevMousePos.current = { x: e.clientX, y: e.clientY };
     };
     
+    useEffect(() => {
+        const handleGlobalMouseUp = () => {
+            if (isDragging.current) {
+                isDragging.current = false;
+            }
+        };
+
+        window.addEventListener('mouseup', handleGlobalMouseUp);
+
+        return () => {
+            window.removeEventListener('mouseup', handleGlobalMouseUp);
+        };
+    }, []);
+
+
     return (
-        <div 
-            className="w-full h-full flex items-center justify-center bg-muted/10 rounded-lg cursor-grab active:cursor-grabbing" 
-            style={{ perspective: '1000px' }}
-            onMouseDown={handleMouseDown}
-            onMouseUp={handleMouseUp}
-            onMouseMove={handleMouseMove}
-            onMouseLeave={handleMouseUp}
-        >
-            <div className="relative w-4/5 h-4/5 transition-transform duration-75 ease-out" style={{ transformStyle: 'preserve-3d', transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)` }}>
-                <Image src={src} alt={alt} fill className="object-contain rounded-md shadow-2xl border" />
+        <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+            <div 
+                className="w-full flex-1 flex items-center justify-center bg-muted/10 rounded-lg cursor-grab active:cursor-grabbing" 
+                style={{ perspective: '1000px' }}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+            >
+                <div className="relative w-4/5 h-4/5 transition-transform duration-75 ease-out" style={{ transformStyle: 'preserve-3d', transform: `rotateX(${rotation.x}deg) rotateY(${rotation.y}deg)` }}>
+                    <Image src={src} alt={alt} fill className="object-contain rounded-md shadow-2xl border" />
+                </div>
+            </div>
+            <div className="w-full px-8">
+                <Label htmlFor="rotation-slider" className="text-sm text-muted-foreground mb-2 block">Rotate View</Label>
+                <Slider 
+                    id="rotation-slider"
+                    min={-180}
+                    max={180}
+                    step={1}
+                    value={[rotation.y]}
+                    onValueChange={(value) => setRotation(prev => ({...prev, y: value[0]}))}
+                />
             </div>
         </div>
     );
@@ -225,7 +253,7 @@ export default function NewProductPage() {
       </div>
     </div>
     <Dialog open={!!previewedImage} onOpenChange={(isOpen) => !isOpen && setPreviewedImage(null)}>
-        <DialogContent className="max-w-3xl h-3/4 flex flex-col">
+        <DialogContent className="max-w-3xl h-3/4 flex flex-col p-8">
             <DialogHeader>
                 <DialogTitle>3D Rotatable Preview</DialogTitle>
             </DialogHeader>
