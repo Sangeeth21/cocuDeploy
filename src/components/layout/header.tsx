@@ -31,9 +31,9 @@ const navLinks = [
 ];
 
 const customerNotifications = [
-    { type: 'order_shipped', id: 'ORD002', text: 'Your order #ORD002 has shipped!', time: '1d ago', href: '/account?tab=orders' },
-    { type: 'request_approved', id: 'REQ001', text: 'Your request for "Classic Leather Watch" was approved!', time: '2d ago', href: '/cart' },
-    { type: 'request_denied', id: 'REQ002', text: '"Modern Minimalist Desk" is unavailable.', time: '3d ago', href: '/products?category=Furniture' },
+    { type: 'order_shipped', id: 'ORD002', text: 'Your order #ORD002 has shipped!', time: '1d ago', href: '/account?tab=orders', actions: [{label: 'Track', href: '/account?tab=orders'}] },
+    { type: 'request_approved', id: 'REQ001', text: 'Your request for "Classic Leather Watch" was approved!', time: '2d ago', href: '/cart', actions: [{label: 'Go to Cart', href: '/cart'}] },
+    { type: 'request_denied', id: 'REQ002', text: '"Modern Minimalist Desk" is unavailable.', time: '3d ago', href: '/products?category=Furniture', actions: [{label: 'View Similar', href: '/products?category=Furniture', variant: 'secondary'}] },
 ]
 
 export function Header() {
