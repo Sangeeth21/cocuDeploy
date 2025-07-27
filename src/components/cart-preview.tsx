@@ -23,7 +23,7 @@ export function CartPreview() {
     return (
         <Popover>
             <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Open cart preview">
+                <Button variant="ghost" size="icon" aria-label="Open cart preview" className="relative">
                     <ShoppingCart className="h-5 w-5" />
                     {cartItems.length > 0 && (
                         <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
