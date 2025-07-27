@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { cn } from '@/lib/utils';
 import { CartProvider } from '@/context/cart-context';
+import { UserProvider } from '@/context/user-context';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -27,12 +28,14 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn('min-h-screen bg-background font-body antialiased flex flex-col', ptSans.variable)}>
-        <CartProvider>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <Toaster />
-        </CartProvider>
+        <UserProvider>
+          <CartProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <Toaster />
+          </CartProvider>
+        </UserProvider>
       </body>
     </html>
   );

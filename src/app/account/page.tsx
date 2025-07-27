@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -35,6 +34,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Message, Conversation } from "@/lib/types";
 import { mockUserOrders } from "@/lib/mock-data";
+import { useUser } from "@/context/user-context";
 
 type Attachment = {
     name: string;
@@ -92,7 +92,7 @@ export default function AccountPage() {
   const searchParams = useSearchParams();
   const tab = searchParams.get('tab') || 'profile';
   const { toast } = useToast();
-  const [avatar, setAvatar] = useState("https://placehold.co/100x100.png");
+  const { avatar, updateAvatar } = useUser();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -184,7 +184,7 @@ export default function AccountPage() {
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      setAvatar(URL.createObjectURL(file));
+      updateAvatar(URL.createObjectURL(file));
        toast({
         title: "Avatar Updated",
         description: "Your new profile picture has been set. Click 'Save Changes' to apply.",

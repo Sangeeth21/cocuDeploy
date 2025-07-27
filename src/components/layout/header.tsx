@@ -16,9 +16,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
 import { CartPreview } from "@/components/cart-preview";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUser } from "@/context/user-context";
 
 
 const navLinks = [
@@ -29,11 +29,8 @@ const navLinks = [
 
 export function Header() {
   const pathname = usePathname();
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const { avatar, isLoggedIn, logout } = useUser();
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -99,7 +96,7 @@ export function Header() {
                <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-transparent rounded-full" asChild>
                   <Link href="/account">
                      <Avatar className="h-8 w-8">
-                      <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="person face" />
+                      <AvatarImage src={avatar} alt="User Avatar" data-ai-hint="person face" />
                       <AvatarFallback>JD</AvatarFallback>
                     </Avatar>
                     <span className="sr-only">User Account</span>
@@ -131,7 +128,7 @@ export function Header() {
                     <Link href="/account?tab=billing"><CreditCard className="mr-2 h-4 w-4"/> Billing</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
+                  <DropdownMenuItem onClick={logout}>
                     <LogOut className="mr-2 h-4 w-4"/> Log Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
