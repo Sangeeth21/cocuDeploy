@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockOrders, mockUsers } from "@/lib/mock-data";
 import { User } from "@/lib/types";
-import { MoreHorizontal, PlusCircle, User as UserIcon, ListChecks, DollarSign, X, Loader2 } from "lucide-react";
+import { MoreHorizontal, PlusCircle, User as UserIcon, ListChecks, DollarSign, X, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -79,6 +79,63 @@ function CustomerProfileDialog({ user }: { user: User }) {
                 </div>
             </div>
         </DialogContent>
+    )
+}
+
+function SuspendCustomerDialog({ user, onConfirm, open, onOpenChange }: { user: User, onConfirm: () => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+    const userOrders = mockOrders.filter(o => o.customer.id === user.id);
+    const totalSpent = userOrders.reduce((acc, order) => acc + order.total, 0);
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <ShieldAlert className="h-6 w-6 text-destructive" />
+                        Confirm Suspension
+                    </DialogTitle>
+                    <DialogDescription>
+                        You are about to suspend {user.name}. Please review their details before confirming. This action can be reversed.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
+                     <div className="md:col-span-1 flex flex-col items-center text-center">
+                        <Avatar className="h-24 w-24 mb-4">
+                            <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person face" />
+                            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <h2 className="text-xl font-bold">{user.name}</h2>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
+                    </div>
+                     <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                                <ListChecks className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">{userOrders.length}</div>
+                            </CardContent>
+                        </Card>
+                        <Card>
+                            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                                <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
+                                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-2xl font-bold">${totalSpent.toFixed(2)}</div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+                <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button variant="destructive" onClick={onConfirm}>
+                        <ShieldAlert className="mr-2 h-4 w-4" /> Confirm Suspend
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -213,6 +270,8 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: User) => void }) {
 export default function AdminCustomersPage() {
     const [customers, setCustomers] = useState(mockUsers.filter(u => u.role === 'Customer'));
     const [selectedCustomer, setSelectedCustomer] = useState<User | null>(null);
+    const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isSuspendOpen, setIsSuspendOpen] = useState(false);
     const { toast } = useToast();
 
     const handleAddCustomer = (newCustomer: User) => {
@@ -221,6 +280,24 @@ export default function AdminCustomersPage() {
             title: "Customer Added",
             description: `${newCustomer.name} has been added and verified.`
         });
+    }
+
+    const handleSuspendClick = (customer: User) => {
+        setSelectedCustomer(customer);
+        setIsSuspendOpen(true);
+    };
+
+    const handleConfirmSuspend = () => {
+        if (!selectedCustomer) return;
+        setCustomers(prev => prev.map(c => 
+            c.id === selectedCustomer.id ? { ...c, status: 'Suspended' } : c
+        ));
+        toast({
+            title: "Customer Suspended",
+            description: `${selectedCustomer.name}'s account has been suspended.`
+        });
+        setIsSuspendOpen(false);
+        setSelectedCustomer(null);
     }
 
     return (
@@ -276,13 +353,13 @@ export default function AdminCustomersPage() {
                                                 <DropdownMenuContent align="end">
                                                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                     <DialogTrigger asChild>
-                                                        <DropdownMenuItem onSelect={() => setSelectedCustomer(user)}>View Profile</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => {setSelectedCustomer(user); setIsProfileOpen(true)}}>View Profile</DropdownMenuItem>
                                                     </DialogTrigger>
                                                     <DropdownMenuItem asChild>
                                                         <Link href={`/admin/orders?customerId=${user.id}`}>View Orders</Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuSeparator/>
-                                                    <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-destructive" onSelect={() => handleSuspendClick(user)}>Suspend</DropdownMenuItem>
                                                 </DropdownMenuContent>
                                             </DropdownMenu>
                                         </TableCell>
@@ -292,10 +369,20 @@ export default function AdminCustomersPage() {
                         </Table>
                     </CardContent>
                 </Card>
-                {selectedCustomer && <CustomerProfileDialog user={selectedCustomer} />}
+                {selectedCustomer && (
+                    <>
+                        <Dialog open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+                             <CustomerProfileDialog user={selectedCustomer} />
+                        </Dialog>
+                        <SuspendCustomerDialog 
+                            user={selectedCustomer}
+                            open={isSuspendOpen}
+                            onOpenChange={setIsSuspendOpen}
+                            onConfirm={handleConfirmSuspend}
+                        />
+                    </>
+                )}
             </div>
         </Dialog>
     )
 }
-
-    
