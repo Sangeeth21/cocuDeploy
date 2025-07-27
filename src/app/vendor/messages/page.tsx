@@ -312,7 +312,7 @@ export default function VendorMessagesPage() {
         <Card className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full">
           {selectedConversation ? (
             <>
-              <CardHeader className="p-4 border-b flex items-center justify-between gap-4">
+              <CardHeader className="p-4 border-b flex flex-row items-center justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <Avatar>
                     <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} data-ai-hint="person face" />
@@ -324,7 +324,7 @@ export default function VendorMessagesPage() {
                     {remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached'}
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 p-0">
+              <CardContent className="flex-1 p-0 bg-muted/20">
                 <ScrollArea className="h-full" ref={scrollAreaRef}>
                     <div className="p-4 space-y-4">
                     {selectedConversation.messages.map((msg, index) => (
@@ -333,7 +333,7 @@ export default function VendorMessagesPage() {
                         ) : (
                         <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
                         {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
-                        <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
+                        <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
                             {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
                             {msg.attachments && (
                                 <div className="grid gap-2 grid-cols-2">
