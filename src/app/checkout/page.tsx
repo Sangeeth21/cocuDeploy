@@ -93,7 +93,7 @@ export default function CheckoutPage() {
                                     <div key={item.id} className="flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className="relative w-16 h-16 rounded-md overflow-hidden">
-                                                <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint={`${item.tags?.[0]} ${item.tags?.[1]}`} />
+                                                <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint={`${item.tags?.[0] || 'product'} ${item.tags?.[1] || ''}`} />
                                             </div>
                                             <div>
                                                 <p className="font-semibold">{item.name}</p>
