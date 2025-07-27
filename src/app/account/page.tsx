@@ -470,7 +470,7 @@ export default function AccountPage() {
                             <div className="relative flex-1">
                                 <Textarea
                                     ref={textareaRef}
-                                    placeholder={isLocked ? "Please proceed to order - Vendor checking..." : "Type your message..."}
+                                    placeholder={isLocked ? "Please wait for the vendor to respond..." : "Type your message..."}
                                     className="pr-20 resize-none max-h-48"
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
