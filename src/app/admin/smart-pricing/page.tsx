@@ -14,7 +14,7 @@ import Image from "next/image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
@@ -71,28 +71,26 @@ export default function SmartPricingPage() {
     const razorpayFee = 15;
     const platformCommissionRate = 0.05; // 5%
 
-    const [needsRecalculation, setNeedsRecalculation] = useState(false);
+    const [needsRecalculation, setNeedsRecalculation] = useState(true);
 
     useEffect(() => {
         if (product) {
             setVendorSP(product.price || 0);
-        }
-    }, [product]);
-
-    useEffect(() => {
-        if(product) {
-            const initialMRP = vendorSP * (1 + platformBuffer / 100);
+            const initialMRP = (product.price || 0) * (1 + platformBuffer / 100);
             const initialFinalSP = initialMRP * (1 - discount / 100);
             setFinalSP(initialFinalSP);
+            setNeedsRecalculation(true); // Always need recalculation on load
         }
-    }, [product, vendorSP, platformBuffer, discount]);
+    }, [product, platformBuffer, discount]);
     
-     useEffect(() => {
+     const handleInputChange = useCallback((setter: React.Dispatch<React.SetStateAction<any>>) => (value: any) => {
+        setter(value);
         setNeedsRecalculation(true);
-    }, [vendorSP, platformBuffer, discount, selectedFreebies]);
+    }, []);
 
-    if (!productId || !product) {
-        notFound();
+
+    if (!product) {
+        return notFound();
     }
 
     const freebieCost = useMemo(() => {
@@ -129,13 +127,15 @@ export default function SmartPricingPage() {
     const handleSelectSuggestion = (suggestion: AISuggestion) => {
         const mrp = vendorSP * (1 + platformBuffer / 100);
         const suggestedFinalSP = suggestion.suggestedSP;
-        const suggestedDiscount = ((mrp - suggestedFinalSP) / mrp) * 100;
+        const suggestedDiscount = mrp > 0 ? ((mrp - suggestedFinalSP) / mrp) * 100 : 0;
         setDiscount(parseFloat(suggestedDiscount.toFixed(2)));
         setFinalSP(suggestedFinalSP);
-        setNeedsRecalculation(false);
+        setNeedsRecalculation(true);
     }
 
     const handleRecalculate = () => {
+        // This is where the actual recalculation happens, but since our `calculations` memo does it automatically,
+        // we just need to clear the "needs recalculation" flag.
         setNeedsRecalculation(false);
         toast({ title: 'Margin Recalculated', description: 'You can now approve the new pricing.'});
     }
@@ -224,7 +224,7 @@ export default function SmartPricingPage() {
                              </div>
                              <div className="sm:col-span-2 space-y-2">
                                  <Label>Freebie Selection (up to 3)</Label>
-                                <Select onValueChange={value => setSelectedFreebies(value ? [value] : [])}>
+                                <Select onValueChange={handleInputChange(setSelectedFreebies)}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select freebies to offer" />
                                     </SelectTrigger>
@@ -288,11 +288,11 @@ export default function SmartPricingPage() {
                                 <TableBody>
                                     <TableRow>
                                         <TableCell>Vendor SP</TableCell>
-                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={vendorSP} onChange={e => setVendorSP(Number(e.target.value))} /></TableCell>
+                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={vendorSP} onChange={e => handleInputChange(setVendorSP)(Number(e.target.value))} /></TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Platform Buffer (%)</TableCell>
-                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={platformBuffer} onChange={e => setPlatformBuffer(Number(e.target.value))} /></TableCell>
+                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={platformBuffer} onChange={e => handleInputChange(setPlatformBuffer)(Number(e.target.value))} /></TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>MRP (Auto-calculated)</TableCell>
@@ -300,11 +300,11 @@ export default function SmartPricingPage() {
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>Discount (%)</TableCell>
-                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={discount} onChange={e => setDiscount(Number(e.target.value))}/></TableCell>
+                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right" value={discount} onChange={e => handleInputChange(setDiscount)(Number(e.target.value))}/></TableCell>
                                     </TableRow>
                                     <TableRow className="bg-muted/50">
                                         <TableCell>Final Selling Price</TableCell>
-                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right font-bold" value={finalSP} onChange={e => setFinalSP(Number(e.target.value))} /></TableCell>
+                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right font-bold" value={finalSP} onChange={e => handleInputChange(setFinalSP)(Number(e.target.value))} /></TableCell>
                                     </TableRow>
                                      <TableRow>
                                         <TableCell className="text-muted-foreground text-xs">PG Fees (3%)</TableCell>
@@ -370,3 +370,5 @@ export default function SmartPricingPage() {
         </div>
     )
 }
+
+    
