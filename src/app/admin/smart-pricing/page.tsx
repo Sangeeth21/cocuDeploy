@@ -7,17 +7,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockProducts } from "@/lib/mock-data";
-import { useSearchParams } from "next/navigation";
-import { notFound } from "next/navigation";
+import { useSearchParams, notFound, useRouter } from "next/navigation";
 import { AlertCircle, ArrowLeft, Bot, Check, Info, Loader2, Save, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import Image from "next/image";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 
 const mockFreebies = [
@@ -45,10 +44,8 @@ export default function SmartPricingPage() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const { toast } = useToast();
-
     const productId = searchParams.get('productId');
-    
-    // Find the product after ensuring productId exists.
+
     const product = useMemo(() => {
         if (!productId) return null;
         return mockProducts.find(p => p.id === productId) || null;
@@ -63,6 +60,7 @@ export default function SmartPricingPage() {
     const [platformBuffer, setPlatformBuffer] = useState(15);
     const [discount, setDiscount] = useState(0);
     const [finalSP, setFinalSP] = useState(0);
+    const [needsRecalculation, setNeedsRecalculation] = useState(true);
 
     // Costs
     const pgFeesRate = 0.03; // 3%
@@ -71,27 +69,26 @@ export default function SmartPricingPage() {
     const razorpayFee = 15;
     const platformCommissionRate = 0.05; // 5%
 
-    const [needsRecalculation, setNeedsRecalculation] = useState(true);
-
     useEffect(() => {
         if (product) {
             setVendorSP(product.price || 0);
-            const initialMRP = (product.price || 0) * (1 + platformBuffer / 100);
-            const initialFinalSP = initialMRP * (1 - discount / 100);
-            setFinalSP(initialFinalSP);
-            setNeedsRecalculation(true); // Always need recalculation on load
         }
-    }, [product, platformBuffer, discount]);
+    }, [product]);
+
+    useEffect(() => {
+        if (product) {
+            const mrp = vendorSP * (1 + platformBuffer / 100);
+            const newFinalSP = mrp * (1 - discount / 100);
+            setFinalSP(newFinalSP);
+            setNeedsRecalculation(true);
+        }
+    }, [product, vendorSP, platformBuffer, discount]);
+
     
      const handleInputChange = useCallback((setter: React.Dispatch<React.SetStateAction<any>>) => (value: any) => {
         setter(value);
         setNeedsRecalculation(true);
     }, []);
-
-
-    if (!product) {
-        return notFound();
-    }
 
     const freebieCost = useMemo(() => {
         return selectedFreebies.reduce((total, fbId) => {
@@ -102,14 +99,14 @@ export default function SmartPricingPage() {
 
     const calculations = useMemo(() => {
         const mrp = vendorSP * (1 + platformBuffer / 100);
-        const finalPrice = finalSP;
-        const pgFee = finalPrice * pgFeesRate;
+        const pgFee = finalSP * pgFeesRate;
         const platformCommission = vendorSP * platformCommissionRate;
-        const totalExpenses = vendorSP + logisticsCost + freebieCost + pgFee + payoutFee + platformCommission + razorpayFee;
-        const platformProfit = finalPrice - totalExpenses;
-        const netMargin = finalPrice > 0 ? (platformProfit / finalPrice) * 100 : 0;
-        return { mrp, finalPrice, pgFee, platformCommission, totalExpenses, platformProfit, netMargin };
+        const totalExpenses = logisticsCost + freebieCost + pgFee + payoutFee + platformCommission + razorpayFee;
+        const platformProfit = finalSP - vendorSP - totalExpenses;
+        const netMargin = finalSP > 0 ? (platformProfit / finalSP) * 100 : 0;
+        return { mrp, finalPrice: finalSP, pgFee, platformCommission, totalExpenses, platformProfit, netMargin };
     }, [vendorSP, platformBuffer, finalSP, freebieCost, platformCommissionRate]);
+
 
     const handleSendToAI = () => {
         if(selectedFreebies.length === 0) {
@@ -128,20 +125,23 @@ export default function SmartPricingPage() {
         const mrp = vendorSP * (1 + platformBuffer / 100);
         const suggestedFinalSP = suggestion.suggestedSP;
         const suggestedDiscount = mrp > 0 ? ((mrp - suggestedFinalSP) / mrp) * 100 : 0;
-        setDiscount(parseFloat(suggestedDiscount.toFixed(2)));
+        
         setFinalSP(suggestedFinalSP);
+        setDiscount(parseFloat(suggestedDiscount.toFixed(2)));
         setNeedsRecalculation(true);
     }
 
     const handleRecalculate = () => {
-        // This is where the actual recalculation happens, but since our `calculations` memo does it automatically,
-        // we just need to clear the "needs recalculation" flag.
         setNeedsRecalculation(false);
         toast({ title: 'Margin Recalculated', description: 'You can now approve the new pricing.'});
     }
     
     const isMarginLow = calculations.netMargin < 11;
     const isApproveDisabled = isMarginLow || needsRecalculation;
+
+    if (!product) {
+        return notFound();
+    }
 
     return (
         <div>
@@ -223,8 +223,8 @@ export default function SmartPricingPage() {
                                 <Input placeholder="e.g., Festival, Launch Offer" />
                              </div>
                              <div className="sm:col-span-2 space-y-2">
-                                 <Label>Freebie Selection (up to 3)</Label>
-                                <Select onValueChange={handleInputChange(setSelectedFreebies)}>
+                                 <Label>Freebie Selection</Label>
+                                <Select onValueChange={(value) => handleInputChange(setSelectedFreebies)([value])}>
                                     <SelectTrigger>
                                         <SelectValue placeholder="Select freebies to offer" />
                                     </SelectTrigger>
@@ -304,7 +304,7 @@ export default function SmartPricingPage() {
                                     </TableRow>
                                     <TableRow className="bg-muted/50">
                                         <TableCell>Final Selling Price</TableCell>
-                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right font-bold" value={finalSP} onChange={e => handleInputChange(setFinalSP)(Number(e.target.value))} /></TableCell>
+                                        <TableCell className="text-right"><Input className="w-24 h-8 text-right font-bold" value={finalSP.toFixed(2)} readOnly /></TableCell>
                                     </TableRow>
                                      <TableRow>
                                         <TableCell className="text-muted-foreground text-xs">PG Fees (3%)</TableCell>
