@@ -61,6 +61,7 @@ export default function NewCampaignPage() {
     const [isPreviewMobile, setIsPreviewMobile] = useState(false);
     const [placement, setPlacement] = useState('hero');
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [previewingCreative, setPreviewingCreative] = useState<Creative | null>(null);
 
     const handleCreateCampaign = () => {
         toast({
@@ -138,16 +139,17 @@ export default function NewCampaignPage() {
     const mockProductForPreview = mockProducts[0];
     const mockReviewForPreview = mockReviews[0];
     
-    const canPreview = creatives.some(c => c.title || c.description || c.image || c.videoUrl);
-
-    const renderMarqueeContent = () => (
-        creatives.map(c => (
-            <div key={c.id} className="flex items-center gap-2 mx-4">
-                {c.image?.src && <Image src={c.image.src} alt={c.title} width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
-                <span className="font-semibold">{c.title}</span>
-                <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{c.cta}</Button>
-            </div>
-        ))
+    const handlePreviewClick = (creative: Creative) => {
+        setPreviewingCreative(creative);
+        setIsPreviewOpen(true);
+    }
+    
+    const renderMarqueeContent = (creative: Creative) => (
+        <div className="flex items-center gap-2 mx-4">
+            {creative.image?.src && <Image src={creative.image.src} alt={creative.title} width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+            <span className="font-semibold">{creative.title}</span>
+            <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
+        </div>
     );
 
     return (
@@ -279,7 +281,10 @@ export default function NewCampaignPage() {
                                                      </div>
                                                  )}
                                              </div>
-                                             <div className="flex justify-end items-center">
+                                             <div className="flex justify-end items-center gap-2">
+                                                <Button variant="secondary" size="sm" onClick={() => handlePreviewClick(creative)} disabled={!creative.image && !creative.embedUrl}>
+                                                    <Eye className="mr-2 h-4 w-4"/> Preview Creative
+                                                </Button>
                                                 <Button variant="destructive" size="sm" onClick={() => handleRemoveCreative(creative.id)}><Trash2 className="mr-2 h-4 w-4" /> Remove</Button>
                                              </div>
                                         </AccordionContent>
@@ -340,9 +345,6 @@ export default function NewCampaignPage() {
                             <p className="text-sm text-muted-foreground mb-4">Review your campaign settings before saving or publishing.</p>
                             <div className="flex flex-col gap-2">
                                 <Button onClick={handleCreateCampaign}><Save className="mr-2 h-4 w-4" /> Save Campaign</Button>
-                                <Button variant="secondary" onClick={() => setIsPreviewOpen(true)} disabled={!canPreview}>
-                                    <Eye className="mr-2 h-4 w-4"/> Preview Campaign
-                                </Button>
                             </div>
                         </CardContent>
                     </Card>
@@ -352,48 +354,36 @@ export default function NewCampaignPage() {
             <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
                 <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
                     <DialogHeader>
-                        <DialogTitle>Campaign Preview</DialogTitle>
+                        <DialogTitle>Creative Preview: {previewingCreative?.title}</DialogTitle>
                     </DialogHeader>
                     <div className="flex justify-center items-center gap-2 border-b pb-2">
                         <Button variant={!isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(false)}><Laptop className="mr-2 h-4 w-4" /> Desktop</Button>
                         <Button variant={isPreviewMobile ? 'secondary' : 'ghost'} size="sm" onClick={() => setIsPreviewMobile(true)}><Smartphone className="mr-2 h-4 w-4" /> Mobile</Button>
                     </div>
                     <div className="flex-1 flex items-center justify-center p-4 bg-muted/20 rounded-lg overflow-auto">
-                        <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full overflow-y-auto", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
-                                <>
+                        {previewingCreative && (
+                            <div className={cn("bg-background shadow-lg rounded-lg transition-all duration-300 ease-in-out w-full h-full overflow-y-auto", isPreviewMobile && "max-w-[375px] max-h-[667px] mx-auto")}>
                                 {placement === 'hero' && (
-                                    <Carousel className="w-full h-full" opts={{loop: true}}>
-                                        <CarouselContent>
-                                            {creatives.filter(c => c.image?.src).map(c => (
-                                                <CarouselItem key={c.id}>
-                                                    <div className="relative w-full h-full">
-                                                        <div className="relative" style={{height: isPreviewMobile ? '100%' : '100%'}}>
-                                                            <Image src={c.image!.src} alt={c.title} fill className="object-cover" />
-                                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-                                                            <div className="absolute inset-0 flex items-center justify-center text-center">
-                                                                <div className="text-white p-4">
-                                                                    <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>{c.title}</h1>
-                                                                    <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>{c.description}</p>
-                                                                    <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">{c.cta}<ArrowRight className="ml-2 h-4 w-4" /></Button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </CarouselItem>
-                                            ))}
-                                        </CarouselContent>
-                                         {creatives.filter(c => c.image?.src).length > 1 && <>
-                                            <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2"/>
-                                            <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2"/>
-                                        </>}
-                                    </Carousel>
+                                    <div className="relative w-full h-full">
+                                        <div className="relative" style={{height: '100%'}}>
+                                            <Image src={previewingCreative.image!.src} alt={previewingCreative.title} fill className="object-cover" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                                            <div className="absolute inset-0 flex items-center justify-center text-center">
+                                                <div className="text-white p-4">
+                                                    <h1 className={cn("font-bold font-headline drop-shadow-lg", isPreviewMobile ? "text-2xl" : "text-4xl")}>{previewingCreative.title}</h1>
+                                                    <p className={cn("mx-auto mb-4 drop-shadow-md", isPreviewMobile ? "text-sm" : "text-lg")}>{previewingCreative.description}</p>
+                                                    <Button size={isPreviewMobile ? 'sm' : 'lg'} className="bg-accent text-accent-foreground hover:bg-accent/90">{previewingCreative.cta}<ArrowRight className="ml-2 h-4 w-4" /></Button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                                 {placement === 'banner' && (
                                      <div className="w-full h-full flex flex-col">
                                         <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center relative whitespace-nowrap overflow-x-hidden">
                                             <div className="flex animate-marquee">
-                                                <div className="flex shrink-0">{renderMarqueeContent()}</div>
-                                                <div className="flex shrink-0">{renderMarqueeContent()}</div>
+                                                <div className="flex shrink-0">{renderMarqueeContent(previewingCreative)}</div>
+                                                <div className="flex shrink-0" aria-hidden="true">{renderMarqueeContent(previewingCreative)}</div>
                                             </div>
                                         </div>
                                         <div className="p-4 flex-1">
@@ -409,26 +399,14 @@ export default function NewCampaignPage() {
                                     <div className="w-full h-full flex items-center justify-center bg-black/50">
                                         <Card className="bg-background rounded-lg shadow-xl p-0 w-full max-w-sm text-center relative overflow-hidden">
                                             <button className="absolute top-2 right-2 z-10 bg-background/50 rounded-full p-1"><X className="h-4 w-4"/></button>
-                                            <Carousel className="w-full">
-                                                <CarouselContent>
-                                                    {creatives.filter(c => c.image?.src).map(c => (
-                                                        <CarouselItem key={c.id}>
-                                                            <div className="flex flex-col items-center">
-                                                                <Image src={c.image!.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />
-                                                                <div className="p-6">
-                                                                    <h2 className="text-lg font-bold font-headline mb-2">{c.title}</h2>
-                                                                    <p className="text-sm text-muted-foreground mb-4">{c.description}</p>
-                                                                    <Button>{c.cta}</Button>
-                                                                </div>
-                                                            </div>
-                                                        </CarouselItem>
-                                                    ))}
-                                                </CarouselContent>
-                                                {creatives.length > 1 && <>
-                                                    <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2"/>
-                                                    <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2"/>
-                                                </>}
-                                            </Carousel>
+                                            <div className="flex flex-col items-center">
+                                                <Image src={previewingCreative.image!.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />
+                                                <div className="p-6">
+                                                    <h2 className="text-lg font-bold font-headline mb-2">{previewingCreative.title}</h2>
+                                                    <p className="text-sm text-muted-foreground mb-4">{previewingCreative.description}</p>
+                                                    <Button>{previewingCreative.cta}</Button>
+                                                </div>
+                                            </div>
                                         </Card>
                                     </div>
                                 )}
@@ -438,28 +416,16 @@ export default function NewCampaignPage() {
                                             <h1 className="text-3xl font-bold font-headline">Homepage Content</h1>
                                             <p className="text-muted-foreground">This is a section of the homepage.</p>
                                         </div>
-                                         <Carousel className="w-full" opts={{loop:true}}>
-                                            <CarouselContent>
-                                                {creatives.filter(c => c.image?.src).map(c => (
-                                                <CarouselItem key={c.id}>
-                                                    <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
-                                                        <Image src={c.image!.src} alt={c.title} fill className="object-cover" />
-                                                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
-                                                            <div>
-                                                                <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>{c.title}</h2>
-                                                                <p className={cn(isPreviewMobile ? "text-xs" : "text-sm", "mt-1 mb-2")}>{c.description}</p>
-                                                                <Button size="sm">{c.cta}</Button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </CarouselItem>
-                                                ))}
-                                            </CarouselContent>
-                                             {creatives.length > 1 && <>
-                                                <CarouselPrevious className="absolute left-2 top-1/2 -translate-y-1/2"/>
-                                                <CarouselNext className="absolute right-2 top-1/2 -translate-y-1/2"/>
-                                            </>}
-                                        </Carousel>
+                                        <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
+                                            <Image src={previewingCreative.image!.src} alt={previewingCreative.title} fill className="object-cover" />
+                                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
+                                                <div>
+                                                    <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>{previewingCreative.title}</h2>
+                                                    <p className={cn(isPreviewMobile ? "text-xs" : "text-sm", "mt-1 mb-2")}>{previewingCreative.description}</p>
+                                                    <Button size="sm">{previewingCreative.cta}</Button>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div className="text-center">
                                             <h2 className="text-2xl font-bold font-headline">Another Section</h2>
                                             <p className="text-muted-foreground">More content follows below.</p>
@@ -468,7 +434,6 @@ export default function NewCampaignPage() {
                                 )}
                                 {placement === 'product-page-banner' && (
                                     <div className="w-full h-full p-4 md:p-8 space-y-8">
-                                        {/* Mock Product Details */}
                                         <div className={cn("grid gap-6", isPreviewMobile ? "grid-cols-1" : "grid-cols-2")}>
                                             <div className="aspect-square bg-muted rounded-lg"></div>
                                             <div className="space-y-3">
@@ -480,28 +445,14 @@ export default function NewCampaignPage() {
                                             </div>
                                         </div>
                                         <Separator />
-                                        {/* Campaign Banner */}
-                                        <Carousel className="w-full" opts={{loop: true}}>
-                                            <CarouselContent>
-                                                {creatives.filter(c => c.image?.src).map(c => (
-                                                <CarouselItem key={c.id}>
-                                                    <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
-                                                        <Image src={c.image!.src} alt={c.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />
-                                                        <div className="flex-1 text-center md:text-left">
-                                                            <h3 className="font-bold">{c.title}</h3>
-                                                            <p className="text-sm text-muted-foreground">{c.description}</p>
-                                                        </div>
-                                                        <Button>{c.cta}</Button>
-                                                    </div>
-                                                </CarouselItem>
-                                                ))}
-                                            </CarouselContent>
-                                             {creatives.length > 1 && <>
-                                                <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2"/>
-                                                <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2"/>
-                                            </>}
-                                        </Carousel>
-                                         {/* Mock Reviews */}
+                                        <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
+                                            <Image src={previewingCreative.image!.src} alt={previewingCreative.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />
+                                            <div className="flex-1 text-center md:text-left">
+                                                <h3 className="font-bold">{previewingCreative.title}</h3>
+                                                <p className="text-sm text-muted-foreground">{previewingCreative.description}</p>
+                                            </div>
+                                            <Button>{previewingCreative.cta}</Button>
+                                        </div>
                                         <div>
                                             <h2 className="text-xl font-bold font-headline mb-4">Customer Reviews</h2>
                                              <Card>
@@ -518,21 +469,24 @@ export default function NewCampaignPage() {
                                         </div>
                                     </div>
                                 )}
-                                </>
-                        </div>
+                            </div>
+                        )}
                     </div>
                 </DialogContent>
             </Dialog>
             <style jsx>{`
                 @keyframes marquee {
                     from { transform: translateX(0); }
-                    to { transform: translateX(-50%); }
+                    to { transform: translateX(-100%); }
                 }
                 .animate-marquee {
                     animation: marquee 60s linear infinite;
                     display: flex;
                     width: 200%;
                 }
+                 .animate-marquee > div {
+                    width: 50%;
+                 }
             `}</style>
         </div>
     );
