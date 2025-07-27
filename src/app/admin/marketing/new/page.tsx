@@ -223,7 +223,7 @@ export default function NewCampaignPage() {
                                         <AccordionTrigger className="hover:no-underline">
                                             <div className="flex items-center gap-4">
                                                 <div className="flex-shrink-0 w-12 h-12 rounded-md bg-muted flex items-center justify-center">
-                                                    {creative.image ? <Image src={creative.image.src} alt="thumbnail" width={48} height={48} className="rounded-md object-cover"/> : <ImageIcon className="h-6 w-6 text-muted-foreground"/>}
+                                                    {creative.image?.src ? <Image src={creative.image.src} alt="thumbnail" width={48} height={48} className="rounded-md object-cover"/> : <ImageIcon className="h-6 w-6 text-muted-foreground"/>}
                                                 </div>
                                                 <span className="font-semibold text-lg">{creative.title}</span>
                                             </div>
@@ -243,7 +243,7 @@ export default function NewCampaignPage() {
                                             </div>
                                             <div className="space-y-2">
                                                 <Label>Creative Image</Label>
-                                                {creative.image ? (
+                                                {creative.image?.src ? (
                                                     <div className="relative group aspect-video rounded-md border">
                                                         <Image src={creative.image.src} alt="Creative preview" fill className="object-contain rounded-md" />
                                                         <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={() => handleCreativeChange(creative.id, 'image', null)}>
@@ -349,7 +349,7 @@ export default function NewCampaignPage() {
                                                                 <CarouselItem key={creative.id}>
                                                                     <div className="relative w-full h-full">
                                                                         <div className="relative" style={{height: isPreviewMobile ? '100%' : '100%'}}>
-                                                                            {creative.image && <Image src={creative.image.src} alt={creative.title} fill className="object-cover" />}
+                                                                            {creative.image?.src && <Image src={creative.image.src} alt={creative.title} fill className="object-cover" />}
                                                                             {creative.embedUrl && !creative.image && <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
                                                                             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                                                             <div className="absolute inset-0 flex items-center justify-center text-center">
@@ -380,7 +380,7 @@ export default function NewCampaignPage() {
                                                             <div className="flex items-center gap-4 animate-[marquee_25s_linear_infinite]">
                                                                {creatives.concat(creatives).map((creative, index) => (
                                                                     <div key={`${creative.id}-${index}`} className="flex items-center gap-2 mx-4">
-                                                                        {creative.image && <Image src={creative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
+                                                                        {creative.image?.src && <Image src={creative.image.src} alt="Banner Image" width={40} height={40} className="rounded-md object-cover h-8 w-auto inline-block"/>}
                                                                         <span className="font-semibold">{creative.title}</span>
                                                                         <Button variant="link" className="text-primary-foreground h-auto p-0 text-xs hover:underline">{creative.cta}</Button>
                                                                     </div>
@@ -398,17 +398,33 @@ export default function NewCampaignPage() {
                                                 )}
                                                 {placement === 'popup' && (
                                                     <div className="w-full h-full flex items-center justify-center bg-black/50">
-                                                        <div className="bg-background rounded-lg shadow-xl p-6 w-full max-w-sm text-center relative">
-                                                            <button className="absolute top-2 right-2"><X className="h-4 w-4"/></button>
-                                                            <h2 className="text-lg font-bold font-headline mb-2">{creatives[0].title}</h2>
-                                                            <p className="text-sm text-muted-foreground mb-4">{creatives[0].description}</p>
-                                                            {creatives[0].image && <Image src={creatives[0].image.src} alt="Popup Image" width={300} height={150} className="rounded-md object-cover mx-auto mb-4" />}
-                                                             {creatives[0].embedUrl && !creatives[0].image && (
-                                                                <div className="aspect-video rounded-md overflow-hidden border mb-4">
-                                                                    <iframe src={creatives[0].embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
-                                                                </div>
-                                                             )}
-                                                            <Button>{creatives[0].cta}</Button>
+                                                        <div className="bg-background rounded-lg shadow-xl p-0 w-full max-w-sm text-center relative overflow-hidden">
+                                                            <button className="absolute top-2 right-2 z-10 bg-background/50 rounded-full p-1"><X className="h-4 w-4"/></button>
+                                                            <Carousel className="w-full" opts={{loop: creatives.length > 1}}>
+                                                                <CarouselContent>
+                                                                    {creatives.map(creative => (
+                                                                        <CarouselItem key={creative.id}>
+                                                                            <div className="flex flex-col items-center">
+                                                                                {creative.image?.src && <Image src={creative.image.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />}
+                                                                                {creative.embedUrl && !creative.image?.src && (
+                                                                                    <div className="aspect-video w-full">
+                                                                                        <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>
+                                                                                    </div>
+                                                                                )}
+                                                                                <div className="p-6">
+                                                                                    <h2 className="text-lg font-bold font-headline mb-2">{creative.title}</h2>
+                                                                                    <p className="text-sm text-muted-foreground mb-4">{creative.description}</p>
+                                                                                    <Button>{creative.cta}</Button>
+                                                                                </div>
+                                                                            </div>
+                                                                        </CarouselItem>
+                                                                    ))}
+                                                                </CarouselContent>
+                                                                {creatives.length > 1 && <>
+                                                                    <CarouselPrevious className="left-2" />
+                                                                    <CarouselNext className="right-2" />
+                                                                </>}
+                                                            </Carousel>
                                                         </div>
                                                     </div>
                                                 )}
@@ -423,8 +439,8 @@ export default function NewCampaignPage() {
                                                                 {creatives.map(creative => (
                                                                      <CarouselItem key={creative.id}>
                                                                         <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
-                                                                            {creative.image && <Image src={creative.image.src} alt={creative.title} fill className="object-cover" />}
-                                                                            {creative.embedUrl && !creative.image && <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
+                                                                            {creative.image?.src && <Image src={creative.image.src} alt={creative.title} fill className="object-cover" />}
+                                                                            {creative.embedUrl && !creative.image?.src && <iframe src={creative.embedUrl} title="Video Preview" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen className="w-full h-full"></iframe>}
                                                                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
                                                                                 <div>
                                                                                     <h2 className={cn("font-bold font-headline", isPreviewMobile ? "text-xl" : "text-3xl")}>{creative.title}</h2>
@@ -461,15 +477,27 @@ export default function NewCampaignPage() {
                                                             </div>
                                                         </div>
                                                         <Separator />
-                                                        {/* Campaign Banner - shows first creative */}
-                                                        <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
-                                                             {creatives[0].image && <Image src={creatives[0].image.src} alt="Product Page Campaign" width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />}
-                                                             <div className="flex-1 text-center md:text-left">
-                                                                <h3 className="font-bold">{creatives[0].title}</h3>
-                                                                <p className="text-sm text-muted-foreground">{creatives[0].description}</p>
-                                                             </div>
-                                                             <Button>{creatives[0].cta}</Button>
-                                                        </div>
+                                                        {/* Campaign Banner - Carousel for multiple creatives */}
+                                                         <Carousel className="w-full" opts={{loop: creatives.length > 1}}>
+                                                            <CarouselContent>
+                                                                {creatives.map(creative => (
+                                                                    <CarouselItem key={creative.id}>
+                                                                        <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
+                                                                            {creative.image?.src && <Image src={creative.image.src} alt={creative.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />}
+                                                                            <div className="flex-1 text-center md:text-left">
+                                                                                <h3 className="font-bold">{creative.title}</h3>
+                                                                                <p className="text-sm text-muted-foreground">{creative.description}</p>
+                                                                            </div>
+                                                                            <Button>{creative.cta}</Button>
+                                                                        </div>
+                                                                    </CarouselItem>
+                                                                ))}
+                                                            </CarouselContent>
+                                                             {creatives.length > 1 && <>
+                                                                <CarouselPrevious className="left-2" />
+                                                                <CarouselNext className="right-2" />
+                                                             </>}
+                                                         </Carousel>
                                                          {/* Mock Reviews */}
                                                         <div>
                                                             <h2 className="text-xl font-bold font-headline mb-4">Customer Reviews</h2>
@@ -500,3 +528,5 @@ export default function NewCampaignPage() {
         </div>
     );
 }
+
+    
