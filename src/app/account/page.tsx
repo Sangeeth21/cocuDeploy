@@ -111,12 +111,46 @@ export default function AccountPage() {
   
   // Chat state
   const [conversations, setConversations] = useState(initialConversations);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(conversations.length > 0 ? conversations[0].id : null);
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1200; // Approx 200 words
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+
+  // Handle navigation from product page
+  useEffect(() => {
+    const vendorId = searchParams.get('vendorId');
+    const productName = searchParams.get('productName');
+    if (vendorId) {
+      const existingConvo = conversations.find(c => c.vendorId === vendorId);
+      if (existingConvo) {
+        setSelectedConversationId(existingConvo.id);
+      } else {
+        // Create a new conversation if one doesn't exist
+        const newConvo: Conversation = {
+          id: conversations.length + 1,
+          vendorId: vendorId,
+          avatar: "https://placehold.co/40x40.png",
+          messages: [],
+        };
+        setConversations(prev => [...prev, newConvo]);
+        setSelectedConversationId(newConvo.id);
+      }
+      
+      if (productName) {
+        setNewMessage(`Hi, I have a question about the "${productName}"...`);
+      }
+      
+      // Clean up URL
+      window.history.replaceState(null, '', '/account?tab=messages');
+    } else {
+        // Default to first conversation if no specific one is targeted
+        if (conversations.length > 0 && !selectedConversationId) {
+            setSelectedConversationId(conversations[0].id);
+        }
+    }
+  }, [searchParams, conversations, selectedConversationId]);
 
   const handleSaveChanges = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();

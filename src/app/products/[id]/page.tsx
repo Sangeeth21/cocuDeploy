@@ -3,21 +3,17 @@
 "use client";
 
 import Image from "next/image";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { mockProducts, mockReviews } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Plus, MessageSquare, Paperclip, X, File as FileIcon, Image as ImageIcon } from "lucide-react";
+import { Star, Plus, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { useState } from "react";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -36,47 +32,27 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
 
 export default function ProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
+  const { toast } = useToast();
   const productId = typeof params.id === 'string' ? params.id : '';
   const product = mockProducts.find((p) => p.id === productId);
-  const { toast } = useToast();
-  const [isMessageOpen, setIsMessageOpen] = useState(false);
-  const [message, setMessage] = useState("");
-  const [attachments, setAttachments] = useState<File[]>([]);
-  const MAX_MESSAGE_LENGTH = 1200; // Approx 200 words
+
 
   if (!product) {
     notFound();
   }
   
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-        const newFiles = Array.from(e.target.files);
-        if (attachments.length + newFiles.length > 5) {
-             toast({
-                variant: "destructive",
-                title: "Attachment Limit Exceeded",
-                description: "You can only attach up to 5 files.",
-            });
-            return;
-        }
-        setAttachments(prev => [...prev, ...newFiles]);
-    }
-  }
-
-  const removeAttachment = (fileToRemove: File) => {
-    setAttachments(prev => prev.filter(file => file !== fileToRemove));
-  }
-
-  const handleSendMessage = () => {
-     if (!message.trim() && attachments.length === 0) return;
+  const handleMessageVendor = () => {
+    // In a real app, you'd find or create a conversation with the vendor
+    // and then navigate. For this mock, we'll just navigate with query params.
+    const message = `Hi, I have a question about the "${product.name}"...`;
     toast({
-      title: "Message Sent!",
-      description: `Your message about ${product.name} has been sent to the vendor.`,
+      title: "Starting Conversation...",
+      description: "Redirecting you to your messages.",
     });
-    setMessage("");
-    setAttachments([]);
-    setIsMessageOpen(false);
+    router.push(`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`);
   };
+
 
   const similarProducts = mockProducts.filter(p => p.category === product.category && p.id !== product.id).slice(0, 3);
   const frequentlyBoughtTogether = mockProducts.filter(p => p.id !== product.id).slice(0, 2);
@@ -112,68 +88,10 @@ export default function ProductDetailPage() {
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           <div className="flex flex-col sm:flex-row gap-2">
             <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90">Add to Cart</Button>
-            <Dialog open={isMessageOpen} onOpenChange={setIsMessageOpen}>
-                <DialogTrigger asChild>
-                    <Button size="lg" variant="outline" className="w-full">
-                        <MessageSquare className="mr-2 h-5 w-5" />
-                        Message Vendor
-                    </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>Message Vendor: {product.vendorId}</DialogTitle>
-                        <DialogDescription>
-                            Have a question about the "{product.name}"?
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-2 space-y-4">
-                       <div className="space-y-2">
-                            <Label htmlFor="message">Your Message</Label>
-                            <div className="relative">
-                                <Textarea 
-                                    id="message" 
-                                    rows={5} 
-                                    value={message}
-                                    onChange={(e) => setMessage(e.target.value)}
-                                    maxLength={MAX_MESSAGE_LENGTH}
-                                    placeholder={`Hi, I have a question about the ${product.name}...`}
-                                />
-                                <p className="text-xs text-muted-foreground text-right mt-1">
-                                    {message.length} / {MAX_MESSAGE_LENGTH}
-                                </p>
-                            </div>
-                       </div>
-                       <div className="space-y-2">
-                            <Label>Attachments ({attachments.length}/5)</Label>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {attachments.map((file, index) => (
-                                    <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2">
-                                        {file.type.startsWith('image/') ? (
-                                            <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                                        ) : (
-                                            <FileIcon className="h-6 w-6 text-muted-foreground" />
-                                        )}
-                                        <p className="text-xs text-muted-foreground truncate">{file.name}</p>
-                                        <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ))}
-                                {attachments.length < 5 && (
-                                    <Label htmlFor="file-upload" className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                                        <Paperclip className="h-6 w-6 text-muted-foreground"/>
-                                        <span className="text-xs text-muted-foreground mt-1">Add File</span>
-                                    </Label>
-                                )}
-                            </div>
-                            <input id="file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} />
-                       </div>
-                    </div>
-                    <DialogFooter>
-                        <Button onClick={handleSendMessage}>Send Message</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendor}>
+                <MessageSquare className="mr-2 h-5 w-5" />
+                Message Vendor
+            </Button>
           </div>
           <p className="text-sm text-muted-foreground">Sold by <span className="font-semibold text-primary">Vendor ID: {product.vendorId}</span></p>
         </div>
@@ -263,3 +181,4 @@ function ProductCardMini({ product }: { product: typeof mockProducts[0] }) {
     
 
     
+
