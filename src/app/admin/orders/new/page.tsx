@@ -10,10 +10,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { mockProducts, mockUsers } from "@/lib/mock-data";
 import type { DisplayProduct, User } from "@/lib/types";
-import { ArrowLeft, Search, X, User as UserIcon, Package, DollarSign, Save, Trash2, CheckCircle } from "lucide-react";
+import { ArrowLeft, Search, X, User as UserIcon, Package, DollarSign, Save, Trash2, CheckCircle, PlusCircle, Link as LinkIcon, Truck, Building, Copy, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
+
 
 type OrderItem = DisplayProduct & { quantity: number };
 
@@ -27,7 +31,8 @@ export default function NewOrderPage() {
     const [productSearchTerm, setProductSearchTerm] = useState("");
     const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
     const [shippingCost, setShippingCost] = useState(0);
-    const [referralCommission, setReferralCommission] = useState(0);
+    const [isFetchingShipping, setIsFetchingShipping] = useState(false);
+    const [isSameAsShipping, setIsSameAsShipping] = useState(true);
 
     // Memos and Calculations
     const customerSearchResults = useMemo(() => {
@@ -61,6 +66,22 @@ export default function NewOrderPage() {
         setSelectedCustomer(customer);
         setCustomerSearchTerm("");
     };
+
+    const handleAddNewCustomer = (newCustomer: Omit<User, 'id' | 'role' | 'status' | 'joinedDate' | 'avatar'>) => {
+        const newUser: User = {
+            id: `USR${(mockUsers.length + 1).toString().padStart(3, '0')}`,
+            ...newCustomer,
+            role: 'Customer',
+            status: 'Active',
+            joinedDate: new Date().toISOString().split('T')[0],
+            avatar: 'https://placehold.co/40x40.png'
+        }
+        // In a real app, you would add this to your database.
+        // For this mock, we'll just set them as selected.
+        setSelectedCustomer(newUser);
+        toast({ title: 'Customer Added', description: `${newUser.name} has been added and selected.`});
+        return newUser;
+    }
     
     const handleProductSelect = (product: DisplayProduct) => {
         if (!orderItems.find(item => item.id === product.id)) {
@@ -78,6 +99,25 @@ export default function NewOrderPage() {
     const handleRemoveItem = (productId: string) => {
         setOrderItems(prev => prev.filter(item => item.id !== productId));
     };
+
+    const handleEstimateShipping = () => {
+        setIsFetchingShipping(true);
+        // Simulate API call to Shiprocket/Borzo
+        setTimeout(() => {
+            const randomCost = Math.floor(Math.random() * 20) + 5;
+            setShippingCost(randomCost);
+            setIsFetchingShipping(false);
+            toast({ title: 'Shipping Cost Estimated', description: `Logistics cost is $${randomCost.toFixed(2)}.`});
+        }, 1500);
+    }
+    
+    const handleGeneratePaymentLink = () => {
+        toast({
+            title: 'Payment Link Generated (Simulated)',
+            description: `A Razorpay link for $${total.toFixed(2)} has been copied to your clipboard.`,
+        });
+        navigator.clipboard.writeText(`https://razorpay.com/pay/mock_${Math.random().toString(36).substring(7)}`);
+    }
 
     const handleCreateOrder = () => {
         if (!selectedCustomer) {
@@ -109,12 +149,20 @@ export default function NewOrderPage() {
                 <div className="lg:col-span-2 flex flex-col gap-8">
                     {/* Customer Card */}
                     <Card>
-                        <CardHeader>
+                        <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Customer</CardTitle>
+                            {!selectedCustomer && (
+                                <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />Add New Customer</Button>
+                                    </DialogTrigger>
+                                    <NewCustomerDialog onSave={handleAddNewCustomer} />
+                                </Dialog>
+                            )}
                         </CardHeader>
                         <CardContent>
                             {selectedCustomer ? (
-                                <div className="flex items-center justify-between p-4 border rounded-lg">
+                                <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
                                     <div className="flex items-center gap-4">
                                         <Avatar>
                                             <AvatarImage src={selectedCustomer.avatar} alt={selectedCustomer.name} />
@@ -160,6 +208,69 @@ export default function NewOrderPage() {
                             )}
                         </CardContent>
                     </Card>
+                    
+                    {/* Shipping & Billing Card */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Shipping & Billing</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="p-4 border rounded-lg space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <Truck className="h-5 w-5 text-muted-foreground" />
+                                    <h3 className="font-semibold">Delivery Address</h3>
+                                </div>
+                                <div className="grid sm:grid-cols-2 gap-4">
+                                     <div className="space-y-2 sm:col-span-2">
+                                        <Label>Full Name</Label>
+                                        <Input placeholder="Recipient's Name"/>
+                                    </div>
+                                     <div className="space-y-2 sm:col-span-2">
+                                        <Label>Address</Label>
+                                        <Input placeholder="Street Address" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>City</Label>
+                                        <Input placeholder="City"/>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>ZIP Code</Label>
+                                        <Input placeholder="ZIP Code"/>
+                                    </div>
+                                </div>
+                                <Button size="sm" variant="secondary" className="w-full" onClick={handleEstimateShipping} disabled={isFetchingShipping}>
+                                    {isFetchingShipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Truck className="mr-2 h-4 w-4" />}
+                                    {isFetchingShipping ? 'Estimating...' : 'Estimate Shipping Cost (Borzo/Shiprocket)'}
+                                </Button>
+                            </div>
+                            <div className="p-4 border rounded-lg space-y-4">
+                                 <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Building className="h-5 w-5 text-muted-foreground" />
+                                        <h3 className="font-semibold">Billing Address</h3>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox id="same-as-shipping" checked={isSameAsShipping} onCheckedChange={(checked) => setIsSameAsShipping(checked as boolean)} />
+                                        <Label htmlFor="same-as-shipping" className="text-xs font-normal">Same as shipping</Label>
+                                    </div>
+                                </div>
+                                <div className={cn("transition-all duration-300", isSameAsShipping ? "hidden" : "grid sm:grid-cols-2 gap-4")}>
+                                     <div className="space-y-2 sm:col-span-2">
+                                        <Label>Address</Label>
+                                        <Input placeholder="Street Address" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>City</Label>
+                                        <Input placeholder="City"/>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>ZIP Code</Label>
+                                        <Input placeholder="ZIP Code"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     {/* Order Items Card */}
                     <Card>
@@ -180,7 +291,7 @@ export default function NewOrderPage() {
                                         <ul>
                                             {productSearchResults.map(product => (
                                                 <li key={product.id} className="p-2 text-sm hover:bg-accent cursor-pointer flex items-center gap-2" onClick={() => handleProductSelect(product)}>
-                                                    <Image src={product.imageUrl} alt={product.name} width={32} height={32} className="rounded-sm" />
+                                                    <Image src={product.imageUrl} alt={product.name} width={32} height={32} className="rounded-sm" data-ai-hint="product image" />
                                                     <span>{product.name}</span>
                                                     <span className="ml-auto font-mono text-xs">${product.price.toFixed(2)}</span>
                                                 </li>
@@ -193,7 +304,7 @@ export default function NewOrderPage() {
                             <div className="space-y-4">
                                 {orderItems.map(item => (
                                     <div key={item.id} className="flex items-center gap-4">
-                                        <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="rounded-md" />
+                                        <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="rounded-md" data-ai-hint="product image" />
                                         <div className="flex-grow">
                                             <p className="font-medium">{item.name}</p>
                                             <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
@@ -232,27 +343,17 @@ export default function NewOrderPage() {
                             </div>
                             <div className="flex items-center justify-between">
                                 <Label htmlFor="shipping-cost">Shipping</Label>
-                                <div className="relative">
-                                    <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                                    <Input 
-                                        id="shipping-cost" 
-                                        type="number" 
-                                        className="w-24 h-8 pl-5" 
-                                        value={shippingCost}
-                                        onChange={(e) => setShippingCost(Number(e.target.value))}
-                                    />
-                                </div>
+                                <span className="font-medium">${shippingCost.toFixed(2)}</span>
                             </div>
                             <div className="flex items-center justify-between">
-                                <Label htmlFor="referral-commission">Referral Commission (Optional)</Label>
+                                <Label htmlFor="referral-commission">Referral Commission</Label>
                                  <div className="relative">
                                     <DollarSign className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                                     <Input 
                                         id="referral-commission" 
                                         type="number" 
+                                        placeholder="0.00"
                                         className="w-24 h-8 pl-5" 
-                                        value={referralCommission}
-                                        onChange={(e) => setReferralCommission(Number(e.target.value))}
                                     />
                                 </div>
                             </div>
@@ -268,6 +369,9 @@ export default function NewOrderPage() {
                             <CardTitle>Actions</CardTitle>
                          </CardHeader>
                          <CardContent className="flex flex-col gap-2">
+                             <Button variant="secondary" onClick={handleGeneratePaymentLink} disabled={total <= 0}>
+                                <Copy className="mr-2 h-4 w-4"/> Generate Payment Link (Razorpay)
+                             </Button>
                              <Button variant="outline"><Save className="mr-2 h-4 w-4" /> Save as Draft</Button>
                              <Button onClick={handleCreateOrder}><CheckCircle className="mr-2 h-4 w-4" /> Create Order</Button>
                          </CardContent>
@@ -277,3 +381,39 @@ export default function NewOrderPage() {
         </div>
     );
 }
+
+
+function NewCustomerDialog({ onSave }: { onSave: (customer: Omit<User, 'id' | 'role' | 'status' | 'joinedDate' | 'avatar'>) => void }) {
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+
+    const handleSave = (e: React.FormEvent) => {
+        e.preventDefault();
+        onSave({ name, email });
+    }
+
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add New Customer</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSave} className="space-y-4 py-2">
+                <div className="space-y-2">
+                    <Label htmlFor="new-customer-name">Full Name</Label>
+                    <Input id="new-customer-name" value={name} onChange={e => setName(e.target.value)} required />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="new-customer-email">Email</Label>
+                    <Input id="new-customer-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="new-customer-phone">Phone (Optional)</Label>
+                    <Input id="new-customer-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} />
+                </div>
+                <Button type="submit" className="w-full">Save Customer</Button>
+            </form>
+        </DialogContent>
+    );
+}
+

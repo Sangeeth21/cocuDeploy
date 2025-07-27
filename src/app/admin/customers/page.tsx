@@ -1,4 +1,5 @@
 
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ export default function AdminCustomersPage() {
                     <p className="text-muted-foreground">Manage all customers on the platform.</p>
                 </div>
                 <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Customer
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Customer
                 </Button>
             </div>
             <Card>
