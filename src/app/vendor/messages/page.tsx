@@ -90,7 +90,6 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
     )
 }
 
-
 export default function VendorMessagesPage() {
   const [conversations, setConversations] = useState(initialConversations);
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(1);
@@ -111,7 +110,6 @@ export default function VendorMessagesPage() {
         setIsConversionDialogOpen(false);
     }
   }, [selectedConversation]);
-
 
   const handleContinueChat = () => {
     if (!selectedConversationId) return;
@@ -145,7 +143,6 @@ export default function VendorMessagesPage() {
     setIsConversionDialogOpen(false);
     toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
   }
-
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -272,7 +269,7 @@ export default function VendorMessagesPage() {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 border rounded-lg bg-card overflow-hidden h-[calc(100vh-11rem)]">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 border rounded-lg bg-card h-[calc(100vh-11rem)]">
         <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full border-r">
           <div className="p-4 border-b">
             <h1 className="text-2xl font-bold font-headline">Inbox</h1>
@@ -412,5 +409,3 @@ export default function VendorMessagesPage() {
     </>
   );
 }
-
-    
