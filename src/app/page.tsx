@@ -5,8 +5,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { mockProducts, mockCategories, mockCampaigns } from "@/lib/mock-data";
-import { ArrowRight, CheckCircle, Truck, Gift, Zap } from "lucide-react";
+import { mockProducts, mockCategories, mockCampaigns, mockHeroCampaigns } from "@/lib/mock-data";
+import { ArrowRight, CheckCircle, Truck, Gift, Zap, Store } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -29,6 +29,39 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
     </div>,
 });
 
+const DefaultHeroSlide = () => (
+    <div className="relative h-[60vh] md:h-[70vh]">
+        <Image
+            src={'https://placehold.co/1920x1080.png'}
+            alt="Welcome to ShopSphere"
+            fill
+            className="object-cover"
+            priority
+            data-ai-hint="abstract background"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center text-center">
+                <div className="container mx-auto text-white p-4">
+                <div className="flex justify-center items-center gap-4 mb-4">
+                    <Store className="h-12 w-12" />
+                    <h1 className="text-4xl md:text-6xl font-bold font-headline drop-shadow-lg">
+                        ShopSphere
+                    </h1>
+                </div>
+                <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 drop-shadow-md">
+                    Your one-stop online marketplace for everything you need.
+                </p>
+                <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" asChild>
+                    <Link href="/products">
+                        Start Shopping <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                </Button>
+            </div>
+        </div>
+    </div>
+);
+
+
 export default function Home() {
   const heroCampaigns = mockCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active' && c.creatives);
   const inlineCampaign = mockCampaigns.find(c => c.placement === 'inline-banner' && c.status === 'Active');
@@ -38,12 +71,12 @@ export default function Home() {
       <section className="w-full">
          <Carousel
             opts={{
-                loop: true,
+                loop: heroCampaigns.length > 1,
             }}
             className="w-full"
             >
             <CarouselContent>
-                {heroCampaigns.map((campaign, index) => (
+                {heroCampaigns.length > 0 ? heroCampaigns.map((campaign, index) => (
                 <CarouselItem key={index}>
                     <div className="relative h-[60vh] md:h-[70vh]">
                         <Image
@@ -71,10 +104,16 @@ export default function Home() {
                         </div>
                     </div>
                 </CarouselItem>
-                ))}
+                )) : (
+                    <CarouselItem>
+                        <DefaultHeroSlide />
+                    </CarouselItem>
+                )}
             </CarouselContent>
-            <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex" />
-            <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex" />
+            {heroCampaigns.length > 1 && <>
+                <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex" />
+                <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex" />
+            </>}
         </Carousel>
       </section>
 
@@ -89,24 +128,33 @@ export default function Home() {
         </div>
       </section>
       
-      {inlineCampaign && (
-        <section className="py-16">
-          <div className="container mx-auto">
-             <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
-                <Image src={inlineCampaign.creatives![0].imageUrl || 'https://placehold.co/1200x500.png'} alt={inlineCampaign.creatives![0].title} fill className="object-cover" />
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
-                    <div>
-                        <h2 className="text-xl md:text-3xl font-bold font-headline">{inlineCampaign.creatives![0].title}</h2>
-                        <p className="text-sm md:text-base mt-1 mb-2">{inlineCampaign.creatives![0].description}</p>
-                        <Button size="sm" asChild>
-                          <Link href={`/products?campaign=${inlineCampaign.id}`}>{inlineCampaign.creatives![0].cta}</Link>
-                        </Button>
+      <section className="py-16">
+        <div className="container mx-auto">
+            {inlineCampaign ? (
+                <div className="relative aspect-video md:aspect-[2.4/1] w-full rounded-lg overflow-hidden">
+                    <Image src={inlineCampaign.creatives![0].imageUrl || 'https://placehold.co/1200x500.png'} alt={inlineCampaign.creatives![0].title} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
+                        <div>
+                            <h2 className="text-xl md:text-3xl font-bold font-headline">{inlineCampaign.creatives![0].title}</h2>
+                            <p className="text-sm md:text-base mt-1 mb-2">{inlineCampaign.creatives![0].description}</p>
+                            <Button size="sm" asChild>
+                            <Link href={`/products?campaign=${inlineCampaign.id}`}>{inlineCampaign.creatives![0].cta}</Link>
+                            </Button>
+                        </div>
                     </div>
                 </div>
-            </div>
-          </div>
-        </section>
-      )}
+            ) : (
+                 <div>
+                    <h2 className="text-3xl font-bold text-center mb-8 font-headline">New Arrivals</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {mockProducts.slice(4, 8).map((product) => (
+                        <ProductCard key={product.id} product={product} />
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+      </section>
 
       <section id="categories" className="py-16 bg-muted/40">
         <div className="container mx-auto">
