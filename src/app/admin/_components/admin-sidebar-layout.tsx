@@ -6,6 +6,8 @@ import { SidebarProvider, Sidebar, SidebarContent, SidebarTrigger, SidebarMenu, 
 import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NotificationPopover } from "@/components/notification-popover";
+import { mockActivity } from "@/lib/mock-data";
 
 
 const navLinks = [
@@ -104,6 +106,9 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                     <div className="flex items-center gap-4">
                         <SidebarTrigger className="md:hidden"/>
                         <span className="font-bold hidden max-md:inline-block">Admin Portal</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <NotificationPopover notifications={mockActivity} />
                     </div>
                  </header>
                  <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40">

@@ -1,16 +1,11 @@
 
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign, PackageWarning } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-
-const mockActivity = [
-    { type: 'order', id: 'ORD004', text: 'New order #ORD004 from CUST004 for $215.00', time: '30m ago', href: '/vendor/orders' },
-    { type: 'message', id: 'MSG012', text: 'New message from CUST001 about "Classic Leather Watch"', time: '2h ago', href: '/vendor/messages' },
-    { type: 'stock', id: 'CM-HND-BL', text: '"Handcrafted Ceramic Mug" is low on stock (8 left)', time: '1d ago', href: '/vendor/inventory' },
-    { type: 'confirmation', id: 'REQ001', text: 'Confirmation requested for "Professional Yoga Mat"', time: '2d ago', href: '/vendor/orders' },
-]
+import { mockVendorActivity } from "@/lib/mock-data";
 
 export default function VendorDashboardPage() {
   return (
@@ -74,7 +69,7 @@ export default function VendorDashboardPage() {
             <CardTitle className="font-headline">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {mockActivity.map(item => {
+            {mockVendorActivity.map(item => {
                 const Icon = item.type === 'stock' ? PackageWarning : item.type === 'message' ? MessageSquare : ListChecks;
                 return (
                      <div key={item.id} className="flex items-start gap-4">

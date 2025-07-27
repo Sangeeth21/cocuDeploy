@@ -20,6 +20,8 @@ import { CartPreview } from "@/components/cart-preview";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/context/user-context";
 import { WishlistPreview } from "@/components/wishlist-preview";
+import { NotificationPopover } from "@/components/notification-popover";
+import { mockActivity } from "@/lib/mock-data";
 
 
 const navLinks = [
@@ -27,6 +29,12 @@ const navLinks = [
   { href: "/#categories", label: "Categories" },
   { href: "/vendor", label: "For Vendors" },
 ];
+
+const customerNotifications = [
+    { type: 'order_shipped', id: 'ORD002', text: 'Your order #ORD002 has shipped!', time: '1d ago', href: '/account?tab=orders' },
+    { type: 'request_approved', id: 'REQ001', text: 'Your request for "Classic Leather Watch" was approved!', time: '2d ago', href: '/cart' },
+    { type: 'request_denied', id: 'REQ002', text: '"Modern Minimalist Desk" is unavailable.', time: '3d ago', href: '/products?category=Furniture' },
+]
 
 export function Header() {
   const pathname = usePathname();
@@ -90,6 +98,7 @@ export function Header() {
           <div className="w-full flex-1 md:w-auto md:flex-none">
             <SearchBar />
           </div>
+          {isLoggedIn && <NotificationPopover notifications={customerNotifications} />}
           <WishlistPreview />
           <CartPreview />
           {isLoggedIn ? (

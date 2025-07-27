@@ -1,0 +1,76 @@
+
+"use client";
+
+import Link from "next/link";
+import { Bell, PackageWarning, MessageSquare, ListChecks, ShieldAlert, User, CheckCircle, X, Truck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Badge } from "./ui/badge";
+
+type Notification = {
+    type: string;
+    id: string;
+    text: string;
+    time: string;
+    href: string;
+};
+
+const notificationIcons: { [key: string]: React.ElementType } = {
+    'order': ListChecks,
+    'message': MessageSquare,
+    'stock': PackageWarning,
+    'confirmation': Bell,
+    'user_report': ShieldAlert,
+    'product_review': PackageWarning,
+    'new_vendor': User,
+    'order_shipped': Truck,
+    'request_approved': CheckCircle,
+    'request_denied': X,
+    default: Bell
+};
+
+export function NotificationPopover({ notifications }: { notifications: Notification[] }) {
+    
+    return (
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Open notifications" className="relative">
+                    <Bell className="h-5 w-5" />
+                    {notifications.length > 0 && (
+                        <span className="absolute top-0 right-0 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                            {notifications.length}
+                        </span>
+                    )}
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96" align="end">
+                <div className="grid gap-4">
+                    <div className="flex justify-between items-center">
+                        <h4 className="font-medium leading-none">Notifications</h4>
+                        <Link href="#" className="text-xs text-muted-foreground hover:text-primary">Mark all as read</Link>
+                    </div>
+                    <div className="grid gap-4 max-h-[22rem] overflow-y-auto pr-2">
+                       {notifications.length > 0 ? (
+                           notifications.map(item => {
+                                const Icon = notificationIcons[item.type] || notificationIcons.default;
+                                return (
+                                     <div key={item.id} className="flex items-start gap-4">
+                                        <div className="p-2 bg-primary/10 rounded-full mt-1">
+                                            <Icon className="h-5 w-5 text-primary"/>
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm"><Link href={item.href} className="font-medium hover:underline">{item.text}</Link></p>
+                                            <p className="text-xs text-muted-foreground">{item.time}</p>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                       ) : (
+                        <p className="text-sm text-center text-muted-foreground py-4">You have no new notifications.</p>
+                       )}
+                    </div>
+                </div>
+            </PopoverContent>
+        </Popover>
+    )
+}

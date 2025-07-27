@@ -8,6 +8,8 @@ import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Setting
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { NotificationPopover } from "@/components/notification-popover";
+import { mockVendorActivity } from "@/lib/mock-data";
 
 
 const navLinks = [
@@ -97,6 +99,9 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                     <div className="flex items-center gap-4">
                         <SidebarTrigger className="md:hidden"/>
                         <span className="font-bold hidden max-md:inline-block">Vendor Portal</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <NotificationPopover notifications={mockVendorActivity} />
                     </div>
                  </header>
                  <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40">
