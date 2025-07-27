@@ -3,16 +3,16 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { VendorSidebarLayout } from "../_components/vendor-sidebar-layout";
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { ChartTooltipContent } from "@/components/ui/chart";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from "@/components/ui/chart";
 
 const salesData = [
-  { date: "Jan", revenue: 4000 },
-  { date: "Feb", revenue: 3000 },
-  { date: "Mar", revenue: 5000 },
-  { date: "Apr", revenue: 4500 },
-  { date: "May", revenue: 6000 },
-  { date: "Jun", revenue: 5500 },
+  { month: "Jan", revenue: 4000 },
+  { month: "Feb", revenue: 3000 },
+  { month: "Mar", revenue: 5000 },
+  { month: "Apr", revenue: 4500 },
+  { month: "May", revenue: 6000 },
+  { month: "Jun", revenue: 5500 },
 ];
 
 const trafficData = [
@@ -22,6 +22,21 @@ const trafficData = [
   { source: "Direct", visitors: 600 },
   { source: "Other", visitors: 300 },
 ];
+
+const salesChartConfig = {
+  revenue: {
+    label: "Revenue",
+    color: "hsl(var(--primary))",
+  },
+};
+
+const trafficChartConfig = {
+    visitors: {
+        label: "Visitors",
+        color: "hsl(var(--accent))",
+    }
+}
+
 
 export default function VendorAnalyticsPage() {
     return (
@@ -37,18 +52,21 @@ export default function VendorAnalyticsPage() {
                         <CardDescription>Monthly revenue for the last 6 months.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={salesData}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis dataKey="date" />
-                                    <YAxis />
-                                    <Tooltip content={<ChartTooltipContent />} />
-                                    <Legend />
-                                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                       <ChartContainer config={salesChartConfig} className="h-[300px] w-full">
+                            <BarChart data={salesData}>
+                                <CartesianGrid vertical={false} />
+                                <XAxis
+                                    dataKey="month"
+                                    tickLine={false}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                />
+                                <YAxis />
+                                <ChartTooltip content={<ChartTooltipContent />} />
+                                <ChartLegend content={<ChartLegendContent />} />
+                                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={4} />
+                            </BarChart>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
                  <Card>
@@ -57,17 +75,22 @@ export default function VendorAnalyticsPage() {
                         <CardDescription>Where your visitors are coming from.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <div className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={trafficData} layout="vertical">
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis type="number" />
-                                    <YAxis type="category" dataKey="source" width={80} />
-                                    <Tooltip content={<ChartTooltipContent />} />
-                                    <Bar dataKey="visitors" fill="hsl(var(--accent))" radius={[0, 4, 4, 0]} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
+                         <ChartContainer config={trafficChartConfig} className="h-[300px] w-full">
+                            <BarChart data={trafficData} layout="vertical">
+                                <CartesianGrid horizontal={false} />
+                                <YAxis
+                                    dataKey="source"
+                                    type="category"
+                                    tickLine={false}
+                                    tickMargin={10}
+                                    axisLine={false}
+                                    width={80}
+                                />
+                                <XAxis type="number" />
+                                <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
+                                <Bar dataKey="visitors" fill="var(--color-visitors)" radius={4} />
+                            </BarChart>
+                        </ChartContainer>
                     </CardContent>
                 </Card>
             </div>
