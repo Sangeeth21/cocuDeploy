@@ -272,7 +272,7 @@ export default function VendorMessagesPage() {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-[calc(100vh-11rem)] border rounded-lg bg-card">
+      <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-[calc(100vh-11rem)] border rounded-lg bg-card overflow-hidden">
         <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full">
           <div className="p-4 border-b">
             <h1 className="text-2xl font-bold font-headline">Inbox</h1>
@@ -360,7 +360,7 @@ export default function VendorMessagesPage() {
                   ))}
                   </div>
               </ScrollArea>
-              <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
+              <form onSubmit={handleSendMessage} className="p-4 border-t space-y-2">
                  {attachments.length > 0 && !isLocked && (
                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                         {attachments.map((file, index) => (
@@ -412,5 +412,3 @@ export default function VendorMessagesPage() {
     </>
   );
 }
-
-    
