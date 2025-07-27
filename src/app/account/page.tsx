@@ -138,7 +138,7 @@ export default function AccountPage() {
         </div>
       </div>
       <Tabs value={tab} onValueChange={(value) => window.history.pushState(null, '', `?tab=${value}`)} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="orders">Order History</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
