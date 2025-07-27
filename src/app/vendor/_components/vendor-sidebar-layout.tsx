@@ -37,20 +37,22 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
         <div className="flex min-h-screen">
         <SidebarProvider>
             <Sidebar collapsible="icon" className="border-r hidden md:flex">
-                <div className="flex items-center justify-between p-2">
-                    <div className="flex items-center gap-2">
-                       <Avatar className="h-10 w-10">
-                            <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
-                            <AvatarFallback>V</AvatarFallback>
-                        </Avatar>
-                        <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                            <span className="text-lg font-semibold">{greeting},</span>
-                            <span className="text-lg font-bold -mt-1">{vendorName}</span>
+                <SidebarHeader>
+                    <div className="flex items-center justify-between p-2">
+                        <div className="flex items-center gap-2">
+                           <Avatar className="h-10 w-10">
+                                <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
+                                <AvatarFallback>V</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                                <span className="text-lg font-semibold">{greeting},</span>
+                                <span className="text-lg font-bold -mt-1">{vendorName}</span>
+                            </div>
                         </div>
+                         <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
                     </div>
-                     <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
-                </div>
-                <SidebarContent className="p-2 pt-8">
+                </SidebarHeader>
+                <SidebarContent className="p-2">
                      <SidebarMenu>
                         {navLinks.map(link => (
                             <SidebarMenuItem key={link.href}>
