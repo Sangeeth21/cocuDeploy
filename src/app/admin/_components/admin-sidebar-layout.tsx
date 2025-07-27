@@ -3,16 +3,18 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarTrigger, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home } from "lucide-react";
+import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 
 const navLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/vendors", label: "Vendors", icon: Store },
+  { href: "/admin/customers", label: "Users", icon: Users },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ListChecks },
+  { href: "/admin/chat-logs", label: "Chat Logs", icon: MessageSquare },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/moderation", label: "Moderation", icon: ShieldCheck, badge: "3" },
   { href: "/admin/settings", label: "Settings", icon: Settings },
@@ -45,7 +47,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton 
                                     asChild
-                                    isActive={pathname === link.href}
+                                    isActive={pathname.startsWith(link.href) && (link.href !== "/admin" || pathname === "/admin")}
                                     tooltip={{children: link.label}}
                                 >
                                     <Link href={link.href}>

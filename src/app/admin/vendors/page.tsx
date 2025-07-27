@@ -2,26 +2,24 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockUsers } from "@/lib/mock-data";
 import { MoreHorizontal, PlusCircle } from "lucide-react";
-import Link from "next/link";
 
-
-export default function AdminCustomersPage() {
-    const customers = mockUsers.filter(u => u.role === 'Customer');
+export default function AdminVendorsPage() {
+    const vendors = mockUsers.filter(u => u.role === 'Vendor');
 
     return (
         <div>
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">Customers</h1>
-                    <p className="text-muted-foreground">Manage all customers on the platform.</p>
+                    <h1 className="text-3xl font-bold font-headline">Vendors</h1>
+                    <p className="text-muted-foreground">Manage all vendors on the platform.</p>
                 </div>
                 <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Customer
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add Vendor
                 </Button>
             </div>
             <Card>
@@ -29,7 +27,7 @@ export default function AdminCustomersPage() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Customer</TableHead>
+                                <TableHead>Vendor</TableHead>
                                 <TableHead className="hidden sm:table-cell">Status</TableHead>
                                 <TableHead className="hidden md:table-cell">Joined Date</TableHead>
                                 <TableHead>
@@ -38,12 +36,12 @@ export default function AdminCustomersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {customers.map(user => (
+                            {vendors.map(user => (
                                 <TableRow key={user.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-4">
                                             <Avatar>
-                                                <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="person face" />
+                                                <AvatarImage src={user.avatar} alt={user.name} data-ai-hint="company logo" />
                                                 <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                             </Avatar>
                                             <div>
@@ -66,8 +64,9 @@ export default function AdminCustomersPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent align="end">
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem>View Profile</DropdownMenuItem>
-                                                <DropdownMenuItem>View Orders</DropdownMenuItem>
+                                                <DropdownMenuItem>View Storefront</DropdownMenuItem>
+                                                <DropdownMenuItem>View Products</DropdownMenuItem>
+                                                <DropdownMenuItem>View Payouts</DropdownMenuItem>
                                                 <DropdownMenuSeparator/>
                                                 <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
                                             </DropdownMenuContent>
