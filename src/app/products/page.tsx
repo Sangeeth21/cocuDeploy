@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { mockProducts, mockCategories } from "@/lib/mock-data";
 import { Card, CardContent } from "@/components/ui/card";
@@ -13,6 +13,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import type { DisplayProduct } from "@/lib/types";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Slider } from "@/components/ui/slider";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -29,13 +33,23 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
     </div>,
 });
 
+const MAX_PRICE = 500;
+
 export default function ProductsPage() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q') ?? '';
+  const initialCategory = searchParams.get('category');
 
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE]);
   const [sortOption, setSortOption] = useState('featured');
+  
+  useEffect(() => {
+    if (initialCategory) {
+      setSelectedCategories([initialCategory]);
+    }
+  }, [initialCategory]);
 
   const handleCategoryChange = (categoryName: string) => {
     setSelectedCategories(prev =>
@@ -52,6 +66,12 @@ export default function ProductsPage() {
         : [...prev, rating]
     );
   };
+  
+  const clearFilters = () => {
+      setSelectedCategories([]);
+      setSelectedRatings([]);
+      setPriceRange([0, MAX_PRICE]);
+  }
 
   const filteredAndSortedProducts = useMemo(() => {
     let products: DisplayProduct[] = mockProducts;
@@ -65,11 +85,11 @@ export default function ProductsPage() {
     }
 
     if (selectedRatings.length > 0) {
-      products = products.filter(p => {
-        const minRating = Math.min(...selectedRatings);
-        return p.rating >= minRating;
-      });
+      const minRating = Math.min(...selectedRatings);
+      products = products.filter(p => p.rating >= minRating);
     }
+    
+    products = products.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
     switch (sortOption) {
       case 'price-asc':
@@ -92,7 +112,7 @@ export default function ProductsPage() {
     }
 
     return products;
-  }, [query, selectedCategories, selectedRatings, sortOption]);
+  }, [query, selectedCategories, selectedRatings, sortOption, priceRange]);
 
 
   return (
@@ -103,31 +123,64 @@ export default function ProductsPage() {
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8">
-        <aside className="lg:col-span-1">
+        <aside className="lg:col-span-1 lg:sticky lg:top-24 h-fit">
           <Card>
             <CardContent className="p-4">
-              <h2 className="text-xl font-semibold font-headline mb-4">Filters</h2>
-              <Accordion type="multiple" defaultValue={['category', 'rating']} className="w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold font-headline">Filters</h2>
+                 <Button variant="link" size="sm" className="p-0 h-auto" onClick={clearFilters}>Clear All</Button>
+              </div>
+              <Accordion type="multiple" defaultValue={['category', 'rating', 'price']} className="w-full">
                 <AccordionItem value="category">
-                  <AccordionTrigger className="font-semibold">Category</AccordionTrigger>
+                  <AccordionTrigger className="font-semibold">
+                    Category {selectedCategories.length > 0 && <Badge className="ml-2">{selectedCategories.length}</Badge>}
+                  </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2 pt-2">
                       {mockCategories.map(category => (
                         <div key={category.name} className="flex items-center space-x-2">
-                          <Checkbox id={category.name} onCheckedChange={() => handleCategoryChange(category.name)} />
+                          <Checkbox 
+                            id={category.name} 
+                            checked={selectedCategories.includes(category.name)} 
+                            onCheckedChange={() => handleCategoryChange(category.name)} 
+                          />
                           <Label htmlFor={category.name} className="font-normal">{category.name}</Label>
                         </div>
                       ))}
                     </div>
                   </AccordionContent>
                 </AccordionItem>
+                <AccordionItem value="price">
+                  <AccordionTrigger className="font-semibold">Price Range</AccordionTrigger>
+                   <AccordionContent>
+                     <div className="pt-4 px-1">
+                        <Slider
+                            min={0}
+                            max={MAX_PRICE}
+                            step={10}
+                            value={priceRange}
+                            onValueChange={(value: [number, number]) => setPriceRange(value)}
+                        />
+                         <div className="flex justify-between text-sm text-muted-foreground mt-2">
+                            <span>${priceRange[0]}</span>
+                            <span>${priceRange[1]}</span>
+                        </div>
+                     </div>
+                   </AccordionContent>
+                </AccordionItem>
                 <AccordionItem value="rating">
-                  <AccordionTrigger className="font-semibold">Rating</AccordionTrigger>
+                  <AccordionTrigger className="font-semibold">
+                    Rating {selectedRatings.length > 0 && <Badge className="ml-2">{selectedRatings.length}</Badge>}
+                  </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-2 pt-2">
                       {[4, 3, 2, 1].map(rating => (
                         <div key={rating} className="flex items-center space-x-2">
-                          <Checkbox id={`rating-${rating}`} onCheckedChange={() => handleRatingChange(rating)} />
+                          <Checkbox 
+                            id={`rating-${rating}`} 
+                            checked={selectedRatings.includes(rating)} 
+                            onCheckedChange={() => handleRatingChange(rating)} 
+                          />
                           <Label htmlFor={`rating-${rating}`} className="font-normal">{rating} stars & up</Label>
                         </div>
                       ))}
@@ -157,9 +210,17 @@ export default function ProductsPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredAndSortedProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+            {filteredAndSortedProducts.length > 0 ? (
+                filteredAndSortedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+                ))
+            ) : (
+                 <div className="sm:col-span-2 xl:col-span-3 text-center py-16">
+                    <h2 className="text-2xl font-semibold">No products found</h2>
+                    <p className="text-muted-foreground mt-2">Try adjusting your filters to find what you're looking for.</p>
+                     <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear Filters</Button>
+                </div>
+            )}
           </div>
         </main>
       </div>
