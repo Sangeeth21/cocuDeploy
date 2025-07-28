@@ -12,6 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
+import { useVerification } from "@/context/vendor-verification-context";
 
 export default function VendorLoginPage() {
   const [email, setEmail] = useState("");
@@ -19,6 +20,8 @@ export default function VendorLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { setAsVerified, setAsUnverified } = useVerification();
+
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,14 +32,23 @@ export default function VendorLoginPage() {
       });
       router.push("/admin");
     } else if (email === "vendor@example.com" && password === "vendorpass") {
-      // For testing: bypass verification by setting a value in localStorage
-      localStorage.setItem("vendor_verified", "true");
+      // This is the special verified vendor account
+      setAsVerified();
       toast({
         title: "Login Successful",
         description: "Redirecting to your vendor dashboard.",
       });
       router.push("/vendor/dashboard");
-    } else if (email === "customer@example.com" && password === "customerpass") {
+    } else if (email === "unverified@example.com" && password === "vendorpass") {
+        // This is the unverified vendor account
+        setAsUnverified();
+         toast({
+            title: "Login Successful",
+            description: "Please complete your verification.",
+        });
+        router.push("/vendor/dashboard");
+    }
+    else if (email === "customer@example.com" && password === "customerpass") {
       toast({
         title: "Login Successful",
         description: "Redirecting to your account.",
@@ -57,7 +69,7 @@ export default function VendorLoginPage() {
         <form onSubmit={handleLogin}>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-headline">Vendor Portal</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard</CardDescription>
+            <CardDescription>Enter your credentials to access your dashboard. Use `unverified@example.com` to see the verification flow.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">

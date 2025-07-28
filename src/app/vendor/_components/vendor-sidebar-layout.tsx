@@ -4,13 +4,14 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight, Gift } from "lucide-react";
+import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight, Gift, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockVendorActivity } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { useVerification } from "@/context/vendor-verification-context";
 
 
 const navLinks = [
@@ -46,6 +47,8 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
     const [greeting, setGreeting] = useState("Hi");
     const vendorName = "Timeless Co.";
+    const { isVerified } = useVerification();
+
 
     useEffect(() => {
         const hasVisited = localStorage.getItem("hasVisitedVendorDashboard");
@@ -75,6 +78,21 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                 </SidebarHeader>
                 <SidebarContent className="p-2">
                      <SidebarMenu>
+                        {!isVerified && (
+                             <SidebarMenuItem>
+                                <SidebarMenuButton 
+                                    asChild
+                                    isActive={pathname === '/vendor/verify'}
+                                    tooltip={{children: 'Complete Verification'}}
+                                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                                >
+                                    <Link href="/vendor/verify">
+                                        <ShieldAlert />
+                                        <span>Verify Account</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        )}
                         {navLinks.map(link => (
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton 
@@ -123,7 +141,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                         <NotificationPopover notifications={mockVendorActivity} />
                     </div>
                  </header>
-                 <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40">
+                 <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-y-auto">
                     {children}
                 </main>
             </div>

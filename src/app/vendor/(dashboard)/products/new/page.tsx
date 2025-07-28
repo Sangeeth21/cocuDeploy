@@ -14,12 +14,14 @@ import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription as AlertDialogDescriptionComponent } from "@/components/ui/alert-dialog"
+
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
+import { useVerification } from "@/context/vendor-verification-context"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -134,13 +136,16 @@ const getYoutubeEmbedUrl = (url: string) => {
 
 export default function NewProductPage() {
     const { toast } = useToast();
+    const { isVerified, addDraftProduct } = useVerification();
+    
     const [images, setImages] = useState<ProductImages>({});
-    const [status, setStatus] = useState(false);
+    const [status, setStatus] = useState(!isVerified); // Default to draft if not verified
     const [requiresConfirmation, setRequiresConfirmation] = useState(false);
     const [show3DPreview, setShow3DPreview] = useState(false);
     const [is3DEnabled, setIs3DEnabled] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isConfirmationAlertOpen, setIsConfirmationAlertOpen] = useState(false);
+    const [isDraftInfoOpen, setIsDraftInfoOpen] = useState(false);
     
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
@@ -195,6 +200,15 @@ export default function NewProductPage() {
             return newImages;
         })
     }
+    
+    const handleSaveDraft = () => {
+        addDraftProduct({ id: Date.now().toString(), name: productName || "Unnamed Product" });
+        if (!isVerified) {
+            setIsDraftInfoOpen(true);
+        } else {
+            toast({ title: "Product Saved as Draft" });
+        }
+    };
 
     const handleGenerate = useCallback(async () => {
         if (!images.front?.src) {
@@ -446,9 +460,10 @@ export default function NewProductPage() {
                     <div className="space-y-2">
                         <Label>Product Status</Label>
                         <div className="flex items-center gap-4 p-2 border rounded-md">
-                            <Switch id="status" checked={status} onCheckedChange={setStatus} />
-                            <Label htmlFor="status" className="font-normal">{ status ? "Active" : "Draft"}</Label>
+                            <Switch id="status" checked={!status} onCheckedChange={(checked) => setStatus(!checked)} disabled={!isVerified} />
+                            <Label htmlFor="status" className="font-normal">{ status ? "Draft" : "Active"}</Label>
                         </div>
+                         {!isVerified && <p className="text-xs text-muted-foreground">Complete verification to publish products.</p>}
                     </div>
                 </CardContent>
             </Card>
@@ -472,15 +487,29 @@ export default function NewProductPage() {
         <Button variant="outline" asChild>
             <Link href="/vendor/dashboard">Cancel</Link>
         </Button>
-        <Button>
+        <Button onClick={handleSaveDraft}>
             Save as Draft
         </Button>
-         <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
+         <Button className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || status}>
             <CheckCircle className="mr-2 h-4 w-4"/>
             Publish Product
         </Button>
       </div>
     </div>
+    <Dialog open={isDraftInfoOpen} onOpenChange={setIsDraftInfoOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Product Saved as Draft</DialogTitle>
+                <DialogDescription>
+                    Your new product has been saved. Please complete your account verification to publish it and start selling.
+                </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setIsDraftInfoOpen(false)}>Okay</Button>
+                <Button asChild><Link href="/vendor/verify">Complete Verification</Link></Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
     <Dialog open={show3DPreview} onOpenChange={setShow3DPreview}>
         <DialogContent className="max-w-3xl h-3/4 flex flex-col p-8">
             <DialogHeader>
@@ -493,9 +522,9 @@ export default function NewProductPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2"><ShieldCheck className="text-primary"/> Enable Pre-Order Check?</AlertDialogTitle>
-                <AlertDialogDescription>
+                <AlertDialogDescriptionComponent>
                     By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
-                </AlertDialogDescription>
+                </AlertDialogDescriptionComponent>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
