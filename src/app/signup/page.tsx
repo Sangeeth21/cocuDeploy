@@ -76,6 +76,11 @@ export default function SignupPage() {
   const handleSignupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (email === 'test-vendor@example.com' && role === 'vendor') {
+        router.push('/vendor/verify');
+        return;
+    }
+
     if (password !== confirmPassword) {
         toast({
             variant: "destructive",
@@ -98,11 +103,6 @@ export default function SignupPage() {
             title: "Terms and Conditions",
             description: "You must agree to the Terms and Conditions to create an account.",
         });
-        return;
-    }
-
-    if (role === 'vendor' && email === 'test-vendor@example.com') {
-        router.push('/vendor/verify');
         return;
     }
 
@@ -205,19 +205,21 @@ export default function SignupPage() {
                     </Button>
                 </div>
                  {isPasswordFocused && (
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 p-2 rounded-md bg-muted/50">
-                        {renderCriteriaCheck("8+ characters", passwordCriteria.length)}
-                        {renderCriteriaCheck("1 uppercase", passwordCriteria.uppercase)}
-                        {renderCriteriaCheck("1 number", passwordCriteria.number)}
-                        {renderCriteriaCheck("1 special char", passwordCriteria.specialChar)}
+                    <div className="space-y-2">
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 p-2 rounded-md bg-muted/50">
+                            {renderCriteriaCheck("8+ characters", passwordCriteria.length)}
+                            {renderCriteriaCheck("1 uppercase", passwordCriteria.uppercase)}
+                            {renderCriteriaCheck("1 number", passwordCriteria.number)}
+                            {renderCriteriaCheck("1 special char", passwordCriteria.specialChar)}
+                        </div>
+                        {password.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <Progress value={passwordStrength.score * 25} className={cn("h-1 w-full", passwordStrength.color)} />
+                                <span className="text-xs text-muted-foreground flex-shrink-0">{passwordStrength.label}</span>
+                            </div>
+                        )}
                     </div>
                  )}
-                {password.length > 0 && !isPasswordFocused && (
-                     <div className="flex items-center gap-2">
-                        <Progress value={passwordStrength.score * 25} className={cn("h-1", passwordStrength.color)} />
-                        <span className="text-xs text-muted-foreground">{passwordStrength.label}</span>
-                     </div>
-                )}
               </div>
                <div className="space-y-2">
                  <div className="flex items-center gap-2">
