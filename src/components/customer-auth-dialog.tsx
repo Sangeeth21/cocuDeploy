@@ -237,6 +237,10 @@ export function CustomerAuthDialog() {
     return (
         <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
             <DialogContent className="sm:max-w-md">
+                 <DialogHeader className="text-center">
+                    <DialogTitle>Welcome to ShopSphere</DialogTitle>
+                    <DialogDescription>Log in or create an account to continue.</DialogDescription>
+                </DialogHeader>
                 <Tabs defaultValue={authDialogState.initialTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="login">Login</TabsTrigger>
