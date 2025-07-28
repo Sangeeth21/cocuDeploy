@@ -114,6 +114,11 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   }
 
   const handleMessageVendorClick = () => {
+    if (!isLoggedIn) {
+        openDialog('login');
+        return;
+    }
+      
     if (isChatDisabled) {
         setIsChatDisabledOpen(true);
         return;
@@ -255,7 +260,7 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
             </Button>
             <Button size="lg" variant="secondary" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
         </div>
-        <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendorClick} disabled={isChatDisabled}>
+        <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendorClick}>
             <MessageSquare className="mr-2 h-5 w-5" />
             Message Vendor
         </Button>
