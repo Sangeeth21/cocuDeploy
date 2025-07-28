@@ -79,16 +79,6 @@ export default function AdminProductsPage() {
                                     <DropdownMenuItem asChild>
                                         <Link href={`/products/${product.id}`} target="_blank">View Live Page <ExternalLink className="ml-auto h-3 w-3"/></Link>
                                     </DropdownMenuItem>
-                                    {product.status === 'Needs Review' && (
-                                        <>
-                                            <DropdownMenuSeparator />
-                                            <DropdownMenuItem asChild>
-                                                <Link href={`/admin/smart-pricing?productId=${product.id}`}>
-                                                    <Sparkles className="mr-2 h-4 w-4 text-accent" /> Smart Pricing
-                                                </Link>
-                                            </DropdownMenuItem>
-                                        </>
-                                    )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </TableCell>

@@ -18,7 +18,6 @@ const navLinks = [
   { href: "/admin/customers", label: "Users", icon: Users },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ListChecks },
-  { href: "/admin/smart-pricing", label: "Smart Pricing", icon: Sparkles },
   { href: "/admin/chat-logs", label: "Chat Logs", icon: MessageSquare },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/product-combos", label: "Product Combos", icon: Combine },
