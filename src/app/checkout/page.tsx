@@ -10,9 +10,11 @@ import { mockProducts, mockUserOrders } from "@/lib/mock-data";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { useState, useMemo } from "react";
-import { Loader2, Percent, Ticket, ShieldCheck } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { Loader2, Percent, Ticket, ShieldCheck, CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 
 const MOCK_USER_DATA = {
@@ -24,19 +26,26 @@ const MOCK_USER_DATA = {
 const MOCK_EMAIL_OTP = "123456";
 const MOCK_PHONE_OTP = "654321";
 
+type VerificationStatus = 'unverified' | 'pending' | 'verified';
 
 export default function CheckoutPage() {
     const { toast } = useToast();
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+    
+    // Form state
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [emailStatus, setEmailStatus] = useState<VerificationStatus>('unverified');
+    const [phoneStatus, setPhoneStatus] = useState<VerificationStatus>('unverified');
     const [emailOtp, setEmailOtp] = useState("");
     const [phoneOtp, setPhoneOtp] = useState("");
-    
+    const [showEmailOtp, setShowEmailOtp] = useState(false);
+    const [showPhoneOtp, setShowPhoneOtp] = useState(false);
+
     const cartItems = mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 }));
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
-    // Loyalty Program check
     const loyaltyOrdersRequired = 3;
     const hasLoyalty = mockUserOrders.length >= loyaltyOrdersRequired;
     const shipping = hasLoyalty ? 0 : 5.00;
@@ -44,33 +53,44 @@ export default function CheckoutPage() {
     const total = useMemo(() => {
         return subtotal + shipping;
     }, [subtotal, shipping]);
-
-    const handleContinueToVerification = (e: React.FormEvent) => {
-        e.preventDefault();
-        // In a real app, you would send OTPs to the entered email/phone here.
-        toast({
-            title: "Verification Required",
-            description: "We've sent verification codes to your email and phone.",
-        });
-        setShowVerificationDialog(true);
+    
+    const handleSendCode = (type: 'email' | 'phone') => {
+        if (type === 'email' && email) {
+            setEmailStatus('pending');
+            setShowEmailOtp(true);
+            toast({ title: "Verification Code Sent", description: "A code has been sent to your email." });
+        }
+        if (type === 'phone' && phone) {
+            setPhoneStatus('pending');
+            setShowPhoneOtp(true);
+            toast({ title: "Verification Code Sent", description: "A code has been sent to your phone." });
+        }
     };
     
-    const handlePayment = (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (emailOtp !== MOCK_EMAIL_OTP || phoneOtp !== MOCK_PHONE_OTP) {
-            toast({
-                variant: "destructive",
-                title: "Verification Failed",
-                description: "Invalid verification codes. Please try again.",
-            });
-            return;
+    const handleVerifyCode = (type: 'email' | 'phone') => {
+        if (type === 'email') {
+            if (emailOtp === MOCK_EMAIL_OTP) {
+                setEmailStatus('verified');
+                toast({ title: "Email Verified!", className: "bg-green-100 dark:bg-green-900" });
+            } else {
+                toast({ variant: "destructive", title: "Invalid Email Code" });
+            }
         }
-
+         if (type === 'phone') {
+            if (phoneOtp === MOCK_PHONE_OTP) {
+                setPhoneStatus('verified');
+                toast({ title: "Phone Verified!", className: "bg-green-100 dark:bg-green-900" });
+            } else {
+                toast({ variant: "destructive", title: "Invalid Phone Code" });
+            }
+        }
+    };
+    
+    const handleFinalizePayment = (e: React.FormEvent) => {
+        e.preventDefault();
         setIsProcessing(true);
         setTimeout(() => {
             setIsProcessing(false);
-            setShowVerificationDialog(false);
             toast({
                 title: "Payment Successful!",
                 description: "Your order has been placed.",
@@ -78,6 +98,8 @@ export default function CheckoutPage() {
             router.push('/account?tab=orders');
         }, 2000);
     }
+    
+    const isFormFullyVerified = emailStatus === 'verified' && phoneStatus === 'verified';
 
     return (
         <div className="container py-12">
@@ -85,21 +107,39 @@ export default function CheckoutPage() {
                 <h1 className="text-4xl font-bold font-headline">Checkout</h1>
                 <p className="text-muted-foreground mt-2">Complete your purchase in a few easy steps.</p>
             </div>
-             <form onSubmit={handleContinueToVerification}>
+             <form onSubmit={handleFinalizePayment}>
                 <div className="grid md:grid-cols-2 gap-12 items-start">
                     <div className="space-y-8">
                         <Card>
                             <CardHeader>
                                 <CardTitle className="font-headline">Shipping Information</CardTitle>
                             </CardHeader>
-                            <CardContent className="grid grid-cols-2 gap-4">
+                            <CardContent className="grid grid-cols-2 gap-x-4 gap-y-6">
                                 <div className="col-span-2">
                                     <Label htmlFor="email">Email Address</Label>
-                                    <Input id="email" type="email" placeholder="you@example.com" required />
+                                    <div className="flex items-center gap-2">
+                                        <Input id="email" type="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => email && emailStatus === 'unverified' && handleSendCode('email')} disabled={emailStatus !== 'unverified'} />
+                                        {emailStatus === 'verified' && <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="h-4 w-4 mr-1"/>Verified</Badge>}
+                                    </div>
+                                    {showEmailOtp && emailStatus === 'pending' && (
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Input placeholder="Enter email code..." value={emailOtp} onChange={e => setEmailOtp(e.target.value)} />
+                                            <Button type="button" variant="outline" onClick={() => handleVerifyCode('email')}>Verify</Button>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="col-span-2">
                                     <Label htmlFor="phone">Phone Number</Label>
-                                    <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" required />
+                                     <div className="flex items-center gap-2">
+                                        <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" required value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => phone && phoneStatus === 'unverified' && handleSendCode('phone')} disabled={phoneStatus !== 'unverified'} />
+                                        {phoneStatus === 'verified' && <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="h-4 w-4 mr-1"/>Verified</Badge>}
+                                    </div>
+                                    {showPhoneOtp && phoneStatus === 'pending' && (
+                                        <div className="flex items-center gap-2 mt-2">
+                                            <Input placeholder="Enter phone code..." value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} />
+                                            <Button type="button" variant="outline" onClick={() => handleVerifyCode('phone')}>Verify</Button>
+                                        </div>
+                                    )}
                                 </div>
                                  <div className="col-span-1">
                                     <Label htmlFor="first-name">First Name</Label>
@@ -195,57 +235,16 @@ export default function CheckoutPage() {
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button size="lg" type="submit" className="w-full">
-                                    Pay Now
+                                <Button size="lg" type="submit" className="w-full" disabled={isProcessing || !isFormFullyVerified}>
+                                    {isProcessing && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                                    {isProcessing ? 'Processing...' : `Pay Now (₹${total.toFixed(2)})`}
                                 </Button>
                             </CardFooter>
                         </Card>
+                        {!isFormFullyVerified && <p className="text-xs text-center text-muted-foreground mt-2">Please verify email and phone to complete your order.</p>}
                     </div>
                 </div>
             </form>
-
-            <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
-                <DialogContent>
-                     <form onSubmit={handlePayment}>
-                        <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                                <ShieldCheck className="text-primary"/> Final Step: Verify & Pay
-                            </DialogTitle>
-                            <DialogDescription>
-                                To protect your account, please enter the verification codes sent to your email and phone.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="email-otp">Email Code</Label>
-                                <Input 
-                                    id="email-otp" 
-                                    placeholder="Enter 6-digit code" 
-                                    value={emailOtp}
-                                    onChange={(e) => setEmailOtp(e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="phone-otp">Phone Code</Label>
-                                <Input 
-                                    id="phone-otp" 
-                                    placeholder="Enter 6-digit code"
-                                    value={phoneOtp}
-                                    onChange={(e) => setPhoneOtp(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </div>
-                        <DialogFooter>
-                            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isProcessing}>
-                                {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                                {isProcessing ? 'Processing...' : `Verify & Pay ₹${total.toFixed(2)}`}
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }
