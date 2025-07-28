@@ -196,7 +196,7 @@ export default function CheckoutPage() {
                             </CardContent>
                             <CardFooter>
                                 <Button size="lg" type="submit" className="w-full">
-                                    Continue to Verification
+                                    Pay Now
                                 </Button>
                             </CardFooter>
                         </Card>
