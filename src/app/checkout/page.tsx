@@ -15,6 +15,7 @@ import { Loader2, Percent, Ticket, ShieldCheck, CheckCircle } from "lucide-react
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useUser } from "@/context/user-context";
 
 
 const MOCK_USER_DATA = {
@@ -31,6 +32,8 @@ type VerificationStatus = 'unverified' | 'pending' | 'verified';
 export default function CheckoutPage() {
     const { toast } = useToast();
     const router = useRouter();
+    const { isLoggedIn } = useUser();
+
     const [isProcessing, setIsProcessing] = useState(false);
     
     // Form state
@@ -42,6 +45,15 @@ export default function CheckoutPage() {
     const [phoneOtp, setPhoneOtp] = useState("");
     const [showEmailOtp, setShowEmailOtp] = useState(false);
     const [showPhoneOtp, setShowPhoneOtp] = useState(false);
+    
+    useEffect(() => {
+        if (isLoggedIn) {
+            setEmail("john.doe@example.com");
+            setPhone("+1 (555) 123-4567");
+            setEmailStatus('verified');
+            setPhoneStatus('verified');
+        }
+    }, [isLoggedIn]);
 
     const cartItems = mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 }));
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -55,6 +67,8 @@ export default function CheckoutPage() {
     }, [subtotal, shipping]);
     
     const handleSendCode = (type: 'email' | 'phone') => {
+        if (isLoggedIn) return; // Don't send for logged in users
+
         if (type === 'email' && email) {
             setEmailStatus('pending');
             setShowEmailOtp(true);
@@ -118,7 +132,7 @@ export default function CheckoutPage() {
                                 <div className="col-span-2">
                                     <Label htmlFor="email">Email Address</Label>
                                     <div className="flex items-center gap-2">
-                                        <Input id="email" type="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => email && emailStatus === 'unverified' && handleSendCode('email')} disabled={emailStatus !== 'unverified'} />
+                                        <Input id="email" type="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => email && emailStatus === 'unverified' && handleSendCode('email')} disabled={isLoggedIn || emailStatus !== 'unverified'} />
                                         {emailStatus === 'verified' && <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="h-4 w-4 mr-1"/>Verified</Badge>}
                                     </div>
                                     {showEmailOtp && emailStatus === 'pending' && (
@@ -131,7 +145,7 @@ export default function CheckoutPage() {
                                 <div className="col-span-2">
                                     <Label htmlFor="phone">Phone Number</Label>
                                      <div className="flex items-center gap-2">
-                                        <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" required value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => phone && phoneStatus === 'unverified' && handleSendCode('phone')} disabled={phoneStatus !== 'unverified'} />
+                                        <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" required value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => phone && phoneStatus === 'unverified' && handleSendCode('phone')} disabled={isLoggedIn || phoneStatus !== 'unverified'} />
                                         {phoneStatus === 'verified' && <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="h-4 w-4 mr-1"/>Verified</Badge>}
                                     </div>
                                     {showPhoneOtp && phoneStatus === 'pending' && (
@@ -143,11 +157,11 @@ export default function CheckoutPage() {
                                 </div>
                                  <div className="col-span-1">
                                     <Label htmlFor="first-name">First Name</Label>
-                                    <Input id="first-name" placeholder="John" required />
+                                    <Input id="first-name" placeholder="John" required defaultValue={isLoggedIn ? "John" : ""} />
                                 </div>
                                  <div className="col-span-1">
                                     <Label htmlFor="last-name">Last Name</Label>
-                                    <Input id="last-name" placeholder="Doe" required />
+                                    <Input id="last-name" placeholder="Doe" required defaultValue={isLoggedIn ? "Doe" : ""} />
                                 </div>
                                 <div className="col-span-2">
                                     <Label htmlFor="address">Address</Label>
