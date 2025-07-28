@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Copy, Gift, Percent, Users, CheckCircle, Clock, Share2, MessageCircle, Send, Twitter, Facebook, Instagram } from "lucide-react";
+import { Copy, Gift, Percent, Users, CheckCircle, Clock, Share2, MessageCircle, Send, Twitter, Facebook, Instagram, Linkedin } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -38,9 +38,14 @@ const cappedTotalDiscount = Math.min(totalCommissionDiscount, 3);
 function ShareDialog() {
     const { toast } = useToast();
     const referralCode = MOCK_VENDOR_DATA.referralCode;
-    const shareUrl = "https://shopsphere.example.com/signup"; // Replace with your actual URL
-    const shareText = `Join me on ShopSphere! Use my referral code to get special onboarding benefits: ${referralCode}`;
-    const fullMessage = `${shareText}\n\nSign up here: ${shareUrl}`;
+    const shareUrl = "https://shopsphere.example.com/signup?ref=vendor"; // A more specific URL
+
+    // Platform-specific messages for vendors
+    const genericText = `Join our community of vendors on ShopSphere! Use my code to get special onboarding benefits: ${referralCode}`;
+    const fullMessage = `${genericText}\n\nSign up here: ${shareUrl}`;
+    const twitterText = `Looking to sell your products online? Join me on @ShopSphere. Use my referral code ${referralCode} to get a great start. #sellonline #ecommerce`;
+    const linkedinTitle = "Opportunity for Vendors: Join ShopSphere Marketplace";
+    const linkedinSummary = `I've had a positive experience selling my products on ShopSphere and wanted to extend an invitation. It's a great platform to reach new customers. They have a referral program that gives new vendors a commission discount to start. Use my code if you decide to sign up: ${referralCode}`;
 
     const copyShareMessage = () => {
         navigator.clipboard.writeText(fullMessage);
@@ -49,9 +54,10 @@ function ShareDialog() {
 
     const socialLinks = [
         { name: 'WhatsApp', icon: MessageCircle, url: `https://wa.me/?text=${encodeURIComponent(fullMessage)}` },
-        { name: 'Telegram', icon: Send, url: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}` },
-        { name: 'Twitter', icon: Twitter, url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}` },
-        { name: 'Facebook', icon: Facebook, url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}` },
+        { name: 'Telegram', icon: Send, url: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(genericText)}` },
+        { name: 'Twitter', icon: Twitter, url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}&url=${encodeURIComponent(shareUrl)}` },
+        { name: 'Facebook', icon: Facebook, url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(genericText)}` },
+        { name: 'LinkedIn', icon: Linkedin, url: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(linkedinTitle)}&summary=${encodeURIComponent(linkedinSummary)}` },
     ];
 
     return (
@@ -77,7 +83,7 @@ function ShareDialog() {
                     </Button>
                 </div>
                 <Separator />
-                <p className="text-sm text-muted-foreground text-center">Or share directly on social media</p>
+                <p className="text-sm text-muted-foreground text-center">Or share directly</p>
                 <div className="flex justify-center gap-2">
                     {socialLinks.map(social => (
                          <Button key={social.name} variant="outline" size="icon" asChild>

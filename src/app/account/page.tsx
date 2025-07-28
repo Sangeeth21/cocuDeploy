@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy, Share2, Twitter, Facebook, Instagram } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy, Share2, Twitter, Facebook, Instagram, Linkedin } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -163,9 +163,14 @@ function WishlistTabContent() {
 function ShareDialog() {
     const { toast } = useToast();
     const referralCode = MOCK_USER_DATA.referralCode;
-    const shareUrl = "https://shopsphere.example.com/signup"; // Replace with your actual URL
-    const shareText = `I love shopping on ShopSphere! Sign up with my referral code to get a special discount on your first order: ${referralCode}`;
-    const fullMessage = `${shareText}\n\nSign up here: ${shareUrl}`;
+    const shareUrl = "https://shopsphere.example.com/signup"; 
+
+    // Platform-specific messages
+    const genericText = `I love shopping on ShopSphere! Sign up with my referral code to get a special discount on your first order: ${referralCode}`;
+    const fullMessage = `${genericText}\n\nSign up here: ${shareUrl}`;
+    const twitterText = `Shopping on @ShopSphere is great! Use my code ${referralCode} for a discount on your first order. #shopsphere #referral`;
+    const linkedinTitle = "Get a Discount on Your First ShopSphere Order";
+    const linkedinSummary = `A great place to discover unique products. Use my referral code ${referralCode} for a discount on your first purchase!`;
 
     const copyShareMessage = () => {
         navigator.clipboard.writeText(fullMessage);
@@ -174,9 +179,10 @@ function ShareDialog() {
 
     const socialLinks = [
         { name: 'WhatsApp', icon: MessageSquare, url: `https://wa.me/?text=${encodeURIComponent(fullMessage)}` },
-        { name: 'Telegram', icon: Send, url: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}` },
-        { name: 'Twitter', icon: Twitter, url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}` },
-        { name: 'Facebook', icon: Facebook, url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}` },
+        { name: 'Telegram', icon: Send, url: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(genericText)}` },
+        { name: 'Twitter', icon: Twitter, url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(twitterText)}&url=${encodeURIComponent(shareUrl)}` },
+        { name: 'Facebook', icon: Facebook, url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(genericText)}` },
+        { name: 'LinkedIn', icon: Linkedin, url: `https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(linkedinTitle)}&summary=${encodeURIComponent(linkedinSummary)}` },
     ];
 
     return (
@@ -202,7 +208,7 @@ function ShareDialog() {
                     </Button>
                 </div>
                 <Separator />
-                <p className="text-sm text-muted-foreground text-center">Or share directly on social media</p>
+                <p className="text-sm text-muted-foreground text-center">Or share directly</p>
                 <div className="flex justify-center gap-2">
                     {socialLinks.map(social => (
                          <Button key={social.name} variant="outline" size="icon" asChild>
@@ -1155,5 +1161,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    
