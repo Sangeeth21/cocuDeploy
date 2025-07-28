@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy, Share2, Twitter, Facebook, Instagram } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -157,6 +157,64 @@ function WishlistTabContent() {
                 </Card>
             ))}
         </div>
+    )
+}
+
+function ShareDialog() {
+    const { toast } = useToast();
+    const referralCode = MOCK_USER_DATA.referralCode;
+    const shareUrl = "https://shopsphere.example.com/signup"; // Replace with your actual URL
+    const shareText = `I love shopping on ShopSphere! Sign up with my referral code to get a special discount on your first order: ${referralCode}`;
+    const fullMessage = `${shareText}\n\nSign up here: ${shareUrl}`;
+
+    const copyShareMessage = () => {
+        navigator.clipboard.writeText(fullMessage);
+        toast({ title: 'Copied!', description: 'Share message copied to clipboard.' });
+    }
+
+    const socialLinks = [
+        { name: 'WhatsApp', icon: MessageSquare, url: `https://wa.me/?text=${encodeURIComponent(fullMessage)}` },
+        { name: 'Telegram', icon: Send, url: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}` },
+        { name: 'Twitter', icon: Twitter, url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}` },
+        { name: 'Facebook', icon: Facebook, url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}` },
+    ];
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button className="rounded-l-none">
+                    <Share2 className="h-4 w-4"/>
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Share Your Referral Code</DialogTitle>
+                    <DialogDescription>
+                        Invite friends to ShopSphere and you'll both get rewards!
+                    </DialogDescription>
+                </DialogHeader>
+                 <div className="flex flex-col space-y-2">
+                    <Label htmlFor="share-message" className="text-sm font-medium">Share Message</Label>
+                    <Textarea id="share-message" value={fullMessage} readOnly rows={4} className="resize-none" />
+                    <Button type="button" size="sm" className="w-full" onClick={copyShareMessage}>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Message
+                    </Button>
+                </div>
+                <Separator />
+                <p className="text-sm text-muted-foreground text-center">Or share directly on social media</p>
+                <div className="flex justify-center gap-2">
+                    {socialLinks.map(social => (
+                         <Button key={social.name} variant="outline" size="icon" asChild>
+                            <a href={social.url} target="_blank" rel="noopener noreferrer">
+                                <social.icon className="h-5 w-5" />
+                                <span className="sr-only">Share on {social.name}</span>
+                            </a>
+                        </Button>
+                    ))}
+                </div>
+            </DialogContent>
+        </Dialog>
     )
 }
 
@@ -555,9 +613,7 @@ export default function AccountPage() {
                             <p className="text-sm text-muted-foreground mb-2">Share your code with friends. When they make their first purchase, you both get a reward!</p>
                              <div className="flex">
                                 <Input value={MOCK_USER_DATA.referralCode} readOnly className="rounded-r-none focus:ring-0 focus:ring-offset-0"/>
-                                <Button className="rounded-l-none" onClick={copyReferralCode}>
-                                    <Copy className="h-4 w-4"/>
-                                </Button>
+                                <ShareDialog />
                             </div>
                         </div>
                         <Separator />
@@ -1099,3 +1155,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    
