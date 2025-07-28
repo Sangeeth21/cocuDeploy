@@ -28,6 +28,8 @@ export default function LoginPage() {
       });
       router.push("/admin");
     } else if (email === "vendor@example.com" && password === "vendorpass") {
+      // For testing: bypass verification by setting a value in localStorage
+      localStorage.setItem("vendor_verified", "true");
       toast({
         title: "Login Successful",
         description: "Redirecting to your vendor dashboard.",
