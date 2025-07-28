@@ -198,7 +198,22 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                 <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
              <div className="space-y-2">
-                <Label htmlFor="customer-signup-password">Password</Label>
+                <div className="flex items-center gap-2">
+                    <Label htmlFor="customer-signup-password">Password</Label>
+                    <TooltipProvider delayDuration={0}>
+                        <Tooltip>
+                            <TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
+                            <TooltipContent>
+                                <ul className="list-disc pl-4 text-xs space-y-1">
+                                    <li>At least 8 characters long</li>
+                                    <li>Contains an uppercase letter</li>
+                                    <li>Contains a number</li>
+                                    <li>Contains a special character</li>
+                                </ul>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
                 <div className="relative">
                     <Input id="customer-signup-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} />
                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
@@ -213,8 +228,23 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                             {renderCriteriaCheck("1 number", passwordCriteria.number)}
                             {renderCriteriaCheck("1 special char", passwordCriteria.specialChar)}
                         </div>
+                         {password.length > 0 && (
+                            <div className="flex items-center gap-2">
+                                <Progress value={passwordStrength.score * 25} className={cn("h-1 w-full", passwordStrength.color)} />
+                                <span className="text-xs text-muted-foreground flex-shrink-0">{passwordStrength.label}</span>
+                            </div>
+                        )}
                     </div>
                  )}
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="customer-confirm-password">Confirm Password</Label>
+                <div className="relative">
+                    <Input id="customer-confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        {showConfirmPassword ? <EyeOff /> : <Eye />}
+                    </Button>
+                </div>
             </div>
             <div className="flex items-center space-x-2 pt-2">
                 <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
