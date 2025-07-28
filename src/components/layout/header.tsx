@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown, ShoppingCart, Heart } from "lucide-react";
+import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown, ShoppingCart, Heart, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchBar } from "@/components/search-bar";
@@ -135,10 +135,13 @@ export function Header() {
                     <Link href="/account?tab=wishlist"><Heart className="mr-2 h-4 w-4"/> Wishlist</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/account?tab=settings"><Settings className="mr-2 h-4 w-4"/> Settings</Link>
+                    <Link href="/account?tab=billing"><CreditCard className="mr-2 h-4 w-4"/> Billing</Link>
+                  </DropdownMenuItem>
+                   <DropdownMenuItem asChild>
+                    <Link href="/account?tab=profile"><Gift className="mr-2 h-4 w-4"/> Referrals</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/account?tab=billing"><CreditCard className="mr-2 h-4 w-4"/> Billing</Link>
+                    <Link href="/account?tab=settings"><Settings className="mr-2 h-4 w-4"/> Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={logout}>
