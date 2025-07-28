@@ -30,7 +30,7 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState("customer");
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: '', color: '' });
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(true);
   
   const [emailOtp, setEmailOtp] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
@@ -215,7 +215,7 @@ export default function SignupPage() {
                         </Label>
                     </div>
                     <div className="flex items-center space-x-2">
-                        <Checkbox id="newsletter" />
+                        <Checkbox id="newsletter" defaultChecked />
                         <Label htmlFor="newsletter" className="font-normal text-sm">Sign up for our newsletter</Label>
                     </div>
                     <div className="flex items-center space-x-2">
