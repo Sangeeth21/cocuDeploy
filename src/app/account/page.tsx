@@ -1098,7 +1098,7 @@ export default function AccountPage() {
                                 </div>
                             </div>
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical/></ButtonMenuTrigger>
+                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical/></Button></DropdownMenuTrigger>
                                 <DropdownMenuContent>
                                     <DropdownMenuItem><Edit className="mr-2"/> Edit</DropdownMenuItem>
                                     <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/> Delete</DropdownMenuItem>
@@ -1168,5 +1168,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    
