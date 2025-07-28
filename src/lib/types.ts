@@ -1,4 +1,5 @@
 
+
 export type DisplayProduct = {
   id: string;
   name: string;
@@ -177,36 +178,23 @@ export type WishlistedCombo = {
 };
 
 // Referrals and Loyalty
-export type CustomerReferralSettings = {
-    isEnabled: boolean;
-    referrerBonus: number; // Wallet credit
-    newCustomerDiscount: number; // Percentage
-    minPurchaseAmount: number;
-}
+export type ProgramTarget = 'customer' | 'vendor';
 
-export type LoyaltyPointsSettings = {
-    isEnabled: boolean;
-    pointsPerRupee: number;
-    redemptionValue: number; // e.g., 0.5 means 1 point = 0.5 rupees
-}
+export type Program = {
+    id: string;
+    name: string;
+    target: ProgramTarget;
+    type: string;
+    reward: {
+        type: string;
+        value: number;
+    };
+    productScope: 'all' | 'selected';
+    status: 'Active' | 'Scheduled' | 'Expired';
+    startDate: Date;
+    endDate: Date;
+    expiryDays?: number;
+};
 
-export type FrequentBuyerReward = {
-    isEnabled: boolean;
-    ordersToQualify: number;
-    rewardType: 'free_delivery';
-    rewardValue: number; // e.g., 2 for 2 free deliveries
-}
 
-export type VendorReferralSettings = {
-    isEnabled: boolean;
-    vendorsToRefer: number;
-    referrerDiscount: number; // percentage
-    discountDuration: number; // number of orders
-    newVendorDiscount: number; // percentage
-}
-
-export type VendorOnboardingBonus = {
-    isEnabled: boolean;
-    productsToList: number;
-    commissionFreeSales: number;
-}
+    

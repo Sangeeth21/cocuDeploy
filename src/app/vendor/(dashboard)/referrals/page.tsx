@@ -4,23 +4,33 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Gift, Percent, Users, CheckCircle, Clock } from "lucide-react";
 
+
+// This data would come from a backend API call for the logged-in vendor
 const MOCK_VENDOR_DATA = {
     referralCode: "VENDOR-A1B2",
+    isReferredVendor: true, // This vendor was referred by someone else
     referrals: 3,
-    referralsNeeded: 5,
+    referralsNeededForBonus: 5,
+    ordersWithDiscount: 0, 
+    onboardingDiscount: {
+        isActive: true,
+        discount: 2, // 2%
+        expires: "3 months"
+    },
+    referralDiscount: {
+        isActive: false,
+        discount: 0.75, // 0.75% because they were referred, will become 1% total
+    }
 };
 
-const mockActiveRewards = [
-    { id: 1, title: "1% Commission Discount", description: "Active on your next 5 orders.", icon: Percent },
-    { id: 2, title: "New Vendor Bonus", description: "0.25% commission discount. Expires in 10 days.", icon: Gift },
-    { id: 3, title: "Onboarding Reward", description: "5 commission-free sales for listing 10 products.", icon: CheckCircle },
-];
+MOCK_VENDOR_DATA.referralDiscount.discount = MOCK_VENDOR_DATA.isReferredVendor ? 0.75 : 1.0;
+const totalCommissionDiscount = (MOCK_VENDOR_DATA.onboardingDiscount.isActive ? MOCK_VENDOR_DATA.onboardingDiscount.discount : 0) + (MOCK_VENDOR_DATA.referralDiscount.isActive ? MOCK_VENDOR_DATA.referralDiscount.discount : 0);
+const cappedTotalDiscount = Math.min(totalCommissionDiscount, 3);
 
 
 export default function VendorReferralsPage() {
@@ -31,7 +41,7 @@ export default function VendorReferralsPage() {
         toast({ title: 'Copied!', description: 'Referral code copied to clipboard.' });
     }
 
-    const referralProgress = (MOCK_VENDOR_DATA.referrals / MOCK_VENDOR_DATA.referralsNeeded) * 100;
+    const referralProgress = (MOCK_VENDOR_DATA.referrals / MOCK_VENDOR_DATA.referralsNeededForBonus) * 100;
 
     return (
         <div>
@@ -48,7 +58,7 @@ export default function VendorReferralsPage() {
                         </CardHeader>
                          <CardContent className="space-y-4">
                              <div>
-                                <p className="text-sm text-muted-foreground mb-2">Share your code with other potential vendors. When 5 new vendors sign up and get verified, you'll receive a 1% discount on your commission for your next 8 orders!</p>
+                                <p className="text-sm text-muted-foreground mb-2">Share your code with other potential vendors. For every 5 new vendors that sign up and get verified, you'll receive a {MOCK_VENDOR_DATA.referralDiscount.discount}% discount on your commission for your next 8 orders!</p>
                                  <div className="flex">
                                     <Input value={MOCK_VENDOR_DATA.referralCode} readOnly className="rounded-r-none focus:ring-0 focus:ring-offset-0"/>
                                     <Button className="rounded-l-none" onClick={copyReferralCode}>
@@ -60,7 +70,7 @@ export default function VendorReferralsPage() {
                              <div>
                                 <Progress value={referralProgress} />
                                  <p className="text-sm text-muted-foreground text-center mt-2">
-                                    You have <span className="font-bold text-primary">{MOCK_VENDOR_DATA.referrals}</span> successful referrals. You're <span className="font-bold text-primary">{MOCK_VENDOR_DATA.referralsNeeded - MOCK_VENDOR_DATA.referrals}</span> away from your next reward!
+                                    You have <span className="font-bold text-primary">{MOCK_VENDOR_DATA.referrals}</span> successful referrals. You're <span className="font-bold text-primary">{MOCK_VENDOR_DATA.referralsNeededForBonus - MOCK_VENDOR_DATA.referrals}</span> away from your next reward!
                                 </p>
                              </div>
                         </CardContent>
@@ -73,22 +83,36 @@ export default function VendorReferralsPage() {
                             <CardDescription>All your currently active bonuses and discounts.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {mockActiveRewards.map((reward) => {
-                                const Icon = reward.icon;
-                                return (
-                                <div key={reward.id} className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
+                            {MOCK_VENDOR_DATA.onboardingDiscount.isActive && (
+                                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
                                     <div className="p-2 bg-primary/10 rounded-full">
-                                        <Icon className="h-5 w-5 text-primary" />
+                                        <CheckCircle className="h-5 w-5 text-primary" />
                                     </div>
                                     <div>
-                                        <p className="font-semibold">{reward.title}</p>
-                                        <p className="text-xs text-muted-foreground">{reward.description}</p>
+                                        <p className="font-semibold">New Vendor Bonus</p>
+                                        <p className="text-xs text-muted-foreground">{MOCK_VENDOR_DATA.onboardingDiscount.discount}% commission discount for your first {MOCK_VENDOR_DATA.onboardingDiscount.expires}.</p>
                                     </div>
                                 </div>
-                            )})}
-                             {mockActiveRewards.length === 0 && (
-                                <p className="text-sm text-muted-foreground text-center py-8">You have no active rewards right now. Refer a vendor to get started!</p>
                             )}
+                             {MOCK_VENDOR_DATA.referralDiscount.isActive && (
+                                <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
+                                    <div className="p-2 bg-primary/10 rounded-full">
+                                        <Gift className="h-5 w-5 text-primary" />
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold">Referral Bonus</p>
+                                        <p className="text-xs text-muted-foreground">{MOCK_VENDOR_DATA.referralDiscount.discount}% commission discount for your next {MOCK_VENDOR_DATA.ordersWithDiscount} orders.</p>
+                                    </div>
+                                </div>
+                             )}
+
+                             <Separator />
+
+                             <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 text-center">
+                                <p className="text-sm font-medium text-primary-foreground/80">Total Commission Discount</p>
+                                 <p className="text-3xl font-bold text-primary">{cappedTotalDiscount.toFixed(2)}%</p>
+                                 <p className="text-xs text-muted-foreground">(Capped at 3% maximum)</p>
+                             </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -96,3 +120,5 @@ export default function VendorReferralsPage() {
         </div>
     )
 }
+
+    

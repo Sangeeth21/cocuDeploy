@@ -63,14 +63,25 @@ const initialPrograms: Program[] = [
     },
      {
         id: 'PROG003',
-        name: 'Vendor Referral',
+        name: 'Vendor Referral Bonus',
         target: 'vendor',
         type: 'referral',
         reward: { type: 'commission_discount', value: 1 },
         productScope: 'all',
-        status: 'Scheduled',
-        startDate: new Date(2024, 7, 1),
-        endDate: new Date(2024, 9, 30),
+        status: 'Active',
+        startDate: new Date(),
+        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
+    },
+    {
+        id: 'PROG004',
+        name: 'New Vendor Onboarding',
+        target: 'vendor',
+        type: 'onboarding',
+        reward: { type: 'commission_discount', value: 2 },
+        productScope: 'all',
+        status: 'Active',
+        startDate: new Date(),
+        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
     }
 ];
 
@@ -94,7 +105,6 @@ const programOptions = {
         ],
         rewards: [
             { value: 'commission_discount', label: 'Commission Discount (%)' },
-            { value: 'commission_free_sales', label: 'Commission-Free Sales (Orders)' },
         ]
     }
 }
@@ -199,7 +209,7 @@ function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void })
                      <div className="space-y-2">
                         <Label>Reward Value / Condition</Label>
                         <Input type="number" value={rewardValue || ''} onChange={e => setRewardValue(Number(e.target.value))} />
-                         <p className="text-xs text-muted-foreground">E.g., 100 for wallet, 15 for %, 5 for # of orders/referrals.</p>
+                         <p className="text-xs text-muted-foreground">E.g., 100 for wallet, 15 for %, 2 for # of orders/referrals.</p>
                     </div>
                      <div className="space-y-2">
                         <Label>Product Scope</Label>
@@ -323,7 +333,7 @@ export default function ReferralsPage() {
                                             <span>
                                                 {program.reward.type === 'wallet_credit' && `₹${program.reward.value}`}
                                                 {(program.reward.type === 'discount_percent' || program.reward.type === 'commission_discount') && `${program.reward.value}%`}
-                                                {(program.reward.type === 'free_shipping' || program.reward.type === 'commission_free_sales') && `${program.reward.value} Orders`}
+                                                {(program.reward.type === 'free_shipping') && `${program.reward.value} Orders`}
                                             </span>
                                         </div>
                                     </TableCell>
@@ -352,3 +362,5 @@ export default function ReferralsPage() {
         </div>
     )
 }
+
+    
