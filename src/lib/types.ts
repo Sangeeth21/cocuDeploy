@@ -14,9 +14,15 @@ export type DisplayProduct = {
   images?: string[];
   sku?: string;
   stock?: number;
-  status?: 'Live' | 'Archived' | 'Needs Review';
+  status?: 'Live' | 'Archived' | 'Needs Review' | 'Draft';
   requiresConfirmation?: boolean;
 };
+
+export type DraftProduct = {
+  id: string;
+  name: string;
+  imageUrl?: string;
+}
 
 export type Review = {
   id: string;

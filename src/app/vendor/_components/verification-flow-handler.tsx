@@ -7,13 +7,20 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from "@/components/ui/button";
 import { useVerification } from "@/context/vendor-verification-context";
 import { ShieldAlert } from "lucide-react";
+import { PublishDraftsDialog } from "./publish-drafts-dialog";
 
 const PROMPT_CLOSE_COUNT_KEY = 'shopsphere_verification_prompt_close_count';
 const MAX_PROMPT_CLOSES = 5;
 
 export function VerificationFlowHandler() {
     const router = useRouter();
-    const { isVerified, promptState, setPromptState, setHasDrafts } = useVerification();
+    const { 
+        isVerified, 
+        promptState, 
+        setPromptState,
+        draftProducts,
+        removeDrafts
+    } = useVerification();
     const [closeCount, setCloseCount] = useState(0);
 
     // Load close count from localStorage on mount
@@ -51,31 +58,22 @@ export function VerificationFlowHandler() {
         router.push('/vendor/verify');
     };
     
-    const handlePublishDrafts = () => {
-        // Here you would navigate to a page or show another modal to select products
-        // For now, we'll just simulate it.
-        setHasDrafts(false);
-        alert("Functionality to select and publish drafts would be implemented here.");
+    const handlePublishDrafts = (selectedIds: string[]) => {
+        // In a real app, this would make an API call to update the product statuses
+        console.log("Publishing products:", selectedIds);
+        removeDrafts(selectedIds);
         setPromptState('dismissed');
     };
 
     if (isVerified) {
         if (promptState === 'show_draft_publish') {
              return (
-                <Dialog open={true} onOpenChange={() => setPromptState('dismissed')}>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Verification Complete!</DialogTitle>
-                            <DialogDescription>
-                                You have draft products. Would you like to publish them now?
-                            </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                             <Button variant="outline" onClick={() => setPromptState('dismissed')}>Do It Later</Button>
-                            <Button onClick={handlePublishDrafts}>Publish Drafts</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
+                <PublishDraftsDialog 
+                    drafts={draftProducts}
+                    open={true}
+                    onOpenChange={() => setPromptState('dismissed')}
+                    onPublish={handlePublishDrafts}
+                />
             );
         }
         return null;
@@ -116,4 +114,3 @@ export function VerificationFlowHandler() {
         </Dialog>
     );
 }
-

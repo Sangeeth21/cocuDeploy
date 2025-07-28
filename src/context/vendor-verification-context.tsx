@@ -2,17 +2,12 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import type { DraftProduct } from '@/lib/types';
 
-// Define the shape of a draft product
-type DraftProduct = {
-    id: string;
-    name: string;
-};
 
 // Define the shape of the verification context state
 interface VerificationState {
     isVerified: boolean;
-    hasDrafts: boolean;
     draftProducts: DraftProduct[];
     promptState: 'initial' | 'prompting' | 'dismissed' | 'permanently_dismissed' | 'show_draft_publish';
 }
@@ -22,8 +17,8 @@ interface VerificationContextType extends VerificationState {
     setAsVerified: () => void;
     setAsUnverified: () => void;
     addDraftProduct: (product: DraftProduct) => void;
+    removeDrafts: (idsToRemove: string[]) => void;
     setPromptState: (state: VerificationState['promptState']) => void;
-    setHasDrafts: (hasDrafts: boolean) => void;
 }
 
 // Create the context
@@ -51,25 +46,22 @@ export const VerificationProvider = ({ children }: { children: ReactNode }) => {
     const addDraftProduct = useCallback((product: DraftProduct) => {
         setDraftProducts(prev => [...prev, product]);
     }, []);
-
-    const setHasDrafts = (hasDrafts: boolean) => {
-         if (!hasDrafts) {
-            setDraftProducts([]);
-        }
-    }
+    
+    const removeDrafts = useCallback((idsToRemove: string[]) => {
+        setDraftProducts(prev => prev.filter(draft => !idsToRemove.includes(draft.id)));
+    }, []);
 
 
     return (
         <VerificationContext.Provider value={{ 
             isVerified, 
-            hasDrafts: draftProducts.length > 0,
             draftProducts,
             promptState,
             setAsVerified, 
             setAsUnverified,
             addDraftProduct,
+            removeDrafts,
             setPromptState,
-            setHasDrafts
         }}>
             {children}
         </VerificationContext.Provider>

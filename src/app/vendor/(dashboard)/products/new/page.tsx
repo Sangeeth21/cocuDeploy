@@ -139,7 +139,7 @@ export default function NewProductPage() {
     const { isVerified, addDraftProduct } = useVerification();
     
     const [images, setImages] = useState<ProductImages>({});
-    const [status, setStatus] = useState(!isVerified); // Default to draft if not verified
+    const [isDraft, setIsDraft] = useState(!isVerified); // Default to draft if not verified
     const [requiresConfirmation, setRequiresConfirmation] = useState(false);
     const [show3DPreview, setShow3DPreview] = useState(false);
     const [is3DEnabled, setIs3DEnabled] = useState(true);
@@ -202,7 +202,7 @@ export default function NewProductPage() {
     }
     
     const handleSaveDraft = () => {
-        addDraftProduct({ id: Date.now().toString(), name: productName || "Unnamed Product" });
+        addDraftProduct({ id: Date.now().toString(), name: productName || "Unnamed Product", imageUrl: images.front?.src });
         if (!isVerified) {
             setIsDraftInfoOpen(true);
         } else {
@@ -460,8 +460,8 @@ export default function NewProductPage() {
                     <div className="space-y-2">
                         <Label>Product Status</Label>
                         <div className="flex items-center gap-4 p-2 border rounded-md">
-                            <Switch id="status" checked={!status} onCheckedChange={(checked) => setStatus(!checked)} disabled={!isVerified} />
-                            <Label htmlFor="status" className="font-normal">{ status ? "Draft" : "Active"}</Label>
+                            <Switch id="status" checked={isDraft} onCheckedChange={setIsDraft} disabled={!isVerified} />
+                            <Label htmlFor="status" className="font-normal">{ isDraft ? "Draft" : "Active"}</Label>
                         </div>
                          {!isVerified && <p className="text-xs text-muted-foreground">Complete verification to publish products.</p>}
                     </div>
@@ -490,7 +490,7 @@ export default function NewProductPage() {
         <Button onClick={handleSaveDraft}>
             Save as Draft
         </Button>
-         <Button className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || status}>
+         <Button className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || isDraft}>
             <CheckCircle className="mr-2 h-4 w-4"/>
             Publish Product
         </Button>
