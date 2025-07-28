@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy, Share2, Twitter, Facebook, Instagram, Linkedin } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy, Share2, Twitter, Facebook, Instagram, Linkedin, User as UserIcon } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -234,21 +234,22 @@ function ShareDialog() {
 
 export default function AccountPage() {
   const searchParams = useSearchParams();
-  const tab = searchParams.get('tab') || 'profile';
   const { toast } = useToast();
-  const { avatar, updateAvatar } = useUser();
+  const { avatar, updateAvatar, isLoggedIn } = useUser();
+  const { openDialog } = useAuthDialog();
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const [tab, setTab] = useState(searchParams.get('tab') || 'profile');
   
   const [isEmailVerifyOpen, setIsEmailVerifyOpen] = useState(false);
   const [isPhoneVerifyOpen, setIsPhoneVerifyOpen] = useState(false);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [isCardFormOpen, setIsCardFormOpen] = useState(false);
 
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showCurrentPassword, setShowNewPassword, setShowConfirmPassword] = [useState(false), useState(false), useState(false)];
   
   // Chat state
   const [conversations, setConversations] = useState(initialConversations);
@@ -294,6 +295,7 @@ export default function AccountPage() {
       
       // Clean up URL and switch to messages tab
       window.history.replaceState(null, '', '/account?tab=messages');
+      setTab('messages');
     } else {
         // Default to first conversation if no specific one is targeted
         if (conversations.length > 0 && !selectedConversationId) {
@@ -507,6 +509,21 @@ export default function AccountPage() {
     const referralsProgress = (MOCK_USER_DATA.referrals / MOCK_USER_DATA.referralsForNextTier) * 100;
     const loyaltyPointsProgress = (MOCK_USER_DATA.loyaltyPoints / MOCK_USER_DATA.pointsToNextTier) * 100;
 
+
+  if (!isLoggedIn) {
+    return (
+        <div className="container py-12 text-center">
+            <div className="flex flex-col items-center gap-4 max-w-sm mx-auto">
+                <UserIcon className="h-16 w-16 text-muted-foreground" />
+                <h1 className="text-2xl font-bold font-headline">Please Log In</h1>
+                <p className="text-muted-foreground">
+                    You need to be logged in to view your account details, orders, and messages.
+                </p>
+                <Button onClick={() => openDialog('login')}>Login / Sign Up</Button>
+            </div>
+        </div>
+    )
+  }
 
   return (
     <div className="container py-12">
@@ -974,31 +991,16 @@ export default function AccountPage() {
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="current-password">Current Password</Label>
-                            <div className="relative">
-                                <Input id="current-password" type={showCurrentPassword ? "text" : "password"} />
-                                <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowCurrentPassword(!showCurrentPassword)}>
-                                    {showCurrentPassword ? <EyeOff /> : <Eye />}
-                                </Button>
-                            </div>
+                            <Input id="current-password" type={showCurrentPassword ? "text" : "password"} />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label htmlFor="new-password">New Password</Label>
-                                <div className="relative">
-                                    <Input id="new-password" type={showNewPassword ? "text" : "password"} />
-                                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowNewPassword(!showNewPassword)}>
-                                        {showNewPassword ? <EyeOff /> : <Eye />}
-                                    </Button>
-                                </div>
+                                <Input id="new-password" type={showNewPassword ? "text" : "password"} />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                <div className="relative">
-                                    <Input id="confirm-password" type={showConfirmPassword ? "text" : "password"} />
-                                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                                        {showConfirmPassword ? <EyeOff /> : <Eye />}
-                                    </Button>
-                                </div>
+                                <Input id="confirm-password" type={showConfirmPassword ? "text" : "password"} />
                             </div>
                         </div>
                     </div>
@@ -1168,3 +1170,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    
