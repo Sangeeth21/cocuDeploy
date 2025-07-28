@@ -14,8 +14,8 @@ import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter } from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
 
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
@@ -526,12 +526,13 @@ export default function NewProductPage() {
                     By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
                 </AlertDialogDescriptionComponent>
             </AlertDialogHeader>
-            <AlertDialogFooter>
+            <AlertDialogFooterComponent>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleConfirmAndEnable}>I Understand &amp; Enable</AlertDialogAction>
-            </AlertDialogFooter>
+            </AlertDialogFooterComponent>
         </AlertDialogContent>
     </AlertDialog>
     </>
   );
 }
+
