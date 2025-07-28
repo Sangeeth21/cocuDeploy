@@ -39,6 +39,7 @@ import { useWishlist } from "@/context/wishlist-context";
 import { ProductCard } from "@/components/product-card";
 import { useCart } from "@/context/cart-context";
 import { Progress } from "@/components/ui/progress";
+import { useAuthDialog } from "@/context/auth-dialog-context";
 
 type Attachment = {
     name: string;
@@ -110,6 +111,8 @@ function WishlistTabContent() {
     const { wishlistItems, removeFromWishlist } = useWishlist();
     const { addToCart } = useCart();
     const { toast } = useToast();
+    const { isLoggedIn } = useUser();
+    const { openDialog } = useAuthDialog();
 
     const handleMoveToCart = (product: DisplayProduct) => {
         addToCart(product);
@@ -121,6 +124,10 @@ function WishlistTabContent() {
     }
 
     const handleBuyNow = (product: DisplayProduct) => {
+        if (!isLoggedIn) {
+            openDialog('login');
+            return;
+        }
         addToCart(product);
         removeFromWishlist(product.id);
         router.push('/checkout');
@@ -1091,7 +1098,7 @@ export default function AccountPage() {
                                 </div>
                             </div>
                             <DropdownMenu>
-                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical/></Button></DropdownMenuTrigger>
+                                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical/></ButtonMenuTrigger>
                                 <DropdownMenuContent>
                                     <DropdownMenuItem><Edit className="mr-2"/> Edit</DropdownMenuItem>
                                     <DropdownMenuItem className="text-destructive"><Trash2 className="mr-2"/> Delete</DropdownMenuItem>
@@ -1161,3 +1168,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    

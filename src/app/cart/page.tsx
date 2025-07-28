@@ -9,11 +9,26 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/context/cart-context";
+import { useUser } from "@/context/user-context";
+import { useAuthDialog } from "@/context/auth-dialog-context";
+import { useRouter } from "next/navigation";
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, subtotal } = useCart();
+  const { isLoggedIn } = useUser();
+  const { openDialog } = useAuthDialog();
+  const router = useRouter();
+
   const shipping = cartItems.length > 0 ? 5.00 : 0;
   const total = subtotal + shipping;
+
+  const handleCheckout = () => {
+    if (!isLoggedIn) {
+      openDialog('login');
+    } else {
+      router.push('/checkout');
+    }
+  };
 
   return (
     <div className="container py-12">
@@ -70,10 +85,8 @@ export default function CartPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                <Button size="lg" className="w-full" asChild>
-                  <Link href="/checkout">
-                    Proceed to Checkout <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
+                <Button size="lg" className="w-full" onClick={handleCheckout}>
+                  Proceed to Checkout <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </CardFooter>
             </Card>
@@ -91,3 +104,5 @@ export default function CartPage() {
     </div>
   );
 }
+
+    

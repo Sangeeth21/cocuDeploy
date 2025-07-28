@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useWishlist } from "@/context/wishlist-context";
+import { useUser } from "@/context/user-context";
+import { useAuthDialog } from "@/context/auth-dialog-context";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -47,6 +49,8 @@ export default function ProductDetailPage() {
   const product = mockProducts.find((p) => p.id === id);
 
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const { isLoggedIn } = useUser();
+  const { openDialog } = useAuthDialog();
 
   if (!product) {
     notFound();
@@ -55,6 +59,10 @@ export default function ProductDetailPage() {
   const similarProducts = mockProducts.filter(p => p.id !== product.id && p.category === product.category).slice(0, 4);
 
   const handleWishlistClick = () => {
+      if (!isLoggedIn) {
+          openDialog('login');
+          return;
+      }
       toggleWishlist(product);
       toast({
           title: isWishlisted(product.id) ? "Removed from Wishlist" : "Added to Wishlist",
@@ -127,3 +135,5 @@ export default function ProductDetailPage() {
     </div>
   );
 }
+
+    

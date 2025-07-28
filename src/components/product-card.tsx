@@ -11,6 +11,8 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/context/cart-context';
 import { useWishlist } from '@/context/wishlist-context';
+import { useUser } from '@/context/user-context';
+import { useAuthDialog } from '@/context/auth-dialog-context';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -20,6 +22,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
+  const { isLoggedIn } = useUser();
+  const { openDialog } = useAuthDialog();
   
   const handleAddToCart = () => {
     addToCart(product);
@@ -32,6 +36,10 @@ export function ProductCard({ product }: ProductCardProps) {
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault(); // prevent navigation when clicking the heart
     e.stopPropagation();
+    if (!isLoggedIn) {
+        openDialog('login');
+        return;
+    }
     toggleWishlist(product);
     toast({
         title: isWishlisted(product.id) ? "Removed from Wishlist" : "Added to Wishlist",
@@ -85,3 +93,5 @@ export function ProductCard({ product }: ProductCardProps) {
     </Card>
   );
 }
+
+    
