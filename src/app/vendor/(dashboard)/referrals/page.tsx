@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Copy, Gift, Percent, Users, CheckCircle, Clock, Share2, MessageCircle, Send, Twitter, Facebook, Instagram } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 
 // This data would come from a backend API call for the logged-in vendor
@@ -37,16 +38,17 @@ const cappedTotalDiscount = Math.min(totalCommissionDiscount, 3);
 function ShareDialog() {
     const { toast } = useToast();
     const referralCode = MOCK_VENDOR_DATA.referralCode;
-    const shareText = `Join me on ShopSphere! Use my referral code to get started: ${referralCode}`;
     const shareUrl = "https://shopsphere.example.com/signup"; // Replace with your actual URL
+    const shareText = `Join me on ShopSphere! Use my referral code to get special onboarding benefits: ${referralCode}`;
+    const fullMessage = `${shareText}\n\nSign up here: ${shareUrl}`;
 
-    const copyReferralCode = () => {
-        navigator.clipboard.writeText(referralCode);
-        toast({ title: 'Copied!', description: 'Referral code copied to clipboard.' });
+    const copyShareMessage = () => {
+        navigator.clipboard.writeText(fullMessage);
+        toast({ title: 'Copied!', description: 'Share message copied to clipboard.' });
     }
 
     const socialLinks = [
-        { name: 'WhatsApp', icon: MessageCircle, url: `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}` },
+        { name: 'WhatsApp', icon: MessageCircle, url: `https://wa.me/?text=${encodeURIComponent(fullMessage)}` },
         { name: 'Telegram', icon: Send, url: `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}` },
         { name: 'Twitter', icon: Twitter, url: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}` },
         { name: 'Facebook', icon: Facebook, url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}` },
@@ -66,14 +68,12 @@ function ShareDialog() {
                         Invite other vendors to join ShopSphere and earn rewards when they sign up.
                     </DialogDescription>
                 </DialogHeader>
-                 <div className="flex items-center space-x-2">
-                    <div className="grid flex-1 gap-2">
-                        <Label htmlFor="link" className="sr-only">Link</Label>
-                        <Input id="link" defaultValue={referralCode} readOnly />
-                    </div>
-                    <Button type="button" size="sm" className="px-3" onClick={copyReferralCode}>
-                        <span className="sr-only">Copy</span>
-                        <Copy className="h-4 w-4" />
+                 <div className="flex flex-col space-y-2">
+                    <Label htmlFor="share-message" className="text-sm font-medium">Share Message</Label>
+                    <Textarea id="share-message" value={fullMessage} readOnly rows={4} className="resize-none" />
+                    <Button type="button" size="sm" className="w-full" onClick={copyShareMessage}>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Message
                     </Button>
                 </div>
                 <Separator />
@@ -171,7 +171,3 @@ export default function VendorReferralsPage() {
         </div>
     )
 }
-
-    
-
-    
