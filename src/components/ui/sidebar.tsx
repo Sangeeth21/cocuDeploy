@@ -33,7 +33,7 @@ type SidebarContext = {
   setOpen: (open: boolean) => void
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
-  isMobile: boolean | undefined
+  isMobile: boolean
   toggleSidebar: () => void
 }
 
@@ -198,7 +198,11 @@ const Sidebar = React.forwardRef<
       )
     }
 
-    if (!mounted || isMobile) {
+    if (!mounted) {
+      return null
+    }
+
+    if (isMobile) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
