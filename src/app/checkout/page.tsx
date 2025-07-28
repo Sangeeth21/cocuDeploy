@@ -37,23 +37,14 @@ export default function CheckoutPage() {
     const [isProcessing, setIsProcessing] = useState(false);
     
     // Form state
-    const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
-    const [emailStatus, setEmailStatus] = useState<VerificationStatus>('unverified');
-    const [phoneStatus, setPhoneStatus] = useState<VerificationStatus>('unverified');
+    const [email, setEmail] = useState(isLoggedIn ? "john.doe@example.com" : "");
+    const [phone, setPhone] = useState(isLoggedIn ? "+1 (555) 123-4567" : "");
+    const [emailStatus, setEmailStatus] = useState<VerificationStatus>(isLoggedIn ? 'verified' : 'unverified');
+    const [phoneStatus, setPhoneStatus] = useState<VerificationStatus>(isLoggedIn ? 'verified' : 'unverified');
     const [emailOtp, setEmailOtp] = useState("");
     const [phoneOtp, setPhoneOtp] = useState("");
     const [showEmailOtp, setShowEmailOtp] = useState(false);
     const [showPhoneOtp, setShowPhoneOtp] = useState(false);
-    
-    useEffect(() => {
-        if (isLoggedIn) {
-            setEmail("john.doe@example.com");
-            setPhone("+1 (555) 123-4567");
-            setEmailStatus('verified');
-            setPhoneStatus('verified');
-        }
-    }, [isLoggedIn]);
 
     const cartItems = mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 }));
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -274,5 +265,3 @@ export default function CheckoutPage() {
         </div>
     );
 }
-
-    
