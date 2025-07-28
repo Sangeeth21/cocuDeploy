@@ -11,7 +11,8 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState, useMemo } from "react";
-import { Loader2, Percent, Ticket } from "lucide-react";
+import { Loader2, Percent, Ticket, ShieldCheck } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 
 const MOCK_USER_DATA = {
@@ -20,11 +21,17 @@ const MOCK_USER_DATA = {
     pointsRedemptionValue: 0.5, // 1 point = 0.5 Rs
 };
 
+const MOCK_EMAIL_OTP = "123456";
+const MOCK_PHONE_OTP = "654321";
+
 
 export default function CheckoutPage() {
     const { toast } = useToast();
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [showVerificationDialog, setShowVerificationDialog] = useState(false);
+    const [emailOtp, setEmailOtp] = useState("");
+    const [phoneOtp, setPhoneOtp] = useState("");
     
     const cartItems = mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 }));
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -37,12 +44,33 @@ export default function CheckoutPage() {
     const total = useMemo(() => {
         return subtotal + shipping;
     }, [subtotal, shipping]);
+
+    const handleContinueToVerification = (e: React.FormEvent) => {
+        e.preventDefault();
+        // In a real app, you would send OTPs to the entered email/phone here.
+        toast({
+            title: "Verification Required",
+            description: "We've sent verification codes to your email and phone.",
+        });
+        setShowVerificationDialog(true);
+    };
     
     const handlePayment = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (emailOtp !== MOCK_EMAIL_OTP || phoneOtp !== MOCK_PHONE_OTP) {
+            toast({
+                variant: "destructive",
+                title: "Verification Failed",
+                description: "Invalid verification codes. Please try again.",
+            });
+            return;
+        }
+
         setIsProcessing(true);
         setTimeout(() => {
             setIsProcessing(false);
+            setShowVerificationDialog(false);
             toast({
                 title: "Payment Successful!",
                 description: "Your order has been placed.",
@@ -57,7 +85,7 @@ export default function CheckoutPage() {
                 <h1 className="text-4xl font-bold font-headline">Checkout</h1>
                 <p className="text-muted-foreground mt-2">Complete your purchase in a few easy steps.</p>
             </div>
-             <form onSubmit={handlePayment}>
+             <form onSubmit={handleContinueToVerification}>
                 <div className="grid md:grid-cols-2 gap-12 items-start">
                     <div className="space-y-8">
                         <Card>
@@ -68,6 +96,10 @@ export default function CheckoutPage() {
                                 <div className="col-span-2">
                                     <Label htmlFor="email">Email Address</Label>
                                     <Input id="email" type="email" placeholder="you@example.com" required />
+                                </div>
+                                <div className="col-span-2">
+                                    <Label htmlFor="phone">Phone Number</Label>
+                                    <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" required />
                                 </div>
                                  <div className="col-span-1">
                                     <Label htmlFor="first-name">First Name</Label>
@@ -163,15 +195,57 @@ export default function CheckoutPage() {
                                 </div>
                             </CardContent>
                             <CardFooter>
-                                <Button size="lg" type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isProcessing}>
-                                    {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                                    {isProcessing ? 'Processing...' : `Pay ₹${total.toFixed(2)}`}
+                                <Button size="lg" type="submit" className="w-full">
+                                    Continue to Verification
                                 </Button>
                             </CardFooter>
                         </Card>
                     </div>
                 </div>
             </form>
+
+            <Dialog open={showVerificationDialog} onOpenChange={setShowVerificationDialog}>
+                <DialogContent>
+                     <form onSubmit={handlePayment}>
+                        <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                                <ShieldCheck className="text-primary"/> Final Step: Verify & Pay
+                            </DialogTitle>
+                            <DialogDescription>
+                                To protect your account, please enter the verification codes sent to your email and phone.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email-otp">Email Code</Label>
+                                <Input 
+                                    id="email-otp" 
+                                    placeholder="Enter 6-digit code" 
+                                    value={emailOtp}
+                                    onChange={(e) => setEmailOtp(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone-otp">Phone Code</Label>
+                                <Input 
+                                    id="phone-otp" 
+                                    placeholder="Enter 6-digit code"
+                                    value={phoneOtp}
+                                    onChange={(e) => setPhoneOtp(e.target.value)}
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" disabled={isProcessing}>
+                                {isProcessing ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
+                                {isProcessing ? 'Processing...' : `Verify & Pay ₹${total.toFixed(2)}`}
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
