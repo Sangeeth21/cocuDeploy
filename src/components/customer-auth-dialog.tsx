@@ -172,10 +172,12 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                     <Label htmlFor="email-otp">Email Verification Code</Label>
                     <Input id="email-otp" required value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)} />
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="phone-otp">Phone Verification Code</Label>
-                    <Input id="phone-otp" required value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} />
-                </div>
+                 {phone && (
+                    <div className="space-y-2">
+                        <Label htmlFor="phone-otp">Phone Verification Code</Label>
+                        <Input id="phone-otp" required value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} />
+                    </div>
+                 )}
                 <Button type="submit" className="w-full" disabled={isLoading}>
                      {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                      Verify and Sign Up
@@ -196,6 +198,10 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             <div className="space-y-2">
                 <Label htmlFor="customer-signup-email">Email</Label>
                 <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="customer-signup-phone">Phone Number (Optional)</Label>
+                <Input id="customer-signup-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
             </div>
              <div className="space-y-2">
                 <div className="flex items-center gap-2">
