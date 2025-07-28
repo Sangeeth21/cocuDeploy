@@ -18,6 +18,8 @@ const MOCK_PHONE_OTP = "654321";
 export default function SignupPage() {
   const [step, setStep] = useState<"details" | "verify">("details");
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [emailOtp, setEmailOtp] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -27,6 +29,17 @@ export default function SignupPage() {
 
   const handleSignupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Developer shortcut to bypass OTP for vendor verification testing
+    if (role === 'vendor' && email === 'test-vendor@example.com') {
+        toast({
+            title: "Developer Shortcut",
+            description: "Bypassing OTP and redirecting to vendor verification.",
+        });
+        router.push('/vendor/verify');
+        return;
+    }
+
     setIsLoading(true);
     // Simulate sending OTPs
     setTimeout(() => {
@@ -82,7 +95,7 @@ export default function SignupPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required />
+                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
@@ -91,7 +104,7 @@ export default function SignupPage() {
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                    <Input id="password" type={showPassword ? "text" : "password"} required />
+                    <Input id="password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
                      <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? <EyeOff /> : <Eye />}
                     </Button>
