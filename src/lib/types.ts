@@ -48,6 +48,27 @@ export type Message = {
   status?: 'sent' | 'delivered' | 'read';
 };
 
+// --- USER & VENDOR TYPES ---
+
+export type VerificationStatus = 'unverified' | 'pending' | 'verified' | 'rejected';
+
+export type VendorDetails = {
+    legalName?: string;
+    businessType?: 'sole_proprietor' | 'private_limited' | 'other';
+    primaryContact?: string;
+    address?: {
+        fullAddress: string;
+        deliverability: 'DELIVERABLE' | 'UNDELIVERABLE' | 'UNKNOWN';
+    };
+    govtIdUrl?: string;
+    selfieUrl?: string;
+    introVideoUrl?: string;
+    proofOfAddressUrl?: string;
+    bankAccountVerified?: boolean;
+    gstin?: string;
+    fssaiLicense?: string;
+};
+
 export type User = {
     id: string;
     name: string;
@@ -56,6 +77,8 @@ export type User = {
     status: 'Active' | 'Suspended';
     joinedDate: string;
     avatar: string;
+    verificationStatus?: VerificationStatus;
+    vendorDetails?: VendorDetails;
 }
 
 export type Conversation = {
@@ -195,6 +218,3 @@ export type Program = {
     endDate: Date;
     expiryDays?: number;
 };
-
-
-    

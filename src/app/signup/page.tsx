@@ -11,7 +11,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
 
 const MOCK_EMAIL_OTP = "123456";
 const MOCK_PHONE_OTP = "654321";
@@ -22,6 +21,7 @@ export default function SignupPage() {
   const [emailOtp, setEmailOtp] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState("customer");
   const router = useRouter();
   const { toast } = useToast();
 
@@ -49,7 +49,11 @@ export default function SignupPage() {
             title: "Account Created!",
             description: "Your account has been successfully verified.",
           });
-          router.push("/account");
+          if (role === 'vendor') {
+            router.push("/vendor/verify");
+          } else {
+            router.push("/account");
+          }
        }, 1500);
     } else {
         toast({
@@ -95,7 +99,7 @@ export default function SignupPage() {
               </div>
               <div className="space-y-2">
                 <Label>I am a...</Label>
-                <RadioGroup defaultValue="customer" className="flex gap-4">
+                <RadioGroup value={role} onValueChange={setRole} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="customer" id="customer" />
                         <Label htmlFor="customer" className="font-normal">Customer</Label>
