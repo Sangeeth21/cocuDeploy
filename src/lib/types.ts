@@ -1,5 +1,4 @@
 
-
 export type DisplayProduct = {
   id: string;
   name: string;
@@ -180,14 +179,22 @@ export type WishlistedCombo = {
 // Referrals and Loyalty
 export type CustomerReferralSettings = {
     isEnabled: boolean;
-    referralBonus: number;
+    referrerBonus: number; // Wallet credit
+    newCustomerDiscount: number; // Percentage
     minPurchaseAmount: number;
 }
 
-export type LoyaltySettings = {
+export type LoyaltyPointsSettings = {
+    isEnabled: boolean;
+    pointsPerRupee: number;
+    redemptionValue: number; // e.g., 0.5 means 1 point = 0.5 rupees
+}
+
+export type FrequentBuyerReward = {
     isEnabled: boolean;
     ordersToQualify: number;
-    reward: 'free_delivery_2'; // Example of a fixed reward
+    rewardType: 'free_delivery';
+    rewardValue: number; // e.g., 2 for 2 free deliveries
 }
 
 export type VendorReferralSettings = {
@@ -196,4 +203,10 @@ export type VendorReferralSettings = {
     referrerDiscount: number; // percentage
     discountDuration: number; // number of orders
     newVendorDiscount: number; // percentage
+}
+
+export type VendorOnboardingBonus = {
+    isEnabled: boolean;
+    productsToList: number;
+    commissionFreeSales: number;
 }

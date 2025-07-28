@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -88,9 +88,15 @@ const mockPaymentMethods = [
 
 const MOCK_USER_DATA = {
     referralCode: "JOHN-D4E8",
+    referrals: 2,
+    referralsForNextTier: 5,
     walletBalance: 100, // in Rs
-    ordersToNextReward: 1, // 3 total needed, user has 2
+    ordersToNextReward: 1,
     totalOrdersForReward: 3,
+    loyaltyPoints: 2500,
+    loyaltyTier: "Silver",
+    nextLoyaltyTier: "Gold",
+    pointsToNextTier: 7500,
 };
 
 // Simulate tracking for chat abuse prevention
@@ -427,6 +433,8 @@ export default function AccountPage() {
     }
 
     const loyaltyProgress = ((MOCK_USER_DATA.totalOrdersForReward - MOCK_USER_DATA.ordersToNextReward) / MOCK_USER_DATA.totalOrdersForReward) * 100;
+    const referralsProgress = (MOCK_USER_DATA.referrals / MOCK_USER_DATA.referralsForNextTier) * 100;
+    const loyaltyPointsProgress = (MOCK_USER_DATA.loyaltyPoints / MOCK_USER_DATA.pointsToNextTier) * 100;
 
 
   return (
@@ -538,9 +546,9 @@ export default function AccountPage() {
                 </Card>
             </div>
              <div className="md:col-span-1 space-y-6">
-                <Card>
+                 <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline flex items-center gap-2"><Gift className="h-5 w-5 text-primary"/>Refer & Earn</CardTitle>
+                        <CardTitle className="font-headline flex items-center gap-2"><Gift className="h-5 w-5 text-primary"/>Referral Status</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
@@ -552,24 +560,53 @@ export default function AccountPage() {
                                 </Button>
                             </div>
                         </div>
-                        <div>
-                             <Label>Discount Wallet</Label>
-                            <div className="text-3xl font-bold text-green-600">
-                                ₹{MOCK_USER_DATA.walletBalance.toFixed(2)}
-                            </div>
-                            <p className="text-xs text-muted-foreground">Available to use at checkout.</p>
-                        </div>
+                        <Separator />
+                         <div>
+                            <Progress value={referralsProgress} />
+                             <p className="text-sm text-muted-foreground text-center mt-2">
+                                You have <span className="font-bold text-primary">{MOCK_USER_DATA.referrals}</span> successful referrals. You're <span className="font-bold text-primary">{MOCK_USER_DATA.referralsForNextTier - MOCK_USER_DATA.referrals}</span> away from the next bonus reward!
+                            </p>
+                         </div>
                     </CardContent>
                 </Card>
                  <Card>
                     <CardHeader>
-                        <CardTitle className="font-headline">Loyalty Status</CardTitle>
+                        <CardTitle className="font-headline flex items-center gap-2"><Trophy className="h-5 w-5 text-yellow-500" /> Loyalty Status</CardTitle>
+                        <CardDescription>Your progress towards rewards.</CardDescription>
                     </CardHeader>
-                     <CardContent className="space-y-3">
-                        <Progress value={loyaltyProgress} />
-                        <p className="text-sm text-muted-foreground text-center">
-                            You're <span className="font-bold text-primary">{MOCK_USER_DATA.ordersToNextReward}</span> order away from your next reward: <span className="font-bold text-primary">Free delivery on 2 orders</span>!
-                        </p>
+                     <CardContent className="space-y-4">
+                         <div>
+                            <div className="flex justify-between items-baseline mb-1">
+                                <Label>Frequent Buyer Reward</Label>
+                                <span className="text-xs font-mono">{MOCK_USER_DATA.totalOrdersForReward - MOCK_USER_DATA.ordersToNextReward}/{MOCK_USER_DATA.totalOrdersForReward} Orders</span>
+                            </div>
+                            <Progress value={loyaltyProgress} />
+                            <p className="text-xs text-muted-foreground text-center mt-2">
+                                You're <span className="font-bold text-primary">{MOCK_USER_DATA.ordersToNextReward}</span> order away from your next reward!
+                            </p>
+                        </div>
+                        <Separator />
+                        <div>
+                            <div className="flex justify-between items-baseline mb-1">
+                                 <Label>Loyalty Tier: <span className="font-bold text-primary">{MOCK_USER_DATA.loyaltyTier}</span></Label>
+                                <span className="text-xs font-mono">{MOCK_USER_DATA.loyaltyPoints.toLocaleString()}/{MOCK_USER_DATA.pointsToNextTier.toLocaleString()} Points</span>
+                            </div>
+                             <Progress value={loyaltyPointsProgress} />
+                             <p className="text-xs text-muted-foreground text-center mt-2">
+                                Earn <span className="font-bold text-primary">{(MOCK_USER_DATA.pointsToNextTier - MOCK_USER_DATA.loyaltyPoints).toLocaleString()}</span> more points to reach <span className="font-bold text-primary">{MOCK_USER_DATA.nextLoyaltyTier}</span> tier.
+                            </p>
+                        </div>
+                         <Separator />
+                         <div className="grid grid-cols-2 gap-4">
+                            <div className="p-2 bg-muted/50 rounded-lg text-center">
+                                <p className="text-2xl font-bold text-green-600">₹{MOCK_USER_DATA.walletBalance.toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground">Wallet Balance</p>
+                            </div>
+                             <div className="p-2 bg-muted/50 rounded-lg text-center">
+                                 <p className="text-2xl font-bold text-primary">{MOCK_USER_DATA.loyaltyPoints.toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">Loyalty Points</p>
+                            </div>
+                         </div>
                     </CardContent>
                 </Card>
              </div>
@@ -1062,5 +1099,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    
