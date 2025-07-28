@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +10,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, Info } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 const MOCK_EMAIL_OTP = "123456";
 const MOCK_PHONE_OTP = "654321";
@@ -19,19 +22,56 @@ export default function SignupPage() {
   const [step, setStep] = useState<"details" | "verify">("details");
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
-  const [emailOtp, setEmailOtp] = useState("");
-  const [phoneOtp, setPhoneOtp] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState("customer");
+  const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: '', color: '' });
+  
   const router = useRouter();
   const { toast } = useToast();
+
+  useEffect(() => {
+    const checkPasswordStrength = (pass: string) => {
+        let score = 0;
+        if (pass.length >= 8) score++;
+        if (/[A-Z]/.test(pass)) score++;
+        if (/[0-9]/.test(pass)) score++;
+        if (/[^A-Za-z0-9]/.test(pass)) score++;
+        
+        if (score < 2) {
+            setPasswordStrength({ score, label: 'Weak', color: 'bg-destructive' });
+        } else if (score < 4) {
+             setPasswordStrength({ score, label: 'Medium', color: 'bg-yellow-500' });
+        } else {
+             setPasswordStrength({ score, label: 'Strong', color: 'bg-green-500' });
+        }
+    }
+    checkPasswordStrength(password);
+  }, [password]);
 
   const handleSignupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Developer shortcut to bypass OTP for vendor verification testing
+    if (password !== confirmPassword) {
+        toast({
+            variant: "destructive",
+            title: "Passwords do not match",
+            description: "Please re-enter your passwords.",
+        });
+        return;
+    }
+     if (passwordStrength.score < 4) {
+        toast({
+            variant: "destructive",
+            title: "Password is too weak",
+            description: "Please choose a stronger password that meets all the criteria.",
+        });
+        return;
+    }
+
     if (role === 'vendor' && email === 'test-vendor@example.com') {
         toast({
             title: "Developer Shortcut",
@@ -42,7 +82,6 @@ export default function SignupPage() {
     }
 
     setIsLoading(true);
-    // Simulate sending OTPs
     setTimeout(() => {
       toast({
         title: "Verification Required",
@@ -103,11 +142,41 @@ export default function SignupPage() {
                 <Input id="phone" type="tel" placeholder="+1 (555) 555-5555" required value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                 <div className="flex items-center gap-2">
+                    <Label htmlFor="password">Password</Label>
+                    <TooltipProvider delayDuration={0}>
+                         <Tooltip>
+                            <TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
+                            <TooltipContent>
+                                <ul className="list-disc pl-4 text-xs space-y-1">
+                                    <li>At least 8 characters long</li>
+                                    <li>Contains an uppercase letter</li>
+                                    <li>Contains a number</li>
+                                    <li>Contains a special character</li>
+                                </ul>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
                 <div className="relative">
                     <Input id="password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
                      <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? <EyeOff /> : <Eye />}
+                    </Button>
+                </div>
+                {password.length > 0 && (
+                     <div className="flex items-center gap-2">
+                        <Progress value={passwordStrength.score * 25} className={cn("h-1", passwordStrength.color)} />
+                        <span className="text-xs text-muted-foreground">{passwordStrength.label}</span>
+                     </div>
+                )}
+              </div>
+               <div className="space-y-2">
+                 <Label htmlFor="confirm-password">Confirm Password</Label>
+                <div className="relative">
+                    <Input id="confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        {showConfirmPassword ? <EyeOff /> : <Eye />}
                     </Button>
                 </div>
               </div>
