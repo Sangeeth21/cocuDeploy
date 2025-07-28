@@ -21,6 +21,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import Image from 'next/image';
 import { AuthDialogProvider } from '@/context/auth-dialog-context';
 import { CustomerAuthDialog } from '@/components/customer-auth-dialog';
+import { app } from '@/lib/firebase';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
