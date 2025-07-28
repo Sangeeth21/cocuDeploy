@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -16,7 +17,7 @@ export function ContactDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Link href="#" className="text-sm text-muted-foreground hover:text-primary">Contact Us</Link>
+        <Button variant="link" className="text-sm text-muted-foreground hover:text-primary p-0 h-auto font-normal">Contact Us</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
