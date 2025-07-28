@@ -1,4 +1,12 @@
 
+"use client";
+
+import { VerificationProvider } from "@/context/vendor-verification-context";
+
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <VerificationProvider>
+      {children}
+    </VerificationProvider>
+  );
 }
