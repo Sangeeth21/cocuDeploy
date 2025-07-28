@@ -164,16 +164,28 @@ export default function CheckoutPage() {
                                     <Input id="last-name" placeholder="Doe" required defaultValue={isLoggedIn ? "Doe" : ""} />
                                 </div>
                                 <div className="col-span-2">
-                                    <Label htmlFor="address">Address</Label>
-                                    <Input id="address" placeholder="123 Main St" required />
+                                    <Label htmlFor="address1">Address Line 1</Label>
+                                    <Input id="address1" placeholder="123 Main St" required />
+                                </div>
+                                 <div className="col-span-2">
+                                    <Label htmlFor="address2">Address Line 2 (Optional)</Label>
+                                    <Input id="address2" placeholder="Apartment, suite, etc." />
                                 </div>
                                 <div className="col-span-1">
                                     <Label htmlFor="city">City</Label>
                                     <Input id="city" placeholder="Anytown" required />
                                 </div>
+                                 <div className="col-span-1">
+                                    <Label htmlFor="state">State / Province</Label>
+                                    <Input id="state" placeholder="California" required />
+                                </div>
                                 <div className="col-span-1">
                                     <Label htmlFor="zip">ZIP Code</Label>
                                     <Input id="zip" placeholder="12345" required />
+                                </div>
+                                 <div className="col-span-1">
+                                    <Label htmlFor="landmark">Landmark (Optional)</Label>
+                                    <Input id="landmark" placeholder="Near the park" />
                                 </div>
                                 <div className="col-span-2 flex items-center space-x-2">
                                     <Checkbox id="save-info" />
@@ -262,3 +274,5 @@ export default function CheckoutPage() {
         </div>
     );
 }
+
+    
