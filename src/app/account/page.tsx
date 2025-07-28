@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +38,7 @@ import { useUser } from "@/context/user-context";
 import { useWishlist } from "@/context/wishlist-context";
 import { ProductCard } from "@/components/product-card";
 import { useCart } from "@/context/cart-context";
+import { Progress } from "@/components/ui/progress";
 
 type Attachment = {
     name: string;
@@ -84,6 +85,13 @@ const mockPaymentMethods = [
     { id: 1, type: "Visa", last4: "4242", expiry: "12/26"},
     { id: 2, type: "Mastercard", last4: "5555", expiry: "08/25"},
 ]
+
+const MOCK_USER_DATA = {
+    referralCode: "JOHN-D4E8",
+    walletBalance: 100, // in Rs
+    ordersToNextReward: 1, // 3 total needed, user has 2
+    totalOrdersForReward: 3,
+};
 
 // Simulate tracking for chat abuse prevention
 const MAX_CHATS_WITHOUT_PURCHASE = 4;
@@ -413,6 +421,14 @@ export default function AccountPage() {
         }
     }, [selectedConversation?.messages]);
 
+    const copyReferralCode = () => {
+        navigator.clipboard.writeText(MOCK_USER_DATA.referralCode);
+        toast({ title: 'Copied!', description: 'Referral code copied to clipboard.' });
+    }
+
+    const loyaltyProgress = ((MOCK_USER_DATA.totalOrdersForReward - MOCK_USER_DATA.ordersToNextReward) / MOCK_USER_DATA.totalOrdersForReward) * 100;
+
+
   return (
     <div className="container py-12">
       <div className="flex items-center gap-6 mb-8">
@@ -451,73 +467,113 @@ export default function AccountPage() {
           <TabsTrigger value="billing">Billing</TabsTrigger>
         </TabsList>
         <TabsContent value="profile" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="font-headline">Public Profile</CardTitle>
-              <CardDescription>This information may be displayed publicly.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+           <div className="grid md:grid-cols-3 gap-6">
+            <div className="md:col-span-2 space-y-6">
+                <Card>
+                    <CardHeader>
+                    <CardTitle className="font-headline">Public Profile</CardTitle>
+                    <CardDescription>This information may be displayed publicly.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Full Name</Label>
+                                <Input id="name" defaultValue="John Doe" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="username">Username</Label>
+                                <Input id="username" defaultValue="johndoe" />
+                            </div>
+                        </div>
                     <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" defaultValue="John Doe" />
+                        <Label htmlFor="bio">Bio</Label>
+                        <Textarea id="bio" placeholder="Tell us a little about yourself" defaultValue="Lover of all things tech and design. Avid collector of handcrafted mugs."/>
                     </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="username">Username</Label>
-                        <Input id="username" defaultValue="johndoe" />
-                    </div>
-                </div>
-              <div className="space-y-2">
-                <Label htmlFor="bio">Bio</Label>
-                <Textarea id="bio" placeholder="Tell us a little about yourself" defaultValue="Lover of all things tech and design. Avid collector of handcrafted mugs."/>
-              </div>
-              <Button onClick={handleSaveChanges}>Save Changes</Button>
-            </CardContent>
-          </Card>
-           <Card className="mt-6">
-              <CardHeader>
-                  <CardTitle className="font-headline">Notifications</CardTitle>
-                  <CardDescription>Recent updates about your orders and account activity.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                  <div className="flex items-center gap-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
-                        <div className="p-2 bg-blue-100 rounded-full dark:bg-blue-900">
-                            <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400"/>
+                    <Button onClick={handleSaveChanges}>Save Changes</Button>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Notifications</CardTitle>
+                        <CardDescription>Recent updates about your orders and account activity.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center gap-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                                <div className="p-2 bg-blue-100 rounded-full dark:bg-blue-900">
+                                    <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400"/>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-blue-800 dark:text-blue-200">Your order #ORD002 has shipped!</p>
+                                    <p className="text-sm text-blue-600 dark:text-blue-400">Estimated delivery: June 25, 2024.</p>
+                                </div>
+                                <Button size="sm" asChild variant="outline" className="bg-white">
+                                    <Link href="/account?tab=orders&tracking=ORD002">Track</Link>
+                                </Button>
                         </div>
-                        <div className="flex-1">
-                            <p className="font-semibold text-blue-800 dark:text-blue-200">Your order #ORD002 has shipped!</p>
-                            <p className="text-sm text-blue-600 dark:text-blue-400">Estimated delivery: June 25, 2024.</p>
+                        <div className="flex items-center gap-4 p-4 border rounded-lg bg-green-50 dark:bg-green-950">
+                                <div className="p-2 bg-green-100 rounded-full dark:bg-green-900">
+                                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400"/>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-green-800 dark:text-green-200">Your request for "Classic Leather Watch" was approved!</p>
+                                    <p className="text-sm text-green-600 dark:text-green-400">The vendor has confirmed availability. You can now complete your purchase.</p>
+                                </div>
+                                <Button size="sm" asChild>
+                                    <Link href="/cart">Go to Cart</Link>
+                                </Button>
                         </div>
-                         <Button size="sm" asChild variant="outline" className="bg-white">
-                            <Link href="/account?tab=orders&tracking=ORD002">Track</Link>
-                        </Button>
-                  </div>
-                  <div className="flex items-center gap-4 p-4 border rounded-lg bg-green-50 dark:bg-green-950">
-                        <div className="p-2 bg-green-100 rounded-full dark:bg-green-900">
-                            <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400"/>
+                        <div className="flex items-center gap-4 p-4 border rounded-lg bg-red-50 dark:bg-red-950">
+                            <div className="p-2 bg-red-100 rounded-full dark:bg-red-900">
+                                    <X className="h-5 w-5 text-red-600 dark:text-red-400"/>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-red-800 dark:text-red-200">"Modern Minimalist Desk" is unavailable.</p>
+                                    <p className="text-sm text-red-600 dark:text-red-400">We're sorry, the vendor could not confirm your request in time.</p>
+                                </div>
+                                <Button size="sm" variant="secondary" asChild>
+                                <Link href="/products?category=Furniture">View Similar</Link>
+                                </Button>
                         </div>
-                        <div className="flex-1">
-                            <p className="font-semibold text-green-800 dark:text-green-200">Your request for "Classic Leather Watch" was approved!</p>
-                            <p className="text-sm text-green-600 dark:text-green-400">The vendor has confirmed availability. You can now complete your purchase.</p>
+                    </CardContent>
+                </Card>
+            </div>
+             <div className="md:col-span-1 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline flex items-center gap-2"><Gift className="h-5 w-5 text-primary"/>Refer & Earn</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <p className="text-sm text-muted-foreground mb-2">Share your code with friends. When they make their first purchase, you both get a reward!</p>
+                             <div className="flex">
+                                <Input value={MOCK_USER_DATA.referralCode} readOnly className="rounded-r-none focus:ring-0 focus:ring-offset-0"/>
+                                <Button className="rounded-l-none" onClick={copyReferralCode}>
+                                    <Copy className="h-4 w-4"/>
+                                </Button>
+                            </div>
                         </div>
-                        <Button size="sm" asChild>
-                            <Link href="/cart">Go to Cart</Link>
-                        </Button>
-                  </div>
-                  <div className="flex items-center gap-4 p-4 border rounded-lg bg-red-50 dark:bg-red-950">
-                       <div className="p-2 bg-red-100 rounded-full dark:bg-red-900">
-                            <X className="h-5 w-5 text-red-600 dark:text-red-400"/>
+                        <div>
+                             <Label>Discount Wallet</Label>
+                            <div className="text-3xl font-bold text-green-600">
+                                ₹{MOCK_USER_DATA.walletBalance.toFixed(2)}
+                            </div>
+                            <p className="text-xs text-muted-foreground">Available to use at checkout.</p>
                         </div>
-                        <div className="flex-1">
-                            <p className="font-semibold text-red-800 dark:text-red-200">"Modern Minimalist Desk" is unavailable.</p>
-                            <p className="text-sm text-red-600 dark:text-red-400">We're sorry, the vendor could not confirm your request in time.</p>
-                        </div>
-                        <Button size="sm" variant="secondary" asChild>
-                           <Link href="/products?category=Furniture">View Similar</Link>
-                        </Button>
-                  </div>
-              </CardContent>
-          </Card>
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="font-headline">Loyalty Status</CardTitle>
+                    </CardHeader>
+                     <CardContent className="space-y-3">
+                        <Progress value={loyaltyProgress} />
+                        <p className="text-sm text-muted-foreground text-center">
+                            You're <span className="font-bold text-primary">{MOCK_USER_DATA.ordersToNextReward}</span> order away from your next reward: <span className="font-bold text-primary">Free delivery on 2 orders</span>!
+                        </p>
+                    </CardContent>
+                </Card>
+             </div>
+           </div>
         </TabsContent>
          <TabsContent value="wishlist" className="mt-6">
           <Card>
@@ -1006,3 +1062,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    

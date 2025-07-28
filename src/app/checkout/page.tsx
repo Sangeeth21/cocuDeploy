@@ -6,23 +6,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { mockProducts } from "@/lib/mock-data";
+import { mockProducts, mockUserOrders } from "@/lib/mock-data";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Loader2, Percent } from "lucide-react";
 
 
 export default function CheckoutPage() {
     const { toast } = useToast();
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [applyWallet, setApplyWallet] = useState(false);
 
     const cartItems = mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 }));
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const shipping = 5.00;
-    const total = subtotal + shipping;
+
+    // Loyalty Program check
+    const loyaltyOrdersRequired = 3;
+    const hasLoyalty = mockUserOrders.length >= loyaltyOrdersRequired;
+    const shipping = hasLoyalty ? 0 : 5.00;
+    
+    // Wallet Balance
+    const walletBalance = 100;
+    const discountFromWallet = applyWallet ? Math.min(subtotal + shipping, walletBalance) : 0;
+    
+    const total = useMemo(() => {
+        return subtotal + shipping - discountFromWallet;
+    }, [subtotal, shipping, discountFromWallet]);
     
     const handlePayment = (e: React.FormEvent) => {
         e.preventDefault();
@@ -127,6 +139,14 @@ export default function CheckoutPage() {
                                         </div>
                                     ))}
                                 </div>
+                                 <div className="mt-4 pt-4 border-t space-y-2">
+                                     <div className="flex items-center justify-between">
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox id="apply-wallet" checked={applyWallet} onCheckedChange={(checked) => setApplyWallet(checked as boolean)} />
+                                            <Label htmlFor="apply-wallet" className="font-normal flex items-center gap-1">Apply Wallet Balance <span className="font-bold text-green-600">(₹{walletBalance.toFixed(2)})</span></Label>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div className="mt-4 pt-4 border-t space-y-2">
                                     <div className="flex justify-between">
                                         <p className="text-muted-foreground">Subtotal</p>
@@ -134,8 +154,14 @@ export default function CheckoutPage() {
                                     </div>
                                     <div className="flex justify-between">
                                         <p className="text-muted-foreground">Shipping</p>
-                                        <p>${shipping.toFixed(2)}</p>
+                                        {hasLoyalty ? <p className="text-green-600 font-semibold">FREE</p> : <p>${shipping.toFixed(2)}</p>}
                                     </div>
+                                    {discountFromWallet > 0 && (
+                                        <div className="flex justify-between text-green-600">
+                                            <p className="font-semibold">Wallet Discount</p>
+                                            <p className="font-semibold">-${discountFromWallet.toFixed(2)}</p>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between font-bold text-lg">
                                         <p>Total</p>
                                         <p>${total.toFixed(2)}</p>
@@ -155,3 +181,5 @@ export default function CheckoutPage() {
         </div>
     );
 }
+
+    

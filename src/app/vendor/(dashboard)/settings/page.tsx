@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { Copy, Gift, Percent, Users } from "lucide-react";
 
 export default function VendorSettingsPage() {
     const { toast } = useToast();
@@ -19,6 +20,20 @@ export default function VendorSettingsPage() {
             description: "Your changes have been saved successfully.",
         });
     }
+
+    const copyReferralCode = () => {
+        navigator.clipboard.writeText("VENDOR-A1B2");
+        toast({ title: 'Copied!', description: 'Referral code copied to clipboard.' });
+    }
+
+    // Mock data for vendor referrals
+    const MOCK_VENDOR_DATA = {
+        referrals: 3,
+        referralsNeeded: 5,
+        commissionDiscount: 0, // No discount yet
+    };
+
+    const referralProgress = (MOCK_VENDOR_DATA.referrals / MOCK_VENDOR_DATA.referralsNeeded) * 100;
 
     return (
         <div>
@@ -42,6 +57,37 @@ export default function VendorSettingsPage() {
                             <Textarea id="store-bio" rows={4} defaultValue="Specializing in handcrafted leather goods and timeless accessories. Committed to quality and craftsmanship." />
                         </div>
                          <Button onClick={handleSaveChanges}>Save Changes</Button>
+                    </CardContent>
+                </Card>
+
+                 <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Gift className="h-5 w-5 text-primary"/> Vendor Referral Program</CardTitle>
+                        <CardDescription>Refer other vendors to earn discounts on your commission fees.</CardDescription>
+                    </CardHeader>
+                     <CardContent className="space-y-4">
+                         <div>
+                            <p className="text-sm text-muted-foreground mb-2">Share your code with other potential vendors. When 5 new vendors sign up and get verified, you'll receive a 1% discount on your commission for your next 8 orders!</p>
+                             <div className="flex">
+                                <Input value="VENDOR-A1B2" readOnly className="rounded-r-none focus:ring-0 focus:ring-offset-0"/>
+                                <Button className="rounded-l-none" onClick={copyReferralCode}>
+                                    <Copy className="h-4 w-4"/>
+                                </Button>
+                            </div>
+                        </div>
+                        <Separator />
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            <div className="p-4 bg-muted/50 rounded-lg text-center">
+                                <Users className="h-6 w-6 text-muted-foreground mx-auto mb-2"/>
+                                <p className="text-2xl font-bold">{MOCK_VENDOR_DATA.referrals}/{MOCK_VENDOR_DATA.referralsNeeded}</p>
+                                <p className="text-xs text-muted-foreground">Verified Referrals</p>
+                            </div>
+                             <div className="p-4 bg-muted/50 rounded-lg text-center">
+                                 <Percent className="h-6 w-6 text-muted-foreground mx-auto mb-2"/>
+                                <p className="text-2xl font-bold">{MOCK_VENDOR_DATA.commissionDiscount}%</p>
+                                <p className="text-xs text-muted-foreground">Current Commission Discount</p>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -88,3 +134,5 @@ export default function VendorSettingsPage() {
         </div>
     );
 }
+
+    
