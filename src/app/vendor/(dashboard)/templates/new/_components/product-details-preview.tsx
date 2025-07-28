@@ -1,6 +1,4 @@
 
-"use client";
-
 import { Button } from "@/components/ui/button";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
