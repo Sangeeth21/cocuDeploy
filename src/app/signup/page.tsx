@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Info } from "lucide-react";
+import { Loader2, Eye, EyeOff, Info, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -35,16 +35,32 @@ export default function SignupPage() {
   const [emailOtp, setEmailOtp] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
 
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [passwordCriteria, setPasswordCriteria] = useState({
+    length: false,
+    uppercase: false,
+    number: false,
+    specialChar: false,
+  });
+
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
     const checkPasswordStrength = (pass: string) => {
         let score = 0;
-        if (pass.length >= 8) score++;
-        if (/[A-Z]/.test(pass)) score++;
-        if (/[0-9]/.test(pass)) score++;
-        if (/[^A-Za-z0-9]/.test(pass)) score++;
+        const newCriteria = {
+            length: pass.length >= 8,
+            uppercase: /[A-Z]/.test(pass),
+            number: /[0-9]/.test(pass),
+            specialChar: /[^A-Za-z0-9]/.test(pass),
+        };
+        setPasswordCriteria(newCriteria);
+        
+        if (newCriteria.length) score++;
+        if (newCriteria.uppercase) score++;
+        if (newCriteria.number) score++;
+        if (newCriteria.specialChar) score++;
         
         if (score < 2) {
             setPasswordStrength({ score, label: 'Weak', color: 'bg-destructive' });
@@ -86,10 +102,6 @@ export default function SignupPage() {
     }
 
     if (role === 'vendor' && email === 'test-vendor@example.com') {
-        toast({
-            title: "Developer Shortcut",
-            description: "Bypassing OTP and redirecting to vendor verification.",
-        });
         router.push('/vendor/verify');
         return;
     }
@@ -130,6 +142,13 @@ export default function SignupPage() {
         setIsLoading(false);
     }
   }
+
+  const renderCriteriaCheck = (label: string, isMet: boolean) => (
+    <div className={cn("flex items-center text-xs gap-2", isMet ? "text-green-600" : "text-muted-foreground")}>
+        <Check className="h-3 w-3" />
+        <span>{label}</span>
+    </div>
+  );
 
 
   return (
@@ -172,12 +191,28 @@ export default function SignupPage() {
                     </TooltipProvider>
                 </div>
                 <div className="relative">
-                    <Input id="password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <Input 
+                        id="password" 
+                        type={showPassword ? "text" : "password"} 
+                        required 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)} 
+                        onFocus={() => setIsPasswordFocused(true)}
+                        onBlur={() => setIsPasswordFocused(false)}
+                    />
                      <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
                         {showPassword ? <EyeOff /> : <Eye />}
                     </Button>
                 </div>
-                {password.length > 0 && (
+                 {isPasswordFocused && (
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 p-2 rounded-md bg-muted/50">
+                        {renderCriteriaCheck("8+ characters", passwordCriteria.length)}
+                        {renderCriteriaCheck("1 uppercase", passwordCriteria.uppercase)}
+                        {renderCriteriaCheck("1 number", passwordCriteria.number)}
+                        {renderCriteriaCheck("1 special char", passwordCriteria.specialChar)}
+                    </div>
+                 )}
+                {password.length > 0 && !isPasswordFocused && (
                      <div className="flex items-center gap-2">
                         <Progress value={passwordStrength.score * 25} className={cn("h-1", passwordStrength.color)} />
                         <span className="text-xs text-muted-foreground">{passwordStrength.label}</span>
@@ -185,7 +220,17 @@ export default function SignupPage() {
                 )}
               </div>
                <div className="space-y-2">
-                 <Label htmlFor="confirm-password">Confirm Password</Label>
+                 <div className="flex items-center gap-2">
+                    <Label htmlFor="confirm-password">Confirm Password</Label>
+                     <TooltipProvider delayDuration={0}>
+                         <Tooltip>
+                            <TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
+                            <TooltipContent>
+                                <p className="text-xs">Passwords must match.</p>
+                            </TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
                 <div className="relative">
                     <Input id="confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                      <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
