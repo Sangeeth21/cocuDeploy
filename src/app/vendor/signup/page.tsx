@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -77,7 +76,11 @@ export default function VendorSignupPage() {
     e.preventDefault();
 
     if (email === 'test-vendor@example.com') {
-        router.push('/vendor/verify');
+        toast({
+            title: "Signup Bypassed for Testing",
+            description: "Please log in with the unverified vendor account to test the verification flow.",
+        });
+        router.push('/vendor/login');
         return;
     }
 
