@@ -33,7 +33,7 @@ export default function NewOrderPage() {
     const [shippingCost, setShippingCost] = useState(0);
     const [isFetchingShipping, setIsFetchingShipping] = useState(false);
     const [isSameAsShipping, setIsSameAsShipping] = useState(true);
-    const [referralCommission, setReferralCommission] = useState(0);
+    const [referralCommission, setReferralCommission] = useState<number | string>(0);
 
     // Memos and Calculations
     const customerSearchResults = useMemo(() => {
@@ -365,8 +365,8 @@ export default function NewOrderPage() {
                                         type="number" 
                                         placeholder="0.00"
                                         className="w-24 h-8 pl-5"
-                                        value={referralCommission || ""}
-                                        onChange={(e) => setReferralCommission(parseFloat(e.target.value) || 0)}
+                                        value={referralCommission}
+                                        onChange={(e) => setReferralCommission(e.target.value)}
                                     />
                                 </div>
                             </div>
