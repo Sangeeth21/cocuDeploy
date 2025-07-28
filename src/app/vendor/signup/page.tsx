@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -12,14 +13,14 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Eye, EyeOff, Info, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const MOCK_EMAIL_OTP = "123456";
 const MOCK_PHONE_OTP = "654321";
 
-export default function SignupPage() {
+export default function VendorSignupPage() {
   const [step, setStep] = useState<"details" | "verify">("details");
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
@@ -28,7 +29,6 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [role, setRole] = useState("customer");
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: '', color: '' });
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   
@@ -76,7 +76,7 @@ export default function SignupPage() {
   const handleSignupSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (email === 'test-vendor@example.com' && role === 'vendor') {
+    if (email === 'test-vendor@example.com') {
         router.push('/vendor/verify');
         return;
     }
@@ -127,11 +127,7 @@ export default function SignupPage() {
             title: "Account Created!",
             description: "Your account has been successfully verified.",
           });
-          if (role === 'vendor') {
-            router.push("/vendor/verify");
-          } else {
-            router.push("/account");
-          }
+          router.push("/vendor/verify");
        }, 1500);
     } else {
         toast({
@@ -157,13 +153,13 @@ export default function SignupPage() {
         {step === 'details' ? (
           <form onSubmit={handleSignupSubmit}>
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-headline">Create an Account</CardTitle>
-              <CardDescription>Join ShopSphere to start buying and selling</CardDescription>
+              <CardTitle className="text-3xl font-headline">Become a Vendor</CardTitle>
+              <CardDescription>Create your vendor account to start selling</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" type="text" placeholder="John Doe" required />
+                <Label htmlFor="name">Full Name or Business Name</Label>
+                <Input id="name" type="text" placeholder="e.g. Timeless Co." required />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -240,34 +236,13 @@ export default function SignupPage() {
                     </Button>
                 </div>
               </div>
-              <div className="space-y-2">
-                <Label>I am a...</Label>
-                <RadioGroup value={role} onValueChange={setRole} className="flex gap-4">
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="customer" id="customer" />
-                        <Label htmlFor="customer" className="font-normal">Customer</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="vendor" id="vendor" />
-                        <Label htmlFor="vendor" className="font-normal">Vendor</Label>
-                    </div>
-                </RadioGroup>
-              </div>
-
+              
                <div className="space-y-3 pt-2">
                     <div className="flex items-start space-x-2">
                         <Checkbox id="terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
                         <Label htmlFor="terms" className="font-normal text-xs text-muted-foreground leading-snug">
-                            I agree to the ShopSphere <Link href="#" className="font-medium text-primary hover:underline">Terms and Conditions</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
+                            I agree to the ShopSphere <Link href="#" className="font-medium text-primary hover:underline">Vendor Terms and Conditions</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
                         </Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="newsletter" defaultChecked />
-                        <Label htmlFor="newsletter" className="font-normal text-sm">Sign up for our newsletter</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="notifications" defaultChecked />
-                        <Label htmlFor="notifications" className="font-normal text-sm">Receive email and phone notifications</Label>
                     </div>
                 </div>
 
@@ -275,11 +250,11 @@ export default function SignupPage() {
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Account
+                Create Vendor Account
               </Button>
               <p className="text-sm text-center text-muted-foreground">
-                  Already have an account?{" "}
-                  <Link href="/login" className="font-semibold text-primary hover:underline">
+                  Already have a vendor account?{" "}
+                  <Link href="/vendor/login" className="font-semibold text-primary hover:underline">
                       Sign In
                   </Link>
               </p>
@@ -304,7 +279,7 @@ export default function SignupPage() {
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                 Verify and Sign Up
+                 Verify and Continue
               </Button>
               <Button variant="link" size="sm" onClick={() => setStep('details')} className="text-muted-foreground">
                 Back to previous step

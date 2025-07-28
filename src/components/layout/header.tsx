@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -22,12 +23,13 @@ import { useUser } from "@/context/user-context";
 import { WishlistPreview } from "@/components/wishlist-preview";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockActivity } from "@/lib/mock-data";
+import { useAuthDialog } from "@/context/auth-dialog-context";
 
 
 const navLinks = [
   { href: "/products", label: "All Products" },
   { href: "/#categories", label: "Categories" },
-  { href: "/vendor", label: "For Vendors" },
+  { href: "/vendor/login", label: "For Vendors" },
 ];
 
 const customerNotifications = [
@@ -39,6 +41,7 @@ const customerNotifications = [
 export function Header() {
   const pathname = usePathname();
   const { avatar, isLoggedIn, logout } = useUser();
+  const { openDialog } = useAuthDialog();
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -151,8 +154,8 @@ export function Header() {
               </DropdownMenu>
             </div>
             ) : (
-                <Button variant="ghost" asChild>
-                    <Link href="/login">Login</Link>
+                <Button variant="ghost" onClick={() => openDialog('login')}>
+                    Login
                 </Button>
             )}
         </div>

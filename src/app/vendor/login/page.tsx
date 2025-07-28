@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -12,7 +13,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 
-export default function LoginPage() {
+export default function VendorLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -55,8 +56,8 @@ export default function LoginPage() {
       <Card className="w-full max-w-md">
         <form onSubmit={handleLogin}>
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-headline">Welcome Back</CardTitle>
-            <CardDescription>Enter your credentials to access your account</CardDescription>
+            <CardTitle className="text-3xl font-headline">Vendor Portal</CardTitle>
+            <CardDescription>Enter your credentials to access your dashboard</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -87,8 +88,8 @@ export default function LoginPage() {
           <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full">Sign In</Button>
             <p className="text-sm text-center text-muted-foreground">
-                Don't have an account?{" "}
-                <Link href="/signup" className="font-semibold text-primary hover:underline">
+                Don't have a vendor account?{" "}
+                <Link href="/vendor/signup" className="font-semibold text-primary hover:underline">
                     Sign Up
                 </Link>
             </p>

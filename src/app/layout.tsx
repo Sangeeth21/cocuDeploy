@@ -19,6 +19,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import Image from 'next/image';
+import { AuthDialogProvider } from '@/context/auth-dialog-context';
+import { CustomerAuthDialog } from '@/components/customer-auth-dialog';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -93,10 +95,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const isAdminOrVendorRoute = pathname.startsWith('/admin') || pathname.startsWith('/vendor');
-  const isAuthRoute = pathname === '/login' || pathname === '/signup';
-  const showHeaderAndFooter = !isAdminOrVendorRoute && !isAuthRoute;
-
+  const isAdminRoute = pathname.startsWith('/admin');
+  const isVendorAuthRoute = pathname.startsWith('/vendor/login') || pathname.startsWith('/vendor/signup') || pathname.startsWith('/vendor/verify');
+  
+  const showHeaderAndFooter = !isAdminRoute && !isVendorAuthRoute;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -108,12 +110,15 @@ export default function RootLayout({
         <UserProvider>
           <CartProvider>
             <WishlistProvider>
-              {showHeaderAndFooter && <CampaignBanner />}
-              {showHeaderAndFooter && <Header />}
-              <main className="flex-1">{children}</main>
-              {showHeaderAndFooter && <Footer />}
-              {showHeaderAndFooter && <CampaignPopup />}
-              <Toaster />
+              <AuthDialogProvider>
+                {showHeaderAndFooter && <CampaignBanner />}
+                {showHeaderAndFooter && <Header />}
+                <main className="flex-1">{children}</main>
+                {showHeaderAndFooter && <Footer />}
+                {showHeaderAndFooter && <CampaignPopup />}
+                <CustomerAuthDialog />
+                <Toaster />
+              </AuthDialogProvider>
             </WishlistProvider>
           </CartProvider>
         </UserProvider>
