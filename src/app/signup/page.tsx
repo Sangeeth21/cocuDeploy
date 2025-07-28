@@ -20,6 +20,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [emailOtp, setEmailOtp] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -99,7 +100,7 @@ export default function SignupPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" type="tel" placeholder="+1 (555) 555-5555" required />
+                <Input id="phone" type="tel" placeholder="+1 (555) 555-5555" required value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
