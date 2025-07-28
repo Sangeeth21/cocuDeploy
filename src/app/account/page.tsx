@@ -249,7 +249,9 @@ export default function AccountPage() {
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [isCardFormOpen, setIsCardFormOpen] = useState(false);
 
-  const [showCurrentPassword, setShowNewPassword, setShowConfirmPassword] = [useState(false), useState(false), useState(false)];
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Chat state
   const [conversations, setConversations] = useState(initialConversations);
@@ -996,11 +998,11 @@ export default function AccountPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label htmlFor="new-password">New Password</Label>
-                                <Input id="new-password" type={showNewPassword ? "text" : "password"} />
+                                <Input id="new-password" type={showNewPassword ? 'text' : 'password'} />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                <Input id="confirm-password" type={showConfirmPassword ? "text" : "password"} />
+                                <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} />
                             </div>
                         </div>
                     </div>
@@ -1170,5 +1172,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    
