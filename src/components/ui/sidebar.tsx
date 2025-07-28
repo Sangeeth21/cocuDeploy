@@ -33,7 +33,7 @@ type SidebarContext = {
   setOpen: (open: boolean) => void
   openMobile: boolean
   setOpenMobile: (open: boolean) => void
-  isMobile: boolean
+  isMobile: boolean | undefined
   toggleSidebar: () => void
 }
 
@@ -122,7 +122,7 @@ const SidebarProvider = React.forwardRef<
         state,
         open,
         setOpen,
-        isMobile: isMobile ?? false,
+        isMobile,
         openMobile,
         setOpenMobile,
         toggleSidebar,
@@ -183,7 +183,6 @@ const Sidebar = React.forwardRef<
         setMounted(true)
     }, [])
 
-
     if (collapsible === "none") {
       return (
         <div
@@ -199,7 +198,7 @@ const Sidebar = React.forwardRef<
       )
     }
 
-    if (isMobile || !mounted) {
+    if (!mounted || isMobile) {
       return (
         <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
           <SheetContent
@@ -592,7 +591,7 @@ const SidebarMenuButton = React.forwardRef<
         <TooltipContent
           side="right"
           align="center"
-          hidden={state !== "collapsed" || isMobile}
+          hidden={isMobile ? false : state !== "collapsed"}
           {...tooltip}
         />
       </Tooltip>

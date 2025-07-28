@@ -32,6 +32,14 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
     </div>,
 });
 
+const FrequentlyBoughtTogether = dynamic(() => import('./_components/frequently-bought-together-preview').then(mod => mod.FrequentlyBoughtTogetherPreview), {
+    loading: () => <Skeleton className="h-[200px] w-full rounded-xl" />
+});
+
+const CustomerReviews = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
+    loading: () => <Skeleton className="h-[300px] w-full rounded-xl" />
+});
+
 export default function ProductDetailPage() {
   const { toast } = useToast();
   const params = useParams();
@@ -44,16 +52,7 @@ export default function ProductDetailPage() {
     notFound();
   }
   
-  const otherProducts = mockProducts.filter(p => p.id !== product.id);
-  const similarProducts = otherProducts.filter(p => p.category === product.category).slice(0, 4);
-  const frequentlyBoughtTogether = otherProducts.slice(0, 2);
-
-  const handleAddBothToCart = () => {
-    toast({
-      title: "Items Added!",
-      description: `${product.name} and ${frequentlyBoughtTogether[0].name} have been added to your cart.`
-    });
-  }
+  const similarProducts = mockProducts.filter(p => p.id !== product.id && p.category === product.category).slice(0, 4);
 
   const handleWishlistClick = () => {
       toggleWishlist(product);
@@ -68,7 +67,7 @@ export default function ProductDetailPage() {
       <div className="grid md:grid-cols-2 gap-12 items-start">
         <div>
           <div className="aspect-square relative w-full overflow-hidden rounded-lg shadow-lg">
-            <Image src={product.imageUrl} alt={product.name} fill className="object-cover" data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+            <Image src={product.imageUrl} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
              <Button 
                 size="icon" 
                 variant="secondary" 
@@ -109,53 +108,11 @@ export default function ProductDetailPage() {
 
       <div className="grid md:grid-cols-3 gap-12">
         <div className="md:col-span-2">
-          <h2 className="text-2xl font-bold font-headline mb-6">Customer Reviews</h2>
-          <div className="space-y-6">
-            {mockReviews.map(review => (
-              <Card key={review.id}>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar>
-                        <AvatarImage src={review.avatarUrl} alt={review.author} data-ai-hint="person face" />
-                        <AvatarFallback>{review.author.charAt(0)}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold">{review.author}</p>
-                        <p className="text-xs text-muted-foreground">{review.date}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className={cn('h-4 w-4', i < review.rating ? 'text-accent fill-accent' : 'text-muted-foreground/30')} />
-                      ))}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <h3 className="font-semibold mb-1">{review.title}</h3>
-                  <p className="text-muted-foreground text-sm">{review.comment}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <CustomerReviews />
         </div>
         
         <div className="space-y-8">
-            <h2 className="text-2xl font-bold font-headline">Frequently Bought Together</h2>
-            <Card>
-                <CardContent className="p-4">
-                    <div className="flex items-center">
-                        <ProductCardMini product={product} />
-                        <Plus className="h-5 w-5 mx-2 text-muted-foreground" />
-                        <ProductCardMini product={frequentlyBoughtTogether[0]} />
-                    </div>
-                    <div className="text-center mt-4">
-                        <p className="text-lg font-semibold">Total Price: ${(product.price + frequentlyBoughtTogether[0].price).toFixed(2)}</p>
-                        <Button className="mt-2" size="sm" onClick={handleAddBothToCart}>Add Both to Cart</Button>
-                    </div>
-                </CardContent>
-            </Card>
+            <FrequentlyBoughtTogether />
         </div>
       </div>
 
@@ -167,22 +124,6 @@ export default function ProductDetailPage() {
           {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
         </div>
       </div>
-    </div>
-  );
-}
-
-function ProductCardMini({ product }: { product: typeof mockProducts[0] }) {
-  return (
-    <div className="flex-1 flex items-center gap-2 group">
-        <Link href={`/products/${product.id}`} className="flex-1 flex items-center gap-2">
-            <div className="relative w-16 h-16 rounded-md overflow-hidden">
-                <Image src={product.imageUrl} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform" data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
-            </div>
-            <div>
-                <p className="text-sm font-semibold line-clamp-2 group-hover:text-primary">{product.name}</p>
-                <p className="text-sm font-bold">${product.price.toFixed(2)}</p>
-            </div>
-        </Link>
     </div>
   );
 }
