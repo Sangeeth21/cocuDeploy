@@ -3,19 +3,13 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { mockProducts, mockCategories } from "@/lib/mock-data";
-import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { mockProducts } from "@/lib/mock-data";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { DisplayProduct } from "@/lib/types";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Slider } from "@/components/ui/slider";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -122,74 +116,15 @@ export default function ProductsPage() {
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8">
-        <aside className="lg:col-span-1 lg:sticky lg:top-24 h-fit">
-          <Card>
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold font-headline">Filters</h2>
-                 <Button variant="link" size="sm" className="p-0 h-auto" onClick={clearFilters}>Clear All</Button>
-              </div>
-              <Accordion type="multiple" defaultValue={['category', 'rating', 'price']} className="w-full">
-                <AccordionItem value="category">
-                  <AccordionTrigger className="font-semibold">
-                    Category {selectedCategories.length > 0 && <Badge className="ml-2">{selectedCategories.length}</Badge>}
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2 pt-2">
-                      {mockCategories.map(category => (
-                        <div key={category.name} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={category.name} 
-                            checked={selectedCategories.includes(category.name)} 
-                            onCheckedChange={() => handleCategoryChange(category.name)} 
-                          />
-                          <Label htmlFor={category.name} className="font-normal">{category.name}</Label>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="price">
-                  <AccordionTrigger className="font-semibold">Price Range</AccordionTrigger>
-                   <AccordionContent>
-                     <div className="pt-4 px-1">
-                        <Slider
-                            min={0}
-                            max={MAX_PRICE}
-                            step={10}
-                            value={priceRange}
-                            onValueChange={(value: [number, number]) => setPriceRange(value)}
-                        />
-                         <div className="flex justify-between text-sm text-muted-foreground mt-2">
-                            <span>${priceRange[0]}</span>
-                            <span>${priceRange[1]}</span>
-                        </div>
-                     </div>
-                   </AccordionContent>
-                </AccordionItem>
-                <AccordionItem value="rating">
-                  <AccordionTrigger className="font-semibold">
-                    Rating {selectedRatings.length > 0 && <Badge className="ml-2">{selectedRatings.length}</Badge>}
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    <div className="space-y-2 pt-2">
-                      {[4, 3, 2, 1].map(rating => (
-                        <div key={rating} className="flex items-center space-x-2">
-                          <Checkbox 
-                            id={`rating-${rating}`} 
-                            checked={selectedRatings.includes(rating)} 
-                            onCheckedChange={() => handleRatingChange(rating)} 
-                          />
-                          <Label htmlFor={`rating-${rating}`} className="font-normal">{rating} stars & up</Label>
-                        </div>
-                      ))}
-                    </div>
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-          </Card>
-        </aside>
+        <ProductFilterSidebar
+            selectedCategories={selectedCategories}
+            onCategoryChange={handleCategoryChange}
+            selectedRatings={selectedRatings}
+            onRatingChange={handleRatingChange}
+            priceRange={priceRange}
+            onPriceRangeChange={setPriceRange}
+            clearFilters={clearFilters}
+        />
 
         <main className="lg:col-span-3">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -40,6 +40,7 @@ import { ProductCard } from "@/components/product-card";
 import { useCart } from "@/context/cart-context";
 import { Progress } from "@/components/ui/progress";
 import { useAuthDialog } from "@/context/auth-dialog-context";
+import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
 
 type Attachment = {
     name: string;
@@ -105,6 +106,7 @@ const MAX_CHATS_WITHOUT_PURCHASE = 4;
 let hasMadePurchase = mockUserOrders.length > 0;
 let uniqueVendorChats = new Set(initialConversations.map(c => c.vendorId)).size;
 
+const MAX_PRICE = 500;
 
 function WishlistTabContent() {
     const router = useRouter();
@@ -113,6 +115,51 @@ function WishlistTabContent() {
     const { toast } = useToast();
     const { isLoggedIn } = useUser();
     const { openDialog } = useAuthDialog();
+    
+    // Filtering State
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
+    const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE]);
+
+    const handleCategoryChange = (categoryName: string) => {
+        setSelectedCategories(prev =>
+        prev.includes(categoryName)
+            ? prev.filter(c => c !== categoryName)
+            : [...prev, categoryName]
+        );
+    };
+
+    const handleRatingChange = (rating: number) => {
+        setSelectedRatings(prev =>
+        prev.includes(rating)
+            ? prev.filter(r => r !== rating)
+            : [...prev, rating]
+        );
+    };
+  
+    const clearFilters = () => {
+        setSelectedCategories([]);
+        setSelectedRatings([]);
+        setPriceRange([0, MAX_PRICE]);
+    }
+
+    const filteredWishlistItems = useMemo(() => {
+        let products: DisplayProduct[] = wishlistItems;
+
+        if (selectedCategories.length > 0) {
+            products = products.filter(p => selectedCategories.includes(p.category));
+        }
+
+        if (selectedRatings.length > 0) {
+            const minRating = Math.min(...selectedRatings);
+            products = products.filter(p => p.rating >= minRating);
+        }
+        
+        products = products.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
+
+        return products;
+    }, [wishlistItems, selectedCategories, selectedRatings, priceRange]);
+
 
     const handleMoveToCart = (product: DisplayProduct) => {
         addToCart(product);
@@ -146,23 +193,44 @@ function WishlistTabContent() {
     }
 
     return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {wishlistItems.map(product => (
-                <Card key={product.id} className="relative group flex flex-col">
-                    <div className="flex-grow">
-                      <ProductCard product={product} />
+        <div className="grid lg:grid-cols-4 gap-8">
+            <ProductFilterSidebar 
+                selectedCategories={selectedCategories}
+                onCategoryChange={handleCategoryChange}
+                selectedRatings={selectedRatings}
+                onRatingChange={handleRatingChange}
+                priceRange={priceRange}
+                onPriceRangeChange={setPriceRange}
+                clearFilters={clearFilters}
+            />
+            <main className="lg:col-span-3">
+                 {filteredWishlistItems.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {filteredWishlistItems.map(product => (
+                            <Card key={product.id} className="relative group flex flex-col">
+                                <div className="flex-grow">
+                                <ProductCard product={product} />
+                                </div>
+                                <div className="p-2 border-t flex flex-col gap-2">
+                                    <Button size="sm" variant="outline" onClick={() => handleMoveToCart(product)}>
+                                        <ShoppingCart className="h-4 w-4 mr-2" />
+                                        Move to Cart
+                                    </Button>
+                                    <Button size="sm" onClick={() => handleBuyNow(product)}>
+                                        Buy Now
+                                    </Button>
+                                </div>
+                            </Card>
+                        ))}
                     </div>
-                    <div className="p-2 border-t flex flex-col gap-2">
-                         <Button size="sm" variant="outline" onClick={() => handleMoveToCart(product)}>
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            Move to Cart
-                        </Button>
-                        <Button size="sm" onClick={() => handleBuyNow(product)}>
-                            Buy Now
-                        </Button>
+                ) : (
+                    <div className="text-center py-16">
+                        <h2 className="text-2xl font-semibold">No products found</h2>
+                        <p className="text-muted-foreground mt-2">Try adjusting your filters to find what you're looking for.</p>
+                        <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear Filters</Button>
                     </div>
-                </Card>
-            ))}
+                )}
+            </main>
         </div>
     )
 }
