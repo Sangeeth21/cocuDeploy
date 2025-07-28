@@ -176,3 +176,24 @@ export type WishlistedCombo = {
     vendorId: string;
   }[];
 };
+
+// Referrals and Loyalty
+export type CustomerReferralSettings = {
+    isEnabled: boolean;
+    referralBonus: number;
+    minPurchaseAmount: number;
+}
+
+export type LoyaltySettings = {
+    isEnabled: boolean;
+    ordersToQualify: number;
+    reward: 'free_delivery_2'; // Example of a fixed reward
+}
+
+export type VendorReferralSettings = {
+    isEnabled: boolean;
+    vendorsToRefer: number;
+    referrerDiscount: number; // percentage
+    discountDuration: number; // number of orders
+    newVendorDiscount: number; // percentage
+}

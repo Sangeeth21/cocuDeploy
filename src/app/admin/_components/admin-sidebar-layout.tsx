@@ -3,7 +3,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles, ChevronsLeft, ChevronsRight, Combine } from "lucide-react";
+import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles, ChevronsLeft, ChevronsRight, Combine, Gift } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NotificationPopover } from "@/components/notification-popover";
@@ -23,6 +23,7 @@ const navLinks = [
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/admin/product-combos", label: "Product Combos", icon: Combine },
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
+  { href: "/admin/referrals", label: "Referrals", icon: Gift },
   { href: "/admin/moderation", label: "Moderation", icon: ShieldCheck, badge: "3" },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
