@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { useVerification } from "@/context/vendor-verification-context";
 import { ShieldAlert } from "lucide-react";
 import { PublishDraftsDialog } from "./publish-drafts-dialog";
+import { verificationSteps } from "../verify/page";
 
 const PROMPT_CLOSE_COUNT_KEY = 'shopsphere_verification_prompt_close_count';
 const MAX_PROMPT_CLOSES = 5;
@@ -19,7 +20,8 @@ export function VerificationFlowHandler() {
         promptState, 
         setPromptState,
         draftProducts,
-        removeDrafts
+        removeDrafts,
+        completedSteps
     } = useVerification();
     const [closeCount, setCloseCount] = useState(0);
 
@@ -71,7 +73,7 @@ export function VerificationFlowHandler() {
                 <PublishDraftsDialog 
                     drafts={draftProducts}
                     open={true}
-                    onOpenChange={() => setPromptState('dismissed')}
+                    onOpenChange={(open) => { if (!open) setPromptState('dismissed') }}
                     onPublish={handlePublishDrafts}
                 />
             );
@@ -79,6 +81,11 @@ export function VerificationFlowHandler() {
         return null;
     }
     
+    const totalSteps = verificationSteps.length;
+    const completedRequiredSteps = verificationSteps.filter(s => !s.isOptional && completedSteps.includes(s.id)).length;
+    const totalRequiredSteps = verificationSteps.filter(s => !s.isOptional).length;
+    const remainingSteps = totalSteps - completedSteps.length;
+
     // Non-blocking banner for the dashboard
     if (promptState === 'dismissed' || promptState === 'permanently_dismissed') {
         return (
@@ -86,10 +93,20 @@ export function VerificationFlowHandler() {
                 <div className="flex">
                     <div className="py-1"><ShieldAlert className="h-5 w-5 text-accent" /></div>
                     <div className="ml-3">
-                         <p className="font-bold">{promptState === 'permanently_dismissed' ? 'Publishing Disabled' : 'Verification Required'}</p>
-                        <p className="text-sm">{promptState === 'permanently_dismissed' ? 'Your products will remain as drafts until you complete verification.' : 'Please complete your account verification to publish products and receive orders.'}</p>
+                         <p className="font-bold">
+                            {completedSteps.length > 0 ? 
+                                `Just ${remainingSteps} step(s) left!`
+                                : 'Verification Required'
+                            }
+                         </p>
+                        <p className="text-sm">
+                            {promptState === 'permanently_dismissed' 
+                                ? 'Your products will remain as drafts until you complete verification.' 
+                                : 'Please complete your account verification to publish products and receive orders.'
+                            }
+                        </p>
                          <Button size="sm" className="mt-2" variant="outline" onClick={() => router.push('/vendor/verify')}>
-                            Complete Verification
+                            {completedSteps.length > 0 ? 'Continue Verification' : 'Start Verification'}
                         </Button>
                     </div>
                 </div>
