@@ -14,6 +14,7 @@ import { Loader2, Eye, EyeOff, Info } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const MOCK_EMAIL_OTP = "123456";
 const MOCK_PHONE_OTP = "654321";
@@ -29,7 +30,11 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState("customer");
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: '', color: '' });
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   
+  const [emailOtp, setEmailOtp] = useState("");
+  const [phoneOtp, setPhoneOtp] = useState("");
+
   const router = useRouter();
   const { toast } = useToast();
 
@@ -68,6 +73,14 @@ export default function SignupPage() {
             variant: "destructive",
             title: "Password is too weak",
             description: "Please choose a stronger password that meets all the criteria.",
+        });
+        return;
+    }
+     if (!agreedToTerms) {
+        toast({
+            variant: "destructive",
+            title: "Terms and Conditions",
+            description: "You must agree to the Terms and Conditions to create an account.",
         });
         return;
     }
@@ -193,6 +206,24 @@ export default function SignupPage() {
                     </div>
                 </RadioGroup>
               </div>
+
+               <div className="space-y-3 pt-2">
+                    <div className="flex items-start space-x-2">
+                        <Checkbox id="terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
+                        <Label htmlFor="terms" className="font-normal text-xs text-muted-foreground leading-snug">
+                            I agree to the ShopSphere <Link href="#" className="font-medium text-primary hover:underline">Terms and Conditions</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
+                        </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="newsletter" />
+                        <Label htmlFor="newsletter" className="font-normal text-sm">Sign up for our newsletter</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="notifications" defaultChecked />
+                        <Label htmlFor="notifications" className="font-normal text-sm">Receive email and phone notifications</Label>
+                    </div>
+                </div>
+
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
