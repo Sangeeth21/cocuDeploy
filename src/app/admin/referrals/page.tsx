@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon } from "lucide-react";
+import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,12 +19,15 @@ import type { DateRange } from "react-day-picker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 
+type ProgramTarget = 'customer' | 'vendor';
+
 type Program = {
     id: string;
     name: string;
-    type: 'referral' | 'milestone';
+    target: ProgramTarget;
+    type: string;
     reward: {
-        type: 'wallet_credit' | 'discount_percent' | 'free_shipping';
+        type: string;
         value: number;
     };
     productScope: 'all' | 'selected';
@@ -38,6 +41,7 @@ const initialPrograms: Program[] = [
     {
         id: 'PROG001',
         name: 'New Customer Referral',
+        target: 'customer',
         type: 'referral',
         reward: { type: 'wallet_credit', value: 100 },
         productScope: 'all',
@@ -48,6 +52,7 @@ const initialPrograms: Program[] = [
     {
         id: 'PROG002',
         name: 'Frequent Buyer Reward',
+        target: 'customer',
         type: 'milestone',
         reward: { type: 'free_shipping', value: 2 },
         productScope: 'selected',
@@ -59,8 +64,9 @@ const initialPrograms: Program[] = [
      {
         id: 'PROG003',
         name: 'Vendor Referral',
+        target: 'vendor',
         type: 'referral',
-        reward: { type: 'discount_percent', value: 1 },
+        reward: { type: 'commission_discount', value: 1 },
         productScope: 'all',
         status: 'Scheduled',
         startDate: new Date(2024, 7, 1),
@@ -69,22 +75,67 @@ const initialPrograms: Program[] = [
 ];
 
 
+const programOptions = {
+    customer: {
+        types: [
+            { value: 'referral', label: 'Referral Program' },
+            { value: 'milestone', label: 'Purchase Milestone' },
+        ],
+        rewards: [
+            { value: 'wallet_credit', label: 'Wallet Credit (₹)' },
+            { value: 'discount_percent', label: 'Percentage Discount (%)' },
+            { value: 'free_shipping', label: 'Free Shipping (Orders)' },
+        ]
+    },
+    vendor: {
+        types: [
+            { value: 'referral', label: 'Vendor Referral' },
+            { value: 'onboarding', label: 'Onboarding Bonus' },
+        ],
+        rewards: [
+            { value: 'commission_discount', label: 'Commission Discount (%)' },
+            { value: 'commission_free_sales', label: 'Commission-Free Sales (Orders)' },
+        ]
+    }
+}
+
+
 function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void }) {
     const [open, setOpen] = useState(false);
     const [name, setName] = useState('');
+    const [targetAudience, setTargetAudience] = useState<ProgramTarget | ''>('');
     const [type, setType] = useState('');
     const [rewardType, setRewardType] = useState('');
     const [rewardValue, setRewardValue] = useState(0);
     const [productScope, setProductScope] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>(undefined);
     const [expiryDays, setExpiryDays] = useState<number | undefined>();
+    
+    const resetForm = () => {
+        setName('');
+        setTargetAudience('');
+        setType('');
+        setRewardType('');
+        setRewardValue(0);
+        setProductScope('all');
+        setDate(undefined);
+        setExpiryDays(undefined);
+    }
+    
+    const handleOpenChange = (isOpen: boolean) => {
+        if (!isOpen) {
+            resetForm();
+        }
+        setOpen(isOpen);
+    }
 
     const handleSave = () => {
         const newProgram: Program = {
             id: `PROG${(Math.random() * 1000).toFixed(0).padStart(3, '0')}`,
             name,
-            type: type as any,
-            reward: { type: rewardType as any, value: rewardValue },
+            target: targetAudience as ProgramTarget,
+            type: type,
+            reward: { type: rewardType, value: rewardValue },
             productScope: productScope as any,
             startDate: date!.from!,
             endDate: date!.to!,
@@ -93,18 +144,11 @@ function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void })
         };
         onSave(newProgram);
         setOpen(false);
-        // Reset form
-        setName('');
-        setType('');
-        setRewardType('');
-        setRewardValue(0);
-        setProductScope('all');
-        setDate(undefined);
-        setExpiryDays(undefined);
+        resetForm();
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" /> Create New Program
@@ -116,35 +160,46 @@ function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void })
                     <DialogDescription>Define the rules and rewards for a new program.</DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-                    <div className="space-y-2">
+                    <div className="md:col-span-2 space-y-2">
                         <Label htmlFor="program-name">Program Name</Label>
                         <Input id="program-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Summer Referral Bonanza" />
                     </div>
                      <div className="space-y-2">
+                        <Label>Target Audience</Label>
+                        <Select value={targetAudience} onValueChange={(value) => setTargetAudience(value as ProgramTarget)}>
+                            <SelectTrigger><SelectValue placeholder="Select audience..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="customer">Customer</SelectItem>
+                                <SelectItem value="vendor">Vendor</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
                         <Label>Program Type</Label>
-                        <Select value={type} onValueChange={setType}>
+                        <Select value={type} onValueChange={setType} disabled={!targetAudience}>
                             <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="referral">Referral Program</SelectItem>
-                                <SelectItem value="milestone">Purchase Milestone</SelectItem>
+                                {targetAudience && programOptions[targetAudience].types.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="space-y-2">
                         <Label>Reward Type</Label>
-                         <Select value={rewardType} onValueChange={setRewardType}>
+                         <Select value={rewardType} onValueChange={setRewardType} disabled={!targetAudience}>
                             <SelectTrigger><SelectValue placeholder="Select reward..." /></SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="wallet_credit">Wallet Credit</SelectItem>
-                                <SelectItem value="discount_percent">Percentage Discount</SelectItem>
-                                <SelectItem value="free_shipping">Free Shipping</SelectItem>
+                                {targetAudience && programOptions[targetAudience].rewards.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))}
                             </SelectContent>
                         </Select>
                     </div>
                      <div className="space-y-2">
-                        <Label>Reward Value</Label>
-                        <Input type="number" value={rewardValue} onChange={e => setRewardValue(Number(e.target.value))} />
-                         <p className="text-xs text-muted-foreground">E.g., 100 for wallet, 15 for %, 2 for # of free shipments.</p>
+                        <Label>Reward Value / Condition</Label>
+                        <Input type="number" value={rewardValue || ''} onChange={e => setRewardValue(Number(e.target.value))} />
+                         <p className="text-xs text-muted-foreground">E.g., 100 for wallet, 15 for %, 5 for # of orders/referrals.</p>
                     </div>
                      <div className="space-y-2">
                         <Label>Product Scope</Label>
@@ -180,7 +235,7 @@ function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void })
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button variant="outline" onClick={() => handleOpenChange(false)}>Cancel</Button>
                     <Button onClick={handleSave}>Save Program</Button>
                 </DialogFooter>
             </DialogContent>
@@ -213,8 +268,17 @@ export default function ReferralsPage() {
         switch (type) {
             case 'wallet_credit': return <DollarSign className="h-4 w-4 text-muted-foreground" />;
             case 'discount_percent': return <Percent className="h-4 w-4 text-muted-foreground" />;
+            case 'commission_discount': return <Percent className="h-4 w-4 text-muted-foreground" />;
             case 'free_shipping': return <Gift className="h-4 w-4 text-muted-foreground" />;
             default: return <Trophy className="h-4 w-4 text-muted-foreground" />;
+        }
+    }
+    
+    const getTargetIcon = (target: ProgramTarget) => {
+        switch(target) {
+            case 'customer': return <Users className="h-4 w-4 text-muted-foreground" />;
+            case 'vendor': return <Store className="h-4 w-4 text-muted-foreground" />;
+            default: return null;
         }
     }
 
@@ -237,7 +301,7 @@ export default function ReferralsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Program Name</TableHead>
-                                <TableHead>Type</TableHead>
+                                <TableHead>Target</TableHead>
                                 <TableHead>Reward</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -247,14 +311,19 @@ export default function ReferralsPage() {
                             {programs.map(program => (
                                 <TableRow key={program.id}>
                                     <TableCell className="font-medium">{program.name}</TableCell>
-                                    <TableCell className="capitalize">{program.type}</TableCell>
+                                     <TableCell>
+                                        <div className="flex items-center gap-2 capitalize">
+                                             {getTargetIcon(program.target)}
+                                             <span>{program.target}</span>
+                                        </div>
+                                    </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
                                             {getRewardIcon(program.reward.type)}
                                             <span>
                                                 {program.reward.type === 'wallet_credit' && `₹${program.reward.value}`}
-                                                {program.reward.type === 'discount_percent' && `${program.reward.value}%`}
-                                                {program.reward.type === 'free_shipping' && `${program.reward.value} shipments`}
+                                                {(program.reward.type === 'discount_percent' || program.reward.type === 'commission_discount') && `${program.reward.value}%`}
+                                                {(program.reward.type === 'free_shipping' || program.reward.type === 'commission_free_sales') && `${program.reward.value} Orders`}
                                             </span>
                                         </div>
                                     </TableCell>
