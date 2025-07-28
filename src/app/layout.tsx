@@ -96,9 +96,9 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
-  const isVendorAuthRoute = pathname.startsWith('/vendor/login') || pathname.startsWith('/vendor/signup') || pathname.startsWith('/vendor/verify');
+  const isVendorRoute = pathname.startsWith('/vendor');
   
-  const showHeaderAndFooter = !isAdminRoute && !isVendorAuthRoute;
+  const showHeaderAndFooter = !isAdminRoute && !isVendorRoute;
 
   return (
     <html lang="en" suppressHydrationWarning>
