@@ -108,27 +108,27 @@ export default function RootLayout({
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased flex flex-col', ptSans.variable)}>
         <UserProvider>
-          <CartProvider>
-            <WishlistProvider>
-              <AuthDialogProvider>
-                {showHeaderAndFooter && (
-                  <>
-                    <CampaignBanner />
-                    <Header />
-                  </>
-                )}
-                <main className="flex-1">{children}</main>
-                {showHeaderAndFooter && (
-                  <>
-                    <Footer />
-                    <CampaignPopup />
-                  </>
-                )}
-                <CustomerAuthDialog />
-                <Toaster />
-              </AuthDialogProvider>
-            </WishlistProvider>
-          </CartProvider>
+          <AuthDialogProvider>
+            <CartProvider>
+              <WishlistProvider>
+                  {showHeaderAndFooter && (
+                    <>
+                      <CampaignBanner />
+                      <Header />
+                    </>
+                  )}
+                  <main className="flex-1">{children}</main>
+                  {showHeaderAndFooter && (
+                    <>
+                      <Footer />
+                      <CampaignPopup />
+                    </>
+                  )}
+                  <CustomerAuthDialog />
+                  <Toaster />
+              </WishlistProvider>
+            </CartProvider>
+          </AuthDialogProvider>
         </UserProvider>
       </body>
     </html>

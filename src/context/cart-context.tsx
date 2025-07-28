@@ -1,9 +1,10 @@
 
 "use client";
 
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import type { DisplayProduct } from '@/lib/types';
 import { mockProducts } from '@/lib/mock-data';
+import { useUser } from './user-context';
 
 // Define the shape of a cart item
 export type CartItem = DisplayProduct & {
@@ -19,7 +20,8 @@ interface CartState {
 type CartAction =
     | { type: 'ADD_TO_CART'; payload: DisplayProduct }
     | { type: 'REMOVE_FROM_CART'; payload: { id: string } }
-    | { type: 'UPDATE_QUANTITY'; payload: { id: string; delta: number } };
+    | { type: 'UPDATE_QUANTITY'; payload: { id: string; delta: number } }
+    | { type: 'CLEAR_CART' };
 
 // Create the context
 interface CartContextType extends CartState {
@@ -70,6 +72,8 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
                     .filter(item => item.quantity > 0), // Remove item if quantity is 0
             };
         }
+        case 'CLEAR_CART':
+            return { ...state, cartItems: [] };
         default:
             return state;
     }
@@ -77,12 +81,19 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 
 // CartProvider component
 export const CartProvider = ({ children }: { children: ReactNode }) => {
+    const { isLoggedIn } = useUser();
     const initialState: CartState = {
-        // Initialize with a couple of products for demonstration
-        cartItems: mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 }))
+        // Initialize with a couple of products for demonstration only if logged in
+        cartItems: isLoggedIn ? mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 })) : []
     };
     
     const [state, dispatch] = useReducer(cartReducer, initialState);
+
+    useEffect(() => {
+        if (!isLoggedIn) {
+            dispatch({ type: 'CLEAR_CART' });
+        }
+    }, [isLoggedIn]);
 
     const addToCart = (product: DisplayProduct) => {
         dispatch({ type: 'ADD_TO_CART', payload: product });

@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import type { DisplayProduct } from '@/lib/types';
 import { mockProducts } from '@/lib/mock-data';
+import { useUser } from './user-context';
 
 const WISHLIST_STORAGE_KEY = 'shopsphere_wishlist';
 
@@ -19,7 +20,8 @@ interface WishlistState {
 type WishlistAction =
     | { type: 'TOGGLE_WISHLIST'; payload: WishlistItem }
     | { type: 'REMOVE_FROM_WISHLIST'; payload: { id: string } }
-    | { type: 'SET_WISHLIST'; payload: WishlistItem[] };
+    | { type: 'SET_WISHLIST'; payload: WishlistItem[] }
+    | { type: 'CLEAR_WISHLIST' };
 
 // Create the context
 interface WishlistContextType extends WishlistState {
@@ -56,6 +58,8 @@ const wishlistReducer = (state: WishlistState, action: WishlistAction): Wishlist
                 ...state,
                 wishlistItems: action.payload,
             };
+        case 'CLEAR_WISHLIST':
+            return { ...state, wishlistItems: [] };
         default:
             return state;
     }
@@ -63,31 +67,40 @@ const wishlistReducer = (state: WishlistState, action: WishlistAction): Wishlist
 
 // WishlistProvider component
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
+    const { isLoggedIn } = useUser();
     const [state, dispatch] = useReducer(wishlistReducer, { wishlistItems: [] });
 
-    // Load wishlist from localStorage on initial render
+    // Load wishlist from localStorage on initial render if logged in
     useEffect(() => {
-        try {
-            const storedWishlist = localStorage.getItem(WISHLIST_STORAGE_KEY);
-            if (storedWishlist) {
-                dispatch({ type: 'SET_WISHLIST', payload: JSON.parse(storedWishlist) });
-            } else {
-                 // For demonstration, initialize with one item if localStorage is empty
-                dispatch({ type: 'SET_WISHLIST', payload: [mockProducts[3]]});
+        if (isLoggedIn) {
+            try {
+                const storedWishlist = localStorage.getItem(WISHLIST_STORAGE_KEY);
+                if (storedWishlist) {
+                    dispatch({ type: 'SET_WISHLIST', payload: JSON.parse(storedWishlist) });
+                } else {
+                     // For demonstration, initialize with one item if localStorage is empty
+                    dispatch({ type: 'SET_WISHLIST', payload: [mockProducts[3]]});
+                }
+            } catch (error) {
+                console.error("Failed to parse wishlist from localStorage", error);
             }
-        } catch (error) {
-            console.error("Failed to parse wishlist from localStorage", error);
+        } else {
+            dispatch({ type: 'CLEAR_WISHLIST' });
         }
-    }, []);
+    }, [isLoggedIn]);
 
     // Save wishlist to localStorage whenever it changes
     useEffect(() => {
         try {
-            localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(state.wishlistItems));
+            if (isLoggedIn) {
+                localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(state.wishlistItems));
+            } else {
+                localStorage.removeItem(WISHLIST_STORAGE_KEY);
+            }
         } catch (error) {
             console.error("Failed to save wishlist to localStorage", error);
         }
-    }, [state.wishlistItems]);
+    }, [state.wishlistItems, isLoggedIn]);
 
 
     const toggleWishlist = (product: WishlistItem) => {

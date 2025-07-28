@@ -3,6 +3,8 @@
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
+
 // Define the shape of the user context state
 interface UserState {
     isLoggedIn: boolean;
@@ -22,10 +24,18 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 // UserProvider component
 export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(true);
-    const [avatar, setAvatar] = useState('https://placehold.co/40x40.png');
+    const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
 
-    const login = () => setIsLoggedIn(true);
-    const logout = () => setIsLoggedIn(false);
+    const login = () => {
+        setIsLoggedIn(true);
+        // In a real app, you would fetch user data here
+        setAvatar(DEFAULT_AVATAR);
+    };
+
+    const logout = () => {
+        setIsLoggedIn(false);
+        setAvatar(DEFAULT_AVATAR); // Reset avatar on logout
+    };
 
     const updateAvatar = (newAvatar: string) => {
         setAvatar(newAvatar);
