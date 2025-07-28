@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Camera, FileUp, Loader2, Video } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
 
 export function IdentityStep({ onComplete }: { onComplete: () => void }) {
     const { toast } = useToast();
