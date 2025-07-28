@@ -4,7 +4,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight, Gift } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -20,6 +20,7 @@ const navLinks = [
   { href: "/vendor/orders", label: "Orders", icon: ListChecks },
   { href: "/vendor/analytics", label: "Analytics", icon: LineChart },
   { href: "/vendor/messages", label: "Messages", icon: MessageSquare, badge: "5" },
+  { href: "/vendor/referrals", label: "Referrals", icon: Gift },
   { href: "/vendor/settings", label: "Settings", icon: Settings },
 ];
 
