@@ -21,7 +21,7 @@ import { Separator } from "@/components/ui/separator";
 
 
 const GoogleIcon = () => (
-    <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
         <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.8 0-5.18-1.89-6.03-4.43H2.39v2.84C4.26 20.98 7.89 23 12 23z" fill="#34A853" />
         <path d="M5.97 14.25a6.47 6.47 0 0 1 0-4.5V6.91H2.39a11.98 11.98 0 0 0 0 10.18l3.58-2.84z" fill="#FBBC05" />
@@ -30,19 +30,19 @@ const GoogleIcon = () => (
 );
 
 const FacebookIcon = () => (
-     <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
         <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878V14.89H8.169v-2.89H10.438V9.62c0-2.274 1.35-3.522 3.42-3.522 1.01 0 1.86.074 2.11.107v2.585h-1.51c-1.1 0-1.31.522-1.31 1.285v1.6h2.86l-.372 2.89h-2.488v7.008C18.343 21.128 22 16.991 22 12z" fill="#1877F2" />
     </svg>
 );
 
 const TwitterIcon = () => (
-    <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
         <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
     </svg>
 );
 
 const InstagramIcon = () => (
-     <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
         <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
         <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
@@ -50,7 +50,7 @@ const InstagramIcon = () => (
 );
 
 const LinkedinIcon = () => (
-     <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+     <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
         <path d="M20.5 2h-17A1.5 1.5 0 0 0 2 3.5v17A1.5 1.5 0 0 0 3.5 22h17a1.5 1.5 0 0 0 1.5-1.5v-17A1.5 1.5 0 0 0 20.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 1 1 8.25 6.5 1.75 1.75 0 0 1 6.5 8.25zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.54 1.54 0 0 0 13 14.19a1.4 1.4 0 0 0 .1.74V19h-3v-9h2.9v1.3a3.11 3.11 0 0 1 2.7-1.4c1.55 0 3.3.86 3.3 3.6z"></path>
     </svg>
 );
@@ -123,21 +123,26 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                     <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                 </div>
             </div>
-            <div className="space-y-2">
-                <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("Google")}>
-                    <GoogleIcon /> Continue with Google
+            <div className="flex justify-center gap-2">
+                 <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Google")}>
+                    <GoogleIcon />
+                    <span className="sr-only">Continue with Google</span>
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("Facebook")}>
-                    <FacebookIcon /> Continue with Facebook
+                <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Facebook")}>
+                    <FacebookIcon />
+                    <span className="sr-only">Continue with Facebook</span>
                 </Button>
-                 <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("X")}>
-                    <TwitterIcon /> Continue with X
+                <Button variant="outline" size="icon" onClick={() => handleSocialLogin("X")}>
+                    <TwitterIcon />
+                     <span className="sr-only">Continue with X</span>
                 </Button>
-                 <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("Instagram")}>
-                    <InstagramIcon /> Continue with Instagram
+                 <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Instagram")}>
+                    <InstagramIcon />
+                     <span className="sr-only">Continue with Instagram</span>
                 </Button>
-                 <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("LinkedIn")}>
-                    <LinkedinIcon /> Continue with LinkedIn
+                 <Button variant="outline" size="icon" onClick={() => handleSocialLogin("LinkedIn")}>
+                    <LinkedinIcon />
+                     <span className="sr-only">Continue with LinkedIn</span>
                 </Button>
             </div>
         </div>
@@ -258,7 +263,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                  {phone && (
                     <div className="space-y-2">
                         <Label htmlFor="phone-otp">Phone Verification Code</Label>
-                        <Input id="phone-otp" required value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} />
+                        <Input id="phone-otp" required value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} />
                     </div>
                  )}
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -274,21 +279,26 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     
     return (
         <div className="space-y-4">
-            <div className="space-y-2">
-                 <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("Google")}>
-                    <GoogleIcon /> Continue with Google
+             <div className="flex justify-center gap-2">
+                 <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Google")}>
+                    <GoogleIcon />
+                    <span className="sr-only">Continue with Google</span>
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("Facebook")}>
-                    <FacebookIcon /> Continue with Facebook
+                <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Facebook")}>
+                    <FacebookIcon />
+                    <span className="sr-only">Continue with Facebook</span>
                 </Button>
-                 <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("X")}>
-                    <TwitterIcon /> Continue with X
+                <Button variant="outline" size="icon" onClick={() => handleSocialLogin("X")}>
+                    <TwitterIcon />
+                     <span className="sr-only">Continue with X</span>
                 </Button>
-                 <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("Instagram")}>
-                    <InstagramIcon /> Continue with Instagram
+                 <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Instagram")}>
+                    <InstagramIcon />
+                     <span className="sr-only">Continue with Instagram</span>
                 </Button>
-                 <Button variant="outline" className="w-full" onClick={() => handleSocialLogin("LinkedIn")}>
-                    <LinkedinIcon /> Continue with LinkedIn
+                 <Button variant="outline" size="icon" onClick={() => handleSocialLogin("LinkedIn")}>
+                    <LinkedinIcon />
+                     <span className="sr-only">Continue with LinkedIn</span>
                 </Button>
             </div>
              <div className="relative">
@@ -407,4 +417,3 @@ export function CustomerAuthDialog() {
         </Dialog>
     );
 }
-
