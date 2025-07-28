@@ -96,13 +96,11 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
             <span className="text-xs text-muted-foreground ml-2">({product.reviewCount})</span>
         </div>
+         <p className="text-xl font-semibold font-body mt-2">${product.price.toFixed(2)}</p>
       </CardContent>
-      <CardFooter className="p-4 pt-0 flex justify-between items-center">
-        <p className="text-xl font-semibold font-body">${product.price.toFixed(2)}</p>
-        <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleAddToCart}>Add to Cart</Button>
-            <Button size="sm" onClick={handleBuyNow}>Buy Now</Button>
-        </div>
+      <CardFooter className="p-2 pt-0 flex flex-col gap-2">
+        <Button variant="secondary" size="sm" className="w-full" onClick={handleAddToCart}>Add to Cart</Button>
+        <Button size="sm" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
       </CardFooter>
     </Card>
   );
