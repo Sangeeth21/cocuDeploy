@@ -13,6 +13,7 @@ import { useCart } from '@/context/cart-context';
 import { useWishlist } from '@/context/wishlist-context';
 import { useUser } from '@/context/user-context';
 import { useAuthDialog } from '@/context/auth-dialog-context';
+import { useRouter } from 'next/navigation';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -24,6 +25,7 @@ export function ProductCard({ product }: ProductCardProps) {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isLoggedIn } = useUser();
   const { openDialog } = useAuthDialog();
+  const router = useRouter();
   
   const handleAddToCart = () => {
     addToCart(product);
@@ -31,6 +33,15 @@ export function ProductCard({ product }: ProductCardProps) {
       title: "Added to cart!",
       description: `${product.name} has been added to your cart.`,
     });
+  };
+
+  const handleBuyNow = () => {
+    if (!isLoggedIn) {
+      openDialog('login');
+      return;
+    }
+    addToCart(product);
+    router.push('/checkout');
   };
 
   const handleWishlistClick = (e: React.MouseEvent) => {
@@ -88,10 +99,11 @@ export function ProductCard({ product }: ProductCardProps) {
       </CardContent>
       <CardFooter className="p-4 pt-0 flex justify-between items-center">
         <p className="text-xl font-semibold font-body">${product.price.toFixed(2)}</p>
-        <Button variant="outline" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={handleAddToCart}>Add to Cart</Button>
+        <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleAddToCart}>Add to Cart</Button>
+            <Button size="sm" onClick={handleBuyNow}>Buy Now</Button>
+        </div>
       </CardFooter>
     </Card>
   );
 }
-
-    

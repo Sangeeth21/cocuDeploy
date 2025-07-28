@@ -15,6 +15,9 @@ import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { mockUserOrders } from "@/lib/mock-data";
+import { useCart } from "@/context/cart-context";
+import { useUser } from "@/context/user-context";
+import { useAuthDialog } from "@/context/auth-dialog-context";
 
 type Attachment = {
     name: string;
@@ -50,7 +53,10 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   const [isPreChatOpen, setIsPreChatOpen] = useState(false);
   const [isChatDisabledOpen, setIsChatDisabledOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
-
+  
+  const { addToCart } = useCart();
+  const { isLoggedIn } = useUser();
+  const { openDialog } = useAuthDialog();
 
   const [conversation, setConversation] = useState<Conversation>({
       ...initialConversation, 
@@ -91,11 +97,21 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
         });
         return;
     }
+    addToCart(product);
     toast({
       title: "Added to cart!",
       description: `${product.name} has been added to your cart.`,
     });
   };
+
+  const handleBuyNow = () => {
+    if (!isLoggedIn) {
+        openDialog('login');
+        return;
+    }
+    addToCart(product);
+    router.push('/checkout');
+  }
 
   const handleMessageVendorClick = () => {
     if (isChatDisabled) {
@@ -232,10 +248,13 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   
   return (
     <>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <Button size="lg" className="w-full bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleAddToCart}>
-            {product.requiresConfirmation ? 'Request to Buy' : 'Add to Cart'}
-        </Button>
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-2">
+            <Button size="lg" className="w-full" onClick={handleAddToCart}>
+                {product.requiresConfirmation ? 'Request to Buy' : 'Add to Cart'}
+            </Button>
+            <Button size="lg" variant="secondary" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
+        </div>
         <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendorClick} disabled={isChatDisabled}>
             <MessageSquare className="mr-2 h-5 w-5" />
             Message Vendor
