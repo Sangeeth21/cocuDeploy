@@ -123,7 +123,7 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                     <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                 </div>
             </div>
-            <div className="flex justify-center gap-2">
+             <div className="flex justify-center gap-2">
                  <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Google")}>
                     <GoogleIcon />
                     <span className="sr-only">Continue with Google</span>
@@ -156,9 +156,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: '', color: '' });
     const [agreedToTerms, setAgreedToTerms] = useState(true);
     const [emailOtp, setEmailOtp] = useState("");
@@ -202,10 +200,6 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
 
     const handleDetailsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (password !== confirmPassword) {
-            toast({ variant: "destructive", title: "Passwords do not match" });
-            return;
-        }
         if (passwordStrength.score < 4) {
             toast({ variant: "destructive", title: "Password is too weak" });
             return;
@@ -361,15 +355,6 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                             )}
                         </div>
                      )}
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="customer-confirm-password">Confirm Password</Label>
-                    <div className="relative">
-                        <Input id="customer-confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                            {showConfirmPassword ? <EyeOff /> : <Eye />}
-                        </Button>
-                    </div>
                 </div>
                 <div className="flex items-center space-x-2 pt-2">
                     <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
