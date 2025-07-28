@@ -111,11 +111,19 @@ export default function RootLayout({
           <CartProvider>
             <WishlistProvider>
               <AuthDialogProvider>
-                {showHeaderAndFooter && <CampaignBanner />}
-                {showHeaderAndFooter && <Header />}
+                {showHeaderAndFooter && (
+                  <>
+                    <CampaignBanner />
+                    <Header />
+                  </>
+                )}
                 <main className="flex-1">{children}</main>
-                {showHeaderAndFooter && <Footer />}
-                {showHeaderAndFooter && <CampaignPopup />}
+                {showHeaderAndFooter && (
+                  <>
+                    <Footer />
+                    <CampaignPopup />
+                  </>
+                )}
                 <CustomerAuthDialog />
                 <Toaster />
               </AuthDialogProvider>
