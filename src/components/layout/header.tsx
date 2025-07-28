@@ -83,7 +83,7 @@ export function Header() {
             <span className="font-bold text-lg font-headline">ShopSphere</span>
             </Link>
             
-            <nav className="hidden md:flex gap-6 items-center">
+            <nav className="hidden md:flex gap-4 items-center">
             {navLinks.map((link) => (
                 <Link
                 key={link.href}
@@ -100,7 +100,7 @@ export function Header() {
         </div>
 
         <div className="flex-1 flex justify-center px-4 lg:px-8">
-             <div className="w-full max-w-lg">
+             <div className="w-full max-w-xl">
                 <SearchBar />
             </div>
         </div>
