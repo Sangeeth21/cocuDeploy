@@ -17,6 +17,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthDialog } from "@/context/auth-dialog-context";
+import { Separator } from "@/components/ui/separator";
+
+
+const GoogleIcon = () => (
+    <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.8 0-5.18-1.89-6.03-4.43H2.39v2.84C4.26 20.98 7.89 23 12 23z" fill="#34A853" />
+        <path d="M5.97 14.25a6.47 6.47 0 0 1 0-4.5V6.91H2.39a11.98 11.98 0 0 0 0 10.18l3.58-2.84z" fill="#FBBC05" />
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.89 1 4.26 3.02 2.39 6.91l3.58 2.84c.85-2.54 3.23-4.43 6.03-4.43z" fill="#EA4335" />
+    </svg>
+);
+
+const FacebookIcon = () => (
+     <svg className="h-5 w-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878V14.89H8.169v-2.89H10.438V9.62c0-2.274 1.35-3.522 3.42-3.522 1.01 0 1.86.074 2.11.107v2.585h-1.51c-1.1 0-1.31.522-1.31 1.285v1.6h2.86l-.372 2.89h-2.488v7.008C18.343 21.128 22 16.991 22 12z" fill="#1877F2" />
+    </svg>
+);
+
 
 // LoginForm Component
 function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
@@ -44,29 +62,56 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
             });
         }
     };
+    
+    const handleSocialLogin = (provider: string) => {
+        toast({
+            title: `Logged in with ${provider}!`,
+            description: "Welcome back!",
+        });
+        onLoginSuccess();
+        router.refresh();
+    }
 
     return (
-        <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="customer-email">Email</Label>
-                <Input id="customer-email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                    <Label htmlFor="customer-password">Password</Label>
-                    <Link href="#" className="text-sm text-primary hover:underline">
-                        Forgot your password?
-                    </Link>
+        <div className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="customer-email">Email</Label>
+                    <Input id="customer-email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
-                <div className="relative">
-                    <Input id="customer-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
-                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <EyeOff /> : <Eye />}
-                    </Button>
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="customer-password">Password</Label>
+                        <Link href="#" className="text-sm text-primary hover:underline">
+                            Forgot your password?
+                        </Link>
+                    </div>
+                    <div className="relative">
+                        <Input id="customer-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                            {showPassword ? <EyeOff /> : <Eye />}
+                        </Button>
+                    </div>
+                </div>
+                <Button type="submit" className="w-full">Sign In</Button>
+            </form>
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                 </div>
             </div>
-            <Button type="submit" className="w-full">Sign In</Button>
-        </form>
+            <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => handleSocialLogin("Google")}>
+                    <GoogleIcon /> Google
+                </Button>
+                <Button variant="outline" onClick={() => handleSocialLogin("Facebook")}>
+                    <FacebookIcon /> Facebook
+                </Button>
+            </div>
+        </div>
     );
 }
 
@@ -160,6 +205,15 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             <span>{label}</span>
         </div>
     );
+    
+     const handleSocialLogin = (provider: string) => {
+        toast({
+            title: `Signed up with ${provider}!`,
+            description: "Welcome to ShopSphere!",
+        });
+        onSignupSuccess();
+        router.refresh();
+    }
 
     if (step === 'verify') {
         return (
@@ -190,79 +244,97 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     }
     
     return (
-        <form onSubmit={handleDetailsSubmit} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="customer-name">Full Name</Label>
-                <Input id="customer-name" required />
+        <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-2">
+                <Button variant="outline" onClick={() => handleSocialLogin("Google")}>
+                    <GoogleIcon /> Google
+                </Button>
+                <Button variant="outline" onClick={() => handleSocialLogin("Facebook")}>
+                    <FacebookIcon /> Facebook
+                </Button>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="customer-signup-email">Email</Label>
-                <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="customer-signup-phone">Phone Number (Optional)</Label>
-                <Input id="customer-signup-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-            </div>
-             <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                    <Label htmlFor="customer-signup-password">Password</Label>
-                    <TooltipProvider delayDuration={0}>
-                        <Tooltip>
-                            <TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
-                            <TooltipContent>
-                                <ul className="list-disc pl-4 text-xs space-y-1">
-                                    <li>At least 8 characters long</li>
-                                    <li>Contains an uppercase letter</li>
-                                    <li>Contains a number</li>
-                                    <li>Contains a special character</li>
-                                </ul>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
+             <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
                 </div>
-                <div className="relative">
-                    <Input id="customer-signup-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} />
-                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <EyeOff /> : <Eye />}
-                    </Button>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or sign up with email</span>
                 </div>
-                {isPasswordFocused && (
-                    <div className="space-y-2 pt-1">
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 p-2 rounded-md bg-muted/50">
-                            {renderCriteriaCheck("8+ characters", passwordCriteria.length)}
-                            {renderCriteriaCheck("1 uppercase", passwordCriteria.uppercase)}
-                            {renderCriteriaCheck("1 number", passwordCriteria.number)}
-                            {renderCriteriaCheck("1 special char", passwordCriteria.specialChar)}
-                        </div>
-                         {password.length > 0 && (
-                            <div className="flex items-center gap-2">
-                                <Progress value={passwordStrength.score * 25} className={cn("h-1 w-full", passwordStrength.color)} />
-                                <span className="text-xs text-muted-foreground flex-shrink-0">{passwordStrength.label}</span>
-                            </div>
-                        )}
+            </div>
+            <form onSubmit={handleDetailsSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="customer-name">Full Name</Label>
+                    <Input id="customer-name" required />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="customer-signup-email">Email</Label>
+                    <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                 <div className="space-y-2">
+                    <Label htmlFor="customer-signup-phone">Phone Number (Optional)</Label>
+                    <Input id="customer-signup-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                </div>
+                 <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                        <Label htmlFor="customer-signup-password">Password</Label>
+                        <TooltipProvider delayDuration={0}>
+                            <Tooltip>
+                                <TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
+                                <TooltipContent>
+                                    <ul className="list-disc pl-4 text-xs space-y-1">
+                                        <li>At least 8 characters long</li>
+                                        <li>Contains an uppercase letter</li>
+                                        <li>Contains a number</li>
+                                        <li>Contains a special character</li>
+                                    </ul>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
                     </div>
-                 )}
-            </div>
-             <div className="space-y-2">
-                <Label htmlFor="customer-confirm-password">Confirm Password</Label>
-                <div className="relative">
-                    <Input id="customer-confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                        {showConfirmPassword ? <EyeOff /> : <Eye />}
-                    </Button>
+                    <div className="relative">
+                        <Input id="customer-signup-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} />
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                            {showPassword ? <EyeOff /> : <Eye />}
+                        </Button>
+                    </div>
+                    {isPasswordFocused && (
+                        <div className="space-y-2 pt-1">
+                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 p-2 rounded-md bg-muted/50">
+                                {renderCriteriaCheck("8+ characters", passwordCriteria.length)}
+                                {renderCriteriaCheck("1 uppercase", passwordCriteria.uppercase)}
+                                {renderCriteriaCheck("1 number", passwordCriteria.number)}
+                                {renderCriteriaCheck("1 special char", passwordCriteria.specialChar)}
+                            </div>
+                             {password.length > 0 && (
+                                <div className="flex items-center gap-2">
+                                    <Progress value={passwordStrength.score * 25} className={cn("h-1 w-full", passwordStrength.color)} />
+                                    <span className="text-xs text-muted-foreground flex-shrink-0">{passwordStrength.label}</span>
+                                </div>
+                            )}
+                        </div>
+                     )}
                 </div>
-            </div>
-            <div className="flex items-center space-x-2 pt-2">
-                <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
-                <Label htmlFor="customer-terms" className="font-normal text-xs text-muted-foreground leading-snug">
-                    I agree to the ShopSphere <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
-                </Label>
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Account
-            </Button>
-        </form>
+                 <div className="space-y-2">
+                    <Label htmlFor="customer-confirm-password">Confirm Password</Label>
+                    <div className="relative">
+                        <Input id="customer-confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                            {showConfirmPassword ? <EyeOff /> : <Eye />}
+                        </Button>
+                    </div>
+                </div>
+                <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
+                    <Label htmlFor="customer-terms" className="font-normal text-xs text-muted-foreground leading-snug">
+                        I agree to the ShopSphere <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
+                    </Label>
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create Account
+                </Button>
+            </form>
+        </div>
     );
 }
 
