@@ -3,216 +3,283 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Percent, Users, Truck, Save, Gift, Trophy } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import type { DateRange } from "react-day-picker";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
+
+type Program = {
+    id: string;
+    name: string;
+    type: 'referral' | 'milestone';
+    reward: {
+        type: 'wallet_credit' | 'discount_percent' | 'free_shipping';
+        value: number;
+    };
+    productScope: 'all' | 'selected';
+    status: 'Active' | 'Scheduled' | 'Expired';
+    startDate: Date;
+    endDate: Date;
+    expiryDays?: number;
+};
+
+const initialPrograms: Program[] = [
+    {
+        id: 'PROG001',
+        name: 'New Customer Referral',
+        type: 'referral',
+        reward: { type: 'wallet_credit', value: 100 },
+        productScope: 'all',
+        status: 'Active',
+        startDate: new Date(2024, 0, 1),
+        endDate: new Date(2024, 11, 31),
+    },
+    {
+        id: 'PROG002',
+        name: 'Frequent Buyer Reward',
+        type: 'milestone',
+        reward: { type: 'free_shipping', value: 2 },
+        productScope: 'selected',
+        status: 'Active',
+        startDate: new Date(2024, 5, 1),
+        endDate: new Date(2024, 6, 31),
+        expiryDays: 60
+    },
+     {
+        id: 'PROG003',
+        name: 'Vendor Referral',
+        type: 'referral',
+        reward: { type: 'discount_percent', value: 1 },
+        productScope: 'all',
+        status: 'Scheduled',
+        startDate: new Date(2024, 7, 1),
+        endDate: new Date(2024, 9, 30),
+    }
+];
+
+
+function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void }) {
+    const [open, setOpen] = useState(false);
+    const [name, setName] = useState('');
+    const [type, setType] = useState('');
+    const [rewardType, setRewardType] = useState('');
+    const [rewardValue, setRewardValue] = useState(0);
+    const [productScope, setProductScope] = useState('all');
+    const [date, setDate] = useState<DateRange | undefined>(undefined);
+    const [expiryDays, setExpiryDays] = useState<number | undefined>();
+
+    const handleSave = () => {
+        const newProgram: Program = {
+            id: `PROG${(Math.random() * 1000).toFixed(0).padStart(3, '0')}`,
+            name,
+            type: type as any,
+            reward: { type: rewardType as any, value: rewardValue },
+            productScope: productScope as any,
+            startDate: date!.from!,
+            endDate: date!.to!,
+            expiryDays,
+            status: 'Active'
+        };
+        onSave(newProgram);
+        setOpen(false);
+        // Reset form
+        setName('');
+        setType('');
+        setRewardType('');
+        setRewardValue(0);
+        setProductScope('all');
+        setDate(undefined);
+        setExpiryDays(undefined);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Create New Program
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Create New Loyalty Program</DialogTitle>
+                    <DialogDescription>Define the rules and rewards for a new program.</DialogDescription>
+                </DialogHeader>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="program-name">Program Name</Label>
+                        <Input id="program-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Summer Referral Bonanza" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Program Type</Label>
+                        <Select value={type} onValueChange={setType}>
+                            <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="referral">Referral Program</SelectItem>
+                                <SelectItem value="milestone">Purchase Milestone</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Reward Type</Label>
+                         <Select value={rewardType} onValueChange={setRewardType}>
+                            <SelectTrigger><SelectValue placeholder="Select reward..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="wallet_credit">Wallet Credit</SelectItem>
+                                <SelectItem value="discount_percent">Percentage Discount</SelectItem>
+                                <SelectItem value="free_shipping">Free Shipping</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Reward Value</Label>
+                        <Input type="number" value={rewardValue} onChange={e => setRewardValue(Number(e.target.value))} />
+                         <p className="text-xs text-muted-foreground">E.g., 100 for wallet, 15 for %, 2 for # of free shipments.</p>
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Product Scope</Label>
+                        <Select value={productScope} onValueChange={setProductScope}>
+                             <SelectTrigger><SelectValue /></SelectTrigger>
+                             <SelectContent>
+                                <SelectItem value="all">All Products</SelectItem>
+                                <SelectItem value="selected">Selected Products Only</SelectItem>
+                            </SelectContent>
+                        </Select>
+                         {productScope === 'selected' && <Button variant="outline" size="sm" className="mt-2 w-full">Select Products</Button>}
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Program Duration</Label>
+                         <Popover>
+                            <PopoverTrigger asChild>
+                                <Button id="date" variant="outline" className="w-full justify-start text-left font-normal">
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {date?.from ? (
+                                        date.to ? `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}` : format(date.from, "LLL dd, y")
+                                    ) : (<span>Pick a date range</span>)}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                                <Calendar mode="range" selected={date} onSelect={setDate} numberOfMonths={2} />
+                            </PopoverContent>
+                        </Popover>
+                    </div>
+                    <div className="md:col-span-2 space-y-2">
+                        <Label htmlFor="expiry-days">Reward Expiry (Optional)</Label>
+                        <Input id="expiry-days" type="number" value={expiryDays || ''} onChange={e => setExpiryDays(e.target.value ? Number(e.target.value) : undefined)} placeholder="e.g., 30" />
+                        <p className="text-xs text-muted-foreground">Number of days the reward is valid for the user after being earned.</p>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
+                    <Button onClick={handleSave}>Save Program</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export default function ReferralsPage() {
     const { toast } = useToast();
+    const [programs, setPrograms] = useState<Program[]>(initialPrograms);
 
-    // Customer states
-    const [customerReferralEnabled, setCustomerReferralEnabled] = useState(true);
-    const [referralBonus, setReferralBonus] = useState(100);
-    const [newCustomerDiscount, setNewCustomerDiscount] = useState(15);
-    const [minPurchase, setMinPurchase] = useState(500);
-    const [frequentBuyerEnabled, setFrequentBuyerEnabled] = useState(true);
-    const [ordersToQualify, setOrdersToQualify] = useState(3);
-    const [loyaltyPointsEnabled, setLoyaltyPointsEnabled] = useState(true);
-    const [pointsPerRupee, setPointsPerRupee] = useState(1);
-    const [pointsRedemptionValue, setPointsRedemptionValue] = useState(0.5); // 100 points = 50 Rs
-
-    // Vendor states
-    const [vendorReferralEnabled, setVendorReferralEnabled] = useState(true);
-    const [vendorsToRefer, setVendorsToRefer] = useState(5);
-    const [referrerDiscount, setReferrerDiscount] = useState(1);
-    const [discountDuration, setDiscountDuration] = useState(8);
-    const [newVendorCommissionDiscount, setNewVendorCommissionDiscount] = useState(0.25);
-    const [listingBonusEnabled, setListingBonusEnabled] = useState(true);
-    const [productsToList, setProductsToList] = useState(5);
-    const [commissionFreeSales, setCommissionFreeSales] = useState(10);
-
-
-    const handleSaveChanges = (tab: 'customer' | 'vendor') => {
+    const handleAddProgram = (newProgram: Program) => {
+        setPrograms(prev => [newProgram, ...prev]);
         toast({
-            title: "Settings Saved!",
-            description: `Your ${tab} program settings have been updated successfully.`,
+            title: "Program Created!",
+            description: `"${newProgram.name}" has been successfully added.`,
         });
+    }
+
+    const getStatusVariant = (status: Program['status']) => {
+        switch (status) {
+            case 'Active': return 'default';
+            case 'Scheduled': return 'secondary';
+            case 'Expired': return 'outline';
+            default: return 'outline';
+        }
+    }
+
+    const getRewardIcon = (type: Program['reward']['type']) => {
+        switch (type) {
+            case 'wallet_credit': return <DollarSign className="h-4 w-4 text-muted-foreground" />;
+            case 'discount_percent': return <Percent className="h-4 w-4 text-muted-foreground" />;
+            case 'free_shipping': return <Gift className="h-4 w-4 text-muted-foreground" />;
+            default: return <Trophy className="h-4 w-4 text-muted-foreground" />;
+        }
     }
 
     return (
         <div>
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold font-headline">Referrals & Loyalty</h1>
-                <p className="text-muted-foreground">Configure and manage your customer and vendor incentive programs.</p>
+            <div className="flex items-center justify-between mb-8">
+                <div>
+                    <h1 className="text-3xl font-bold font-headline">Promotions Engine</h1>
+                    <p className="text-muted-foreground">Create and manage your customer and vendor incentive programs.</p>
+                </div>
+                <CreateProgramDialog onSave={handleAddProgram} />
             </div>
 
-            <Tabs defaultValue="customer">
-                <TabsList>
-                    <TabsTrigger value="customer">Customer Programs</TabsTrigger>
-                    <TabsTrigger value="vendor">Vendor Programs</TabsTrigger>
-                </TabsList>
-                <TabsContent value="customer" className="mt-6">
-                    <div className="grid gap-8">
-                        <Card>
-                            <CardHeader className="flex-row items-start justify-between">
-                                <div>
-                                    <CardTitle>Customer Referral Program</CardTitle>
-                                    <CardDescription>Reward customers for bringing new users to the platform.</CardDescription>
-                                </div>
-                                <Switch checked={customerReferralEnabled} onCheckedChange={setCustomerReferralEnabled} />
-                            </CardHeader>
-                            <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="referral-bonus">Referrer Bonus (Wallet Credit)</Label>
-                                    <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="referral-bonus" type="number" value={referralBonus} onChange={(e) => setReferralBonus(Number(e.target.value))} className="pl-8" disabled={!customerReferralEnabled} />
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Bonus for the referrer after a successful purchase by the new customer.</p>
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="new-customer-discount">New Customer Welcome Discount</Label>
-                                     <div className="relative">
-                                        <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="new-customer-discount" type="number" value={newCustomerDiscount} onChange={(e) => setNewCustomerDiscount(Number(e.target.value))} className="pl-8" disabled={!customerReferralEnabled}/>
-                                     </div>
-                                    <p className="text-xs text-muted-foreground">A % discount for the new customer on their first order.</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="min-purchase">Minimum Purchase for Bonus</Label>
-                                     <div className="relative">
-                                        <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="min-purchase" type="number" value={minPurchase} onChange={(e) => setMinPurchase(Number(e.target.value))} className="pl-8" disabled={!customerReferralEnabled}/>
-                                     </div>
-                                    <p className="text-xs text-muted-foreground">The minimum order value for the new customer's first purchase to trigger rewards.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                            <CardHeader className="flex-row items-start justify-between">
-                                 <div>
-                                    <CardTitle>Loyalty Points Program</CardTitle>
-                                    <CardDescription>Reward customers with points for every purchase they make.</CardDescription>
-                                </div>
-                                 <Switch checked={loyaltyPointsEnabled} onCheckedChange={setLoyaltyPointsEnabled} />
-                            </CardHeader>
-                            <CardContent className="grid md:grid-cols-2 gap-6">
-                               <div className="space-y-2">
-                                    <Label htmlFor="points-per-rupee">Points Earned per Rupee</Label>
-                                    <Input id="points-per-rupee" type="number" value={pointsPerRupee} onChange={(e) => setPointsPerRupee(Number(e.target.value))} disabled={!loyaltyPointsEnabled}/>
-                                    <p className="text-xs text-muted-foreground">How many points a customer gets for each rupee spent.</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Points Redemption Value</Label>
-                                    <Input type="number" value={pointsRedemptionValue} onChange={(e) => setPointsRedemptionValue(Number(e.target.value))} disabled={!loyaltyPointsEnabled}/>
-                                     <p className="text-xs text-muted-foreground">Value of each point in rupees. E.g., 0.5 means 1 point = ₹0.50.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader className="flex-row items-start justify-between">
-                                 <div>
-                                    <CardTitle>Frequent Buyer Reward</CardTitle>
-                                    <CardDescription>A special reward for customers who make a certain number of purchases.</CardDescription>
-                                </div>
-                                 <Switch checked={frequentBuyerEnabled} onCheckedChange={setFrequentBuyerEnabled} />
-                            </CardHeader>
-                            <CardContent className="grid md:grid-cols-2 gap-6">
-                               <div className="space-y-2">
-                                    <Label htmlFor="orders-qualify">Orders to Qualify</Label>
-                                    <Input id="orders-qualify" type="number" value={ordersToQualify} onChange={(e) => setOrdersToQualify(Number(e.target.value))} disabled={!frequentBuyerEnabled}/>
-                                    <p className="text-xs text-muted-foreground">Number of completed orders required to unlock the reward.</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label>Reward</Label>
-                                    <div className="flex items-center gap-2 p-3 border rounded-md bg-muted">
-                                        <Trophy className="h-5 w-5 text-primary"/>
-                                        <p className="font-medium">Free delivery on next 2 orders</p>
-                                    </div>
-                                     <p className="text-xs text-muted-foreground">This is a predefined reward. More options can be added in the future.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                        <div className="flex justify-end">
-                            <Button onClick={() => handleSaveChanges('customer')}><Save className="mr-2 h-4 w-4"/> Save Customer Settings</Button>
-                        </div>
-                    </div>
-                </TabsContent>
-                <TabsContent value="vendor" className="mt-6">
-                     <div className="grid gap-8">
-                        <Card>
-                             <CardHeader className="flex-row items-start justify-between">
-                                <div>
-                                    <CardTitle>Vendor Referral Program</CardTitle>
-                                    <CardDescription>Incentivize vendors to recruit other high-quality sellers.</CardDescription>
-                                </div>
-                                <Switch checked={vendorReferralEnabled} onCheckedChange={setVendorReferralEnabled} />
-                            </CardHeader>
-                            <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="vendors-to-refer">Vendors to Refer</Label>
-                                    <div className="relative">
-                                         <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="vendors-to-refer" type="number" value={vendorsToRefer} onChange={(e) => setVendorsToRefer(Number(e.target.value))} className="pl-8" disabled={!vendorReferralEnabled}/>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">Number of successful new vendor sign-ups required.</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="referrer-discount">Referrer's Commission Discount</Label>
-                                    <div className="relative">
-                                         <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="referrer-discount" type="number" value={referrerDiscount} onChange={(e) => setReferrerDiscount(Number(e.target.value))} className="pl-8" disabled={!vendorReferralEnabled}/>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">The % discount on platform commission for the referring vendor.</p>
-                                </div>
-                                 <div className="space-y-2">
-                                    <Label htmlFor="discount-duration">Discount Duration (Orders)</Label>
-                                    <Input id="discount-duration" type="number" value={discountDuration} onChange={(e) => setDiscountDuration(Number(e.target.value))} disabled={!vendorReferralEnabled}/>
-                                    <p className="text-xs text-muted-foreground">Number of subsequent orders the referrer's discount applies to.</p>
-                                </div>
-                                 <div className="space-y-2 lg:col-span-3">
-                                    <Label htmlFor="new-vendor-discount">New Vendor's Welcome Commission</Label>
-                                    <div className="relative max-w-sm">
-                                         <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                        <Input id="new-vendor-discount" type="number" value={newVendorCommissionDiscount} onChange={(e) => setNewVendorCommissionDiscount(Number(e.target.value))} className="pl-8" disabled={!vendorReferralEnabled}/>
-                                    </div>
-                                    <p className="text-xs text-muted-foreground">The % discount on platform commission for the newly referred vendors on their first few sales.</p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                         <Card>
-                             <CardHeader className="flex-row items-start justify-between">
-                                <div>
-                                    <CardTitle>New Vendor Onboarding Bonus</CardTitle>
-                                    <CardDescription>Reward new vendors for listing their first products quickly.</CardDescription>
-                                </div>
-                                <Switch checked={listingBonusEnabled} onCheckedChange={setListingBonusEnabled} />
-                            </CardHeader>
-                             <CardContent className="grid md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <Label htmlFor="products-to-list">Products to List</Label>
-                                    <Input id="products-to-list" type="number" value={productsToList} onChange={(e) => setProductsToList(Number(e.target.value))} disabled={!listingBonusEnabled}/>
-                                    <p className="text-xs text-muted-foreground">Number of products a new vendor must list to receive the bonus.</p>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="commission-free-sales">Commission-Free Sales</Label>
-                                    <Input id="commission-free-sales" type="number" value={commissionFreeSales} onChange={(e) => setCommissionFreeSales(Number(e.target.value))} disabled={!listingBonusEnabled}/>
-                                    <p className="text-xs text-muted-foreground">Number of sales that will have 0% platform commission as a reward.</p>
-                                </div>
-                             </CardContent>
-                         </Card>
-                         <div className="flex justify-end">
-                            <Button onClick={() => handleSaveChanges('vendor')}><Save className="mr-2 h-4 w-4"/> Save Vendor Settings</Button>
-                        </div>
-                    </div>
-                </TabsContent>
-            </Tabs>
+             <Card>
+                <CardHeader>
+                    <CardTitle>All Programs</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Program Name</TableHead>
+                                <TableHead>Type</TableHead>
+                                <TableHead>Reward</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead className="text-right">Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {programs.map(program => (
+                                <TableRow key={program.id}>
+                                    <TableCell className="font-medium">{program.name}</TableCell>
+                                    <TableCell className="capitalize">{program.type}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            {getRewardIcon(program.reward.type)}
+                                            <span>
+                                                {program.reward.type === 'wallet_credit' && `₹${program.reward.value}`}
+                                                {program.reward.type === 'discount_percent' && `${program.reward.value}%`}
+                                                {program.reward.type === 'free_shipping' && `${program.reward.value} shipments`}
+                                            </span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={getStatusVariant(program.status)}>{program.status}</Badge>
+                                    </TableCell>
+                                     <TableCell className="text-right">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                                <DropdownMenuItem>Pause</DropdownMenuItem>
+                                                <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
         </div>
     )
 }

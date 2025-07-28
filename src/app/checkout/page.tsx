@@ -25,9 +25,7 @@ export default function CheckoutPage() {
     const { toast } = useToast();
     const router = useRouter();
     const [isProcessing, setIsProcessing] = useState(false);
-    const [applyWallet, setApplyWallet] = useState(false);
-    const [applyPoints, setApplyPoints] = useState(false);
-
+    
     const cartItems = mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 }));
     const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
 
@@ -36,14 +34,9 @@ export default function CheckoutPage() {
     const hasLoyalty = mockUserOrders.length >= loyaltyOrdersRequired;
     const shipping = hasLoyalty ? 0 : 5.00;
     
-    // Wallet Balance & Points
-    const discountFromWallet = applyWallet ? Math.min(subtotal + shipping, MOCK_USER_DATA.walletBalance) : 0;
-    const availablePointsDiscount = MOCK_USER_DATA.loyaltyPoints * MOCK_USER_DATA.pointsRedemptionValue;
-    const discountFromPoints = applyPoints ? Math.min(subtotal + shipping - discountFromWallet, availablePointsDiscount) : 0;
-    
     const total = useMemo(() => {
-        return subtotal + shipping - discountFromWallet - discountFromPoints;
-    }, [subtotal, shipping, discountFromWallet, discountFromPoints]);
+        return subtotal + shipping;
+    }, [subtotal, shipping]);
     
     const handlePayment = (e: React.FormEvent) => {
         e.preventDefault();
@@ -148,14 +141,10 @@ export default function CheckoutPage() {
                                         </div>
                                     ))}
                                 </div>
-                                 <div className="mt-4 pt-4 border-t space-y-4">
-                                     <div className="flex items-center space-x-2">
-                                        <Checkbox id="apply-wallet" checked={applyWallet} onCheckedChange={(checked) => setApplyWallet(checked as boolean)} />
-                                        <Label htmlFor="apply-wallet" className="font-normal flex items-center gap-1">Apply Wallet Balance <span className="font-bold text-green-600">(₹{MOCK_USER_DATA.walletBalance.toFixed(2)})</span></Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <Checkbox id="apply-points" checked={applyPoints} onCheckedChange={(checked) => setApplyPoints(checked as boolean)} />
-                                        <Label htmlFor="apply-points" className="font-normal flex items-center gap-1">Redeem Loyalty Points <span className="font-bold text-primary">({MOCK_USER_DATA.loyaltyPoints} points)</span></Label>
+                                <div className="mt-4 pt-4 border-t space-y-4">
+                                    <div className="flex items-center gap-2">
+                                        <Input placeholder="Enter coupon or gift card" />
+                                        <Button variant="outline">Apply</Button>
                                     </div>
                                 </div>
                                 <div className="mt-4 pt-4 border-t space-y-2">
@@ -167,18 +156,6 @@ export default function CheckoutPage() {
                                         <p className="text-muted-foreground">Shipping</p>
                                         {hasLoyalty ? <p className="text-green-600 font-semibold">FREE</p> : <p>${shipping.toFixed(2)}</p>}
                                     </div>
-                                    {discountFromWallet > 0 && (
-                                        <div className="flex justify-between text-green-600">
-                                            <p className="font-semibold">Wallet Discount</p>
-                                            <p className="font-semibold">-₹{discountFromWallet.toFixed(2)}</p>
-                                        </div>
-                                    )}
-                                    {discountFromPoints > 0 && (
-                                        <div className="flex justify-between text-primary">
-                                            <p className="font-semibold">Points Discount</p>
-                                            <p className="font-semibold">-₹{discountFromPoints.toFixed(2)}</p>
-                                        </div>
-                                    )}
                                     <div className="flex justify-between font-bold text-lg">
                                         <p>Total</p>
                                         <p>₹{total.toFixed(2)}</p>
