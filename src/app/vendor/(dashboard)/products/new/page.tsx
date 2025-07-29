@@ -16,7 +16,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader as AlertDialogHeaderComponent, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
@@ -226,9 +226,31 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                              <Button variant="outline" onClick={() => handleAddArea('ellipse')}><CircleIcon className="mr-2 h-4 w-4" /> Ellipse</Button>
                         </CardContent>
                     </Card>
+                    <Card>
+                        <CardHeader className="p-4">
+                            <CardTitle className="text-base">Defined Areas</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                             {areas.length > 0 ? (
+                                <div className="space-y-2">
+                                    {areas.map(area => (
+                                        <button key={area.id}
+                                            onClick={() => setSelectedAreaId(area.id)}
+                                            className={cn(
+                                                "w-full text-left p-2 rounded-md text-sm",
+                                                selectedAreaId === area.id ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted/50'
+                                            )}
+                                        >{area.label}</button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center">No areas defined yet. Use the tools to add one.</p>
+                            )}
+                        </CardContent>
+                    </Card>
                     <Card className="flex-1">
                         <CardHeader className="p-4">
-                            <CardTitle className="text-base">Selected Area</CardTitle>
+                            <CardTitle className="text-base">Properties</CardTitle>
                         </CardHeader>
                         <CardContent className="p-4 pt-0">
                             {selectedArea ? (
@@ -243,7 +265,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                                     </Button>
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground text-center">Select an area on the image to edit its properties.</p>
+                                <p className="text-sm text-muted-foreground text-center">Select an area to edit its properties.</p>
                             )}
                         </CardContent>
                     </Card>
@@ -788,25 +810,26 @@ export default function NewProductPage() {
     
     <AlertDialog open={isConfirmationAlertOpen} onOpenChange={setIsConfirmationAlertOpen}>
       <AlertDialogContent>
-        <AlertDialogHeaderComponent>
-          <AlertDialogTitleComponent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>
             <div className="flex items-center gap-2">
               <ShieldCheck className="text-primary"/> Enable Pre-Order Check?
             </div>
-          </AlertDialogTitleComponent>
-          <AlertDialogDescriptionComponent>
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
-          </AlertDialogDescriptionComponent>
-        </AlertDialogHeaderComponent>
-        <AlertDialogFooterComponent>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirmAndEnable}>I Understand &amp; Enable</AlertDialogAction>
-        </AlertDialogFooterComponent>
+        </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
     </>
   );
 }
+
 
 
 
