@@ -53,6 +53,11 @@ export type Category = {
   productCount: number;
 };
 
+export type CustomizationOption = {
+  id: string;
+  label: string;
+}
+
 export type Attachment = {
   name: string;
   type: 'image' | 'file';

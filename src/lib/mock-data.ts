@@ -1,5 +1,5 @@
 
-import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign } from './types';
+import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign, CustomizationOption } from './types';
 
 export const mockProducts: DisplayProduct[] = [
   {
@@ -171,31 +171,39 @@ export const mockCategories: Category[] = [
     { name: 'Food & Beverage Gifts', imageUrl: 'https://placehold.co/400x300.png', productCount: 65 },
 ];
 
-export const customizationOptions = [
+export const customizationOptions: CustomizationOption[] = [
+  // Printing
   { id: 'screen-printing', label: 'Screen Printing' },
   { id: 'digital-printing', label: 'Digital Printing (DTG)' },
-  { id: 'embroidery', label: 'Embroidery' },
-  { id: 'laser-engraving', label: 'Laser Engraving' },
   { id: 'sublimation', label: 'Sublimation' },
   { id: 'uv-printing', label: 'UV Printing' },
+  { id: 'vinyl-transfer', label: 'Heat Transfer Vinyl (HTV)' },
+  // Stitching & Fabric
+  { id: 'embroidery', label: 'Embroidery' },
+  { id: 'patch-sewing', label: 'Patch Sewing' },
+  // Material Alteration
+  { id: 'laser-engraving', label: 'Laser Engraving' },
   { id: 'debossing', label: 'Debossing / Embossing' },
-  { id: 'vinyl-transfer', label: 'Heat Transfer Vinyl' },
+  { id: 'foil-stamping', label: 'Foil Stamping' },
+  // Photo
+  { id: 'photo-printing', label: 'Photo Printing' },
+  { id: 'photo-etching', label: 'Photo Etching' },
 ];
 
 export const categoryCustomizationMap: { [key: string]: string[] } = {
-    'Custom Apparel': ['screen-printing', 'digital-printing', 'embroidery', 'vinyl-transfer', 'sublimation'],
-    'Drinkware & Tumblers': ['screen-printing', 'laser-engraving', 'sublimation', 'uv-printing'],
-    'Phone & Tech Accessories': ['uv-printing', 'laser-engraving', 'screen-printing'],
-    'Bags & Totes': ['screen-printing', 'embroidery', 'vinyl-transfer'],
-    'Home & Décor': ['laser-engraving', 'sublimation', 'embroidery', 'uv-printing'],
-    'Stationery & Office Supplies': ['screen-printing', 'laser-engraving', 'uv-printing', 'debossing'],
-    'Jewelry & Personal Accessories': ['laser-engraving', 'debossing'],
-    'Events & Occasions': ['screen-printing', 'digital-printing', 'laser-engraving'],
-    'Corporate Gift Kits': ['screen-printing', 'embroidery', 'laser-engraving', 'uv-printing', 'debossing'],
-    'Outdoor & Lifestyle': ['screen-printing', 'laser-engraving', 'embroidery'],
-    'Premium & Specialty Finishes': ['laser-engraving', 'debossing', 'uv-printing'],
-    'Wellness & Self-Care': ['uv-printing', 'screen-printing', 'laser-engraving'],
-    'Food & Beverage Gifts': ['debossing', 'uv-printing', 'screen-printing']
+    'Custom Apparel': ['screen-printing', 'digital-printing', 'embroidery', 'vinyl-transfer', 'sublimation', 'patch-sewing'],
+    'Drinkware & Tumblers': ['screen-printing', 'laser-engraving', 'sublimation', 'uv-printing', 'photo-printing'],
+    'Phone & Tech Accessories': ['uv-printing', 'laser-engraving', 'screen-printing', 'debossing'],
+    'Bags & Totes': ['screen-printing', 'embroidery', 'vinyl-transfer', 'patch-sewing'],
+    'Home & Décor': ['laser-engraving', 'sublimation', 'embroidery', 'uv-printing', 'photo-printing', 'photo-etching'],
+    'Stationery & Office Supplies': ['screen-printing', 'laser-engraving', 'uv-printing', 'debossing', 'foil-stamping'],
+    'Jewelry & Personal Accessories': ['laser-engraving', 'debossing', 'photo-etching', 'foil-stamping'],
+    'Events & Occasions': ['screen-printing', 'digital-printing', 'laser-engraving', 'foil-stamping'],
+    'Corporate Gift Kits': ['screen-printing', 'embroidery', 'laser-engraving', 'uv-printing', 'debossing', 'foil-stamping'],
+    'Outdoor & Lifestyle': ['screen-printing', 'laser-engraving', 'embroidery', 'patch-sewing'],
+    'Premium & Specialty Finishes': ['laser-engraving', 'debossing', 'foil-stamping', 'photo-etching'],
+    'Wellness & Self-Care': ['uv-printing', 'screen-printing', 'laser-engraving', 'embroidery', 'debossing'],
+    'Food & Beverage Gifts': ['debossing', 'uv-printing', 'screen-printing', 'foil-stamping', 'laser-engraving']
 };
 
 

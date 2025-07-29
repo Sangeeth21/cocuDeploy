@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, MousePointer2, Trash2, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2 } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
 import { useVerification } from "@/context/vendor-verification-context"
-import type { CustomizationArea } from "@/lib/types";
+import type { CustomizationArea, CustomizationOption } from "@/lib/types";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -52,17 +52,15 @@ type ProductImages = {
 
 // Custom hook for managing state with undo/redo
 function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T) => T)) => void, () => void, () => void, boolean, boolean] {
-    const [history, setHistory] = useState([initialState]);
     const [index, setIndex] = useState(0);
+    const historyRef = useRef([initialState]);
 
     const setState = useCallback((newState: T | ((prevState: T) => T)) => {
-        setHistory(currentHistory => {
-            const newHistory = currentHistory.slice(0, index + 1);
-            const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(newHistory[index]) : newState;
-            newHistory.push(resolvedState);
-            setIndex(newHistory.length - 1);
-            return newHistory;
-        });
+        const newHistory = historyRef.current.slice(0, index + 1);
+        const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(newHistory[index]) : newState;
+        newHistory.push(resolvedState);
+        historyRef.current = newHistory;
+        setIndex(newHistory.length - 1);
     }, [index]);
 
     const undo = () => {
@@ -72,15 +70,15 @@ function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T)
     };
 
     const redo = () => {
-        if (index < history.length - 1) {
+        if (index < historyRef.current.length - 1) {
             setIndex(index + 1);
         }
     };
     
     const canUndo = index > 0;
-    const canRedo = index < history.length - 1;
+    const canRedo = index < historyRef.current.length - 1;
 
-    return [history[index], setState, undo, redo, canUndo, canRedo];
+    return [historyRef.current[index], setState, undo, redo, canUndo, canRedo];
 }
 
 
@@ -96,6 +94,10 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
     const startMousePos = useRef({ x: 0, y: 0 });
     const startArea = useRef<CustomizationArea | null>(null);
 
+    useEffect(() => {
+        setLiveAreas(areas);
+    }, [areas]);
+
     const selectedArea = useMemo(() => areas.find(a => a.id === selectedAreaId), [areas, selectedAreaId]);
     
     const updateAreaProperty = useCallback(<K extends keyof Omit<CustomizationArea, 'id'>> (id: string, property: K, value: CustomizationArea[K]) => {
@@ -108,13 +110,13 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
             const modifierKey = isMac ? event.metaKey : event.ctrlKey;
 
-            if (modifierKey && event.key === 'z') {
+            if (modifierKey && event.key.toLowerCase() === 'z') {
                 event.preventDefault();
                 event.shiftKey ? redo() : undo();
-            } else if (modifierKey && event.key === 'y') {
+            } else if (modifierKey && event.key.toLowerCase() === 'y') {
                 event.preventDefault();
                 redo();
-            } else if (modifierKey && event.key === 'b') {
+            } else if (modifierKey && event.key.toLowerCase() === 'b') {
                 event.preventDefault();
                 if (selectedArea) {
                     const newWeight = selectedArea.fontWeight === 'bold' ? 'normal' : 'bold';
@@ -152,7 +154,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         e.stopPropagation();
         
         startMousePos.current = { x: e.clientX, y: e.clientY };
-        startArea.current = areas.find(a => a.id === id) || null;
+        startArea.current = liveAreas.find(a => a.id === id) || null;
         setActiveInteraction({ id, type, handle });
         setSelectedAreaId(id);
         document.body.style.cursor = handle.includes('resize') ? `${handle}-resize` : 'grabbing';
@@ -200,7 +202,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
 
     const handlePointerUp = useCallback(() => {
         if(activeInteraction) {
-            // Push the final state to history after drag/resize ends
             setAreas(liveAreas);
         }
         setActiveInteraction(null);
@@ -544,6 +545,12 @@ export default function NewProductPage() {
     const [productDescription, setProductDescription] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("");
     const [selectedCustomizations, setSelectedCustomizations] = useState<string[]>([]);
+    
+    const [isAddMoreOpen, setIsAddMoreOpen] = useState(false);
+    const [customOptions, setCustomOptions] = useState<CustomizationOption[]>([]);
+    const [newOptionLabel, setNewOptionLabel] = useState("");
+    const [editingOption, setEditingOption] = useState<CustomizationOption | null>(null);
+
 
     const [galleryImages, setGalleryImages] = useState<{file: File, src: string}[]>([]);
     const [videoUrl, setVideoUrl] = useState("");
@@ -560,6 +567,38 @@ export default function NewProductPage() {
         setSelectedCategory(category);
         // Clear selected customizations when category changes to avoid irrelevant options
         setSelectedCustomizations([]);
+        setCustomOptions([]);
+    };
+
+    const handleAddNewCustomOption = () => {
+        if (!newOptionLabel.trim()) return;
+
+        if (editingOption) {
+            setCustomOptions(customOptions.map(opt => 
+                opt.id === editingOption.id ? { ...opt, label: newOptionLabel } : opt
+            ));
+            setEditingOption(null);
+        } else {
+             setCustomOptions([
+                ...customOptions, 
+                { id: `custom-${Date.now()}`, label: newOptionLabel.trim() }
+            ]);
+        }
+       
+        setNewOptionLabel("");
+    };
+
+    const handleRemoveCustomOption = (id: string) => {
+        setCustomOptions(customOptions.filter(opt => opt.id !== id));
+        if (editingOption?.id === id) {
+            setEditingOption(null);
+            setNewOptionLabel("");
+        }
+    };
+    
+    const handleEditCustomOption = (option: CustomizationOption) => {
+        setEditingOption(option);
+        setNewOptionLabel(option.label);
     };
 
 
@@ -896,6 +935,20 @@ export default function NewProductPage() {
                             {selectedCategory ? "No specific customization types for this category." : "Please select a category to see available customization types."}
                         </p>
                     )}
+                    {(customOptions).map((option) => (
+                         <div key={option.id} className="flex items-center space-x-2">
+                            <Checkbox 
+                                id={option.id} 
+                                checked={true}
+                                disabled
+                            />
+                            <Label htmlFor={option.id} className="font-normal text-sm text-primary">{option.label}</Label>
+                        </div>
+                    ))}
+                    <div className="flex items-center space-x-2">
+                        <Checkbox id="add-more" onCheckedChange={(checked) => checked && setIsAddMoreOpen(true)} />
+                        <Label htmlFor="add-more" className="font-normal text-sm">Add More...</Label>
+                    </div>
                 </CardContent>
             </Card>
         </div>
@@ -976,6 +1029,53 @@ export default function NewProductPage() {
         </Button>
       </div>
     </div>
+    
+    <Dialog open={isAddMoreOpen} onOpenChange={setIsAddMoreOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Add Custom Customization Types</DialogTitle>
+                <DialogDescription>
+                    Add any customization options that were not in the default list.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 space-y-4">
+                <div className="flex gap-2">
+                    <Input 
+                        placeholder="e.g. 3D Puff Embroidery" 
+                        value={newOptionLabel}
+                        onChange={(e) => setNewOptionLabel(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleAddNewCustomOption()}
+                    />
+                    <Button onClick={handleAddNewCustomOption}>
+                        {editingOption ? 'Update' : 'Add'}
+                    </Button>
+                </div>
+                 {customOptions.length > 0 && (
+                     <div className="space-y-2 p-2 border rounded-md max-h-48 overflow-y-auto">
+                         {customOptions.map(option => (
+                             <div 
+                                key={option.id} 
+                                className="flex items-center justify-between group p-1.5 rounded-md hover:bg-muted"
+                            >
+                                <span className="text-sm cursor-pointer" onClick={() => handleEditCustomOption(option)}>{option.label}</span>
+                                <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
+                                    onClick={() => handleRemoveCustomOption(option.id)}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+                         ))}
+                    </div>
+                 )}
+            </div>
+            <DialogFooter>
+                <Button onClick={() => setIsAddMoreOpen(false)}>Done</Button>
+            </DialogFooter>
+        </DialogContent>
+    </Dialog>
     
     <Dialog open={!!editingSide} onOpenChange={(open) => !open && setEditingSide(null)}>
         <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
