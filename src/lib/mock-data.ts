@@ -1,5 +1,4 @@
 
-
 import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign } from './types';
 
 export const mockProducts: DisplayProduct[] = [
@@ -169,7 +168,35 @@ export const mockCategories: Category[] = [
     { name: 'Outdoor & Lifestyle', imageUrl: 'https://placehold.co/400x300.png', productCount: 120 },
     { name: 'Premium & Specialty Finishes', imageUrl: 'https://placehold.co/400x300.png', productCount: 75 },
     { name: 'Wellness & Self-Care', imageUrl: 'https://placehold.co/400x300.png', productCount: 85 },
+    { name: 'Food & Beverage Gifts', imageUrl: 'https://placehold.co/400x300.png', productCount: 65 },
 ];
+
+export const customizationOptions = [
+  { id: 'screen-printing', label: 'Screen Printing' },
+  { id: 'digital-printing', label: 'Digital Printing (DTG)' },
+  { id: 'embroidery', label: 'Embroidery' },
+  { id: 'laser-engraving', label: 'Laser Engraving' },
+  { id: 'sublimation', label: 'Sublimation' },
+  { id: 'uv-printing', label: 'UV Printing' },
+  { id: 'debossing', label: 'Debossing / Embossing' },
+  { id: 'vinyl-transfer', label: 'Heat Transfer Vinyl' },
+];
+
+export const categoryCustomizationMap: { [key: string]: string[] } = {
+    'Custom Apparel': ['screen-printing', 'digital-printing', 'embroidery', 'vinyl-transfer', 'sublimation'],
+    'Drinkware & Tumblers': ['screen-printing', 'laser-engraving', 'sublimation', 'uv-printing'],
+    'Phone & Tech Accessories': ['uv-printing', 'laser-engraving', 'screen-printing'],
+    'Bags & Totes': ['screen-printing', 'embroidery', 'vinyl-transfer'],
+    'Home & Décor': ['laser-engraving', 'sublimation', 'embroidery', 'uv-printing'],
+    'Stationery & Office Supplies': ['screen-printing', 'laser-engraving', 'uv-printing', 'debossing'],
+    'Jewelry & Personal Accessories': ['laser-engraving', 'debossing'],
+    'Events & Occasions': ['screen-printing', 'digital-printing', 'laser-engraving'],
+    'Corporate Gift Kits': ['screen-printing', 'embroidery', 'laser-engraving', 'uv-printing', 'debossing'],
+    'Outdoor & Lifestyle': ['screen-printing', 'laser-engraving', 'embroidery'],
+    'Premium & Specialty Finishes': ['laser-engraving', 'debossing', 'uv-printing'],
+    'Wellness & Self-Care': ['uv-printing', 'screen-printing', 'laser-engraving'],
+    'Food & Beverage Gifts': ['debossing', 'uv-printing', 'screen-printing']
+};
 
 
 export const mockUsers: User[] = [

@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { mockCategories } from "@/lib/mock-data"
+import { mockCategories, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data"
 import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, MousePointer2, Trash2, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2 } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
@@ -37,17 +37,6 @@ const imageSides: { key: ImageSide; label: string }[] = [
     { key: "right", label: "Right" },
     { key: "top", label: "Top" },
     { key: "bottom", label: "Bottom" },
-];
-
-const customizationOptions = [
-  { id: 'screen-printing', label: 'Screen Printing' },
-  { id: 'digital-printing', label: 'Digital Printing (DTG)' },
-  { id: 'embroidery', label: 'Embroidery' },
-  { id: 'laser-engraving', label: 'Laser Engraving' },
-  { id: 'sublimation', label: 'Sublimation' },
-  { id: 'uv-printing', label: 'UV Printing' },
-  { id: 'debossing', label: 'Debossing / Embossing' },
-  { id: 'vinyl-transfer', label: 'Heat Transfer Vinyl' },
 ];
 
 type ProductImage = {
@@ -101,10 +90,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
     
     // Local state for live dragging/resizing to avoid polluting history
     const [liveAreas, setLiveAreas] = useState(areas);
-    
-    useEffect(() => {
-      setLiveAreas(areas);
-    }, [areas]);
     
     const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
     const [activeInteraction, setActiveInteraction] = useState<{ id: string, type: 'drag' | 'resize', handle: string } | null>(null);
@@ -557,11 +542,26 @@ export default function NewProductPage() {
     
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<string>("");
     const [selectedCustomizations, setSelectedCustomizations] = useState<string[]>([]);
 
     const [galleryImages, setGalleryImages] = useState<{file: File, src: string}[]>([]);
     const [videoUrl, setVideoUrl] = useState("");
     const [videoEmbedUrl, setVideoEmbedUrl] = useState<string | null>(null);
+
+    const availableCustomizations = useMemo(() => {
+        if (!selectedCategory) return [];
+        return customizationOptions.filter(option =>
+            categoryCustomizationMap[selectedCategory]?.includes(option.id)
+        );
+    }, [selectedCategory]);
+
+    const handleCategoryChange = (category: string) => {
+        setSelectedCategory(category);
+        // Clear selected customizations when category changes to avoid irrelevant options
+        setSelectedCustomizations([]);
+    };
+
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, side: ImageSide) => {
         if (event.target.files && event.target.files[0]) {
@@ -880,16 +880,22 @@ export default function NewProductPage() {
                     <CardDescription>Select the personalization methods available for this product.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {customizationOptions.map((option) => (
-                        <div key={option.id} className="flex items-center space-x-2">
-                            <Checkbox 
-                                id={option.id} 
-                                checked={selectedCustomizations.includes(option.id)}
-                                onCheckedChange={(checked) => handleCustomizationChange(option.id, !!checked)}
-                            />
-                            <Label htmlFor={option.id} className="font-normal text-sm">{option.label}</Label>
-                        </div>
-                    ))}
+                    {availableCustomizations.length > 0 ? (
+                        availableCustomizations.map((option) => (
+                            <div key={option.id} className="flex items-center space-x-2">
+                                <Checkbox 
+                                    id={option.id} 
+                                    checked={selectedCustomizations.includes(option.id)}
+                                    onCheckedChange={(checked) => handleCustomizationChange(option.id, !!checked)}
+                                />
+                                <Label htmlFor={option.id} className="font-normal text-sm">{option.label}</Label>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="col-span-full text-sm text-muted-foreground text-center">
+                            {selectedCategory ? "No specific customization types for this category." : "Please select a category to see available customization types."}
+                        </p>
+                    )}
                 </CardContent>
             </Card>
         </div>
@@ -916,7 +922,7 @@ export default function NewProductPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
-                        <Select>
+                        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
                             <SelectTrigger id="category">
                                 <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
