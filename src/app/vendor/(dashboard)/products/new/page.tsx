@@ -15,14 +15,14 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
 import { useVerification } from "@/context/vendor-verification-context"
 import type { CustomizationArea } from "@/lib/types";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -206,7 +206,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
 
     return (
         <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
-             <DialogHeader className="flex-row items-center gap-2">
+            <DialogHeader className="flex-row items-center gap-2">
                 <DialogTitle>Define Customizable Areas</DialogTitle>
                 <Dialog>
                     <TooltipProvider delayDuration={100}>
@@ -228,7 +228,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                             <p><strong className="text-foreground">2. Position:</strong> Click and drag any area to move it to the desired position on the image.</p>
                             <p><strong className="text-foreground">3. Resize:</strong> Click an area to select it. Drag the handles on its edges and corners to resize it.</p>
                             <p><strong className="text-foreground">4. Label:</strong> With an area selected, use the "Area Label" input in the Properties panel to give it a descriptive name (e.g., "Logo Here").</p>
-                            <p><strong className="text-foreground">5. Manage:</strong> You can see a list of all your areas. Click one to select it, or use the "Remove" button in the Properties panel to delete the selected area.</p>
+                            <p><strong className="text-foreground">5. Manage:</strong> You can see a list of all your areas below the image. Click one to select it, or use the "Remove" button in the Properties panel or the 'X' on the tag to delete it.</p>
                         </div>
                     </DialogContent>
                 </Dialog>
@@ -239,6 +239,33 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                         <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
                         {areas.map(area => <DraggableArea key={area.id} area={area} />)}
                     </div>
+                     {areas.length > 0 && (
+                        <Card>
+                            <CardHeader className="p-2"><CardTitle className="text-sm">Defined Areas</CardTitle></CardHeader>
+                            <CardContent className="p-2 flex flex-wrap gap-2">
+                                {areas.map(area => (
+                                    <div 
+                                        key={area.id}
+                                        onClick={() => setSelectedAreaId(area.id)}
+                                        className={cn(
+                                            "flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-sm font-medium cursor-pointer border",
+                                            selectedAreaId === area.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted/50'
+                                        )}
+                                    >
+                                        {area.label}
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-5 rounded-full"
+                                            onClick={(e) => { e.stopPropagation(); handleRemoveArea(area.id); }}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                ))}
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
                 <div className="col-span-1 flex flex-col gap-4">
@@ -249,29 +276,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                         <CardContent className="p-4 pt-0 grid grid-cols-2 gap-2">
                              <Button variant="outline" onClick={() => handleAddArea('rect')}><Square className="mr-2 h-4 w-4" /> Rectangle</Button>
                              <Button variant="outline" onClick={() => handleAddArea('ellipse')}><CircleIcon className="mr-2 h-4 w-4" /> Ellipse</Button>
-                        </CardContent>
-                    </Card>
-                     <Card>
-                        <CardHeader className="p-4"><CardTitle className="text-base">Defined Areas</CardTitle></CardHeader>
-                        <CardContent className="p-4 pt-0">
-                             {areas.length > 0 ? (
-                                <div className="space-y-2">
-                                    {areas.map(area => (
-                                         <button 
-                                            key={area.id}
-                                            onClick={() => setSelectedAreaId(area.id)}
-                                            className={cn(
-                                                "w-full text-left rounded-md p-2 text-sm border",
-                                                selectedAreaId === area.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted/50'
-                                            )}
-                                         >
-                                            {area.label}
-                                        </button>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground text-center">No areas defined yet.</p>
-                            )}
                         </CardContent>
                     </Card>
                     <Card className="flex-1">
