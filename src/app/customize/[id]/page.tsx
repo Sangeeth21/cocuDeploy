@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Textarea } from "@/components/ui/textarea";
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
 
@@ -328,5 +329,3 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
-
-    
