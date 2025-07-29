@@ -160,6 +160,7 @@ export const mockCategories: Category[] = [
     { name: 'Custom Apparel', imageUrl: 'https://placehold.co/400x300.png', productCount: 320 },
     { name: 'Drinkware & Tumblers', imageUrl: 'https://placehold.co/400x300.png', productCount: 210 },
     { name: 'Phone & Tech Accessories', imageUrl: 'https://placehold.co/400x300.png', productCount: 150 },
+    { name: 'Bags & Totes', imageUrl: 'https://placehold.co/400x300.png', productCount: 140 },
     { name: 'Home & Décor', imageUrl: 'https://placehold.co/400x300.png', productCount: 180 },
     { name: 'Stationery & Office Supplies', imageUrl: 'https://placehold.co/400x300.png', productCount: 250 },
     { name: 'Jewelry & Personal Accessories', imageUrl: 'https://placehold.co/400x300.png', productCount: 110 },
@@ -167,7 +168,6 @@ export const mockCategories: Category[] = [
     { name: 'Corporate Gift Kits', imageUrl: 'https://placehold.co/400x300.png', productCount: 50 },
     { name: 'Outdoor & Lifestyle', imageUrl: 'https://placehold.co/400x300.png', productCount: 120 },
     { name: 'Premium & Specialty Finishes', imageUrl: 'https://placehold.co/400x300.png', productCount: 75 },
-    { name: 'Bags & Totes', imageUrl: 'https://placehold.co/400x300.png', productCount: 140 },
     { name: 'Wellness & Self-Care', imageUrl: 'https://placehold.co/400x300.png', productCount: 85 },
 ];
 
