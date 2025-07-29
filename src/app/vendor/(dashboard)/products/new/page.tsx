@@ -15,7 +15,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
@@ -52,8 +52,8 @@ type ProductImages = {
 
 // Custom hook for managing state with undo/redo
 function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T) => T)) => void, () => void, () => void, boolean, boolean] {
-    const [index, setIndex] = useState(0);
     const historyRef = useRef([initialState]);
+    const [index, setIndex] = useState(0);
 
     const setState = useCallback((newState: T | ((prevState: T) => T)) => {
         const currentState = historyRef.current[index];
@@ -110,14 +110,12 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             const modifierKey = isMac ? event.metaKey : event.ctrlKey;
 
             if (modifierKey) {
+                event.preventDefault();
                 if (event.key.toLowerCase() === 'z') {
-                    event.preventDefault();
                     event.shiftKey ? redo() : undo();
                 } else if (event.key.toLowerCase() === 'y') {
-                    event.preventDefault();
                     redo();
                 } else if (event.key.toLowerCase() === 'b') {
-                    event.preventDefault();
                     if (selectedArea) {
                         const newWeight = selectedArea.fontWeight === 'bold' ? 'normal' : 'bold';
                         updateAreaProperty(selectedArea.id, 'fontWeight', newWeight);
