@@ -162,6 +162,7 @@ export default function CommissionEnginePage() {
                                     type="number" 
                                     value={currentCommission}
                                     onChange={(e) => setCurrentCommission(Number(e.target.value))}
+                                    className="pr-8"
                                 />
                             </div>
                         </div>
@@ -192,7 +193,7 @@ export default function CommissionEnginePage() {
                                 type="number" 
                                 value={currentBuffer.value}
                                 onChange={(e) => setCurrentBuffer(prev => ({...prev, value: Number(e.target.value)}))}
-                                className={currentBuffer.type === 'fixed' ? "pl-8" : ""}
+                                className={currentBuffer.type === 'fixed' ? "pl-8" : "pr-8"}
                             />
                         </div>
                     </div>
