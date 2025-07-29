@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -154,10 +153,11 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         setAreas(prev => prev.map(a => a.id === selectedAreaId ? { ...a, label: newLabel } : a));
     }
     
-    const handleRemoveArea = () => {
-        if(!selectedAreaId) return;
-        setAreas(prev => prev.filter(a => a.id !== selectedAreaId));
-        setSelectedAreaId(null);
+    const handleRemoveArea = (idToRemove: string) => {
+        setAreas(prev => prev.filter(a => a.id !== idToRemove));
+        if (selectedAreaId === idToRemove) {
+            setSelectedAreaId(null);
+        }
     }
     
     const DraggableArea = ({ area }: { area: CustomizationArea }) => {
@@ -211,9 +211,33 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                 <DialogDescription>Add, move, and resize areas where customers can add their designs.</DialogDescription>
             </DialogHeader>
             <div className="flex-1 grid grid-cols-4 gap-6 min-h-0">
-                <div ref={containerRef} className="col-span-3 relative w-full h-full bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center" onPointerDown={() => setSelectedAreaId(null)}>
-                    <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
-                    {areas.map(area => <DraggableArea key={area.id} area={area} />)}
+                <div className="col-span-3 flex flex-col gap-4">
+                    <div ref={containerRef} className="flex-1 relative w-full h-full bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center" onPointerDown={() => setSelectedAreaId(null)}>
+                        <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
+                        {areas.map(area => <DraggableArea key={area.id} area={area} />)}
+                    </div>
+                     {areas.length > 0 && (
+                        <Card>
+                            <CardContent className="p-2">
+                                <div className="flex flex-wrap gap-2">
+                                    {areas.map(area => (
+                                         <button 
+                                            key={area.id}
+                                            onClick={() => setSelectedAreaId(area.id)}
+                                            className={cn(
+                                                "flex items-center gap-2 rounded-full pl-3 pr-2 py-1 text-sm border",
+                                                selectedAreaId === area.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted/50'
+                                            )}
+                                         >
+                                            <span>{area.label}</span>
+                                            <div className="w-px h-4 bg-border" />
+                                            <X className="h-4 w-4 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleRemoveArea(area.id)}} />
+                                        </button>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
 
                 <div className="col-span-1 flex flex-col gap-4">
@@ -224,28 +248,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                         <CardContent className="p-4 pt-0 grid grid-cols-2 gap-2">
                              <Button variant="outline" onClick={() => handleAddArea('rect')}><Square className="mr-2 h-4 w-4" /> Rectangle</Button>
                              <Button variant="outline" onClick={() => handleAddArea('ellipse')}><CircleIcon className="mr-2 h-4 w-4" /> Ellipse</Button>
-                        </CardContent>
-                    </Card>
-                    <Card>
-                        <CardHeader className="p-4">
-                            <CardTitle className="text-base">Defined Areas</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-4 pt-0">
-                             {areas.length > 0 ? (
-                                <div className="space-y-2">
-                                    {areas.map(area => (
-                                        <button key={area.id}
-                                            onClick={() => setSelectedAreaId(area.id)}
-                                            className={cn(
-                                                "w-full text-left p-2 rounded-md text-sm",
-                                                selectedAreaId === area.id ? 'bg-primary/10 text-primary font-semibold' : 'hover:bg-muted/50'
-                                            )}
-                                        >{area.label}</button>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-muted-foreground text-center">No areas defined yet. Use the tools to add one.</p>
-                            )}
                         </CardContent>
                     </Card>
                     <Card className="flex-1">
@@ -259,9 +261,9 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                                         <Label htmlFor="area-label">Area Label</Label>
                                         <Input id="area-label" value={selectedArea.label} onChange={handleLabelChange} placeholder="e.g., Logo Here" />
                                     </div>
-                                    <Button variant="destructive" size="sm" className="w-full" onClick={handleRemoveArea}>
+                                    <Button variant="destructive" size="sm" className="w-full" onClick={() => handleRemoveArea(selectedArea.id)}>
                                         <Trash2 className="mr-2 h-4 w-4" />
-                                        Remove Area
+                                        Remove Selected Area
                                     </Button>
                                 </div>
                             ) : (
@@ -273,7 +275,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             </div>
             <DialogFooter>
                 <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-                <Button onClick={() => onSave(areas)}>Save Areas</Button>
+                <Button onClick={() => onSave(areas)}>Apply Changes</Button>
             </DialogFooter>
         </DialogContent>
     );
@@ -829,10 +831,3 @@ export default function NewProductPage() {
     </>
   );
 }
-
-
-
-
-
-
-
