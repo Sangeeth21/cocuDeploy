@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from "react";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay } from '@dnd-kit/core';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Save, X, Smartphone, Laptop } from "lucide-react";
@@ -35,16 +34,6 @@ const componentMap: ComponentMap = {
 
 // --- Draggable Item Components ---
 
-function DraggableItem({ id, isOverlay = false }: { id: string, isOverlay?: boolean }) {
-    const { name } = componentMap[id];
-    return (
-        <div className={cn("flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm", isOverlay && "shadow-lg scale-105 rotate-1")}>
-             <GripVertical className="h-5 w-5 text-muted-foreground" />
-            <span className="font-medium flex-1">{name}</span>
-        </div>
-    );
-}
-
 function SortableItem({ id }: { id: string }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
     const style = {
@@ -52,11 +41,14 @@ function SortableItem({ id }: { id: string }) {
         transition,
         opacity: isDragging ? 0.5 : 1,
     };
+    const { name } = componentMap[id];
 
     return (
-        <div ref={setNodeRef} style={style} {...attributes} {...listeners} className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm cursor-grab active:cursor-grabbing">
-             <GripVertical className="h-5 w-5 text-muted-foreground" />
-            <span className="font-medium flex-1">{componentMap[id].name}</span>
+        <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm">
+             <Button variant="ghost" {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 h-auto">
+                <GripVertical className="h-5 w-5 text-muted-foreground" />
+             </Button>
+            <span className="font-medium flex-1">{name}</span>
         </div>
     );
 }
@@ -80,7 +72,11 @@ export default function NewTemplatePage() {
         })
     );
     
-    function handleDragEnd(event: DragEndEvent) {
+    const handleDragStart = (event: DragStartEvent) => {
+        setActiveId(event.active.id as string);
+    };
+    
+    const handleDragEnd = (event: DragEndEvent) => {
         setActiveId(null);
         const { active, over } = event;
         if (over && active.id !== over.id) {
@@ -170,7 +166,7 @@ export default function NewTemplatePage() {
                              <DndContext 
                                 sensors={sensors} 
                                 collisionDetection={closestCenter} 
-                                onDragStart={(event) => setActiveId(event.active.id as string)}
+                                onDragStart={handleDragStart}
                                 onDragEnd={handleDragEnd}
                             >
                                 <SortableContext items={components} strategy={verticalListSortingStrategy}>
@@ -179,7 +175,7 @@ export default function NewTemplatePage() {
                                     </div>
                                 </SortableContext>
                                  <DragOverlay>
-                                    {activeId ? <DraggableItem id={activeId} isOverlay /> : null}
+                                    {activeId ? <SortableItem id={activeId} /> : null}
                                 </DragOverlay>
                             </DndContext>
                         </CardContent>
