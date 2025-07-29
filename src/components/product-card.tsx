@@ -6,7 +6,7 @@ import Link from 'next/link';
 import type { DisplayProduct } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, Star } from 'lucide-react';
+import { Heart, Star, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/context/cart-context';
@@ -14,6 +14,8 @@ import { useWishlist } from '@/context/wishlist-context';
 import { useUser } from '@/context/user-context';
 import { useAuthDialog } from '@/context/auth-dialog-context';
 import { useRouter } from 'next/navigation';
+import { useMemo } from 'react';
+import { categoryCustomizationMap } from '@/lib/mock-data';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -27,8 +29,14 @@ export function ProductCard({ product }: ProductCardProps) {
   const { openDialog } = useAuthDialog();
   const router = useRouter();
   
+  const isCustomizable = useMemo(() => {
+    if (!product) return false;
+    const categoryCustomizations = categoryCustomizationMap[product.category];
+    return !!categoryCustomizations && categoryCustomizations.length > 0;
+  }, [product]);
+
   const handleAddToCart = () => {
-    addToCart(product);
+    addToCart({product, customizations: {}});
     toast({
       title: "Added to cart!",
       description: `${product.name} has been added to your cart.`,
@@ -40,9 +48,13 @@ export function ProductCard({ product }: ProductCardProps) {
       openDialog('login');
       return;
     }
-    addToCart(product);
+    addToCart({product, customizations: {}});
     router.push('/checkout');
   };
+  
+  const handleCustomize = () => {
+    router.push(`/customize/${product.id}`);
+  }
 
   const handleWishlistClick = (e: React.MouseEvent) => {
     e.preventDefault(); // prevent navigation when clicking the heart
@@ -98,9 +110,18 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
          <p className="text-xl font-semibold font-body mt-2">${product.price.toFixed(2)}</p>
       </CardContent>
-      <CardFooter className="p-2 pt-0 flex flex-col gap-2">
-        <Button variant="secondary" size="sm" className="w-full" onClick={handleAddToCart}>Add to Cart</Button>
-        <Button size="sm" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
+       <CardFooter className="p-2 pt-0 flex flex-col gap-2">
+        {isCustomizable ? (
+          <Button size="sm" className="w-full" onClick={handleCustomize}>
+            <Wand2 className="mr-2 h-4 w-4" />
+            Customize Now
+          </Button>
+        ) : (
+          <>
+            <Button variant="secondary" size="sm" className="w-full" onClick={handleAddToCart}>Add to Cart</Button>
+            <Button size="sm" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
+          </>
+        )}
       </CardFooter>
     </Card>
   );
