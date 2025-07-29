@@ -14,7 +14,7 @@ import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
@@ -261,28 +261,30 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         <DialogContent className="max-w-7xl h-[90vh] flex flex-col">
             <DialogHeader className="flex-row items-center gap-2">
                  <DialogTitle>Define Customizable Areas</DialogTitle>
-                <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4"/></Button>
-                            </DialogTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent><p>How to use the editor</p></TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
-                 <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>How to Define Areas</DialogTitle>
-                    </DialogHeader>
-                    <div className="text-sm text-muted-foreground space-y-4">
-                        <p><strong className="text-foreground">1. Add a Shape:</strong> Use the "Rectangle" or "Ellipse" buttons to add a new area.</p>
-                        <p><strong className="text-foreground">2. Position & Resize:</strong> Click and drag an area to move it. Drag the handles on its edges and corners to resize it.</p>
-                        <p><strong className="text-foreground">3. Customize:</strong> With an area selected, use the "Properties" panel to change its label, placeholder text, and text styling.</p>
-                        <p><strong className="text-foreground">4. Undo/Redo:</strong> Use the undo and redo buttons in the toolbar to step back and forth through your changes.</p>
-                        <p><strong className="text-foreground">5. Save:</strong> When you're finished, click "Save Changes" to apply your work to the product image.</p>
-                    </div>
-                </DialogContent>
+                <Dialog>
+                    <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4"/></Button>
+                                </DialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent><p>How to use the editor</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>How to Define Areas</DialogTitle>
+                        </DialogHeader>
+                        <div className="text-sm text-muted-foreground space-y-4">
+                            <p><strong className="text-foreground">1. Add a Shape:</strong> Use the "Rectangle" or "Ellipse" buttons to add a new area.</p>
+                            <p><strong className="text-foreground">2. Position & Resize:</strong> Click and drag an area to move it. Drag the handles on its edges and corners to resize it.</p>
+                            <p><strong className="text-foreground">3. Customize:</strong> With an area selected, use the "Properties" panel to change its label, placeholder text, and text styling.</p>
+                            <p><strong className="text-foreground">4. Undo/Redo:</strong> Use the undo and redo buttons in the toolbar to step back and forth through your changes.</p>
+                            <p><strong className="text-foreground">5. Save:</strong> When you're finished, click "Save Changes" to apply your work to the product image.</p>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </DialogHeader>
 
             <div className="flex-1 grid grid-cols-5 gap-6 min-h-0">
@@ -940,4 +942,3 @@ export default function NewProductPage() {
   );
 }
 
-    
