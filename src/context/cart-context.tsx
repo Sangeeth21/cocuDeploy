@@ -11,7 +11,7 @@ export type CartItem = {
     instanceId: string; // Unique ID for this specific instance in the cart
     product: DisplayProduct;
     quantity: number;
-    customizations: { [key: string]: CustomizationValue };
+    customizations: { [key: string]: Partial<CustomizationValue> };
 };
 
 
@@ -22,14 +22,14 @@ interface CartState {
 
 // Define the actions that can be performed on the cart
 type CartAction =
-    | { type: 'ADD_TO_CART'; payload: { product: DisplayProduct, customizations: { [key: string]: CustomizationValue } } }
+    | { type: 'ADD_TO_CART'; payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> } } }
     | { type: 'REMOVE_FROM_CART'; payload: { instanceId: string } }
     | { type: 'UPDATE_QUANTITY'; payload: { instanceId: string; delta: number } }
     | { type: 'CLEAR_CART' };
 
 // Create the context
 interface CartContextType extends CartState {
-    addToCart: (payload: { product: DisplayProduct, customizations: { [key: string]: CustomizationValue } }) => void;
+    addToCart: (payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> } }) => void;
     removeFromCart: (instanceId: string) => void;
     updateQuantity: (instanceId: string, delta: number) => void;
     subtotal: number;
@@ -42,18 +42,27 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const cartReducer = (state: CartState, action: CartAction): CartState => {
     switch (action.type) {
         case 'ADD_TO_CART': {
-            // For simplicity, we'll add customized products as new line items even if they are the same base product.
-            // A more complex implementation might merge items if customizations are identical.
-            const newCartItem: CartItem = {
-                instanceId: `${action.payload.product.id}-${Date.now()}`, // Simple unique ID
-                product: action.payload.product,
-                quantity: 1,
-                customizations: action.payload.customizations,
-            };
-            return {
-                ...state,
-                cartItems: [...state.cartItems, newCartItem],
-            };
+            const hasCustomizations = Object.keys(action.payload.customizations).length > 0;
+            const existingItemIndex = state.cartItems.findIndex(item => item.product.id === action.payload.product.id && !hasCustomizations && Object.keys(item.customizations).length === 0);
+
+            if (existingItemIndex !== -1 && !hasCustomizations) {
+                // If item exists and has no customizations, just increase quantity
+                const updatedCartItems = [...state.cartItems];
+                updatedCartItems[existingItemIndex].quantity += 1;
+                return { ...state, cartItems: updatedCartItems };
+            } else {
+                 // Add as a new item if it has customizations or doesn't exist
+                const newCartItem: CartItem = {
+                    instanceId: `${action.payload.product.id}-${Date.now()}`, // Simple unique ID
+                    product: action.payload.product,
+                    quantity: 1,
+                    customizations: action.payload.customizations,
+                };
+                return {
+                    ...state,
+                    cartItems: [...state.cartItems, newCartItem],
+                };
+            }
         }
         case 'REMOVE_FROM_CART':
             return {
@@ -87,7 +96,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Initial state logic adjusted
     const getInitialState = (): CartState => {
         if (isLoggedIn) {
-             const sampleProducts = [mockProducts.find(p => p.id === '1'), mockProducts.find(p => p.id === '4')].filter(Boolean) as DisplayProduct[];
+            const sampleProducts = [mockProducts.find(p => p.id === '1'), mockProducts.find(p => p.id === '4')].filter(Boolean) as DisplayProduct[];
             return {
                 cartItems: sampleProducts.map((p, index) => ({
                     instanceId: `${p.id}-${index}`,
@@ -108,7 +117,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [isLoggedIn]);
 
-    const addToCart = (payload: { product: DisplayProduct, customizations: { [key: string]: CustomizationValue } }) => {
+    const addToCart = (payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> } }) => {
         dispatch({ type: 'ADD_TO_CART', payload });
     };
 

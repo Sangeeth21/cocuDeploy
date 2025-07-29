@@ -15,7 +15,6 @@ import { useUser } from '@/context/user-context';
 import { useAuthDialog } from '@/context/auth-dialog-context';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
-import { categoryCustomizationMap } from '@/lib/mock-data';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -30,9 +29,8 @@ export function ProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   
   const isCustomizable = useMemo(() => {
-    if (!product) return false;
-    const categoryCustomizations = categoryCustomizationMap[product.category];
-    return !!categoryCustomizations && categoryCustomizations.length > 0;
+    // A product is customizable if it has any defined customization areas on any side.
+    return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
   }, [product]);
 
   const handleAddToCart = () => {
@@ -123,10 +121,10 @@ export function ProductCard({ product }: ProductCardProps) {
                 </div>
             </div>
         ) : (
-            <>
+            <div className="w-full flex gap-2">
                 <Button variant="secondary" size="sm" className="w-full" onClick={handleAddToCart}>Add to Cart</Button>
                 <Button size="sm" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
-            </>
+            </div>
         )}
       </CardFooter>
     </Card>

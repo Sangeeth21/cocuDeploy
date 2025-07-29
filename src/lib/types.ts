@@ -1,5 +1,14 @@
 
-export type CustomizationValue = string | number | { file: File, src: string };
+
+export type CustomizationValue = {
+  text: string;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  textColor: string;
+  textAlign: 'left' | 'center' | 'right';
+  curveIntensity: number;
+};
 
 export type CustomizationArea = {
   id: string;
@@ -14,6 +23,7 @@ export type CustomizationArea = {
   fontWeight: string;
   textColor: string;
   curveIntensity: number;
+  maxLength?: number;
 };
 
 export type DisplayProduct = {

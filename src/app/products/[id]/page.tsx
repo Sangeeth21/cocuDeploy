@@ -3,10 +3,10 @@
 
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
-import { mockProducts, mockReviews, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data";
+import { mockProducts, mockReviews, categoryCustomizationMap } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Plus, Heart } from "lucide-react";
+import { Star, Heart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
@@ -55,8 +55,8 @@ export default function ProductDetailPage() {
   
   const isCustomizable = useMemo(() => {
     if (!product) return false;
-    const categoryCustomizations = categoryCustomizationMap[product.category];
-    return categoryCustomizations && categoryCustomizations.length > 0;
+    // A product is customizable if it has any defined customization areas on any side.
+    return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
   }, [product]);
 
   if (!product) {

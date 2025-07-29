@@ -1,20 +1,23 @@
 
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { notFound, useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationArea, CustomizationValue } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, PilcrowLeft, Pilcrow, PilcrowRight } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
 
@@ -33,21 +36,42 @@ export default function CustomizeProductPage() {
     const [activeSide, setActiveSide] = useState<ImageSide>("front");
     const [customizations, setCustomizations] = useState<{ [key: string]: CustomizationValue }>({});
 
-    useEffect(() => {
-        // Set the initial active side to the first one that has an image
-        if (product) {
-            const firstAvailableSide = imageSides.find(side => product.images?.[imageSides.indexOf(side)]);
-            if (firstAvailableSide) {
-                setActiveSide(firstAvailableSide);
-            }
-        }
+    // Find the first available side with customization areas and set it as active
+    const firstCustomizableSide = useMemo(() => {
+        if (!product?.customizationAreas) return "front";
+        return imageSides.find(side => product.customizationAreas![side]?.length) || "front";
     }, [product]);
 
-    const handleCustomizationChange = (areaId: string, value: CustomizationValue) => {
-        setCustomizations(prev => ({ ...prev, [areaId]: value }));
-    };
+    // Set initial state for active side and customizations
+    useState(() => {
+        setActiveSide(firstCustomizableSide);
+        if (product?.customizationAreas) {
+            const initialCustomizations: { [key: string]: CustomizationValue } = {};
+            Object.values(product.customizationAreas).flat().forEach(area => {
+                if (area) {
+                     initialCustomizations[area.id] = {
+                        text: `Your ${area.label}`,
+                        fontFamily: area.fontFamily,
+                        fontSize: area.fontSize,
+                        fontWeight: area.fontWeight,
+                        textColor: area.textColor,
+                        textAlign: 'center',
+                        curveIntensity: 0,
+                    };
+                }
+            });
+            setCustomizations(initialCustomizations);
+        }
+    });
 
-    const handleAddToCart = () => {
+    const handleCustomizationChange = useCallback((areaId: string, value: Partial<CustomizationValue>) => {
+        setCustomizations(prev => ({
+            ...prev,
+            [areaId]: { ...prev[areaId], ...value }
+        }));
+    }, []);
+
+    const handleAddToCart = (buyNow = false) => {
         if (!product) return;
         addToCart({ product, customizations });
         toast({
@@ -55,7 +79,7 @@ export default function CustomizeProductPage() {
             description: `${product.name} has been added to your cart.`,
         });
 
-        if (searchParams.get('buyNow') === 'true') {
+        if (buyNow || searchParams.get('buyNow') === 'true') {
             router.push('/checkout');
         } else {
             router.push('/cart');
@@ -73,31 +97,75 @@ export default function CustomizeProductPage() {
             <div className="relative w-full h-full">
                 <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
                 {areas.map(area => {
-                    const value = customizations[area.id] as string || "";
-                    
-                    const SlicedText = () => (
-                        <div style={{
+                    const value = customizations[area.id] as any;
+                    if (!value || !value.text) return null;
+
+                    const SlicedText = () => {
+                        const curve = value.curveIntensity || 0;
+                        const numSlices = 30; // More slices for smoother curve
+                        
+                        if (curve === 0) {
+                            return (
+                                <div className="w-full h-full flex items-center p-1"
+                                     style={{
+                                        fontFamily: value.fontFamily,
+                                        fontSize: `${value.fontSize}px`,
+                                        fontWeight: value.fontWeight,
+                                        color: value.textColor,
+                                        justifyContent: value.textAlign === 'left' ? 'flex-start' : value.textAlign === 'right' ? 'flex-end' : 'center',
+                                        textAlign: value.textAlign,
+                                     }}
+                                >
+                                    {value.text}
+                                </div>
+                            )
+                        }
+
+                        return (
+                             <div className="w-full h-full" style={{ transformStyle: 'preserve-3d', perspective: '500px' }}>
+                                {Array.from({ length: numSlices }).map((_, i) => {
+                                    const sliceAngle = ((i - numSlices / 2 + 0.5) / numSlices) * curve;
+                                    return (
+                                        <div key={i} className="absolute w-full h-full overflow-hidden"
+                                            style={{
+                                                left: `${(i / numSlices) * 100}%`,
+                                                width: `${100 / numSlices}%`,
+                                                transform: `rotateY(${sliceAngle}deg)`,
+                                                transformOrigin: `50% 50% -${area.width / 2}px`,
+                                            }}
+                                        >
+                                             <div className="absolute w-full h-full flex items-center p-1"
+                                                style={{
+                                                    left: `-${i * 100}%`,
+                                                    width: `${numSlices * 100}%`,
+                                                    fontFamily: value.fontFamily,
+                                                    fontSize: `${value.fontSize}px`,
+                                                    fontWeight: value.fontWeight,
+                                                    color: value.textColor,
+                                                    justifyContent: value.textAlign === 'left' ? 'flex-start' : value.textAlign === 'right' ? 'flex-end' : 'center',
+                                                    textAlign: value.textAlign,
+                                                }}
+                                             >
+                                                {value.text}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )
+                    };
+
+                    return (
+                         <div key={area.id} style={{
                             position: 'absolute',
                             left: `${area.x}%`,
                             top: `${area.y}%`,
                             width: `${area.width}%`,
                             height: `${area.height}%`,
-                            perspective: '500px',
-                            transformStyle: 'preserve-3d',
                         }}>
-                             <div className="w-full h-full flex items-center justify-center p-1 text-center"
-                                style={{
-                                    fontFamily: area.fontFamily,
-                                    fontSize: `${area.fontSize}px`,
-                                    fontWeight: area.fontWeight as React.CSSProperties['fontWeight'],
-                                    color: area.textColor,
-                                }}>
-                                {value}
-                            </div>
+                           <SlicedText />
                         </div>
-                    );
-
-                    return <SlicedText key={area.id} />;
+                    )
                 })}
             </div>
         )
@@ -129,6 +197,7 @@ export default function CustomizeProductPage() {
                             <TabsList className="grid w-full grid-cols-6 h-auto p-1">
                                 {imageSides.map(side => {
                                     const hasImage = !!product.images?.[imageSides.indexOf(side)];
+                                    const hasAreas = !!product.customizationAreas?.[side]?.length;
                                     return (
                                         <TabsTrigger 
                                             key={side} 
@@ -141,6 +210,7 @@ export default function CustomizeProductPage() {
                                                     <Image src={product.images![imageSides.indexOf(side)]} alt={`${side} view thumbnail`} fill className="object-cover rounded-sm" /> 
                                                     : <div className="w-full h-full bg-muted rounded-sm"/>
                                                 }
+                                                {hasAreas && <Wand2 className="absolute bottom-1 right-1 h-3 w-3 text-white bg-primary p-0.5 rounded-sm" />}
                                             </div>
                                             {side}
                                         </TabsTrigger>
@@ -159,24 +229,69 @@ export default function CustomizeProductPage() {
                             </CardTitle>
                             <CardDescription>Add your custom text to the designated areas.</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-6">
-                            {currentCustomizationAreas.length > 0 ? (
-                                currentCustomizationAreas.map(area => (
-                                    <div key={area.id} className="space-y-2">
-                                        <Label htmlFor={area.id}>{area.label}</Label>
-                                        <Input
-                                            id={area.id}
-                                            placeholder={`Enter text for ${area.label.toLowerCase()}...`}
-                                            value={(customizations[area.id] as string) || ""}
-                                            onChange={(e) => handleCustomizationChange(area.id, e.target.value)}
-                                        />
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-sm text-muted-foreground text-center py-8">
-                                    No customizable areas defined for this side of the product.
-                                </p>
-                            )}
+                        <CardContent>
+                             <Tabs value={activeSide} onValueChange={(value) => setActiveSide(value as ImageSide)}>
+                                 {currentCustomizationAreas.length > 0 ? (
+                                    <TabsContent value={activeSide} className="mt-0">
+                                        {currentCustomizationAreas.map(area => {
+                                            const value = customizations[area.id] as any || {};
+                                            return (
+                                                <div key={area.id} className="space-y-4 border p-4 rounded-lg">
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor={`text-${area.id}`}>{area.label}</Label>
+                                                        <Input
+                                                            id={`text-${area.id}`}
+                                                            placeholder={`Enter text for ${area.label.toLowerCase()}...`}
+                                                            value={value.text || ""}
+                                                            onChange={(e) => handleCustomizationChange(area.id, { text: e.target.value })}
+                                                            maxLength={area.maxLength || 50}
+                                                        />
+                                                        {area.maxLength && <p className="text-xs text-muted-foreground text-right">{(value.text?.length || 0)} / {area.maxLength}</p>}
+                                                    </div>
+
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                         <div className="space-y-2">
+                                                            <Label>Font</Label>
+                                                            <Select value={value.fontFamily} onValueChange={(v) => handleCustomizationChange(area.id, { fontFamily: v })}>
+                                                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="sans-serif">Sans Serif</SelectItem>
+                                                                    <SelectItem value="serif">Serif</SelectItem>
+                                                                    <SelectItem value="monospace">Monospace</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Font Size: {value.fontSize}px</Label>
+                                                            <Slider min={8} max={48} step={1} value={[value.fontSize]} onValueChange={([v]) => handleCustomizationChange(area.id, { fontSize: v })} />
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4 items-end">
+                                                        <div className="space-y-2">
+                                                            <Label>Text Style</Label>
+                                                            <ToggleGroup type="multiple" value={value.fontWeight === 'bold' ? ['bold'] : []} onValueChange={(v) => handleCustomizationChange(area.id, { fontWeight: v.includes('bold') ? 'bold' : 'normal' })} className="w-full">
+                                                                <ToggleGroupItem value="bold" className="flex-1"><Bold className="h-4 w-4"/></ToggleGroupItem>
+                                                            </ToggleGroup>
+                                                        </div>
+                                                         <div className="space-y-2">
+                                                            <Label>Color</Label>
+                                                            <Input type="color" value={value.textColor} onChange={(e) => handleCustomizationChange(area.id, { textColor: e.target.value })} className="h-10 p-1" />
+                                                        </div>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Curvature: {value.curveIntensity}%</Label>
+                                                        <Slider min={-100} max={100} step={1} value={[value.curveIntensity]} onValueChange={([v]) => handleCustomizationChange(area.id, { curveIntensity: v })} />
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </TabsContent>
+                                ) : (
+                                    <p className="text-sm text-muted-foreground text-center py-8">
+                                        No customizable areas defined for this side of the product.
+                                    </p>
+                                )}
+                            </Tabs>
                         </CardContent>
                     </Card>
 
@@ -189,8 +304,11 @@ export default function CustomizeProductPage() {
                                 <span className="text-muted-foreground">Product Price</span>
                                 <span className="font-bold text-xl">${product.price.toFixed(2)}</span>
                             </div>
-                            <Button size="lg" className="w-full mt-4" onClick={handleAddToCart}>
-                                <CheckCircle className="mr-2 h-5 w-5"/> Confirm Customization & Add to Cart
+                            <Button size="lg" className="w-full mt-4" onClick={() => handleAddToCart()}>
+                                <ShoppingCart className="mr-2 h-5 w-5"/> Add to Cart
+                            </Button>
+                            <Button size="lg" variant="secondary" className="w-full" onClick={() => handleAddToCart(true)}>
+                                <CheckCircle className="mr-2 h-5 w-5"/> Buy Now
                             </Button>
                          </CardContent>
                     </Card>

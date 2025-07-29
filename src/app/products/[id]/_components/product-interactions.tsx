@@ -24,8 +24,7 @@ type Attachment = {
     url: string;
 }
 
-const initialConversation: Conversation = {
-    id: 1,
+const initialConversation: Omit<Conversation, 'id'> = {
     vendorId: "VDR001",
     avatar: "https://placehold.co/40x40.png",
     messages: [],
@@ -57,7 +56,7 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
   const { isLoggedIn } = useUser();
   const { openDialog } = useAuthDialog();
 
-  const [conversation, setConversation] = useState<Conversation>({
+  const [conversation, setConversation] = useState<Omit<Conversation, 'id'>>({
       ...initialConversation, 
       vendorId: product.vendorId
   });
@@ -87,6 +86,10 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
   }, [isChatOpen, product.name, conversation.messages.length])
 
   const handleAddToCart = () => {
+    if (isCustomizable) {
+        router.push(`/customize/${product.id}`);
+        return;
+    }
     if (product.requiresConfirmation) {
         setIsConfirmationOpen(true);
         // Here you would also trigger a backend notification to the vendor
@@ -106,6 +109,10 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
   const handleBuyNow = () => {
     if (!isLoggedIn) {
         openDialog('login');
+        return;
+    }
+    if (isCustomizable) {
+        router.push(`/customize/${product.id}?buyNow=true`);
         return;
     }
     addToCart({product, customizations: {}});
