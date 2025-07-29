@@ -113,7 +113,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                         </SidebarMenuItem>
                          <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
-                                <Link href="/login">
+                                <Link href="/admin-login">
                                     <LogOut />
                                     <span>Log Out</span>
                                 </Link>

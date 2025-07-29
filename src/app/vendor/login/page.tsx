@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState } from "react";
@@ -13,6 +12,7 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff } from "lucide-react";
 import { useVerification } from "@/context/vendor-verification-context";
+import { useUser } from "@/context/user-context";
 
 export default function VendorLoginPage() {
   const [email, setEmail] = useState("");
@@ -21,17 +21,12 @@ export default function VendorLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { setAsVerified, setAsUnverified } = useVerification();
+  const { login } = useUser();
 
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === "admin@example.com" && password === "adminpass") {
-      toast({
-        title: "Login Successful",
-        description: "Redirecting to the admin dashboard.",
-      });
-      router.push("/admin");
-    } else if (email === "vendor@example.com" && password === "vendorpass") {
+    if (email === "vendor@example.com" && password === "vendorpass") {
       // This is the special verified vendor account
       setAsVerified();
       toast({
@@ -49,6 +44,7 @@ export default function VendorLoginPage() {
         router.push("/vendor/dashboard");
     }
     else if (email === "customer@example.com" && password === "customerpass") {
+      login();
       toast({
         title: "Login Successful",
         description: "Redirecting to your account.",
