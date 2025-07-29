@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -14,7 +15,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
@@ -55,8 +56,9 @@ function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T)
     const historyRef = useRef([initialState]);
 
     const setState = useCallback((newState: T | ((prevState: T) => T)) => {
+        const currentState = historyRef.current[index];
         const newHistory = historyRef.current.slice(0, index + 1);
-        const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(historyRef.current[index]) : newState;
+        const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(currentState) : newState;
         newHistory.push(resolvedState);
         historyRef.current = newHistory;
         setIndex(newHistory.length - 1);
@@ -84,7 +86,6 @@ function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T)
 function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductImage, onSave: (areas: CustomizationArea[]) => void, onCancel: () => void }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [areas, setAreas, undo, redo, canUndo, canRedo] = useHistoryState<CustomizationArea[]>(image.customAreas || []);
-    
     const [liveAreas, setLiveAreas] = useState<CustomizationArea[]>(image.customAreas || []);
     const startAreaRef = useRef<CustomizationArea | null>(null);
 
@@ -144,7 +145,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             fontSize: 14,
             fontWeight: 'normal',
             textColor: '#000000',
-            surfaceType: 'flat',
+            curveIntensity: 0,
         };
         setAreas(prevAreas => [...prevAreas, newArea]);
         setSelectedAreaId(newArea.id);
@@ -155,7 +156,10 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         e.stopPropagation();
         
         startMousePos.current = { x: e.clientX, y: e.clientY };
-        startAreaRef.current = liveAreas.find(a => a.id === id) || null;
+        const currentArea = liveAreas.find(a => a.id === id);
+        if (!currentArea) return;
+
+        startAreaRef.current = { ...currentArea };
         setActiveInteraction({ id, type, handle });
         setSelectedAreaId(id);
         document.body.style.cursor = handle.includes('resize') ? `${handle}-resize` : 'grabbing';
@@ -244,14 +248,44 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             { cursor: 'ns-resize', position: 'bottom-0 left-1/2 -translate-x-1/2', handle: 's' },
             { cursor: 'nwse-resize', position: 'bottom-0 right-0', handle: 'se' },
         ];
-
-        const textContent = (area.label || 'Your Text').split('').map((char, index) => (
-            <span key={index} className="char-span" style={{
-                // @ts-ignore
-                '--char-index': index,
-            }}>{char === ' ' ? '\u00A0' : char}</span>
-        ));
         
+        const numSlices = 20;
+        const totalAngle = area.curveIntensity ?? 0;
+        
+        const SlicedContent = () => (
+            <>
+                {Array.from({ length: numSlices }).map((_, i) => {
+                    const sliceAngle = ((i - numSlices / 2) / numSlices) * totalAngle;
+                    return (
+                        <div
+                            key={i}
+                            className="absolute w-full h-full overflow-hidden"
+                            style={{
+                                left: `${(i / numSlices) * 100}%`,
+                                width: `${100 / numSlices}%`,
+                                transform: `rotateY(${sliceAngle}deg)`,
+                            }}
+                        >
+                            <div
+                                className="absolute w-full h-full flex items-center justify-center p-1 pointer-events-none"
+                                style={{
+                                    left: `-${i * 100}%`,
+                                    width: `${numSlices * 100}%`,
+                                    fontFamily: area.fontFamily,
+                                    fontSize: `${area.fontSize}px`,
+                                    fontWeight: area.fontWeight as React.CSSProperties['fontWeight'],
+                                    color: area.textColor,
+                                }}
+                            >
+                                <span className="truncate">{area.label}</span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </>
+        );
+
+
         return (
              <div
                 style={{
@@ -260,7 +294,8 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     top: `${area.y}%`,
                     width: `${area.width}%`,
                     height: `${area.height}%`,
-                    perspective: area.surfaceType === 'curved' ? '500px' : undefined,
+                    perspective: totalAngle > 0 ? '500px' : undefined,
+                    transformStyle: totalAngle > 0 ? 'preserve-3d' : undefined,
                 }}
                 className={cn(
                     "border-2 border-dashed border-primary cursor-grab active:cursor-grabbing",
@@ -269,22 +304,21 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                 )}
                 onPointerDown={(e) => handlePointerDown(e, area.id, 'drag')}
             >
-                <div 
-                    className={cn(
-                        "w-full h-full flex items-center justify-center pointer-events-none select-none p-1",
-                         area.surfaceType === 'curved' && 'char-container'
-                    )}
-                    style={{
-                        fontFamily: area.fontFamily,
-                        fontSize: `${area.fontSize}px`,
-                        fontWeight: area.fontWeight as React.CSSProperties['fontWeight'],
-                        color: area.textColor,
-                        // @ts-ignore
-                        '--total-chars': (area.label || 'Your Text').length,
-                    }}
-                >
-                    {area.surfaceType === 'curved' ? textContent : <span className="truncate">{area.label}</span>}
-                </div>
+                {totalAngle > 0 ? (
+                    <div className="relative w-full h-full" style={{transformStyle: 'preserve-3d'}}><SlicedContent /></div>
+                ) : (
+                    <div
+                        className="w-full h-full flex items-center justify-center pointer-events-none select-none p-1"
+                        style={{
+                            fontFamily: area.fontFamily,
+                            fontSize: `${area.fontSize}px`,
+                            fontWeight: area.fontWeight as React.CSSProperties['fontWeight'],
+                            color: area.textColor,
+                        }}
+                    >
+                         <span className="truncate">{area.label}</span>
+                    </div>
+                )}
                 {isSelected && resizeHandles.map(handle => (
                     <div
                         key={handle.handle}
@@ -379,11 +413,17 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                                     </div>
                                     
                                     <div className="space-y-2">
-                                        <Label>Surface Type</Label>
-                                        <ToggleGroup type="single" value={selectedArea.surfaceType} onValueChange={(v) => v && updateAreaProperty(selectedArea.id, 'surfaceType', v as 'flat' | 'curved')} className="w-full">
-                                            <ToggleGroupItem value="flat" className="flex-1">Flat</ToggleGroupItem>
-                                            <ToggleGroupItem value="curved" className="flex-1">Curved</ToggleGroupItem>
-                                        </ToggleGroup>
+                                        <div className="flex justify-between items-center">
+                                            <Label>Curvature</Label>
+                                            <span className="text-xs text-muted-foreground">{selectedArea.curveIntensity || 0}%</span>
+                                        </div>
+                                        <Slider
+                                            min={0}
+                                            max={100}
+                                            step={1}
+                                            value={[selectedArea.curveIntensity || 0]}
+                                            onValueChange={(value) => updateAreaProperty(selectedArea.id, 'curveIntensity', value[0])}
+                                        />
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
@@ -446,7 +486,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     <div className="text-sm text-muted-foreground space-y-4 py-2">
                         <p><strong className="text-foreground">1. Add a Shape:</strong> Use the "Rectangle" or "Ellipse" buttons to add a new area.</p>
                         <p><strong className="text-foreground">2. Position & Resize:</strong> Click and drag an area on the image to move it. Drag the handles on its edges to resize it.</p>
-                        <p><strong className="text-foreground">3. Customize:</strong> Select an area (by clicking it on the image or on its tag below) to edit its properties. Use "Surface Type" for items like mugs.</p>
+                        <p><strong className="text-foreground">3. Customize:</strong> Select an area (by clicking it on the image or on its tag below) to edit its properties. Use "Curvature" for items like mugs.</p>
                         <p><strong className="text-foreground">4. Undo/Redo:</strong> Use the undo/redo buttons or keyboard shortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Y) to step through your changes.</p>
                         <p><strong className="text-foreground">5. Save:</strong> When you're finished, click "Save Changes" to apply your work to this image.</p>
                     </div>
@@ -780,18 +820,6 @@ export default function NewProductPage() {
 
   return (
     <>
-    <style jsx global>{`
-        .char-container {
-            transform-style: preserve-3d;
-            display: flex;
-        }
-        .char-span {
-            display: inline-block;
-            transform-origin: center;
-            /* Each char rotates based on its index. Angle can be adjusted. */
-            transform: rotateY(calc( (var(--char-index) - (var(--total-chars) - 1) / 2) * 10deg) );
-        }
-    `}</style>
     <div className="container py-12">
       <div className="flex justify-between items-center mb-8">
         <div>
