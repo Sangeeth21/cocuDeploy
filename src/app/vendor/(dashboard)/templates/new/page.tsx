@@ -80,12 +80,8 @@ export default function NewTemplatePage() {
         })
     );
     
-    function handleDragStart(event: any) {
-        setActiveId(event.active.id);
-    }
-
-
     function handleDragEnd(event: DragEndEvent) {
+        setActiveId(null);
         const { active, over } = event;
         if (over && active.id !== over.id) {
             setComponents((items) => {
@@ -94,11 +90,6 @@ export default function NewTemplatePage() {
                 return arrayMove(items, oldIndex, newIndex);
             });
         }
-        setActiveId(null);
-    }
-    
-    function handleDragCancel() {
-        setActiveId(null);
     }
 
     const handleSave = () => {
@@ -179,9 +170,8 @@ export default function NewTemplatePage() {
                              <DndContext 
                                 sensors={sensors} 
                                 collisionDetection={closestCenter} 
-                                onDragStart={handleDragStart}
+                                onDragStart={(event) => setActiveId(event.active.id as string)}
                                 onDragEnd={handleDragEnd}
-                                onDragCancel={handleDragCancel}
                             >
                                 <SortableContext items={components} strategy={verticalListSortingStrategy}>
                                     <div className="space-y-2">
