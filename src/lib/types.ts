@@ -8,6 +8,12 @@ export type CustomizationArea = {
   width: number;
   height: number;
   label: string;
+  placeholderText: string;
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string;
+  textAlign: 'left' | 'center' | 'right';
+  textColor: string;
 };
 
 export type DisplayProduct = {
@@ -60,7 +66,7 @@ export type Message = {
   id: string;
   sender: "customer" | "vendor" | "system";
   text: string;
-  timestamp: any;
+  timestamp?: any;
   attachments?: Attachment[];
   status?: 'sent' | 'delivered' | 'read';
 };
@@ -235,3 +241,5 @@ export type Program = {
     endDate: Date;
     expiryDays?: number;
 };
+
+    
