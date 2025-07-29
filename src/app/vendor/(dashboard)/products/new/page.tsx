@@ -9,12 +9,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, MousePointer2, Trash2, Circle as CircleIcon, Info, Bold, Italic, AlignLeft, AlignCenter, AlignRight, Undo2, Redo2 } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, MousePointer2, Trash2, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2 } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
@@ -25,6 +25,7 @@ import type { CustomizationArea } from "@/lib/types";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Checkbox } from "@/components/ui/checkbox"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -36,6 +37,17 @@ const imageSides: { key: ImageSide; label: string }[] = [
     { key: "right", label: "Right" },
     { key: "top", label: "Top" },
     { key: "bottom", label: "Bottom" },
+];
+
+const customizationOptions = [
+  { id: 'screen-printing', label: 'Screen Printing' },
+  { id: 'digital-printing', label: 'Digital Printing (DTG)' },
+  { id: 'embroidery', label: 'Embroidery' },
+  { id: 'laser-engraving', label: 'Laser Engraving' },
+  { id: 'sublimation', label: 'Sublimation' },
+  { id: 'uv-printing', label: 'UV Printing' },
+  { id: 'debossing', label: 'Debossing / Embossing' },
+  { id: 'vinyl-transfer', label: 'Heat Transfer Vinyl' },
 ];
 
 type ProductImage = {
@@ -101,7 +113,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
 
     const selectedArea = useMemo(() => areas.find(a => a.id === selectedAreaId), [areas, selectedAreaId]);
     
-    const updateAreaProperty = useCallback(<K extends keyof CustomizationArea>(id: string, property: K, value: CustomizationArea[K]) => {
+    const updateAreaProperty = useCallback(<K extends keyof Omit<CustomizationArea, 'id'>> (id: string, property: K, value: CustomizationArea[K]) => {
         setAreas(prevAreas => prevAreas.map(a => a.id === id ? { ...a, [property]: value } : a));
     }, [setAreas]);
 
@@ -306,6 +318,33 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                         <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
                         {liveAreas.map(area => <DraggableArea key={area.id} area={area} />)}
                     </div>
+                     <Card>
+                        <CardHeader className="p-2 border-b">
+                            <CardTitle className="text-sm font-semibold px-2">Defined Areas</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2">
+                        {areas.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {areas.map(area => (
+                                    <div 
+                                        key={area.id}
+                                        className={cn("flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors",
+                                            selectedAreaId === area.id ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"
+                                        )}
+                                        onClick={() => setSelectedAreaId(area.id)}
+                                    >
+                                        <span>{area.label}</span>
+                                        <button onClick={(e) => {e.stopPropagation(); handleRemoveArea(area.id)}} className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-black/20">
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-muted-foreground text-center py-2">No areas defined yet.</p>
+                        )}
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="col-span-2 flex flex-col gap-4">
@@ -332,7 +371,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                                 <ScrollArea className="h-[45vh] pr-2">
                                 <div className="space-y-4">
                                      <div className="space-y-2">
-                                        <Label htmlFor="area-label">Area Label (Placeholder)</Label>
+                                        <Label htmlFor="area-label">Area Label</Label>
                                         <Input id="area-label" value={selectedArea.label} onChange={(e) => updateAreaProperty(selectedArea.id, 'label', e.target.value)} />
                                     </div>
                                     
@@ -384,31 +423,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                 </div>
             </div>
              <DialogFooter className="p-4 border-t flex-shrink-0">
-                 <Card>
-                    <CardContent className="p-2">
-                        {areas.length > 0 ? (
-                            <div className="flex flex-wrap gap-2">
-                                {areas.map(area => (
-                                    <div 
-                                        key={area.id}
-                                        className={cn("flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors",
-                                            selectedAreaId === area.id ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"
-                                        )}
-                                        onClick={() => setSelectedAreaId(area.id)}
-                                    >
-                                        <span>{area.label}</span>
-                                        <button onClick={(e) => {e.stopPropagation(); handleRemoveArea(area.id)}} className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-black/20">
-                                            <X className="h-3 w-3" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <p className="text-xs text-muted-foreground text-center py-2">No areas defined yet.</p>
-                        )}
-                    </CardContent>
-                </Card>
-                <div className="flex-grow"></div>
                 <Button variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button onClick={() => onSave(areas)}>Save Changes</Button>
             </DialogFooter>
@@ -543,6 +557,7 @@ export default function NewProductPage() {
     
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
+    const [selectedCustomizations, setSelectedCustomizations] = useState<string[]>([]);
 
     const [galleryImages, setGalleryImages] = useState<{file: File, src: string}[]>([]);
     const [videoUrl, setVideoUrl] = useState("");
@@ -691,6 +706,12 @@ export default function NewProductPage() {
             description: "You will be notified to confirm new orders for this product.",
         });
         setIsConfirmationAlertOpen(false);
+    };
+
+    const handleCustomizationChange = (id: string, checked: boolean) => {
+        setSelectedCustomizations(prev => 
+            checked ? [...prev, id] : prev.filter(item => item !== id)
+        );
     };
 
   return (
@@ -850,6 +871,25 @@ export default function NewProductPage() {
                             </div>
                         )}
                      </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Customization Types</CardTitle>
+                    <CardDescription>Select the personalization methods available for this product.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {customizationOptions.map((option) => (
+                        <div key={option.id} className="flex items-center space-x-2">
+                            <Checkbox 
+                                id={option.id} 
+                                checked={selectedCustomizations.includes(option.id)}
+                                onCheckedChange={(checked) => handleCustomizationChange(option.id, !!checked)}
+                            />
+                            <Label htmlFor={option.id} className="font-normal text-sm">{option.label}</Label>
+                        </div>
+                    ))}
                 </CardContent>
             </Card>
         </div>
