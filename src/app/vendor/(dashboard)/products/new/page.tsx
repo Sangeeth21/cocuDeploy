@@ -16,7 +16,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader as AlertDialogHeaderComponent, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
 
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
@@ -24,6 +24,7 @@ import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
 import { useVerification } from "@/context/vendor-verification-context"
 import type { CustomizationArea } from "@/lib/types";
+import { DndContext, useDraggable, useSensor, PointerSensor } from '@dnd-kit/core';
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -48,81 +49,91 @@ type ProductImages = {
     [key in ImageSide]?: ProductImage
 };
 
+
 function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductImage, onSave: (area: CustomizationArea) => void, onCancel: () => void }) {
-    const imageRef = useRef<HTMLImageElement>(null);
-    const [area, setArea] = useState<CustomizationArea | null>(image.customArea || null);
-    const [isDrawing, setIsDrawing] = useState(false);
-    const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [area, setArea] = useState<CustomizationArea>(
+        image.customArea || { x: 25, y: 25, width: 50, height: 50 } // Default area in percentage
+    );
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!imageRef.current) return;
-        const rect = imageRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / rect.width * 100;
-        const y = (e.clientY - rect.top) / rect.height * 100;
-        setStartPoint({ x, y });
-        setIsDrawing(true);
-        setArea(null); // Reset area on new draw
+    const handleDrag = (e: any) => {
+        setArea(prev => ({
+            ...prev,
+            x: Math.max(0, Math.min(100 - prev.width, prev.x + (e.delta.x / (containerRef.current?.clientWidth || 1)) * 100)),
+            y: Math.max(0, Math.min(100 - prev.height, prev.y + (e.delta.y / (containerRef.current?.clientHeight || 1)) * 100))
+        }));
     };
+    
+    const handleResize = (e: any, handle: string) => {
+        const dx = (e.delta.x / (containerRef.current?.clientWidth || 1)) * 100;
+        const dy = (e.delta.y / (containerRef.current?.clientHeight || 1)) * 100;
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (!isDrawing || !startPoint || !imageRef.current) return;
-        const rect = imageRef.current.getBoundingClientRect();
-        const currentX = (e.clientX - rect.left) / rect.width * 100;
-        const currentY = (e.clientY - rect.top) / rect.height * 100;
-        
-        const newArea = {
-            x: Math.min(startPoint.x, currentX),
-            y: Math.min(startPoint.y, currentY),
-            width: Math.abs(currentX - startPoint.x),
-            height: Math.abs(currentY - startPoint.y),
-        };
-        setArea(newArea);
+        setArea(prev => {
+            let { x, y, width, height } = prev;
+
+            if (handle.includes('right')) width = Math.max(10, Math.min(100 - x, width + dx));
+            if (handle.includes('bottom')) height = Math.max(10, Math.min(100 - y, height + dy));
+            if (handle.includes('left')) {
+                const newWidth = Math.max(10, width - dx);
+                x += width - newWidth;
+                width = newWidth;
+            }
+            if (handle.includes('top')) {
+                const newHeight = Math.max(10, height - dy);
+                y += height - newHeight;
+                height = newHeight;
+            }
+            
+            return { x: Math.max(0, x), y: Math.max(0, y), width: Math.min(100-x, width), height: Math.min(100-y, height) };
+        });
     };
-
-    const handleMouseUp = () => {
-        setIsDrawing(false);
-        setStartPoint(null);
+    
+    const DraggableHandle = ({ id, onDrag, children, className }: any) => {
+        const { attributes, listeners, setNodeRef, transform } = useDraggable({ id, onDrag });
+        const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : {};
+        return <div ref={setNodeRef} style={style} {...listeners} {...attributes} className={className}>{children}</div>;
     };
-
-    const handleSave = () => {
-        if (area) {
-            onSave(area);
-        }
-    };
-
+    
+    const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 }});
+    
+    const handleSave = () => onSave(area);
+    
     return (
         <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-            <DialogHeader>
+             <DialogHeader>
                 <DialogTitle>Define Customizable Area</DialogTitle>
-                <DialogDescription>Click and drag on the image to draw the area where customers can add their design.</DialogDescription>
+                <DialogDescription>Drag and resize the overlay to define where customers can add their design.</DialogDescription>
             </DialogHeader>
-            <div 
-                className="relative w-full h-full cursor-crosshair overflow-hidden"
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseUp}
-            >
-                <Image ref={imageRef} src={image.src} alt="Product to customize" fill className="object-contain select-none" />
-                {area && (
-                    <div 
-                        className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
-                        style={{
-                            left: `${area.x}%`,
-                            top: `${area.y}%`,
-                            width: `${area.width}%`,
-                            height: `${area.height}%`,
-                        }}
-                    />
-                )}
-            </div>
+            <DndContext onDragMove={e => {
+                if (String(e.active.id).startsWith('resize-')) handleResize(e, String(e.active.id));
+                if (e.active.id === 'drag-area') handleDrag(e);
+            }} sensors={[pointerSensor]}>
+                <div ref={containerRef} className="relative w-full h-full bg-muted/20 overflow-hidden flex items-center justify-center">
+                    <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
+                    <div className="absolute w-full h-full top-0 left-0">
+                        <DraggableHandle id="drag-area">
+                            <div className="absolute cursor-move" style={{
+                                left: `${area.x}%`,
+                                top: `${area.y}%`,
+                                width: `${area.width}%`,
+                                height: `${area.height}%`,
+                            }}>
+                                <div className="w-full h-full bg-primary/20 border-2 border-dashed border-primary pointer-events-none" />
+                                <DraggableHandle id="resize-top-left" onDrag={handleResize} className="absolute -top-2 -left-2 w-4 h-4 rounded-full bg-primary border-2 border-background cursor-nwse-resize" />
+                                <DraggableHandle id="resize-top-right" onDrag={handleResize} className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-primary border-2 border-background cursor-nesw-resize" />
+                                <DraggableHandle id="resize-bottom-left" onDrag={handleResize} className="absolute -bottom-2 -left-2 w-4 h-4 rounded-full bg-primary border-2 border-background cursor-nesw-resize" />
+                                <DraggableHandle id="resize-bottom-right" onDrag={handleResize} className="absolute -bottom-2 -right-2 w-4 h-4 rounded-full bg-primary border-2 border-background cursor-nwse-resize" />
+                            </div>
+                        </DraggableHandle>
+                    </div>
+                </div>
+            </DndContext>
             <DialogFooter>
-                <Button variant="outline" onClick={() => setArea(null)} disabled={!area}>Clear Area</Button>
                 <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-                <Button onClick={handleSave} disabled={!area}>Save Area</Button>
+                <Button onClick={handleSave}>Save Area</Button>
             </DialogFooter>
         </DialogContent>
-    )
+    );
 }
 
 function ImagePreview3D({ images }: { images: ProductImages }) {
@@ -298,7 +309,7 @@ export default function NewProductPage() {
             setImages(prev => ({
                 ...prev,
                 [editingSide!]: {
-                    ...prev[editingSide!],
+                    ...prev[editingSide!]!,
                     customArea: area,
                 }
             }));
@@ -652,12 +663,12 @@ export default function NewProductPage() {
     
     <AlertDialog open={isConfirmationAlertOpen} onOpenChange={setIsConfirmationAlertOpen}>
         <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2"><ShieldCheck className="text-primary"/> Enable Pre-Order Check?</AlertDialogTitle>
-                <AlertDialogDescription>
+            <AlertDialogHeaderComponent>
+                <AlertDialogTitleComponent className="flex items-center gap-2"><ShieldCheck className="text-primary"/> Enable Pre-Order Check?</AlertDialogTitleComponent>
+                <AlertDialogDescriptionComponent>
                     By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
+                </AlertDialogDescriptionComponent>
+            </AlertDialogHeaderComponent>
             <AlertDialogFooterComponent>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleConfirmAndEnable}>I Understand &amp; Enable</AlertDialogAction>
@@ -667,5 +678,6 @@ export default function NewProductPage() {
     </>
   );
 }
+
 
 
