@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -9,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -86,13 +85,12 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
     const containerRef = useRef<HTMLDivElement>(null);
     const [areas, setAreas, undo, redo, canUndo, canRedo] = useHistoryState<CustomizationArea[]>(image.customAreas || []);
     
-    // Local state for live dragging/resizing to avoid polluting history
-    const [liveAreas, setLiveAreas] = useState(areas);
-    
+    const [liveAreas, setLiveAreas] = useState<CustomizationArea[]>(image.customAreas || []);
+    const startAreaRef = useRef<CustomizationArea | null>(null);
+
     const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
     const [activeInteraction, setActiveInteraction] = useState<{ id: string, type: 'drag' | 'resize', handle: string } | null>(null);
     const startMousePos = useRef({ x: 0, y: 0 });
-    const startArea = useRef<CustomizationArea | null>(null);
 
     useEffect(() => {
         setLiveAreas(areas);
@@ -100,7 +98,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
 
     const selectedArea = useMemo(() => areas.find(a => a.id === selectedAreaId), [areas, selectedAreaId]);
     
-    const updateAreaProperty = useCallback(<K extends keyof Omit<CustomizationArea, 'id' | 'placeholderText'>> (id: string, property: K, value: CustomizationArea[K]) => {
+    const updateAreaProperty = useCallback(<K extends keyof Omit<CustomizationArea, 'id'>> (id: string, property: K, value: CustomizationArea[K]) => {
         setAreas(prevAreas => prevAreas.map(a => a.id === id ? { ...a, [property]: value } : a));
     }, [setAreas]);
 
@@ -110,17 +108,19 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
             const modifierKey = isMac ? event.metaKey : event.ctrlKey;
 
-            if (modifierKey && event.key.toLowerCase() === 'z') {
-                event.preventDefault();
-                event.shiftKey ? redo() : undo();
-            } else if (modifierKey && event.key.toLowerCase() === 'y') {
-                event.preventDefault();
-                redo();
-            } else if (modifierKey && event.key.toLowerCase() === 'b') {
-                event.preventDefault();
-                if (selectedArea) {
-                    const newWeight = selectedArea.fontWeight === 'bold' ? 'normal' : 'bold';
-                    updateAreaProperty(selectedArea.id, 'fontWeight', newWeight);
+            if (modifierKey) {
+                if (event.key.toLowerCase() === 'z') {
+                    event.preventDefault();
+                    event.shiftKey ? redo() : undo();
+                } else if (event.key.toLowerCase() === 'y') {
+                    event.preventDefault();
+                    redo();
+                } else if (event.key.toLowerCase() === 'b') {
+                    event.preventDefault();
+                    if (selectedArea) {
+                        const newWeight = selectedArea.fontWeight === 'bold' ? 'normal' : 'bold';
+                        updateAreaProperty(selectedArea.id, 'fontWeight', newWeight);
+                    }
                 }
             }
         };
@@ -144,6 +144,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             fontSize: 14,
             fontWeight: 'normal',
             textColor: '#000000',
+            surfaceType: 'flat',
         };
         setAreas(prevAreas => [...prevAreas, newArea]);
         setSelectedAreaId(newArea.id);
@@ -154,14 +155,14 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         e.stopPropagation();
         
         startMousePos.current = { x: e.clientX, y: e.clientY };
-        startArea.current = liveAreas.find(a => a.id === id) || null;
+        startAreaRef.current = liveAreas.find(a => a.id === id) || null;
         setActiveInteraction({ id, type, handle });
         setSelectedAreaId(id);
         document.body.style.cursor = handle.includes('resize') ? `${handle}-resize` : 'grabbing';
     }
 
      const handlePointerMove = useCallback((e: PointerEvent) => {
-        if (!activeInteraction || !startArea.current) return;
+        if (!activeInteraction || !startAreaRef.current) return;
         e.preventDefault();
         
         const containerWidth = containerRef.current?.clientWidth || 1;
@@ -175,7 +176,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                  if (area.id !== activeInteraction.id) return area;
 
                  const newArea = { ...area };
-                 const initialArea = startArea.current;
+                 const initialArea = startAreaRef.current;
 
                  if (!initialArea) return area;
 
@@ -208,7 +209,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             setAreas(liveAreas);
         }
         setActiveInteraction(null);
-        startArea.current = null;
+        startAreaRef.current = null;
         document.body.style.cursor = 'default';
     }, [activeInteraction, liveAreas, setAreas]);
 
@@ -243,6 +244,13 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             { cursor: 'ns-resize', position: 'bottom-0 left-1/2 -translate-x-1/2', handle: 's' },
             { cursor: 'nwse-resize', position: 'bottom-0 right-0', handle: 'se' },
         ];
+
+        const textContent = (area.label || 'Your Text').split('').map((char, index) => (
+            <span key={index} className="char-span" style={{
+                // @ts-ignore
+                '--char-index': index,
+            }}>{char === ' ' ? '\u00A0' : char}</span>
+        ));
         
         return (
              <div
@@ -252,6 +260,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     top: `${area.y}%`,
                     width: `${area.width}%`,
                     height: `${area.height}%`,
+                    perspective: area.surfaceType === 'curved' ? '500px' : undefined,
                 }}
                 className={cn(
                     "border-2 border-dashed border-primary cursor-grab active:cursor-grabbing",
@@ -261,15 +270,20 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                 onPointerDown={(e) => handlePointerDown(e, area.id, 'drag')}
             >
                 <div 
-                    className="w-full h-full flex items-center justify-center pointer-events-none select-none p-1"
+                    className={cn(
+                        "w-full h-full flex items-center justify-center pointer-events-none select-none p-1",
+                         area.surfaceType === 'curved' && 'char-container'
+                    )}
                     style={{
                         fontFamily: area.fontFamily,
                         fontSize: `${area.fontSize}px`,
                         fontWeight: area.fontWeight as React.CSSProperties['fontWeight'],
                         color: area.textColor,
+                        // @ts-ignore
+                        '--total-chars': (area.label || 'Your Text').length,
                     }}
                 >
-                    <span className="truncate">{area.label}</span>
+                    {area.surfaceType === 'curved' ? textContent : <span className="truncate">{area.label}</span>}
                 </div>
                 {isSelected && resizeHandles.map(handle => (
                     <div
@@ -364,6 +378,14 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                                         <Input id="area-label" value={selectedArea.label} onChange={(e) => updateAreaProperty(selectedArea.id, 'label', e.target.value)} />
                                     </div>
                                     
+                                    <div className="space-y-2">
+                                        <Label>Surface Type</Label>
+                                        <ToggleGroup type="single" value={selectedArea.surfaceType} onValueChange={(v) => v && updateAreaProperty(selectedArea.id, 'surfaceType', v as 'flat' | 'curved')} className="w-full">
+                                            <ToggleGroupItem value="flat" className="flex-1">Flat</ToggleGroupItem>
+                                            <ToggleGroupItem value="curved" className="flex-1">Curved</ToggleGroupItem>
+                                        </ToggleGroup>
+                                    </div>
+
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label>Font</Label>
@@ -424,7 +446,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     <div className="text-sm text-muted-foreground space-y-4 py-2">
                         <p><strong className="text-foreground">1. Add a Shape:</strong> Use the "Rectangle" or "Ellipse" buttons to add a new area.</p>
                         <p><strong className="text-foreground">2. Position & Resize:</strong> Click and drag an area on the image to move it. Drag the handles on its edges to resize it.</p>
-                        <p><strong className="text-foreground">3. Customize:</strong> Select an area (by clicking it on the image or on its tag below) to edit its label and text styling in the "Properties" panel.</p>
+                        <p><strong className="text-foreground">3. Customize:</strong> Select an area (by clicking it on the image or on its tag below) to edit its properties. Use "Surface Type" for items like mugs.</p>
                         <p><strong className="text-foreground">4. Undo/Redo:</strong> Use the undo/redo buttons or keyboard shortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Y) to step through your changes.</p>
                         <p><strong className="text-foreground">5. Save:</strong> When you're finished, click "Save Changes" to apply your work to this image.</p>
                     </div>
@@ -758,6 +780,18 @@ export default function NewProductPage() {
 
   return (
     <>
+    <style jsx global>{`
+        .char-container {
+            transform-style: preserve-3d;
+            display: flex;
+        }
+        .char-span {
+            display: inline-block;
+            transform-origin: center;
+            /* Each char rotates based on its index. Angle can be adjusted. */
+            transform: rotateY(calc( (var(--char-index) - (var(--total-chars) - 1) / 2) * 10deg) );
+        }
+    `}</style>
     <div className="container py-12">
       <div className="flex justify-between items-center mb-8">
         <div>

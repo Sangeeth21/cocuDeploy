@@ -11,6 +11,7 @@ export type CustomizationArea = {
   fontSize: number;
   fontWeight: string;
   textColor: string;
+  surfaceType: 'flat' | 'curved';
 };
 
 export type DisplayProduct = {
