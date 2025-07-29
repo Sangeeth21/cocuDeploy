@@ -34,21 +34,30 @@ const componentMap: ComponentMap = {
 
 // --- Draggable Item Components ---
 
+function DraggableItem({ id }: { id: string }) {
+    const { name } = componentMap[id];
+    return (
+        <div className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm">
+            <Button variant="ghost" className="cursor-grab active:cursor-grabbing p-1 h-auto">
+                <GripVertical className="h-5 w-5 text-muted-foreground" />
+            </Button>
+            <span className="font-medium flex-1">{name}</span>
+        </div>
+    );
+}
+
 function SortableItem({ id }: { id: string }) {
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+    
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.5 : 1,
     };
-    const { name } = componentMap[id];
 
     return (
-        <div ref={setNodeRef} style={style} className="flex items-center gap-2 p-3 bg-card border rounded-lg shadow-sm">
-             <Button variant="ghost" {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-1 h-auto">
-                <GripVertical className="h-5 w-5 text-muted-foreground" />
-             </Button>
-            <span className="font-medium flex-1">{name}</span>
+        <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+            <DraggableItem id={id} />
         </div>
     );
 }
@@ -72,12 +81,11 @@ export default function NewTemplatePage() {
         })
     );
     
-    const handleDragStart = (event: DragStartEvent) => {
+    function handleDragStart(event: DragStartEvent) {
         setActiveId(event.active.id as string);
-    };
+    }
     
-    const handleDragEnd = (event: DragEndEvent) => {
-        setActiveId(null);
+    function handleDragEnd(event: DragEndEvent) {
         const { active, over } = event;
         if (over && active.id !== over.id) {
             setComponents((items) => {
@@ -86,6 +94,7 @@ export default function NewTemplatePage() {
                 return arrayMove(items, oldIndex, newIndex);
             });
         }
+        setActiveId(null);
     }
 
     const handleSave = () => {
@@ -175,7 +184,7 @@ export default function NewTemplatePage() {
                                     </div>
                                 </SortableContext>
                                  <DragOverlay>
-                                    {activeId ? <SortableItem id={activeId} /> : null}
+                                    {activeId ? <DraggableItem id={activeId} /> : null}
                                 </DragOverlay>
                             </DndContext>
                         </CardContent>
