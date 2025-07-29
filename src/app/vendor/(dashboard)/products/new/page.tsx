@@ -1,4 +1,3 @@
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -591,7 +590,7 @@ export default function NewProductPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline">Media & Customization</CardTitle>
+                    <CardTitle className="font-headline">Media &amp; Customization</CardTitle>
                     <CardDescription>Upload images and define areas for customer personalization.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -669,7 +668,7 @@ export default function NewProductPage() {
                             Preview 3D Model
                         </Button>
                     </div>
-                     {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, & Right images to enable the 3D preview.</p>}
+                     {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, &amp; Right images to enable the 3D preview.</p>}
                      <Separator className="my-6" />
                      
                      <div className="space-y-4">
