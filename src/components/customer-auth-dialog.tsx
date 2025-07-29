@@ -18,6 +18,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { Separator } from "@/components/ui/separator";
+import { useVerification } from "@/context/vendor-verification-context";
+import { useUser } from "@/context/user-context";
 
 
 const GoogleIcon = () => (
@@ -72,17 +74,35 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
+    const { login } = useUser();
+    const { setAsVerified, setAsUnverified } = useVerification();
+
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        // Simplified logic for customer login
+        
+        // Vendor test accounts
+        if (email === "vendor@example.com" && password === "vendorpass") {
+          setAsVerified();
+          toast({ title: "Login Successful", description: "Redirecting to your vendor dashboard." });
+          router.push("/vendor/dashboard");
+          onLoginSuccess();
+          return;
+        }
+        if (email === "unverified@example.com" && password === "vendorpass") {
+          setAsUnverified();
+          toast({ title: "Login Successful", description: "Please complete your verification." });
+          router.push("/vendor/dashboard");
+          onLoginSuccess();
+          return;
+        }
+        
+        // Customer account
         if (email === "customer@example.com" && password === "customerpass") {
-            toast({
-                title: "Login Successful",
-                description: "Welcome back!",
-            });
-            onLoginSuccess(); // Close dialog via context
-            router.refresh(); // Refresh page to update header state
+            login();
+            toast({ title: "Login Successful", description: "Welcome back!" });
+            onLoginSuccess();
+            router.refresh();
         } else {
             toast({
                 variant: "destructive",
@@ -93,6 +113,7 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     };
     
     const handleSocialLogin = (provider: string) => {
+        login();
         toast({
             title: `Logged in with ${provider}!`,
             description: "Welcome back!",
@@ -179,6 +200,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     });
     const router = useRouter();
     const { toast } = useToast();
+    const { login } = useUser();
 
     useEffect(() => {
         const checkPasswordStrength = (pass: string) => {
@@ -230,6 +252,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         setIsLoading(true);
         // Mock OTP check
         setTimeout(() => {
+           login();
            toast({ title: "Account Created!", description: "Welcome to ShopSphere!" });
            onSignupSuccess();
            router.refresh();
@@ -244,6 +267,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     );
     
      const handleSocialLogin = (provider: string) => {
+        login();
         toast({
             title: `Signed up with ${provider}!`,
             description: "Welcome to ShopSphere!",

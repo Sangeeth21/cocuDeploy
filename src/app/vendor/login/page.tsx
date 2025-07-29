@@ -21,13 +21,10 @@ export default function VendorLoginPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { setAsVerified, setAsUnverified } = useVerification();
-  const { login } = useUser();
-
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (email === "vendor@example.com" && password === "vendorpass") {
-      // This is the special verified vendor account
       setAsVerified();
       toast({
         title: "Login Successful",
@@ -35,7 +32,6 @@ export default function VendorLoginPage() {
       });
       router.push("/vendor/dashboard");
     } else if (email === "unverified@example.com" && password === "vendorpass") {
-        // This is the unverified vendor account
         setAsUnverified();
          toast({
             title: "Login Successful",
@@ -43,14 +39,7 @@ export default function VendorLoginPage() {
         });
         router.push("/vendor/dashboard");
     }
-    else if (email === "customer@example.com" && password === "customerpass") {
-      login();
-      toast({
-        title: "Login Successful",
-        description: "Redirecting to your account.",
-      });
-      router.push("/account");
-    } else {
+    else {
         toast({
             variant: "destructive",
             title: "Login Failed",
