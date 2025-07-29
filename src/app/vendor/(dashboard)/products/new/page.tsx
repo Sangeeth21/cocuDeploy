@@ -16,7 +16,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader as AlertDialogHeaderComponent, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
@@ -52,13 +52,13 @@ type ProductImages = {
 function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductImage, onSave: (areas: CustomizationArea[]) => void, onCancel: () => void }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [areas, setAreas] = useState<CustomizationArea[]>(image.customAreas || []);
-    const [activeId, setActiveId] = useState<string | null>(null);
     const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
+    const [activeInteraction, setActiveInteraction] = useState<{ id: string, type: 'drag' | 'resize', handle: string } | null>(null);
+    const startMousePos = useRef({ x: 0, y: 0 });
+    const startArea = useRef<CustomizationArea | null>(null);
 
-    const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 } });
-    
     const selectedArea = areas.find(a => a.id === selectedAreaId);
-
+    
     const handleAddArea = (shape: 'rect' | 'ellipse') => {
         const newArea: CustomizationArea = {
             id: `area-${Date.now()}`,
@@ -73,25 +73,80 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         setSelectedAreaId(newArea.id);
     };
 
-    const handleDragEnd = (event: DragEndEvent) => {
-        const { active, delta } = event;
-        const id = active.id as string;
+    const handlePointerDown = (e: React.PointerEvent, id: string, type: 'drag' | 'resize', handle = 'body') => {
+        e.preventDefault();
+        e.stopPropagation();
         
-        setAreas(prev => prev.map(area => {
-            if (area.id === id) {
-                const containerWidth = containerRef.current?.clientWidth || 1;
-                const containerHeight = containerRef.current?.clientHeight || 1;
+        startMousePos.current = { x: e.clientX, y: e.clientY };
+        startArea.current = areas.find(a => a.id === id) || null;
+        setActiveInteraction({ id, type, handle });
+        setSelectedAreaId(id);
+        document.body.style.cursor = handle.includes('resize') ? `${handle}-resize` : 'grabbing';
+    }
+
+    const handlePointerMove = useCallback((e: React.PointerEvent) => {
+        if (!activeInteraction || !startArea.current) return;
+        e.preventDefault();
+        
+        const containerWidth = containerRef.current?.clientWidth || 1;
+        const containerHeight = containerRef.current?.clientHeight || 1;
+
+        const dx = (e.clientX - startMousePos.current.x) / containerWidth * 100;
+        const dy = (e.clientY - startMousePos.current.y) / containerHeight * 100;
+
+        setAreas(prevAreas => prevAreas.map(area => {
+            if (area.id !== activeInteraction.id || !startArea.current) return area;
+
+            const newArea = { ...area };
+
+            if (activeInteraction.type === 'drag') {
+                newArea.x = Math.max(0, Math.min(100 - newArea.width, startArea.current.x + dx));
+                newArea.y = Math.max(0, Math.min(100 - newArea.height, startArea.current.y + dy));
+            } else { // resize
+                const handle = activeInteraction.handle;
                 
-                const newX = Math.max(0, Math.min(100 - area.width, area.x + (delta.x / containerWidth) * 100));
-                const newY = Math.max(0, Math.min(100 - area.height, area.y + (delta.y / containerHeight) * 100));
-
-                return { ...area, x: newX, y: newY };
+                if (handle.includes('e')) { // East
+                    newArea.width = Math.max(5, Math.min(100 - newArea.x, startArea.current.width + dx));
+                }
+                if (handle.includes('w')) { // West
+                    const newWidth = Math.max(5, startArea.current.width - dx);
+                    newArea.x = startArea.current.x + (startArea.current.width - newWidth);
+                    newArea.width = newWidth;
+                }
+                if (handle.includes('s')) { // South
+                    newArea.height = Math.max(5, Math.min(100 - newArea.y, startArea.current.height + dy));
+                }
+                if (handle.includes('n')) { // North
+                    const newHeight = Math.max(5, startArea.current.height - dy);
+                    newArea.y = startArea.current.y + (startArea.current.height - newHeight);
+                    newArea.height = newHeight;
+                }
             }
-            return area;
+            return newArea;
         }));
+    }, [activeInteraction]);
 
-        setActiveId(null);
-    };
+    const handlePointerUp = useCallback(() => {
+        setActiveInteraction(null);
+        startArea.current = null;
+        document.body.style.cursor = 'default';
+    }, []);
+
+    useEffect(() => {
+        const container = containerRef.current;
+        if (container) {
+            const handleMove = (e: PointerEvent) => handlePointerMove(e as any);
+            const handleUp = () => handlePointerUp();
+
+            container.addEventListener('pointermove', handleMove);
+            window.addEventListener('pointerup', handleUp);
+
+            return () => {
+                container.removeEventListener('pointermove', handleMove);
+                window.removeEventListener('pointerup', handleUp);
+            };
+        }
+    }, [handlePointerMove, handlePointerUp]);
     
     const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!selectedAreaId) return;
@@ -106,16 +161,21 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
     }
     
     const DraggableArea = ({ area }: { area: CustomizationArea }) => {
-        const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: area.id });
-        const style = transform ? {
-            transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-        } : undefined;
-
+        const isSelected = selectedAreaId === area.id;
+        const resizeHandles = [
+            { cursor: 'nwse-resize', position: 'top-0 left-0', handle: 'nw' },
+            { cursor: 'ns-resize', position: 'top-0 left-1/2 -translate-x-1/2', handle: 'n' },
+            { cursor: 'nesw-resize', position: 'top-0 right-0', handle: 'ne' },
+            { cursor: 'ew-resize', position: 'top-1/2 -translate-y-1/2 left-0', handle: 'w' },
+            { cursor: 'ew-resize', position: 'top-1/2 -translate-y-1/2 right-0', handle: 'e' },
+            { cursor: 'nesw-resize', position: 'bottom-0 left-0', handle: 'sw' },
+            { cursor: 'ns-resize', position: 'bottom-0 left-1/2 -translate-x-1/2', handle: 's' },
+            { cursor: 'nwse-resize', position: 'bottom-0 right-0', handle: 'se' },
+        ];
+        
         return (
              <div
-                ref={setNodeRef}
                 style={{
-                    ...style,
                     position: 'absolute',
                     left: `${area.x}%`,
                     top: `${area.y}%`,
@@ -123,15 +183,23 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     height: `${area.height}%`,
                 }}
                 className={cn(
-                    "border-2 border-dashed border-primary cursor-move flex items-center justify-center",
-                    selectedAreaId === area.id && "bg-primary/20 ring-2 ring-primary",
+                    "border-2 border-dashed border-primary cursor-grab active:cursor-grabbing",
+                    isSelected && "bg-primary/20 ring-2 ring-primary",
                     area.shape === 'ellipse' && "rounded-full"
                 )}
-                {...listeners}
-                {...attributes}
-                onClick={(e) => { e.stopPropagation(); setSelectedAreaId(area.id); }}
+                onPointerDown={(e) => handlePointerDown(e, area.id, 'drag')}
             >
-                <span className="text-xs bg-black/50 text-white px-1 py-0.5 rounded-sm pointer-events-none select-none">{area.label}</span>
+                <div className="w-full h-full flex items-center justify-center pointer-events-none select-none">
+                    <span className="text-xs bg-black/50 text-white px-1 py-0.5 rounded-sm">{area.label}</span>
+                </div>
+                {isSelected && resizeHandles.map(handle => (
+                    <div
+                        key={handle.handle}
+                        className={cn("absolute h-3 w-3 bg-primary border border-background rounded-full -m-1.5 z-10", handle.position)}
+                        style={{ cursor: `${handle.handle}-resize` }}
+                        onPointerDown={(e) => handlePointerDown(e, area.id, 'resize', handle.handle)}
+                    />
+                ))}
             </div>
         )
     }
@@ -140,15 +208,13 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
             <DialogHeader>
                 <DialogTitle>Define Customizable Areas</DialogTitle>
-                <DialogDescription>Add, move, and label areas where customers can add their designs.</DialogDescription>
+                <DialogDescription>Add, move, and resize areas where customers can add their designs.</DialogDescription>
             </DialogHeader>
             <div className="flex-1 grid grid-cols-4 gap-6 min-h-0">
-                 <DndContext onDragStart={e => setActiveId(e.active.id as string)} onDragEnd={handleDragEnd} sensors={[pointerSensor]}>
-                    <div ref={containerRef} className="col-span-3 relative w-full h-full bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center" onClick={() => setSelectedAreaId(null)}>
-                        <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
-                        {areas.map(area => <DraggableArea key={area.id} area={area} />)}
-                    </div>
-                </DndContext>
+                <div ref={containerRef} className="col-span-3 relative w-full h-full bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center" onPointerDown={() => setSelectedAreaId(null)}>
+                    <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
+                    {areas.map(area => <DraggableArea key={area.id} area={area} />)}
+                </div>
 
                 <div className="col-span-1 flex flex-col gap-4">
                      <Card>
@@ -721,22 +787,27 @@ export default function NewProductPage() {
     </Dialog>
     
     <AlertDialog open={isConfirmationAlertOpen} onOpenChange={setIsConfirmationAlertOpen}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-                <AlertDialogTitle className="flex items-center gap-2"><ShieldCheck className="text-primary"/> Enable Pre-Order Check?</AlertDialogTitle>
-                <AlertDialogDescription>
-                    By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
-                </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleConfirmAndEnable}>I Understand &amp; Enable</AlertDialogAction>
-            </AlertDialogFooter>
-        </AlertDialogContent>
+      <AlertDialogContent>
+        <AlertDialogHeaderComponent>
+          <AlertDialogTitleComponent>
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="text-primary"/> Enable Pre-Order Check?
+            </div>
+          </AlertDialogTitleComponent>
+          <AlertDialogDescriptionComponent>
+            By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
+          </AlertDialogDescriptionComponent>
+        </AlertDialogHeaderComponent>
+        <AlertDialogFooterComponent>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={handleConfirmAndEnable}>I Understand &amp; Enable</AlertDialogAction>
+        </AlertDialogFooterComponent>
+      </AlertDialogContent>
     </AlertDialog>
     </>
   );
 }
+
 
 
 
