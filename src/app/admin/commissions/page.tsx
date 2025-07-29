@@ -92,7 +92,7 @@ export default function CommissionEnginePage() {
                                     <TableRow>
                                         <TableHead>Category</TableHead>
                                         <TableHead>Commission Rate</TableHead>
-                                        <TableHead>Price Buffer</TableHead>
+                                        <TableHead>Buffer Price/ Buffer %</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
