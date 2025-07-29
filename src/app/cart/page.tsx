@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Minus, Plus, Trash2, ArrowRight } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, Wand2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/context/cart-context";
 import { useUser } from "@/context/user-context";
@@ -29,6 +29,10 @@ export default function CartPage() {
       router.push('/checkout');
     }
   };
+  
+  const hasCustomizations = (item: typeof cartItems[0]) => {
+      return Object.keys(item.customizations).length > 0;
+  }
 
   return (
     <div className="container py-12">
@@ -37,25 +41,31 @@ export default function CartPage() {
         <div className="grid md:grid-cols-3 gap-12 items-start">
           <div className="md:col-span-2 space-y-4">
             {cartItems.map(item => (
-              <Card key={item.id} className="overflow-hidden">
+              <Card key={item.instanceId} className="overflow-hidden">
                 <div className="flex items-center gap-4">
-                  <Link href={`/products/${item.id}`} className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
-                    <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint={`${item.tags?.[0] || 'product'} ${item.tags?.[1] || ''}`} />
+                  <Link href={`/products/${item.product.id}`} className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
+                    <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" data-ai-hint={`${item.product.tags?.[0] || 'product'} ${item.product.tags?.[1] || ''}`} />
                   </Link>
                   <div className="flex-grow p-4">
-                    <Link href={`/products/${item.id}`} className="font-semibold font-headline hover:text-primary">{item.name}</Link>
-                    <p className="text-sm text-muted-foreground">Vendor ID: {item.vendorId}</p>
-                    <p className="text-lg font-semibold mt-2">${item.price.toFixed(2)}</p>
+                    <Link href={`/products/${item.product.id}`} className="font-semibold font-headline hover:text-primary">{item.product.name}</Link>
+                    {hasCustomizations(item) && (
+                         <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                            <Wand2 className="h-3 w-3" />
+                            <span>Customized</span>
+                        </div>
+                    )}
+                    <p className="text-sm text-muted-foreground mt-1">Vendor ID: {item.product.vendorId}</p>
+                    <p className="text-lg font-semibold mt-2">${item.product.price.toFixed(2)}</p>
                   </div>
                   <div className="flex items-center gap-2 p-4">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, -1)}>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.instanceId, -1)}>
                       <Minus className="h-4 w-4" />
                     </Button>
                     <Input type="number" value={item.quantity} className="w-14 h-8 text-center" readOnly />
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.id, 1)}>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.instanceId, 1)}>
                       <Plus className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => removeFromCart(item.id)}>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => removeFromCart(item.instanceId)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

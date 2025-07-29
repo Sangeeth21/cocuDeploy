@@ -1,4 +1,6 @@
 
+export type CustomizationValue = string | number | { file: File, src: string };
+
 export type CustomizationArea = {
   id: string;
   shape: 'rect' | 'ellipse';
@@ -30,6 +32,14 @@ export type DisplayProduct = {
   stock?: number;
   status?: 'Live' | 'Archived' | 'Needs Review' | 'Draft';
   requiresConfirmation?: boolean;
+  customizationAreas?: {
+      front?: CustomizationArea[];
+      back?: CustomizationArea[];
+      left?: CustomizationArea[];
+      right?: CustomizationArea[];
+      top?: CustomizationArea[];
+      bottom?: CustomizationArea[];
+  };
 };
 
 export type DraftProduct = {

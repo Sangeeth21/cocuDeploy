@@ -2,14 +2,18 @@
 "use client";
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
-import type { DisplayProduct } from '@/lib/types';
+import type { DisplayProduct, CustomizationValue } from '@/lib/types';
 import { mockProducts } from '@/lib/mock-data';
 import { useUser } from './user-context';
 
 // Define the shape of a cart item
-export type CartItem = DisplayProduct & {
+export type CartItem = {
+    instanceId: string; // Unique ID for this specific instance in the cart
+    product: DisplayProduct;
     quantity: number;
+    customizations: { [key: string]: CustomizationValue };
 };
+
 
 // Define the shape of the cart state
 interface CartState {
@@ -18,16 +22,16 @@ interface CartState {
 
 // Define the actions that can be performed on the cart
 type CartAction =
-    | { type: 'ADD_TO_CART'; payload: DisplayProduct }
-    | { type: 'REMOVE_FROM_CART'; payload: { id: string } }
-    | { type: 'UPDATE_QUANTITY'; payload: { id: string; delta: number } }
+    | { type: 'ADD_TO_CART'; payload: { product: DisplayProduct, customizations: { [key: string]: CustomizationValue } } }
+    | { type: 'REMOVE_FROM_CART'; payload: { instanceId: string } }
+    | { type: 'UPDATE_QUANTITY'; payload: { instanceId: string; delta: number } }
     | { type: 'CLEAR_CART' };
 
 // Create the context
 interface CartContextType extends CartState {
-    addToCart: (product: DisplayProduct) => void;
-    removeFromCart: (id: string) => void;
-    updateQuantity: (id: string, delta: number) => void;
+    addToCart: (payload: { product: DisplayProduct, customizations: { [key: string]: CustomizationValue } }) => void;
+    removeFromCart: (instanceId: string) => void;
+    updateQuantity: (instanceId: string, delta: number) => void;
     subtotal: number;
     totalItems: number;
 }
@@ -38,33 +42,30 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const cartReducer = (state: CartState, action: CartAction): CartState => {
     switch (action.type) {
         case 'ADD_TO_CART': {
-            const existingItem = state.cartItems.find(item => item.id === action.payload.id);
-            if (existingItem) {
-                // If item exists, just increase quantity
-                return {
-                    ...state,
-                    cartItems: state.cartItems.map(item =>
-                        item.id === action.payload.id ? { ...item, quantity: item.quantity + 1 } : item
-                    ),
-                };
-            }
-            // If item does not exist, add it to the cart
+            // For simplicity, we'll add customized products as new line items even if they are the same base product.
+            // A more complex implementation might merge items if customizations are identical.
+            const newCartItem: CartItem = {
+                instanceId: `${action.payload.product.id}-${Date.now()}`, // Simple unique ID
+                product: action.payload.product,
+                quantity: 1,
+                customizations: action.payload.customizations,
+            };
             return {
                 ...state,
-                cartItems: [...state.cartItems, { ...action.payload, quantity: 1 }],
+                cartItems: [...state.cartItems, newCartItem],
             };
         }
         case 'REMOVE_FROM_CART':
             return {
                 ...state,
-                cartItems: state.cartItems.filter(item => item.id !== action.payload.id),
+                cartItems: state.cartItems.filter(item => item.instanceId !== action.payload.instanceId),
             };
         case 'UPDATE_QUANTITY': {
             return {
                 ...state,
                 cartItems: state.cartItems
                     .map(item => {
-                        if (item.id === action.payload.id) {
+                        if (item.instanceId === action.payload.instanceId) {
                             return { ...item, quantity: Math.max(0, item.quantity + action.payload.delta) };
                         }
                         return item;
@@ -82,12 +83,23 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 // CartProvider component
 export const CartProvider = ({ children }: { children: ReactNode }) => {
     const { isLoggedIn } = useUser();
-    const initialState: CartState = {
-        // Initialize with a couple of products for demonstration only if logged in
-        cartItems: isLoggedIn ? mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 })) : []
+    
+    // Initial state logic adjusted
+    const getInitialState = (): CartState => {
+        if (isLoggedIn) {
+            return {
+                cartItems: mockProducts.slice(0, 2).map((p, index) => ({
+                    instanceId: `${p.id}-${index}`,
+                    product: p,
+                    quantity: 1,
+                    customizations: {},
+                })),
+            };
+        }
+        return { cartItems: [] };
     };
     
-    const [state, dispatch] = useReducer(cartReducer, initialState);
+    const [state, dispatch] = useReducer(cartReducer, getInitialState());
 
     useEffect(() => {
         if (!isLoggedIn) {
@@ -95,19 +107,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [isLoggedIn]);
 
-    const addToCart = (product: DisplayProduct) => {
-        dispatch({ type: 'ADD_TO_CART', payload: product });
+    const addToCart = (payload: { product: DisplayProduct, customizations: { [key: string]: CustomizationValue } }) => {
+        dispatch({ type: 'ADD_TO_CART', payload });
     };
 
-    const removeFromCart = (id: string) => {
-        dispatch({ type: 'REMOVE_FROM_CART', payload: { id } });
+    const removeFromCart = (instanceId: string) => {
+        dispatch({ type: 'REMOVE_FROM_CART', payload: { instanceId } });
     };
 
-    const updateQuantity = (id: string, delta: number) => {
-        dispatch({ type: 'UPDATE_QUANTITY', payload: { id, delta } });
+    const updateQuantity = (instanceId: string, delta: number) => {
+        dispatch({ type: 'UPDATE_QUANTITY', payload: { instanceId, delta } });
     };
 
-    const subtotal = state.cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const subtotal = state.cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
     const totalItems = state.cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
     return (

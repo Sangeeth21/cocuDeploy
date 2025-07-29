@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
-import { mockProducts, mockReviews } from "@/lib/mock-data";
+import { mockProducts, mockReviews, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Star, Plus, Heart } from "lucide-react";
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWishlist } from "@/context/wishlist-context";
 import { useUser } from "@/context/user-context";
 import { useAuthDialog } from "@/context/auth-dialog-context";
+import { useMemo } from "react";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -51,6 +52,12 @@ export default function ProductDetailPage() {
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isLoggedIn } = useUser();
   const { openDialog } = useAuthDialog();
+  
+  const isCustomizable = useMemo(() => {
+    if (!product) return false;
+    const categoryCustomizations = categoryCustomizationMap[product.category];
+    return categoryCustomizations && categoryCustomizations.length > 0;
+  }, [product]);
 
   if (!product) {
     notFound();
@@ -108,7 +115,7 @@ export default function ProductDetailPage() {
           <p className="text-3xl font-bold font-body">${product.price.toFixed(2)}</p>
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           
-          <ProductInteractions product={product} />
+          <ProductInteractions product={product} isCustomizable={isCustomizable} />
         </div>
       </div>
 
@@ -135,5 +142,3 @@ export default function ProductDetailPage() {
     </div>
   );
 }
-
-    

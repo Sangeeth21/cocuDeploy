@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from "next/image";
@@ -8,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { DisplayProduct, Conversation, Message } from "@/lib/types";
-import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, BellRing } from "lucide-react";
+import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, BellRing, Wand2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -46,7 +45,7 @@ const VIEWED_WARNINGS_KEY = 'shopsphere_viewed_chat_warnings';
 const WARNING_COUNT_KEY = 'shopsphere_chat_warning_count';
 const MAX_WARNING_COUNT = 5;
 
-export function ProductInteractions({ product }: { product: DisplayProduct }) {
+export function ProductInteractions({ product, isCustomizable }: { product: DisplayProduct, isCustomizable: boolean }) {
   const { toast } = useToast();
   const router = useRouter();
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -88,6 +87,10 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
   }, [isChatOpen, product.name, conversation.messages.length])
 
   const handleAddToCart = () => {
+    if (isCustomizable) {
+        router.push(`/customize/${product.id}`);
+        return;
+    }
     if (product.requiresConfirmation) {
         setIsConfirmationOpen(true);
         // Here you would also trigger a backend notification to the vendor
@@ -97,7 +100,7 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
         });
         return;
     }
-    addToCart(product);
+    addToCart({product, customizations: {}});
     toast({
       title: "Added to cart!",
       description: `${product.name} has been added to your cart.`,
@@ -109,7 +112,11 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
         openDialog('login');
         return;
     }
-    addToCart(product);
+    if (isCustomizable) {
+        router.push(`/customize/${product.id}?buyNow=true`);
+        return;
+    }
+    addToCart({product, customizations: {}});
     router.push('/checkout');
   }
 
@@ -256,7 +263,8 @@ export function ProductInteractions({ product }: { product: DisplayProduct }) {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row gap-2">
             <Button size="lg" className="w-full" onClick={handleAddToCart}>
-                {product.requiresConfirmation ? 'Request to Buy' : 'Add to Cart'}
+                {product.requiresConfirmation ? 'Request to Buy' : isCustomizable ? 'Customize' : 'Add to Cart'}
+                {isCustomizable && <Wand2 className="ml-2 h-5 w-5" />}
             </Button>
             <Button size="lg" variant="secondary" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
         </div>
