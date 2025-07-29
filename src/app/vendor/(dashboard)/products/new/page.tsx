@@ -14,7 +14,7 @@ import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
@@ -55,6 +55,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
     const [activeInteraction, setActiveInteraction] = useState<{ id: string, type: 'drag' | 'resize', handle: string } | null>(null);
     const startMousePos = useRef({ x: 0, y: 0 });
     const startArea = useRef<CustomizationArea | null>(null);
+    const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
     const selectedArea = areas.find(a => a.id === selectedAreaId);
     
@@ -104,20 +105,20 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             } else { // resize
                 const handle = activeInteraction.handle;
                 
-                if (handle.includes('e')) { // East
-                    newArea.width = Math.max(5, Math.min(100 - newArea.x, startArea.current.width + dx));
+                if (handle.includes('e')) {
+                    newArea.width = Math.max(5, Math.min(100 - startArea.current.x, startArea.current.width + dx));
                 }
-                if (handle.includes('w')) { // West
+                if (handle.includes('w')) {
                     const newWidth = Math.max(5, startArea.current.width - dx);
-                    newArea.x = startArea.current.x + (startArea.current.width - newWidth);
+                    newArea.x = startArea.current.x + dx;
                     newArea.width = newWidth;
                 }
-                if (handle.includes('s')) { // South
-                    newArea.height = Math.max(5, Math.min(100 - newArea.y, startArea.current.height + dy));
+                if (handle.includes('s')) {
+                    newArea.height = Math.max(5, Math.min(100 - startArea.current.y, startArea.current.height + dy));
                 }
-                if (handle.includes('n')) { // North
+                if (handle.includes('n')) {
                     const newHeight = Math.max(5, startArea.current.height - dy);
-                    newArea.y = startArea.current.y + (startArea.current.height - newHeight);
+                    newArea.y = startArea.current.y + dy;
                     newArea.height = newHeight;
                 }
             }
@@ -158,6 +159,11 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         if (selectedAreaId === idToRemove) {
             setSelectedAreaId(null);
         }
+    }
+    
+    const handleClose = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        setShowSaveConfirm(true);
     }
     
     const DraggableArea = ({ area }: { area: CustomizationArea }) => {
@@ -209,6 +215,12 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             <DialogHeader>
                 <DialogTitle>Define Customizable Areas</DialogTitle>
                 <DialogDescription>Add, move, and resize areas where customers can add their designs.</DialogDescription>
+                  <DialogClose asChild>
+                    <button className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground" onClick={handleClose}>
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                    </button>
+                 </DialogClose>
             </DialogHeader>
             <div className="flex-1 grid grid-cols-4 gap-6 min-h-0">
                 <div className="col-span-3 flex flex-col gap-4">
@@ -273,10 +285,20 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     </Card>
                 </div>
             </div>
-            <DialogFooter>
-                <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-                <Button onClick={() => onSave(areas)}>Apply Changes</Button>
-            </DialogFooter>
+             <AlertDialog open={showSaveConfirm} onOpenChange={setShowSaveConfirm}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Save Changes?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Do you want to save the changes made to the customization areas?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel onClick={onCancel}>Discard</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onSave(areas)}>Save Changes</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </DialogContent>
     );
 }
