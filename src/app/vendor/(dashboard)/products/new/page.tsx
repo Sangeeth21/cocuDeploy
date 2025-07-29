@@ -57,7 +57,7 @@ function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T)
 
     const setState = useCallback((newState: T | ((prevState: T) => T)) => {
         const newHistory = historyRef.current.slice(0, index + 1);
-        const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(newHistory[index]) : newState;
+        const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(historyRef.current[index]) : newState;
         newHistory.push(resolvedState);
         historyRef.current = newHistory;
         setIndex(newHistory.length - 1);
@@ -175,22 +175,25 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                  if (area.id !== activeInteraction.id) return area;
 
                  const newArea = { ...area };
+                 const initialArea = startArea.current;
+
+                 if (!initialArea) return area;
 
                 if (activeInteraction.type === 'drag') {
-                    newArea.x = Math.max(0, Math.min(100 - startArea.current!.width, startArea.current!.x + dx));
-                    newArea.y = Math.max(0, Math.min(100 - startArea.current!.height, startArea.current!.y + dy));
+                    newArea.x = Math.max(0, Math.min(100 - initialArea.width, initialArea.x + dx));
+                    newArea.y = Math.max(0, Math.min(100 - initialArea.height, initialArea.y + dy));
                 } else { // resize
                     const handle = activeInteraction.handle;
-                    if (handle.includes('e')) newArea.width = Math.max(5, Math.min(100 - startArea.current!.x, startArea.current!.width + dx));
+                    if (handle.includes('e')) newArea.width = Math.max(5, Math.min(100 - initialArea.x, initialArea.width + dx));
                     if (handle.includes('w')) {
-                        const newWidth = Math.max(5, startArea.current!.width - dx);
-                        newArea.x = startArea.current!.x + dx;
+                        const newWidth = Math.max(5, initialArea.width - dx);
+                        newArea.x = initialArea.x + dx;
                         newArea.width = newWidth;
                     }
-                    if (handle.includes('s')) newArea.height = Math.max(5, Math.min(100 - startArea.current!.y, startArea.current!.height + dy));
+                    if (handle.includes('s')) newArea.height = Math.max(5, Math.min(100 - initialArea.y, initialArea.height + dy));
                     if (handle.includes('n')) {
-                        const newHeight = Math.max(5, startArea.current!.height - dy);
-                        newArea.y = startArea.current!.y + dy;
+                        const newHeight = Math.max(5, initialArea.height - dy);
+                        newArea.y = initialArea.y + dy;
                         newArea.height = newHeight;
                     }
                 }
