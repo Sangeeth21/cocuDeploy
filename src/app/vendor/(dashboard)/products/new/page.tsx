@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -8,20 +9,20 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, MousePointer2, Trash2, Circle as CircleIcon } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, MousePointer2, Trash2, Circle as CircleIcon, Info } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
 import { useVerification } from "@/context/vendor-verification-context"
 import type { CustomizationArea } from "@/lib/types";
-import { DndContext, useDraggable, useDroppable, useSensor, PointerSensor, DragOverlay, DragEndEvent } from '@dnd-kit/core';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -54,7 +55,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
     const [activeInteraction, setActiveInteraction] = useState<{ id: string, type: 'drag' | 'resize', handle: string } | null>(null);
     const startMousePos = useRef({ x: 0, y: 0 });
     const startArea = useRef<CustomizationArea | null>(null);
-    const [showSaveConfirm, setShowSaveConfirm] = useState(false);
 
     const selectedArea = areas.find(a => a.id === selectedAreaId);
     
@@ -160,11 +160,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         }
     }
     
-    const handleClose = (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        setShowSaveConfirm(true);
-    }
-    
     const DraggableArea = ({ area }: { area: CustomizationArea }) => {
         const isSelected = selectedAreaId === area.id;
         const resizeHandles = [
@@ -211,15 +206,32 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
 
     return (
         <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
-            <DialogHeader>
+             <DialogHeader className="flex-row items-center gap-2">
                 <DialogTitle>Define Customizable Areas</DialogTitle>
-                <DialogDescription>Add, move, and resize areas where customers can add their designs.</DialogDescription>
-                  <DialogClose asChild>
-                    <button className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground" onClick={handleClose}>
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Close</span>
-                    </button>
-                 </DialogClose>
+                <Dialog>
+                    <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4"/></Button>
+                                </DialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent><p>How to use the editor</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>How to Define Areas</DialogTitle>
+                        </DialogHeader>
+                        <div className="text-sm text-muted-foreground space-y-4">
+                            <p><strong className="text-foreground">1. Add a Shape:</strong> Use the "Rectangle" or "Ellipse" buttons in the Tools panel to add a new area to the image.</p>
+                            <p><strong className="text-foreground">2. Position:</strong> Click and drag any area to move it to the desired position on the image.</p>
+                            <p><strong className="text-foreground">3. Resize:</strong> Click an area to select it. Drag the handles on its edges and corners to resize it.</p>
+                            <p><strong className="text-foreground">4. Label:</strong> With an area selected, use the "Area Label" input in the Properties panel to give it a descriptive name (e.g., "Logo Here").</p>
+                            <p><strong className="text-foreground">5. Manage:</strong> You can see a list of all your areas. Click one to select it, or use the "Remove" button in the Properties panel to delete the selected area.</p>
+                        </div>
+                    </DialogContent>
+                </Dialog>
             </DialogHeader>
             <div className="flex-1 grid grid-cols-4 gap-6 min-h-0">
                 <div className="col-span-3 flex flex-col gap-4">
@@ -227,28 +239,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                         <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
                         {areas.map(area => <DraggableArea key={area.id} area={area} />)}
                     </div>
-                     {areas.length > 0 && (
-                        <Card>
-                            <CardContent className="p-2">
-                                <div className="flex flex-wrap gap-2">
-                                    {areas.map(area => (
-                                         <button 
-                                            key={area.id}
-                                            onClick={() => setSelectedAreaId(area.id)}
-                                            className={cn(
-                                                "flex items-center gap-2 rounded-full pl-3 pr-2 py-1 text-sm border",
-                                                selectedAreaId === area.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted/50'
-                                            )}
-                                         >
-                                            <span>{area.label}</span>
-                                            <div className="w-px h-4 bg-border" />
-                                            <X className="h-4 w-4 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleRemoveArea(area.id)}} />
-                                        </button>
-                                    ))}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
                 </div>
 
                 <div className="col-span-1 flex flex-col gap-4">
@@ -259,6 +249,29 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                         <CardContent className="p-4 pt-0 grid grid-cols-2 gap-2">
                              <Button variant="outline" onClick={() => handleAddArea('rect')}><Square className="mr-2 h-4 w-4" /> Rectangle</Button>
                              <Button variant="outline" onClick={() => handleAddArea('ellipse')}><CircleIcon className="mr-2 h-4 w-4" /> Ellipse</Button>
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader className="p-4"><CardTitle className="text-base">Defined Areas</CardTitle></CardHeader>
+                        <CardContent className="p-4 pt-0">
+                             {areas.length > 0 ? (
+                                <div className="space-y-2">
+                                    {areas.map(area => (
+                                         <button 
+                                            key={area.id}
+                                            onClick={() => setSelectedAreaId(area.id)}
+                                            className={cn(
+                                                "w-full text-left rounded-md p-2 text-sm border",
+                                                selectedAreaId === area.id ? 'bg-primary text-primary-foreground border-primary' : 'bg-background hover:bg-muted/50'
+                                            )}
+                                         >
+                                            {area.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center">No areas defined yet.</p>
+                            )}
                         </CardContent>
                     </Card>
                     <Card className="flex-1">
@@ -284,20 +297,10 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     </Card>
                 </div>
             </div>
-             <AlertDialog open={showSaveConfirm} onOpenChange={setShowSaveConfirm}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Save Changes?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Do you want to save the changes made to the customization areas?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel onClick={onCancel}>Discard</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onSave(areas)}>Save Changes</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <DialogFooter>
+                <Button variant="outline" onClick={onCancel}>Cancel</Button>
+                <Button onClick={() => onSave(areas)}>Save Changes</Button>
+            </DialogFooter>
         </DialogContent>
     );
 }
@@ -843,10 +846,10 @@ export default function NewProductPage() {
             By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
+        <AlertDialogFooterComponent>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={handleConfirmAndEnable}>I Understand &amp; Enable</AlertDialogAction>
-        </AlertDialogFooter>
+        </AlertDialogFooterComponent>
       </AlertDialogContent>
     </AlertDialog>
     </>
