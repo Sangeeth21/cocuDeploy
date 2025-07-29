@@ -20,40 +20,40 @@ type Conversation = Omit<AdminConversation, 'awaitingVendorDecision' | 'userMess
 
 const initialConversations: Conversation[] = [
   {
-    id: 1,
+    id: "1",
     customerId: "CUST001",
     vendorId: "VDR001",
     customerAvatar: "https://placehold.co/40x40.png",
     vendorAvatar: "https://placehold.co/40x40.png",
     status: 'active',
     messages: [
-      { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
-      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it." },
-      { id: 'msg3', sender: "customer", text: "That would be great, thank you!" },
+      { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?", timestamp: new Date() },
+      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it.", timestamp: new Date() },
+      { id: 'msg3', sender: "customer", text: "That would be great, thank you!", timestamp: new Date() },
     ],
     avatar: '', // not used in this view
   },
   {
-    id: 2,
+    id: "2",
     customerId: "CUST002",
     vendorId: "VDR002",
     customerAvatar: "https://placehold.co/40x40.png",
     vendorAvatar: "https://placehold.co/40x40.png",
     status: 'flagged',
-    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada? My email is test@example.com" }],
+    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada? My email is test@example.com", timestamp: new Date() }],
      avatar: '',
   },
 ];
 
 export default function AdminChatLogsPage() {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(1);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>("1");
   const { toast } = useToast();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
-  const handleSelectConversation = (id: number) => {
+  const handleSelectConversation = (id: string) => {
     setSelectedConversationId(id);
   }
 

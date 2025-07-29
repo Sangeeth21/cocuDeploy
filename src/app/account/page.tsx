@@ -52,13 +52,13 @@ const FORBIDDEN_KEYWORDS = ['phone', 'email', 'contact', '@', '.com', 'number', 
 
 const initialConversations: Conversation[] = [
   {
-    id: 1,
+    id: "1",
     vendorId: "VDR001",
     avatar: "https://placehold.co/40x40.png",
     messages: [
-      { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
-      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it." },
-      { id: 'msg3', sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}] },
+      { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?", timestamp: new Date() },
+      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it.", timestamp: new Date() },
+      { id: 'msg3', sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}], timestamp: new Date() },
     ],
     unread: true,
     userMessageCount: 3,
@@ -66,10 +66,10 @@ const initialConversations: Conversation[] = [
     status: 'active',
   },
   {
-    id: 2,
+    id: "2",
     vendorId: "VDR002",
     avatar: "https://placehold.co/40x40.png",
-    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}] }],
+    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}], timestamp: new Date() }],
     unread: false,
     userMessageCount: 1,
     awaitingVendorDecision: false,
@@ -323,7 +323,7 @@ export default function AccountPage() {
   
   // Chat state
   const [conversations, setConversations] = useState(initialConversations);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1500;
@@ -340,7 +340,7 @@ export default function AccountPage() {
       if (!convo) {
         // Create a new conversation if one doesn't exist
         const newConvo: Conversation = {
-          id: conversations.length + 1,
+          id: (conversations.length + 1).toString(),
           vendorId: vendorId,
           avatar: "https://placehold.co/40x40.png",
           messages: [],
@@ -475,6 +475,7 @@ export default function AccountPage() {
         id: Math.random().toString(),
         sender: "customer", 
         text: newMessage,
+        timestamp: new Date(),
         ...(newAttachments.length > 0 && { attachments: newAttachments })
     };
 
@@ -494,7 +495,8 @@ export default function AccountPage() {
             updatedConvo.messages.push({
                 id: 'system-wait',
                 sender: 'system',
-                text: 'You have reached the initial message limit. Please wait for the vendor to respond.'
+                text: 'You have reached the initial message limit. Please wait for the vendor to respond.',
+                timestamp: new Date(),
             });
         }
         
@@ -505,7 +507,7 @@ export default function AccountPage() {
     setAttachments([]);
   }, [attachments, newMessage, selectedConversationId, toast]);
 
-  const handleSelectConversation = useCallback((id: number) => {
+  const handleSelectConversation = useCallback((id: string) => {
     setSelectedConversationId(id);
     setConversations(prev =>
         prev.map(convo => 
@@ -514,7 +516,7 @@ export default function AccountPage() {
     );
   }, []);
   
-  const handleReportConversation = (id: number) => {
+  const handleReportConversation = (id: string) => {
     setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'flagged' } : c));
     toast({
         title: "Conversation Reported",

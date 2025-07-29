@@ -50,6 +50,7 @@ export type Message = {
   id: string;
   sender: "customer" | "vendor" | "system";
   text: string;
+  timestamp: Date;
   attachments?: Attachment[];
   status?: 'sent' | 'delivered' | 'read';
 };
@@ -88,7 +89,7 @@ export type User = {
 }
 
 export type Conversation = {
-  id: number;
+  id: string;
   vendorId: string;
   customerId?: string; // For vendor/admin view
   avatar: string;
