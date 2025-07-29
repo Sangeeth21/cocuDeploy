@@ -176,12 +176,7 @@ const Sidebar = React.forwardRef<
     },
     ref
   ) => {
-    const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
-    const [mounted, setMounted] = React.useState(false)
-
-    React.useEffect(() => {
-        setMounted(true)
-    }, [])
+    const { isMobile, state, open, openMobile, setOpenMobile } = useSidebar()
 
     if (collapsible === "none") {
       return (
@@ -196,10 +191,6 @@ const Sidebar = React.forwardRef<
           {children}
         </div>
       )
-    }
-
-    if (!mounted) {
-      return null
     }
 
     if (isMobile) {
@@ -595,7 +586,7 @@ const SidebarMenuButton = React.forwardRef<
         <TooltipContent
           side="right"
           align="center"
-          hidden={isMobile ? false : state !== "collapsed"}
+          hidden={state !== "collapsed" || isMobile}
           {...tooltip}
         />
       </Tooltip>

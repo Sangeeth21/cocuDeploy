@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockUsers } from "@/lib/mock-data";
-import { MoreHorizontal, PlusCircle, Loader2 } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Loader2, ShieldAlert } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -145,9 +145,34 @@ function NewVendorDialog({ onSave }: { onSave: (vendor: User) => void }) {
     );
 }
 
+function SuspendVendorDialog({ vendor, onConfirm, open, onOpenChange }: { vendor: User, onConfirm: () => void, open: boolean, onOpenChange: (open: boolean) => void }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                        <ShieldAlert className="h-6 w-6 text-destructive" />
+                        Confirm Suspension
+                    </DialogTitle>
+                    <DialogDescription>
+                        Are you sure you want to suspend {vendor.name}? This will prevent them from logging in and listing new products.
+                    </DialogDescription>
+                </DialogHeader>
+                 <div className="flex justify-end gap-2 pt-4">
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button variant="destructive" onClick={onConfirm}>
+                        <ShieldAlert className="mr-2 h-4 w-4" /> Confirm Suspend
+                    </Button>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export default function AdminVendorsPage() {
     const [vendors, setVendors] = useState(mockUsers.filter(u => u.role === 'Vendor'));
+    const [selectedVendor, setSelectedVendor] = useState<User | null>(null);
+    const [isSuspendOpen, setIsSuspendOpen] = useState(false);
     const { toast } = useToast();
 
     const handleAddVendor = (newVendor: User) => {
@@ -158,7 +183,26 @@ export default function AdminVendorsPage() {
         });
     }
 
+    const handleSuspendClick = (vendor: User) => {
+        setSelectedVendor(vendor);
+        setIsSuspendOpen(true);
+    };
+
+     const handleConfirmSuspend = () => {
+        if (!selectedVendor) return;
+        setVendors(prev => prev.map(v => 
+            v.id === selectedVendor.id ? { ...v, status: 'Suspended' } : v
+        ));
+        toast({
+            title: "Vendor Suspended",
+            description: `${selectedVendor.name}'s account has been suspended.`
+        });
+        setIsSuspendOpen(false);
+        setSelectedVendor(null);
+    }
+
     return (
+        <>
         <div>
             <div className="flex items-center justify-between mb-8">
                 <div>
@@ -213,7 +257,7 @@ export default function AdminVendorsPage() {
                                                 <DropdownMenuItem>View Products</DropdownMenuItem>
                                                 <DropdownMenuItem>View Payouts</DropdownMenuItem>
                                                 <DropdownMenuSeparator/>
-                                                <DropdownMenuItem className="text-destructive">Suspend</DropdownMenuItem>
+                                                <DropdownMenuItem className="text-destructive" onClick={() => handleSuspendClick(user)}>Suspend</DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
@@ -224,5 +268,14 @@ export default function AdminVendorsPage() {
                 </CardContent>
             </Card>
         </div>
+        {selectedVendor && (
+            <SuspendVendorDialog
+                vendor={selectedVendor}
+                open={isSuspendOpen}
+                onOpenChange={setIsSuspendOpen}
+                onConfirm={handleConfirmSuspend}
+            />
+        )}
+        </>
     )
 }
