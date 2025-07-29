@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -20,6 +20,7 @@ import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 
 type DesignElement = {
     id: string;
@@ -29,6 +30,7 @@ type DesignElement = {
     width: number;
     height: number;
     rotation: number;
+    // Text properties
     text?: string;
     fontFamily?: string;
     fontSize?: number;
@@ -36,9 +38,45 @@ type DesignElement = {
     textColor?: string;
     textAlign?: 'left' | 'center' | 'right';
     curveIntensity?: number;
+    outlineColor?: string;
+    outlineWidth?: number;
+    // Image properties
     imageUrl?: string;
     originalAreaId?: string; // Links text element back to a vendor-defined area
 }
+
+// Custom hook for managing state with undo/redo
+function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T) => T)) => void, () => void, () => void, boolean, boolean] {
+    const historyRef = useRef([initialState]);
+    const [index, setIndex] = useState(0);
+
+    const setState = useCallback((newState: T | ((prevState: T) => T)) => {
+        const currentState = historyRef.current[index];
+        const newHistory = historyRef.current.slice(0, index + 1);
+        const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(currentState) : newState;
+        newHistory.push(resolvedState);
+        historyRef.current = newHistory;
+        setIndex(newHistory.length - 1);
+    }, [index]);
+
+    const undo = () => {
+        if (index > 0) {
+            setIndex(index - 1);
+        }
+    };
+
+    const redo = () => {
+        if (index < historyRef.current.length - 1) {
+            setIndex(index + 1);
+        }
+    };
+    
+    const canUndo = index > 0;
+    const canRedo = index < historyRef.current.length - 1;
+
+    return [historyRef.current[index], setState, undo, redo, canUndo, canRedo];
+}
+
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
 
@@ -93,6 +131,18 @@ const CustomizationRenderer = ({ product, activeSide, designElements }: { produc
         <div className="relative w-full h-full">
             <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
             {designElements.map((element) => {
+                 const svgFilterId = `outline-${element.id}`;
+
+                 const textStyle: React.CSSProperties = {
+                    fontFamily: element.fontFamily,
+                    fontSize: `${element.fontSize}px`,
+                    fontWeight: element.fontWeight,
+                    color: element.textColor,
+                    textAlign: element.textAlign,
+                    lineHeight: 1,
+                    filter: element.outlineColor && element.outlineWidth ? `url(#${svgFilterId})` : 'none',
+                };
+                
                 if(element.type === 'text' && element.originalAreaId) return null; // These are handled by vendor areas
 
                 return (
@@ -104,11 +154,31 @@ const CustomizationRenderer = ({ product, activeSide, designElements }: { produc
                         height: `${element.height}%`,
                         transform: `rotate(${element.rotation}deg)`,
                     }}>
+                        {element.outlineColor && element.outlineWidth && (
+                            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+                                <defs>
+                                    <filter id={svgFilterId}>
+                                        <feMorphology operator="dilate" radius={element.outlineWidth} in="SourceGraphic" result="dilated" />
+                                        <feFlood floodColor={element.outlineColor} result="color" />
+                                        <feComposite in="color" in2="dilated" operator="in" result="outline" />
+                                        <feMerge>
+                                            <feMergeNode in="outline" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+                            </svg>
+                        )}
                         {element.type === 'image' && element.imageUrl && (
                             <Image src={element.imageUrl} alt="Uploaded art" fill className="object-contain"/>
                         )}
                         {element.type === 'art' && element.imageUrl && (
                             <Image src={element.imageUrl} alt="Clipart" fill className="object-contain"/>
+                        )}
+                         {element.type === 'text' && (
+                            <div className="w-full h-full flex items-center justify-center p-1" style={textStyle}>
+                                <ArchText text={element.text || ""} curve={element.curveIntensity || 0} fontSize={element.fontSize || 14} areaWidth={element.width} />
+                            </div>
                         )}
                     </div>
                 )
@@ -116,6 +186,17 @@ const CustomizationRenderer = ({ product, activeSide, designElements }: { produc
             {product.customizationAreas?.[activeSide]?.map((area: any) => {
                  const element = designElements.find(el => el.originalAreaId === area.id);
                  if (!element || !element.text) return null;
+
+                 const svgFilterId = `outline-${element.id}`;
+
+                 const textStyle: React.CSSProperties = {
+                    fontFamily: element.fontFamily,
+                    fontSize: `${element.fontSize}px`,
+                    fontWeight: element.fontWeight,
+                    color: element.textColor,
+                    lineHeight: 1,
+                    filter: element.outlineColor && element.outlineWidth ? `url(#${svgFilterId})` : 'none',
+                };
 
                  return (
                      <div key={area.id} style={{
@@ -125,15 +206,26 @@ const CustomizationRenderer = ({ product, activeSide, designElements }: { produc
                         width: `${area.width}%`,
                         height: `${area.height}%`,
                     }}>
+                        {element.outlineColor && element.outlineWidth && (
+                            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+                                <defs>
+                                    <filter id={svgFilterId}>
+                                        <feMorphology operator="dilate" radius={element.outlineWidth} in="SourceAlpha" result="dilated" />
+                                        <feFlood floodColor={element.outlineColor} result="color" />
+                                        <feComposite in="color" in2="dilated" operator="in" result="outline" />
+                                        <feMerge>
+                                            <feMergeNode in="outline" />
+                                            <feMergeNode in="SourceGraphic" />
+                                        </feMerge>
+                                    </filter>
+                                </defs>
+                            </svg>
+                        )}
                        <div className="w-full h-full flex items-center p-1"
                              style={{
-                                fontFamily: element.fontFamily,
-                                fontSize: `${element.fontSize}px`,
-                                fontWeight: element.fontWeight,
-                                color: element.textColor,
+                                ...textStyle,
                                 justifyContent: element.textAlign === 'left' ? 'flex-start' : element.textAlign === 'right' ? 'flex-end' : 'center',
                                 textAlign: element.textAlign as any,
-                                lineHeight: 1,
                              }}
                         >
                            <ArchText text={element.text} curve={element.curveIntensity || 0} fontSize={element.fontSize || 14} areaWidth={area.width} />
@@ -163,7 +255,7 @@ export default function CustomizeProductPage() {
     const product = useMemo(() => mockProducts.find((p) => p.id === id), [id]);
 
     const [activeSide, setActiveSide] = useState<ImageSide>("front");
-    const [designElements, setDesignElements] = useState<DesignElement[]>([]);
+    const [designElements, setDesignElements, undo, redo, canUndo, canRedo] = useHistoryState<DesignElement[]>([]);
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
 
     const firstCustomizableSide = useMemo(() => {
@@ -186,24 +278,42 @@ export default function CustomizeProductPage() {
                         text: `Your ${area.label}`,
                         fontFamily: area.fontFamily || 'sans-serif',
                         fontSize: area.fontSize || 14,
-                        fontWeight: area.fontWeight || 'normal',
-                        textColor: area.textColor || '#000000',
+                        fontWeight: 'normal',
+                        textColor: '#000000',
                         textAlign: 'center',
                         curveIntensity: 0,
+                        outlineColor: 'transparent',
+                        outlineWidth: 0,
                     });
                 }
             });
             setDesignElements(initialElements);
-            // Select the first text element by default
             if(initialElements.length > 0) {
                 setSelectedElementId(initialElements[0].id)
             }
         }
-    }, [firstCustomizableSide, product]);
+    }, [firstCustomizableSide, product, setDesignElements]);
 
     const handleElementChange = useCallback((elementId: string, value: Partial<DesignElement>) => {
         setDesignElements(prev => prev.map(el => el.id === elementId ? { ...el, ...value } : el));
-    }, []);
+    }, [setDesignElements]);
+    
+    const addTextElement = () => {
+        const newElement: DesignElement = {
+            id: `text-${Date.now()}`,
+            type: 'text',
+            x: 25, y: 40, width: 50, height: 20, rotation: 0,
+            text: 'New Text',
+            fontFamily: 'sans-serif',
+            fontSize: 24,
+            fontWeight: 'normal',
+            textColor: '#000000',
+            textAlign: 'center',
+            curveIntensity: 0,
+        };
+        setDesignElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
+    }
     
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
@@ -250,6 +360,21 @@ export default function CustomizeProductPage() {
         setDesignElements(newElements);
     }
     
+    const duplicateElement = (elementId: string) => {
+        const elementToCopy = designElements.find(el => el.id === elementId);
+        if (!elementToCopy) return;
+
+        const newElement = {
+            ...elementToCopy,
+            id: `${elementToCopy.type}-${Date.now()}`,
+            x: elementToCopy.x + 5,
+            y: elementToCopy.y + 5,
+        };
+        
+        setDesignElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
+    };
+    
     const selectedElement = useMemo(() => designElements.find(el => el.id === selectedElementId), [designElements, selectedElementId]);
 
     const handleAddToCart = (buyNow = false) => {
@@ -287,10 +412,8 @@ export default function CustomizeProductPage() {
     }
     
     const currentVendorCustomizationAreas = product.customizationAreas?.[activeSide] || [];
-    
-    // Filter elements to only those that belong to vendor-defined areas on the current side
     const textElementsForCurrentSide = designElements.filter(el => 
-        el.type === 'text' && currentVendorCustomizationAreas.some(area => `text-${area.id}` === el.id)
+        el.type === 'text' && el.originalAreaId && currentVendorCustomizationAreas.some(area => `text-${area.id}` === el.id)
     );
 
     return (
@@ -357,76 +480,77 @@ export default function CustomizeProductPage() {
                             <TabsTrigger value="notes" className="flex-col h-14"><StickyNote className="h-5 w-5 mb-1"/>Notes</TabsTrigger>
                         </TabsList>
                         
+                        <div className="flex items-center p-2 border-b">
+                            <span className="text-sm font-semibold pl-2">Edit Text</span>
+                            <div className="ml-auto flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={!canUndo}><Undo2 className="h-4 w-4"/></Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={!canRedo}><Redo2 className="h-4 w-4"/></Button>
+                            </div>
+                        </div>
+
                         <ScrollArea className="flex-1">
                             <div className="p-4">
                                 <TabsContent value="text" className="mt-0 space-y-4">
-                                {textElementsForCurrentSide.length > 0 ? (
-                                        textElementsForCurrentSide.map((element) => {
-                                            const area = currentVendorCustomizationAreas.find(a => `text-${a.id}` === element.id)!;
-                                            return (
-                                                <div key={element.id} className="space-y-4 border p-4 rounded-lg">
-                                                    <div className="space-y-2">
-                                                        <Label htmlFor={`text-${area.id}`}>{area.label}</Label>
-                                                        <Input
-                                                            id={`text-${area.id}`}
-                                                            placeholder={`Enter text...`}
-                                                            value={element.text || ""}
-                                                            onChange={(e) => handleElementChange(element.id, { text: e.target.value })}
-                                                            maxLength={area.maxLength || 50}
-                                                        />
-                                                    </div>
-
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
-                                                            <Label>Font</Label>
-                                                            <Select value={element.fontFamily} onValueChange={(v) => handleElementChange(element.id, { fontFamily: v })}>
-                                                                <SelectTrigger><SelectValue/></SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="sans-serif">Sans Serif</SelectItem>
-                                                                    <SelectItem value="serif">Serif</SelectItem>
-                                                                    <SelectItem value="monospace">Monospace</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Font Size</Label>
-                                                            <Input type="number" value={element.fontSize} onChange={(e) => handleElementChange(element.id, { fontSize: parseInt(e.target.value) || 14 })}/>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div className="space-y-2">
-                                                            <Label>Alignment</Label>
-                                                            <ToggleGroup type="single" value={element.textAlign} onValueChange={(v) => v && handleElementChange(element.id, {textAlign: v as any})} className="w-full">
-                                                                <ToggleGroupItem value="left" className="flex-1"><PilcrowLeft className="h-4 w-4"/></ToggleGroupItem>
-                                                                <ToggleGroupItem value="center" className="flex-1"><Pilcrow className="h-4 w-4"/></ToggleGroupItem>
-                                                                <ToggleGroupItem value="right" className="flex-1"><PilcrowRight className="h-4 w-4"/></ToggleGroupItem>
-                                                            </ToggleGroup>
-                                                        </div>
-                                                        <div className="space-y-2">
-                                                            <Label>Style</Label>
-                                                            <ToggleGroup type="multiple" value={element.fontWeight === 'bold' ? ['bold'] : []} onValueChange={(v) => handleElementChange(element.id, {fontWeight: v.includes('bold') ? 'bold' : 'normal'})} className="w-full">
-                                                                <ToggleGroupItem value="bold" className="flex-1"><Bold className="h-4 w-4"/></ToggleGroupItem>
-                                                            </ToggleGroup>
-                                                        </div>
-                                                    </div>
-                                                    
-                                                    <div className="space-y-2">
-                                                        <Label>Color</Label>
-                                                        <Input type="color" value={element.textColor} onChange={(e) => handleElementChange(element.id, { textColor: e.target.value })} className="h-10 p-1" />
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Curvature</Label>
-                                                        <Slider min={-100} max={100} step={1} value={[element.curveIntensity || 0]} onValueChange={([v]) => handleElementChange(element.id, { curveIntensity: v })} />
-                                                    </div>
-                                                </div>
-                                            )
-                                        })
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground text-center py-8">
-                                            No customizable text areas on this side.
-                                        </p>
-                                    )}
+                                {selectedElement?.type === 'text' ? (
+                                    <div className="space-y-4">
+                                        <Input
+                                            placeholder="Your text here"
+                                            value={selectedElement.text || ""}
+                                            onChange={(e) => handleElementChange(selectedElementId!, { text: e.target.value })}
+                                        />
+                                        <Separator/>
+                                        <div className="space-y-2">
+                                            <Label>Change Font</Label>
+                                            <Select value={selectedElement.fontFamily} onValueChange={(v) => handleElementChange(selectedElementId!, { fontFamily: v })}>
+                                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="sans-serif">Sans Serif</SelectItem>
+                                                    <SelectItem value="serif">Serif</SelectItem>
+                                                    <SelectItem value="monospace">Monospace</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label>Edit Color</Label>
+                                            <Input type="color" value={selectedElement.textColor} onChange={(e) => handleElementChange(selectedElementId!, { textColor: e.target.value })} className="h-10 p-1" />
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label>Rotation</Label>
+                                            <div className="flex items-center gap-2">
+                                                <Slider min={-180} max={180} step={1} value={[selectedElement.rotation || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { rotation: v })} />
+                                                <Input type="number" value={selectedElement.rotation || 0} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
+                                            </div>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label>Outline</Label>
+                                            <div className="flex items-center gap-2">
+                                                <Input type="color" value={selectedElement.outlineColor} onChange={(e) => handleElementChange(selectedElementId!, { outlineColor: e.target.value })} className="h-10 p-1 w-14" />
+                                                <Slider min={0} max={5} step={0.1} value={[selectedElement.outlineWidth || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { outlineWidth: v })} />
+                                            </div>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label>Text Shape</Label>
+                                             <Slider min={-100} max={100} step={1} value={[selectedElement.curveIntensity || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { curveIntensity: v })} />
+                                        </div>
+                                        <Separator/>
+                                         <div className="grid grid-cols-2 gap-2">
+                                            <Button variant="outline" size="sm" disabled>Center</Button>
+                                            <Button variant="outline" size="sm" onClick={() => duplicateElement(selectedElementId!)}>Duplicate</Button>
+                                             <div className="col-span-2">
+                                                <ToggleGroup type="single" value={selectedElement.textAlign} onValueChange={(v) => v && handleElementChange(selectedElementId!, {textAlign: v as any})} className="w-full">
+                                                    <ToggleGroupItem value="left" className="flex-1"><AlignLeft className="h-4 w-4"/></ToggleGroupItem>
+                                                    <ToggleGroupItem value="center" className="flex-1"><AlignCenter className="h-4 w-4"/></ToggleGroupItem>
+                                                    <ToggleGroupItem value="right" className="flex-1"><AlignRight className="h-4 w-4"/></ToggleGroupItem>
+                                                </ToggleGroup>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 text-muted-foreground">
+                                        <p>Select a text layer to edit it, or add new text.</p>
+                                        <Button variant="secondary" className="mt-4" onClick={addTextElement}>Add Text</Button>
+                                    </div>
+                                )}
                                 </TabsContent>
 
                                 <TabsContent value="upload" className="mt-0">
@@ -477,7 +601,10 @@ export default function CustomizeProductPage() {
                              <Card>
                                 <CardHeader className="flex flex-row items-center justify-between p-2">
                                     <CardTitle className="text-sm font-semibold flex items-center gap-2"><Layers className="h-4 w-4"/> Layers</CardTitle>
-                                    <p className="text-xs text-muted-foreground">{designElements.length} items</p>
+                                    <div className="flex items-center gap-1">
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!selectedElementId} onClick={() => reorderElement(selectedElementId!, 'up')}><ChevronsUp className="h-4 w-4"/></Button>
+                                        <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!selectedElementId} onClick={() => reorderElement(selectedElementId!, 'down')}><ChevronsDown className="h-4 w-4"/></Button>
+                                    </div>
                                 </CardHeader>
                                 <CardContent className="p-2 space-y-2 max-h-48 overflow-y-auto">
                                     {designElements.length > 0 ? (
@@ -491,7 +618,7 @@ export default function CustomizeProductPage() {
                                                 {element.type === 'image' && <Upload className="h-4 w-4 text-muted-foreground"/>}
                                                 {element.type === 'art' && <Wand2 className="h-4 w-4 text-muted-foreground"/>}
                                                 <span className="text-sm truncate flex-1">
-                                                    {element.type === 'text' ? (element.text || 'Untitled Text') : 'Uploaded Image'}
+                                                    {element.type === 'text' ? (element.text || 'Untitled Text') : (element.type === 'image' ? 'Uploaded Image' : 'Clipart')}
                                                 </span>
                                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); removeElement(element.id)}}><Trash2 className="h-4 w-4"/></Button>
                                             </div>
@@ -508,3 +635,4 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
+
