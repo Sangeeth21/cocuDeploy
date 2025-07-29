@@ -24,6 +24,7 @@ import { useVerification } from "@/context/vendor-verification-context"
 import type { CustomizationArea } from "@/lib/types";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -941,4 +942,3 @@ export default function NewProductPage() {
     </>
   );
 }
-
