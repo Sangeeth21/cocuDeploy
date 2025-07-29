@@ -87,8 +87,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     // Initial state logic adjusted
     const getInitialState = (): CartState => {
         if (isLoggedIn) {
+             const sampleProducts = [mockProducts.find(p => p.id === '1'), mockProducts.find(p => p.id === '4')].filter(Boolean) as DisplayProduct[];
             return {
-                cartItems: mockProducts.slice(0, 2).map((p, index) => ({
+                cartItems: sampleProducts.map((p, index) => ({
                     instanceId: `${p.id}-${index}`,
                     product: p,
                     quantity: 1,

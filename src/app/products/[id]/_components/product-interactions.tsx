@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { DisplayProduct, Conversation, Message } from "@/lib/types";
-import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, BellRing, Wand2 } from "lucide-react";
+import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, BellRing, Wand2, ShoppingCart } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -87,10 +87,6 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
   }, [isChatOpen, product.name, conversation.messages.length])
 
   const handleAddToCart = () => {
-    if (isCustomizable) {
-        router.push(`/customize/${product.id}`);
-        return;
-    }
     if (product.requiresConfirmation) {
         setIsConfirmationOpen(true);
         // Here you would also trigger a backend notification to the vendor
@@ -112,12 +108,12 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
         openDialog('login');
         return;
     }
-    if (isCustomizable) {
-        router.push(`/customize/${product.id}?buyNow=true`);
-        return;
-    }
     addToCart({product, customizations: {}});
     router.push('/checkout');
+  }
+
+  const handleCustomize = () => {
+    router.push(`/customize/${product.id}`);
   }
 
   const handleMessageVendorClick = () => {
@@ -261,13 +257,26 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
   return (
     <>
       <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row gap-2">
-            <Button size="lg" className="w-full" onClick={handleAddToCart}>
-                {product.requiresConfirmation ? 'Request to Buy' : isCustomizable ? 'Customize' : 'Add to Cart'}
-                {isCustomizable && <Wand2 className="ml-2 h-5 w-5" />}
+        {isCustomizable ? (
+          <div className="space-y-2">
+            <Button size="lg" className="w-full" onClick={handleCustomize}>
+                <Wand2 className="mr-2 h-5 w-5" /> Customize
             </Button>
-            <Button size="lg" variant="secondary" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
-        </div>
+            <div className="grid grid-cols-2 gap-2">
+                <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
+                    <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
+                </Button>
+                <Button size="lg" variant="secondary" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
+            </div>
+          </div>
+        ) : (
+           <div className="flex flex-col sm:flex-row gap-2">
+              <Button size="lg" className="w-full" onClick={handleAddToCart}>
+                  {product.requiresConfirmation ? 'Request to Buy' : 'Add to Cart'}
+              </Button>
+              <Button size="lg" variant="secondary" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
+          </div>
+        )}
         <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendorClick}>
             <MessageSquare className="mr-2 h-5 w-5" />
             Message Vendor
