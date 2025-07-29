@@ -1,10 +1,13 @@
 
 
 export type CustomizationArea = {
+  id: string;
+  shape: 'rect' | 'ellipse';
   x: number;
   y: number;
   width: number;
   height: number;
+  label: string;
 };
 
 export type DisplayProduct = {

@@ -10,13 +10,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, MousePointer2 } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, MousePointer2, Trash2, Circle as CircleIcon } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader as AlertDialogHeaderComponent, AlertDialogTitle as AlertDialogTitleComponent, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription as AlertDialogDescriptionComponent, AlertDialogFooter as AlertDialogFooterComponent } from "@/components/ui/alert-dialog"
 
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
@@ -24,7 +24,7 @@ import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
 import { useVerification } from "@/context/vendor-verification-context"
 import type { CustomizationArea } from "@/lib/types";
-import { DndContext, useDraggable, useSensor, PointerSensor } from '@dnd-kit/core';
+import { DndContext, useDraggable, useDroppable, useSensor, PointerSensor, DragOverlay, DragEndEvent } from '@dnd-kit/core';
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -42,7 +42,7 @@ type ProductImage = {
     file?: File;
     src: string;
     isGenerated?: boolean;
-    customArea?: CustomizationArea;
+    customAreas?: CustomizationArea[];
 }
 
 type ProductImages = {
@@ -50,87 +50,143 @@ type ProductImages = {
 };
 
 
-function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductImage, onSave: (area: CustomizationArea) => void, onCancel: () => void }) {
+function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductImage, onSave: (areas: CustomizationArea[]) => void, onCancel: () => void }) {
     const containerRef = useRef<HTMLDivElement>(null);
-    const [area, setArea] = useState<CustomizationArea>(
-        image.customArea || { x: 25, y: 25, width: 50, height: 50 } // Default area in percentage
-    );
+    const [areas, setAreas] = useState<CustomizationArea[]>(image.customAreas || []);
+    const [activeId, setActiveId] = useState<string | null>(null);
+    const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
 
-    const handleDrag = (e: any) => {
-        setArea(prev => ({
-            ...prev,
-            x: Math.max(0, Math.min(100 - prev.width, prev.x + (e.delta.x / (containerRef.current?.clientWidth || 1)) * 100)),
-            y: Math.max(0, Math.min(100 - prev.height, prev.y + (e.delta.y / (containerRef.current?.clientHeight || 1)) * 100))
+    const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 } });
+    
+    const selectedArea = areas.find(a => a.id === selectedAreaId);
+
+    const handleAddArea = (shape: 'rect' | 'ellipse') => {
+        const newArea: CustomizationArea = {
+            id: `area-${Date.now()}`,
+            shape,
+            x: 35,
+            y: 35,
+            width: 30,
+            height: 30,
+            label: `New ${shape}`
+        };
+        setAreas(prev => [...prev, newArea]);
+        setSelectedAreaId(newArea.id);
+    };
+
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { active, delta } = event;
+        const id = active.id as string;
+        
+        setAreas(prev => prev.map(area => {
+            if (area.id === id) {
+                const containerWidth = containerRef.current?.clientWidth || 1;
+                const containerHeight = containerRef.current?.clientHeight || 1;
+                
+                const newX = Math.max(0, Math.min(100 - area.width, area.x + (delta.x / containerWidth) * 100));
+                const newY = Math.max(0, Math.min(100 - area.height, area.y + (delta.y / containerHeight) * 100));
+
+                return { ...area, x: newX, y: newY };
+            }
+            return area;
         }));
-    };
-    
-    const handleResize = (e: any, handle: string) => {
-        const dx = (e.delta.x / (containerRef.current?.clientWidth || 1)) * 100;
-        const dy = (e.delta.y / (containerRef.current?.clientHeight || 1)) * 100;
 
-        setArea(prev => {
-            let { x, y, width, height } = prev;
+        setActiveId(null);
+    };
+    
+    const handleLabelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!selectedAreaId) return;
+        const newLabel = e.target.value;
+        setAreas(prev => prev.map(a => a.id === selectedAreaId ? { ...a, label: newLabel } : a));
+    }
+    
+    const handleRemoveArea = () => {
+        if(!selectedAreaId) return;
+        setAreas(prev => prev.filter(a => a.id !== selectedAreaId));
+        setSelectedAreaId(null);
+    }
+    
+    const DraggableArea = ({ area }: { area: CustomizationArea }) => {
+        const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: area.id });
+        const style = transform ? {
+            transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+        } : undefined;
 
-            if (handle.includes('right')) width = Math.max(10, Math.min(100 - x, width + dx));
-            if (handle.includes('bottom')) height = Math.max(10, Math.min(100 - y, height + dy));
-            if (handle.includes('left')) {
-                const newWidth = Math.max(10, width - dx);
-                x += width - newWidth;
-                width = newWidth;
-            }
-            if (handle.includes('top')) {
-                const newHeight = Math.max(10, height - dy);
-                y += height - newHeight;
-                height = newHeight;
-            }
-            
-            return { x: Math.max(0, x), y: Math.max(0, y), width: Math.min(100-x, width), height: Math.min(100-y, height) };
-        });
-    };
-    
-    const DraggableHandle = ({ id, onDrag, children, className }: any) => {
-        const { attributes, listeners, setNodeRef, transform } = useDraggable({ id, onDrag });
-        const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : {};
-        return <div ref={setNodeRef} style={style} {...listeners} {...attributes} className={className}>{children}</div>;
-    };
-    
-    const pointerSensor = useSensor(PointerSensor, { activationConstraint: { distance: 5 }});
-    
-    const handleSave = () => onSave(area);
-    
+        return (
+             <div
+                ref={setNodeRef}
+                style={{
+                    ...style,
+                    position: 'absolute',
+                    left: `${area.x}%`,
+                    top: `${area.y}%`,
+                    width: `${area.width}%`,
+                    height: `${area.height}%`,
+                }}
+                className={cn(
+                    "border-2 border-dashed border-primary cursor-move flex items-center justify-center",
+                    selectedAreaId === area.id && "bg-primary/20 ring-2 ring-primary",
+                    area.shape === 'ellipse' && "rounded-full"
+                )}
+                {...listeners}
+                {...attributes}
+                onClick={(e) => { e.stopPropagation(); setSelectedAreaId(area.id); }}
+            >
+                <span className="text-xs bg-black/50 text-white px-1 py-0.5 rounded-sm pointer-events-none select-none">{area.label}</span>
+            </div>
+        )
+    }
+
     return (
-        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
-             <DialogHeader>
-                <DialogTitle>Define Customizable Area</DialogTitle>
-                <DialogDescription>Drag and resize the overlay to define where customers can add their design.</DialogDescription>
+        <DialogContent className="max-w-6xl h-[90vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Define Customizable Areas</DialogTitle>
+                <DialogDescription>Add, move, and label areas where customers can add their designs.</DialogDescription>
             </DialogHeader>
-            <DndContext onDragMove={e => {
-                if (String(e.active.id).startsWith('resize-')) handleResize(e, String(e.active.id));
-                if (e.active.id === 'drag-area') handleDrag(e);
-            }} sensors={[pointerSensor]}>
-                <div ref={containerRef} className="relative w-full h-full bg-muted/20 overflow-hidden flex items-center justify-center">
-                    <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
-                    <div className="absolute w-full h-full top-0 left-0">
-                        <DraggableHandle id="drag-area">
-                            <div className="absolute cursor-move" style={{
-                                left: `${area.x}%`,
-                                top: `${area.y}%`,
-                                width: `${area.width}%`,
-                                height: `${area.height}%`,
-                            }}>
-                                <div className="w-full h-full bg-primary/20 border-2 border-dashed border-primary pointer-events-none" />
-                                <DraggableHandle id="resize-top-left" onDrag={handleResize} className="absolute -top-2 -left-2 w-4 h-4 rounded-full bg-primary border-2 border-background cursor-nwse-resize" />
-                                <DraggableHandle id="resize-top-right" onDrag={handleResize} className="absolute -top-2 -right-2 w-4 h-4 rounded-full bg-primary border-2 border-background cursor-nesw-resize" />
-                                <DraggableHandle id="resize-bottom-left" onDrag={handleResize} className="absolute -bottom-2 -left-2 w-4 h-4 rounded-full bg-primary border-2 border-background cursor-nesw-resize" />
-                                <DraggableHandle id="resize-bottom-right" onDrag={handleResize} className="absolute -bottom-2 -right-2 w-4 h-4 rounded-full bg-primary border-2 border-background cursor-nwse-resize" />
-                            </div>
-                        </DraggableHandle>
+            <div className="flex-1 grid grid-cols-4 gap-6 min-h-0">
+                 <DndContext onDragStart={e => setActiveId(e.active.id as string)} onDragEnd={handleDragEnd} sensors={[pointerSensor]}>
+                    <div ref={containerRef} className="col-span-3 relative w-full h-full bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center" onClick={() => setSelectedAreaId(null)}>
+                        <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
+                        {areas.map(area => <DraggableArea key={area.id} area={area} />)}
                     </div>
+                </DndContext>
+
+                <div className="col-span-1 flex flex-col gap-4">
+                     <Card>
+                        <CardHeader className="p-4">
+                            <CardTitle className="text-base">Tools</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0 grid grid-cols-2 gap-2">
+                             <Button variant="outline" onClick={() => handleAddArea('rect')}><Square className="mr-2 h-4 w-4" /> Rectangle</Button>
+                             <Button variant="outline" onClick={() => handleAddArea('ellipse')}><CircleIcon className="mr-2 h-4 w-4" /> Ellipse</Button>
+                        </CardContent>
+                    </Card>
+                    <Card className="flex-1">
+                        <CardHeader className="p-4">
+                            <CardTitle className="text-base">Selected Area</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            {selectedArea ? (
+                                <div className="space-y-4">
+                                     <div className="space-y-2">
+                                        <Label htmlFor="area-label">Area Label</Label>
+                                        <Input id="area-label" value={selectedArea.label} onChange={handleLabelChange} placeholder="e.g., Logo Here" />
+                                    </div>
+                                    <Button variant="destructive" size="sm" className="w-full" onClick={handleRemoveArea}>
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Remove Area
+                                    </Button>
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground text-center">Select an area on the image to edit its properties.</p>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
-            </DndContext>
+            </div>
             <DialogFooter>
                 <Button variant="secondary" onClick={onCancel}>Cancel</Button>
-                <Button onClick={handleSave}>Save Area</Button>
+                <Button onClick={() => onSave(areas)}>Save Areas</Button>
             </DialogFooter>
         </DialogContent>
     );
@@ -252,7 +308,7 @@ export default function NewProductPage() {
         if (event.target.files && event.target.files[0]) {
             const file = event.target.files[0];
             const src = URL.createObjectURL(file);
-            setImages(prev => ({ ...prev, [side]: { file, src } }));
+            setImages(prev => ({ ...prev, [side]: { file, src, customAreas: [] } }));
         }
     };
     
@@ -304,17 +360,17 @@ export default function NewProductPage() {
         }
     };
     
-    const handleSaveCustomArea = (area: CustomizationArea) => {
+    const handleSaveCustomArea = (areas: CustomizationArea[]) => {
         if (editingSide) {
             setImages(prev => ({
                 ...prev,
                 [editingSide!]: {
                     ...prev[editingSide!]!,
-                    customArea: area,
+                    customAreas: areas,
                 }
             }));
             setEditingSide(null);
-            toast({ title: "Customization area saved!" });
+            toast({ title: "Customization areas saved!" });
         }
     };
 
@@ -435,17 +491,21 @@ export default function NewProductPage() {
                                 {images[side.key]?.src ? (
                                     <div className="relative group aspect-square rounded-md border">
                                         <Image src={images[side.key]!.src} alt={`${side.label} product image`} fill className="object-cover rounded-md" />
-                                        {images[side.key]?.customArea && (
+                                        {images[side.key]?.customAreas && images[side.key]!.customAreas!.map(area => (
                                             <div 
-                                                className="absolute border-2 border-dashed border-primary/70 bg-primary/20 pointer-events-none"
+                                                key={area.id}
+                                                className={cn(
+                                                    "absolute border-2 border-dashed border-primary/70 bg-primary/10 pointer-events-none",
+                                                    area.shape === 'ellipse' && 'rounded-full'
+                                                )}
                                                 style={{
-                                                    left: `${images[side.key]!.customArea!.x}%`,
-                                                    top: `${images[side.key]!.customArea!.y}%`,
-                                                    width: `${images[side.key]!.customArea!.width}%`,
-                                                    height: `${images[side.key]!.customArea!.height}%`,
+                                                    left: `${area.x}%`,
+                                                    top: `${area.y}%`,
+                                                    width: `${area.width}%`,
+                                                    height: `${area.height}%`,
                                                 }}
                                             />
-                                        )}
+                                        ))}
                                         <Button
                                             variant="destructive"
                                             size="icon"
@@ -663,21 +723,22 @@ export default function NewProductPage() {
     
     <AlertDialog open={isConfirmationAlertOpen} onOpenChange={setIsConfirmationAlertOpen}>
         <AlertDialogContent>
-            <AlertDialogHeaderComponent>
-                <AlertDialogTitleComponent className="flex items-center gap-2"><ShieldCheck className="text-primary"/> Enable Pre-Order Check?</AlertDialogTitleComponent>
+            <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2"><ShieldCheck className="text-primary"/> Enable Pre-Order Check?</AlertDialogTitle>
                 <AlertDialogDescriptionComponent>
                     By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
                 </AlertDialogDescriptionComponent>
-            </AlertDialogHeaderComponent>
-            <AlertDialogFooterComponent>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handleConfirmAndEnable}>I Understand &amp; Enable</AlertDialogAction>
-            </AlertDialogFooterComponent>
+            </AlertDialogFooter>
         </AlertDialogContent>
     </AlertDialog>
     </>
   );
 }
+
 
 
 
