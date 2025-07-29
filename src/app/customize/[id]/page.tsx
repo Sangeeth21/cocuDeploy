@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -21,6 +21,9 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
+type TextShape = 'normal' | 'arch' | 'valley' | 'bulge' | 'pinch' | 'perspective-left' | 'perspective-right';
 
 type DesignElement = {
     id: string;
@@ -37,7 +40,8 @@ type DesignElement = {
     fontWeight?: string;
     textColor?: string;
     textAlign?: 'left' | 'center' | 'right';
-    curveIntensity?: number;
+    textShape?: TextShape;
+    shapeIntensity?: number;
     outlineColor?: string;
     outlineWidth?: number;
     // Image properties
@@ -82,36 +86,97 @@ type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
 
 const imageSides: ImageSide[] = ["front", "back", "left", "right", "top", "bottom"];
 
-const ArchText = ({ text, curve, fontSize, areaWidth }: { text: string; curve: number; fontSize: number; areaWidth: number }) => {
-    if (curve === 0 || !text) {
-        return <>{text}</>;
+const TextRenderer = ({ element }: { element: DesignElement }) => {
+    const { 
+        text, 
+        fontFamily, 
+        fontSize, 
+        fontWeight, 
+        textColor, 
+        textAlign, 
+        textShape = 'normal',
+        shapeIntensity = 50,
+        outlineColor,
+        outlineWidth,
+    } = element;
+    
+    const svgFilterId = `outline-${element.id}`;
+    
+    const textStyle: React.CSSProperties = {
+        fontFamily,
+        fontSize: `${fontSize}px`,
+        fontWeight: fontWeight as React.CSSProperties['fontWeight'],
+        color: textColor,
+        textAlign,
+        lineHeight: 1,
+        filter: outlineColor && outlineWidth ? `url(#${svgFilterId})` : 'none',
+        display: 'inline-block',
+        whiteSpace: 'pre-wrap',
+    };
+
+    const intensity = (shapeIntensity - 50) / 50; // Map slider 0-100 to -1 to 1
+
+    const getTransform = (): string => {
+        switch (textShape) {
+            case 'arch':
+                return `path('M 0,${50 - intensity * 25} C ${intensity * 50},${50 - intensity * 75} ${100 - intensity * 50},${50 - intensity * 75} 100,${50 - intensity * 25}')`;
+            case 'valley':
+                 return `path('M 0,50 C 25,${50 + intensity * 50} 75,${50 + intensity * 50} 100,50')`;
+            case 'bulge':
+                 return `transform: scaleY(${1 + intensity * 0.5})`;
+            case 'pinch':
+                 return `transform: scaleY(${1 - Math.abs(intensity * 0.5)})`;
+            case 'perspective-left':
+                 return `transform: perspective(150px) rotateY(${intensity * 30}deg)`;
+            case 'perspective-right':
+                 return `transform: perspective(150px) rotateY(${-intensity * 30}deg)`;
+            default:
+                return 'none';
+        }
+    }
+    
+    if (textShape !== 'normal' && textShape !== 'bulge' && textShape !== 'pinch' && textShape !== 'perspective-left' && textShape !== 'perspective-right') {
+        return (
+             <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+                 {outlineColor && outlineWidth && (
+                    <defs>
+                        <filter id={svgFilterId}>
+                            <feMorphology operator="dilate" radius={outlineWidth} in="SourceGraphic" result="dilated" />
+                            <feFlood floodColor={outlineColor} result="color" />
+                            <feComposite in="color" in2="dilated" operator="in" result="outline" />
+                            <feMerge>
+                                <feMergeNode in="outline" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+                 )}
+                 <path id={`path-${element.id}`} d={getTransform().replace("path('", "").slice(0,-2)} fill="transparent" />
+                 <text style={{...textStyle, filter: 'none'}} dy={textShape === 'arch' ? fontSize!*0.25 : 0}>
+                    <textPath href={`#path-${element.id}`} startOffset="50%" textAnchor="middle">{text}</textPath>
+                 </text>
+             </svg>
+        )
     }
 
-    const characters = text.split('');
-    const totalAngle = Math.abs(curve) * 1.5; // Controls how much the text wraps
-    const radius = (areaWidth * 180) / (totalAngle * Math.PI);
-    const charSpacing = (text.length > 1 ? totalAngle / (text.length - 1) : 0);
-
     return (
-        <div className="w-full h-full relative" style={{ fontSize: `${fontSize}px` }}>
-            {characters.map((char, i) => {
-                const angle = -totalAngle / 2 + i * charSpacing;
-                const transformDirection = curve > 0 ? 1 : -1;
-                
-                return (
-                    <span
-                        key={i}
-                        className="absolute left-1/2 top-1/2"
-                        style={{
-                            transform: `translate(-50%, ${transformDirection === 1 ? '-100%' : '0%'}) rotate(${angle}deg)`,
-                            transformOrigin: `center ${transformDirection * radius}px`,
-                            height: `${radius}px`,
-                        }}
-                    >
-                        {char}
-                    </span>
-                );
-            })}
+        <div className="w-full h-full flex items-center justify-center p-1" style={{transform: textShape !== 'normal' ? getTransform() : 'none'}}>
+            {outlineColor && outlineWidth && (
+                <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+                    <defs>
+                        <filter id={svgFilterId}>
+                            <feMorphology operator="dilate" radius={outlineWidth} in="SourceGraphic" result="dilated" />
+                            <feFlood floodColor={outlineColor} result="color" />
+                            <feComposite in="color" in2="dilated" operator="in" result="outline" />
+                            <feMerge>
+                                <feMergeNode in="outline" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+                </svg>
+            )}
+            <span style={textStyle}>{text}</span>
         </div>
     );
 };
@@ -131,18 +196,6 @@ const CustomizationRenderer = ({ product, activeSide, designElements }: { produc
         <div className="relative w-full h-full">
             <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
             {designElements.map((element) => {
-                 const svgFilterId = `outline-${element.id}`;
-
-                 const textStyle: React.CSSProperties = {
-                    fontFamily: element.fontFamily,
-                    fontSize: `${element.fontSize}px`,
-                    fontWeight: element.fontWeight,
-                    color: element.textColor,
-                    textAlign: element.textAlign,
-                    lineHeight: 1,
-                    filter: element.outlineColor && element.outlineWidth ? `url(#${svgFilterId})` : 'none',
-                };
-                
                 if(element.type === 'text' && element.originalAreaId) return null; // These are handled by vendor areas
 
                 return (
@@ -154,49 +207,19 @@ const CustomizationRenderer = ({ product, activeSide, designElements }: { produc
                         height: `${element.height}%`,
                         transform: `rotate(${element.rotation}deg)`,
                     }}>
-                        {element.outlineColor && element.outlineWidth && (
-                            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-                                <defs>
-                                    <filter id={svgFilterId}>
-                                        <feMorphology operator="dilate" radius={element.outlineWidth} in="SourceGraphic" result="dilated" />
-                                        <feFlood floodColor={element.outlineColor} result="color" />
-                                        <feComposite in="color" in2="dilated" operator="in" result="outline" />
-                                        <feMerge>
-                                            <feMergeNode in="outline" />
-                                            <feMergeNode in="SourceGraphic" />
-                                        </feMerge>
-                                    </filter>
-                                </defs>
-                            </svg>
-                        )}
                         {element.type === 'image' && element.imageUrl && (
                             <Image src={element.imageUrl} alt="Uploaded art" fill className="object-contain"/>
                         )}
                         {element.type === 'art' && element.imageUrl && (
                             <Image src={element.imageUrl} alt="Clipart" fill className="object-contain"/>
                         )}
-                         {element.type === 'text' && (
-                            <div className="w-full h-full flex items-center justify-center p-1" style={textStyle}>
-                                <ArchText text={element.text || ""} curve={element.curveIntensity || 0} fontSize={element.fontSize || 14} areaWidth={element.width} />
-                            </div>
-                        )}
+                        {element.type === 'text' && <TextRenderer element={element} />}
                     </div>
                 )
             })}
             {product.customizationAreas?.[activeSide]?.map((area: any) => {
                  const element = designElements.find(el => el.originalAreaId === area.id);
-                 if (!element || !element.text) return null;
-
-                 const svgFilterId = `outline-${element.id}`;
-
-                 const textStyle: React.CSSProperties = {
-                    fontFamily: element.fontFamily,
-                    fontSize: `${element.fontSize}px`,
-                    fontWeight: element.fontWeight,
-                    color: element.textColor,
-                    lineHeight: 1,
-                    filter: element.outlineColor && element.outlineWidth ? `url(#${svgFilterId})` : 'none',
-                };
+                 if (!element) return null;
 
                  return (
                      <div key={area.id} style={{
@@ -206,30 +229,7 @@ const CustomizationRenderer = ({ product, activeSide, designElements }: { produc
                         width: `${area.width}%`,
                         height: `${area.height}%`,
                     }}>
-                        {element.outlineColor && element.outlineWidth && (
-                            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-                                <defs>
-                                    <filter id={svgFilterId}>
-                                        <feMorphology operator="dilate" radius={element.outlineWidth} in="SourceAlpha" result="dilated" />
-                                        <feFlood floodColor={element.outlineColor} result="color" />
-                                        <feComposite in="color" in2="dilated" operator="in" result="outline" />
-                                        <feMerge>
-                                            <feMergeNode in="outline" />
-                                            <feMergeNode in="SourceGraphic" />
-                                        </feMerge>
-                                    </filter>
-                                </defs>
-                            </svg>
-                        )}
-                       <div className="w-full h-full flex items-center p-1"
-                             style={{
-                                ...textStyle,
-                                justifyContent: element.textAlign === 'left' ? 'flex-start' : element.textAlign === 'right' ? 'flex-end' : 'center',
-                                textAlign: element.textAlign as any,
-                             }}
-                        >
-                           <ArchText text={element.text} curve={element.curveIntensity || 0} fontSize={element.fontSize || 14} areaWidth={area.width} />
-                        </div>
+                        <TextRenderer element={element} />
                     </div>
                  )
             })}
@@ -244,6 +244,63 @@ const mockArt = [
     { id: 'art-4', src: '/art/brush.svg', icon: Brush },
 ];
 
+const textShapes: { id: TextShape; label: string }[] = [
+    { id: 'normal', label: 'Normal' },
+    { id: 'arch', label: 'Arch' },
+    { id: 'valley', label: 'Valley' },
+    { id: 'bulge', label: 'Bulge' },
+    { id: 'pinch', label: 'Pinch' },
+    { id: 'perspective-left', label: 'Perspective Left' },
+    { id: 'perspective-right', label: 'Perspective Right' },
+];
+
+function TextShapeDialog({ open, onOpenChange, element, onElementChange }: { open: boolean, onOpenChange: (open: boolean) => void, element: DesignElement | undefined, onElementChange: (id: string, value: Partial<DesignElement>) => void }) {
+    if (!element) return null;
+
+    const [currentShape, setCurrentShape] = useState(element.textShape || 'normal');
+    const [currentIntensity, setCurrentIntensity] = useState(element.shapeIntensity || 50);
+
+    const handleDone = () => {
+        onElementChange(element.id, { textShape: currentShape, shapeIntensity: currentIntensity });
+        onOpenChange(false);
+    }
+    
+    const handleRemoveShape = () => {
+        onElementChange(element.id, { textShape: 'normal', shapeIntensity: 50 });
+        onOpenChange(false);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Choose Text Shape</DialogTitle>
+                </DialogHeader>
+                 <div className="grid grid-cols-3 gap-2">
+                    {textShapes.map(shape => (
+                        <Button 
+                            key={shape.id} 
+                            variant={currentShape === shape.id ? "default" : "outline"}
+                            onClick={() => setCurrentShape(shape.id)}
+                        >
+                            {shape.label}
+                        </Button>
+                    ))}
+                </div>
+                 <div className="space-y-2 pt-4">
+                    <Label>Choose shape settings</Label>
+                    <Slider value={[currentIntensity]} onValueChange={([val]) => setCurrentIntensity(val)} />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={handleRemoveShape}>Remove Shape</Button>
+                    <Button onClick={handleDone}>Done</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
 export default function CustomizeProductPage() {
     const params = useParams();
     const router = useRouter();
@@ -257,6 +314,7 @@ export default function CustomizeProductPage() {
     const [activeSide, setActiveSide] = useState<ImageSide>("front");
     const [designElements, setDesignElements, undo, redo, canUndo, canRedo] = useHistoryState<DesignElement[]>([]);
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    const [isTextShapeOpen, setIsTextShapeOpen] = useState(false);
 
     const firstCustomizableSide = useMemo(() => {
         if (!product?.customizationAreas) return "front";
@@ -281,9 +339,8 @@ export default function CustomizeProductPage() {
                         fontWeight: 'normal',
                         textColor: '#000000',
                         textAlign: 'center',
-                        curveIntensity: 0,
-                        outlineColor: 'transparent',
-                        outlineWidth: 0,
+                        textShape: 'normal',
+                        shapeIntensity: 50
                     });
                 }
             });
@@ -309,7 +366,8 @@ export default function CustomizeProductPage() {
             fontWeight: 'normal',
             textColor: '#000000',
             textAlign: 'center',
-            curveIntensity: 0,
+            textShape: 'normal',
+            shapeIntensity: 50,
         };
         setDesignElements(prev => [...prev, newElement]);
         setSelectedElementId(newElement.id);
@@ -389,7 +447,6 @@ export default function CustomizeProductPage() {
                     fontWeight: el.fontWeight,
                     textColor: el.textColor,
                     textAlign: el.textAlign,
-                    curveIntensity: el.curveIntensity
                 }
             }
         });
@@ -500,7 +557,7 @@ export default function CustomizeProductPage() {
                                         />
                                         <Separator/>
                                         <div className="space-y-2">
-                                            <Label>Change Font</Label>
+                                            <Label>Font</Label>
                                             <Select value={selectedElement.fontFamily} onValueChange={(v) => handleElementChange(selectedElementId!, { fontFamily: v })}>
                                                 <SelectTrigger><SelectValue/></SelectTrigger>
                                                 <SelectContent>
@@ -511,7 +568,7 @@ export default function CustomizeProductPage() {
                                             </Select>
                                         </div>
                                          <div className="space-y-2">
-                                            <Label>Edit Color</Label>
+                                            <Label>Color</Label>
                                             <Input type="color" value={selectedElement.textColor} onChange={(e) => handleElementChange(selectedElementId!, { textColor: e.target.value })} className="h-10 p-1" />
                                         </div>
                                          <div className="space-y-2">
@@ -530,13 +587,15 @@ export default function CustomizeProductPage() {
                                         </div>
                                          <div className="space-y-2">
                                             <Label>Text Shape</Label>
-                                             <Slider min={-100} max={100} step={1} value={[selectedElement.curveIntensity || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { curveIntensity: v })} />
+                                            <Button variant="outline" className="w-full justify-start" onClick={() => setIsTextShapeOpen(true)}>
+                                                <Shapes className="mr-2 h-4 w-4" />
+                                                <span className="capitalize">{selectedElement.textShape?.replace('-', ' ') || 'Normal'}</span>
+                                            </Button>
                                         </div>
                                         <Separator/>
                                          <div className="grid grid-cols-2 gap-2">
-                                            <Button variant="outline" size="sm" disabled>Center</Button>
                                             <Button variant="outline" size="sm" onClick={() => duplicateElement(selectedElementId!)}>Duplicate</Button>
-                                             <div className="col-span-2">
+                                            <div className="col-span-2">
                                                 <ToggleGroup type="single" value={selectedElement.textAlign} onValueChange={(v) => v && handleElementChange(selectedElementId!, {textAlign: v as any})} className="w-full">
                                                     <ToggleGroupItem value="left" className="flex-1"><AlignLeft className="h-4 w-4"/></ToggleGroupItem>
                                                     <ToggleGroupItem value="center" className="flex-1"><AlignCenter className="h-4 w-4"/></ToggleGroupItem>
@@ -632,7 +691,14 @@ export default function CustomizeProductPage() {
                     </Tabs>
                 </div>
             </main>
+            <TextShapeDialog 
+                open={isTextShapeOpen} 
+                onOpenChange={setIsTextShapeOpen}
+                element={selectedElement}
+                onElementChange={handleElementChange}
+            />
         </div>
     );
 }
 
+    
