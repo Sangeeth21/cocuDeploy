@@ -104,7 +104,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             fontWeight: 'normal',
             textAlign: 'center',
             textColor: '#000000',
-            placeholderText: 'Your Text'
         };
         setAreas([...areas, newArea]);
         setSelectedAreaId(newArea.id);
@@ -244,7 +243,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                         color: area.textColor,
                     }}
                 >
-                    <span className="truncate">{area.placeholderText}</span>
+                    <span className="truncate">{area.label}</span>
                 </div>
                 {isSelected && resizeHandles.map(handle => (
                     <div
@@ -260,7 +259,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
 
     return (
         <DialogContent className="max-w-7xl h-[90vh] flex flex-col">
-            <DialogHeader className="flex-row items-center gap-2">
+            <DialogHeader className="flex-row items-center gap-2 pr-12">
                  <DialogTitle>Define Customizable Areas</DialogTitle>
                 <Dialog>
                     <TooltipProvider delayDuration={100}>
@@ -280,7 +279,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                         <div className="text-sm text-muted-foreground space-y-4">
                             <p><strong className="text-foreground">1. Add a Shape:</strong> Use the "Rectangle" or "Ellipse" buttons to add a new area.</p>
                             <p><strong className="text-foreground">2. Position & Resize:</strong> Click and drag an area to move it. Drag the handles on its edges and corners to resize it.</p>
-                            <p><strong className="text-foreground">3. Customize:</strong> With an area selected, use the "Properties" panel to change its label, placeholder text, and text styling.</p>
+                            <p><strong className="text-foreground">3. Customize:</strong> With an area selected, use the "Properties" panel to change its label and text styling.</p>
                             <p><strong className="text-foreground">4. Undo/Redo:</strong> Use the undo and redo buttons in the toolbar to step back and forth through your changes.</p>
                             <p><strong className="text-foreground">5. Save:</strong> When you're finished, click "Save Changes" to apply your work to the product image.</p>
                         </div>
@@ -320,12 +319,8 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                                 <ScrollArea className="h-[45vh] pr-2">
                                 <div className="space-y-4">
                                      <div className="space-y-2">
-                                        <Label htmlFor="area-label">Area Label</Label>
-                                        <Input id="area-label" value={selectedArea.label} onChange={(e) => updateAreaProperty(selectedArea.id, 'label', e.target.value)} placeholder="e.g., Logo Here" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="placeholder-text">Placeholder Text</Label>
-                                        <Input id="placeholder-text" value={selectedArea.placeholderText} onChange={(e) => updateAreaProperty(selectedArea.id, 'placeholderText', e.target.value)} placeholder="e.g., Your Name" />
+                                        <Label htmlFor="area-label">Area Label / Placeholder</Label>
+                                        <Input id="area-label" value={selectedArea.label} onChange={(e) => updateAreaProperty(selectedArea.id, 'label', e.target.value)} placeholder="e.g., Your Name Here" />
                                     </div>
                                     
                                     <div className="grid grid-cols-2 gap-4">

@@ -1,5 +1,4 @@
 
-
 export type CustomizationArea = {
   id: string;
   shape: 'rect' | 'ellipse';
@@ -8,7 +7,6 @@ export type CustomizationArea = {
   width: number;
   height: number;
   label: string;
-  placeholderText: string;
   fontFamily: string;
   fontSize: number;
   fontWeight: string;
@@ -241,5 +239,3 @@ export type Program = {
     endDate: Date;
     expiryDays?: number;
 };
-
-    
