@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { notFound, useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -11,8 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import type { CustomizationArea, CustomizationValue } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn } from "lucide-react";
+import type { CustomizationValue } from "@/lib/types";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -73,7 +73,7 @@ const CustomizationRenderer = ({ product, activeSide, customizations }: { produc
     return (
         <div className="relative w-full h-full">
             <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
-            {currentCustomizationAreas.map((area: CustomizationArea) => {
+            {currentCustomizationAreas.map((area: any) => {
                 const value = customizations[area.id] as any;
                 if (!value || !value.text) return null;
 
@@ -92,7 +92,7 @@ const CustomizationRenderer = ({ product, activeSide, customizations }: { produc
                                 fontWeight: value.fontWeight,
                                 color: value.textColor,
                                 justifyContent: value.textAlign === 'left' ? 'flex-start' : value.textAlign === 'right' ? 'flex-end' : 'center',
-                                textAlign: value.textAlign,
+                                textAlign: value.textAlign as any,
                                 lineHeight: 1,
                              }}
                         >
@@ -126,7 +126,7 @@ export default function CustomizeProductPage() {
     }, [product]);
 
     // Set initial state for active side and customizations
-    useState(() => {
+    useEffect(() => {
         setActiveSide(firstCustomizableSide);
         if (product?.customizationAreas) {
             const initialCustomizations: { [key: string]: CustomizationValue } = {};
@@ -134,10 +134,10 @@ export default function CustomizeProductPage() {
                 if (area) {
                      initialCustomizations[area.id] = {
                         text: `Your ${area.label}`,
-                        fontFamily: area.fontFamily,
-                        fontSize: area.fontSize,
-                        fontWeight: area.fontWeight,
-                        textColor: area.textColor,
+                        fontFamily: area.fontFamily || 'sans-serif',
+                        fontSize: area.fontSize || 14,
+                        fontWeight: area.fontWeight || 'normal',
+                        textColor: area.textColor || '#000000',
                         textAlign: 'center',
                         curveIntensity: 0,
                     };
@@ -145,7 +145,7 @@ export default function CustomizeProductPage() {
             });
             setCustomizations(initialCustomizations);
         }
-    });
+    }, [firstCustomizableSide, product]);
 
     const handleCustomizationChange = useCallback((areaId: string, value: Partial<CustomizationValue>) => {
         setCustomizations(prev => ({
@@ -196,11 +196,11 @@ export default function CustomizeProductPage() {
 
             <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6 overflow-hidden">
                 {/* Left Panel: Preview */}
-                <div className="md:col-span-2 lg:col-span-3 h-full flex items-center justify-center gap-4">
-                     <div className="relative h-full flex-1 flex items-center justify-center bg-background rounded-lg shadow-md p-4">
+                <div className="md:col-span-2 lg:col-span-3 h-full flex flex-col items-center justify-center gap-4">
+                     <div className="relative h-full flex-1 w-full flex items-center justify-center bg-background rounded-lg shadow-md p-4">
                         <CustomizationRenderer product={product} activeSide={activeSide} customizations={customizations} />
                     </div>
-                     <div className="flex flex-col gap-2">
+                     <div className="flex-shrink-0 flex items-center justify-center gap-2 bg-background p-2 rounded-lg shadow-md">
                          {imageSides.map(side => {
                             const hasImage = !!product.images?.[imageSides.indexOf(side)];
                             return (
@@ -242,7 +242,7 @@ export default function CustomizeProductPage() {
                         <div className="flex-1 overflow-y-auto p-4">
                             <TabsContent value="text" className="mt-0 space-y-4">
                                {currentCustomizationAreas.length > 0 ? (
-                                    currentCustomizationAreas.map(area => {
+                                    currentCustomizationAreas.map((area: any) => {
                                         const value = customizations[area.id] as any || {};
                                         return (
                                             <div key={area.id} className="space-y-4 border p-4 rounded-lg">
@@ -274,6 +274,24 @@ export default function CustomizeProductPage() {
                                                         <Input type="number" value={value.fontSize} onChange={(e) => handleCustomizationChange(area.id, { fontSize: parseInt(e.target.value) || 14 })}/>
                                                     </div>
                                                 </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div className="space-y-2">
+                                                        <Label>Alignment</Label>
+                                                        <ToggleGroup type="single" value={value.textAlign} onValueChange={(v) => v && handleCustomizationChange(area.id, {textAlign: v as any})} className="w-full">
+                                                            <ToggleGroupItem value="left" className="flex-1"><PilcrowLeft className="h-4 w-4"/></ToggleGroupItem>
+                                                            <ToggleGroupItem value="center" className="flex-1"><Pilcrow className="h-4 w-4"/></ToggleGroupItem>
+                                                            <ToggleGroupItem value="right" className="flex-1"><PilcrowRight className="h-4 w-4"/></ToggleGroupItem>
+                                                        </ToggleGroup>
+                                                    </div>
+                                                    <div className="space-y-2">
+                                                        <Label>Style</Label>
+                                                         <ToggleGroup type="multiple" value={value.fontWeight === 'bold' ? ['bold'] : []} onValueChange={(v) => handleCustomizationChange(area.id, {fontWeight: v.includes('bold') ? 'bold' : 'normal'})} className="w-full">
+                                                            <ToggleGroupItem value="bold" className="flex-1"><Bold className="h-4 w-4"/></ToggleGroupItem>
+                                                        </ToggleGroup>
+                                                    </div>
+                                                </div>
+                                                
                                                 <div className="space-y-2">
                                                     <Label>Color</Label>
                                                     <Input type="color" value={value.textColor} onChange={(e) => handleCustomizationChange(area.id, { textColor: e.target.value })} className="h-10 p-1" />
