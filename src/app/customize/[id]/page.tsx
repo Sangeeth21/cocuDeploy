@@ -91,6 +91,40 @@ export default function CustomizeProductPage() {
     }
     
     const currentCustomizationAreas = product.customizationAreas?.[activeSide] || [];
+    
+    const ArchText = ({ text, curve, fontSize, areaWidth }: { text: string; curve: number; fontSize: number; areaWidth: number }) => {
+        if (curve === 0 || !text) {
+            return <>{text}</>;
+        }
+
+        const characters = text.split('');
+        const totalAngle = Math.abs(curve) * 1.5; // Controls how much the text wraps
+        const radius = (areaWidth * 180) / (totalAngle * Math.PI);
+        const charSpacing = (text.length > 1 ? totalAngle / (text.length - 1) : 0);
+
+        return (
+            <div className="w-full h-full relative" style={{ fontSize: `${fontSize}px` }}>
+                {characters.map((char, i) => {
+                    const angle = -totalAngle / 2 + i * charSpacing;
+                    const transformDirection = curve > 0 ? 1 : -1;
+                    
+                    return (
+                        <span
+                            key={i}
+                            className="absolute left-1/2 top-1/2"
+                            style={{
+                                transform: `translate(-50%, ${transformDirection === 1 ? '-100%' : '0%'}) rotate(${angle}deg)`,
+                                transformOrigin: `center ${transformDirection * radius}px`,
+                                height: `${radius}px`,
+                            }}
+                        >
+                            {char}
+                        </span>
+                    );
+                })}
+            </div>
+        );
+    };
 
     const CustomizationRenderer = ({ areas, productSrc }: { areas: CustomizationArea[], productSrc: string }) => {
         return (
@@ -100,61 +134,6 @@ export default function CustomizeProductPage() {
                     const value = customizations[area.id] as any;
                     if (!value || !value.text) return null;
 
-                    const SlicedText = () => {
-                        const curve = value.curveIntensity || 0;
-                        const numSlices = 30; // More slices for smoother curve
-                        
-                        if (curve === 0) {
-                            return (
-                                <div className="w-full h-full flex items-center p-1"
-                                     style={{
-                                        fontFamily: value.fontFamily,
-                                        fontSize: `${value.fontSize}px`,
-                                        fontWeight: value.fontWeight,
-                                        color: value.textColor,
-                                        justifyContent: value.textAlign === 'left' ? 'flex-start' : value.textAlign === 'right' ? 'flex-end' : 'center',
-                                        textAlign: value.textAlign,
-                                     }}
-                                >
-                                    {value.text}
-                                </div>
-                            )
-                        }
-
-                        return (
-                             <div className="w-full h-full" style={{ transformStyle: 'preserve-3d', perspective: '500px' }}>
-                                {Array.from({ length: numSlices }).map((_, i) => {
-                                    const sliceAngle = ((i - numSlices / 2 + 0.5) / numSlices) * curve;
-                                    return (
-                                        <div key={i} className="absolute w-full h-full overflow-hidden"
-                                            style={{
-                                                left: `${(i / numSlices) * 100}%`,
-                                                width: `${100 / numSlices}%`,
-                                                transform: `rotateY(${sliceAngle}deg)`,
-                                                transformOrigin: `50% 50% -${area.width / 2}px`,
-                                            }}
-                                        >
-                                             <div className="absolute w-full h-full flex items-center p-1"
-                                                style={{
-                                                    left: `-${i * 100}%`,
-                                                    width: `${numSlices * 100}%`,
-                                                    fontFamily: value.fontFamily,
-                                                    fontSize: `${value.fontSize}px`,
-                                                    fontWeight: value.fontWeight,
-                                                    color: value.textColor,
-                                                    justifyContent: value.textAlign === 'left' ? 'flex-start' : value.textAlign === 'right' ? 'flex-end' : 'center',
-                                                    textAlign: value.textAlign,
-                                                }}
-                                             >
-                                                {value.text}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )
-                    };
-
                     return (
                          <div key={area.id} style={{
                             position: 'absolute',
@@ -163,7 +142,19 @@ export default function CustomizeProductPage() {
                             width: `${area.width}%`,
                             height: `${area.height}%`,
                         }}>
-                           <SlicedText />
+                           <div className="w-full h-full flex items-center p-1"
+                                 style={{
+                                    fontFamily: value.fontFamily,
+                                    fontSize: `${value.fontSize}px`,
+                                    fontWeight: value.fontWeight,
+                                    color: value.textColor,
+                                    justifyContent: value.textAlign === 'left' ? 'flex-start' : value.textAlign === 'right' ? 'flex-end' : 'center',
+                                    textAlign: value.textAlign,
+                                    lineHeight: 1,
+                                 }}
+                            >
+                               <ArchText text={value.text} curve={value.curveIntensity} fontSize={value.fontSize} areaWidth={area.width} />
+                            </div>
                         </div>
                     )
                 })}
