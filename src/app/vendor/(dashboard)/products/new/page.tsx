@@ -290,6 +290,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                                     fontSize: `${area.fontSize}px`,
                                     fontWeight: area.fontWeight as React.CSSProperties['fontWeight'],
                                     color: area.textColor,
+                                    background: isSelected ? 'rgba(66, 133, 244, 0.2)' : 'transparent',
                                 }}
                             >
                                 <span className="truncate">{area.label}</span>
@@ -324,7 +325,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                      style={{
                         perspective: curveIntensity > 0 ? '500px' : undefined,
                         transformStyle: curveIntensity > 0 ? 'preserve-3d' : undefined,
-                        background: isSelected ? 'rgba(66, 133, 244, 0.2)' : 'transparent',
+                        background: (isSelected && curveIntensity === 0) ? 'rgba(66, 133, 244, 0.2)' : 'transparent',
                      }}
                 >
                     {curveIntensity > 0 ? <SlicedContent /> : <Content />}
