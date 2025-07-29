@@ -12,13 +12,33 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+
+type DesignElement = {
+    id: string;
+    type: 'text' | 'image' | 'art';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    text?: string;
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: string;
+    textColor?: string;
+    textAlign?: 'left' | 'center' | 'right';
+    curveIntensity?: number;
+    imageUrl?: string;
+    originalAreaId?: string; // Links text element back to a vendor-defined area
+}
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
 
@@ -58,8 +78,7 @@ const ArchText = ({ text, curve, fontSize, areaWidth }: { text: string; curve: n
     );
 };
 
-const CustomizationRenderer = ({ product, activeSide, customizations }: { product: any, activeSide: ImageSide, customizations: { [key: string]: CustomizationValue } }) => {
-    const currentCustomizationAreas = product.customizationAreas?.[activeSide] || [];
+const CustomizationRenderer = ({ product, activeSide, designElements }: { product: any, activeSide: ImageSide, designElements: DesignElement[] }) => {
     const productSrc = product.images?.[imageSides.indexOf(activeSide)];
 
     if (!productSrc) {
@@ -73,11 +92,32 @@ const CustomizationRenderer = ({ product, activeSide, customizations }: { produc
     return (
         <div className="relative w-full h-full">
             <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
-            {currentCustomizationAreas.map((area: any) => {
-                const value = customizations[area.id] as any;
-                if (!value || !value.text) return null;
+            {designElements.map((element) => {
+                if(element.type === 'text' && element.originalAreaId) return null; // These are handled by vendor areas
 
                 return (
+                    <div key={element.id} style={{
+                        position: 'absolute',
+                        left: `${element.x}%`,
+                        top: `${element.y}%`,
+                        width: `${element.width}%`,
+                        height: `${element.height}%`,
+                        transform: `rotate(${element.rotation}deg)`,
+                    }}>
+                        {element.type === 'image' && element.imageUrl && (
+                            <Image src={element.imageUrl} alt="Uploaded art" fill className="object-contain"/>
+                        )}
+                        {element.type === 'art' && element.imageUrl && (
+                            <Image src={element.imageUrl} alt="Clipart" fill className="object-contain"/>
+                        )}
+                    </div>
+                )
+            })}
+            {product.customizationAreas?.[activeSide]?.map((area: any) => {
+                 const element = designElements.find(el => el.originalAreaId === area.id);
+                 if (!element || !element.text) return null;
+
+                 return (
                      <div key={area.id} style={{
                         position: 'absolute',
                         left: `${area.x}%`,
@@ -87,24 +127,30 @@ const CustomizationRenderer = ({ product, activeSide, customizations }: { produc
                     }}>
                        <div className="w-full h-full flex items-center p-1"
                              style={{
-                                fontFamily: value.fontFamily,
-                                fontSize: `${value.fontSize}px`,
-                                fontWeight: value.fontWeight,
-                                color: value.textColor,
-                                justifyContent: value.textAlign === 'left' ? 'flex-start' : value.textAlign === 'right' ? 'flex-end' : 'center',
-                                textAlign: value.textAlign as any,
+                                fontFamily: element.fontFamily,
+                                fontSize: `${element.fontSize}px`,
+                                fontWeight: element.fontWeight,
+                                color: element.textColor,
+                                justifyContent: element.textAlign === 'left' ? 'flex-start' : element.textAlign === 'right' ? 'flex-end' : 'center',
+                                textAlign: element.textAlign as any,
                                 lineHeight: 1,
                              }}
                         >
-                           <ArchText text={value.text} curve={value.curveIntensity} fontSize={value.fontSize} areaWidth={area.width} />
+                           <ArchText text={element.text} curve={element.curveIntensity || 0} fontSize={element.fontSize || 14} areaWidth={area.width} />
                         </div>
                     </div>
-                )
+                 )
             })}
         </div>
     )
 }
 
+const mockArt = [
+    { id: 'art-1', src: '/art/smile.svg', icon: Smile },
+    { id: 'art-2', src: '/art/star.svg', icon: StarIcon },
+    { id: 'art-3', src: '/art/party.svg', icon: PartyPopper },
+    { id: 'art-4', src: '/art/brush.svg', icon: Brush },
+];
 
 export default function CustomizeProductPage() {
     const params = useParams();
@@ -117,22 +163,26 @@ export default function CustomizeProductPage() {
     const product = useMemo(() => mockProducts.find((p) => p.id === id), [id]);
 
     const [activeSide, setActiveSide] = useState<ImageSide>("front");
-    const [customizations, setCustomizations] = useState<{ [key: string]: CustomizationValue }>({});
+    const [designElements, setDesignElements] = useState<DesignElement[]>([]);
+    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
 
-    // Find the first available side with customization areas and set it as active
     const firstCustomizableSide = useMemo(() => {
         if (!product?.customizationAreas) return "front";
         return imageSides.find(side => product.customizationAreas![side]?.length) || "front";
     }, [product]);
 
-    // Set initial state for active side and customizations
     useEffect(() => {
         setActiveSide(firstCustomizableSide);
         if (product?.customizationAreas) {
-            const initialCustomizations: { [key: string]: CustomizationValue } = {};
+            const initialElements: DesignElement[] = [];
             Object.values(product.customizationAreas).flat().forEach(area => {
                 if (area) {
-                     initialCustomizations[area.id] = {
+                     initialElements.push({
+                        id: `text-${area.id}`,
+                        type: 'text',
+                        originalAreaId: area.id,
+                        x: area.x, y: area.y, width: area.width, height: area.height,
+                        rotation: 0,
                         text: `Your ${area.label}`,
                         fontFamily: area.fontFamily || 'sans-serif',
                         fontSize: area.fontSize || 14,
@@ -140,23 +190,86 @@ export default function CustomizeProductPage() {
                         textColor: area.textColor || '#000000',
                         textAlign: 'center',
                         curveIntensity: 0,
-                    };
+                    });
                 }
             });
-            setCustomizations(initialCustomizations);
+            setDesignElements(initialElements);
+            // Select the first text element by default
+            if(initialElements.length > 0) {
+                setSelectedElementId(initialElements[0].id)
+            }
         }
     }, [firstCustomizableSide, product]);
 
-    const handleCustomizationChange = useCallback((areaId: string, value: Partial<CustomizationValue>) => {
-        setCustomizations(prev => ({
-            ...prev,
-            [areaId]: { ...prev[areaId], ...value }
-        }));
+    const handleElementChange = useCallback((elementId: string, value: Partial<DesignElement>) => {
+        setDesignElements(prev => prev.map(el => el.id === elementId ? { ...el, ...value } : el));
     }, []);
+    
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            const newElement: DesignElement = {
+                id: `image-${Date.now()}`,
+                type: 'image',
+                x: 25, y: 25, width: 50, height: 50, rotation: 0,
+                imageUrl: URL.createObjectURL(file)
+            }
+            setDesignElements(prev => [...prev, newElement]);
+            setSelectedElementId(newElement.id);
+        }
+    };
+    
+    const addArtElement = (artSrc: string) => {
+         const newElement: DesignElement = {
+            id: `art-${Date.now()}`,
+            type: 'art',
+            x: 35, y: 35, width: 30, height: 30, rotation: 0,
+            imageUrl: artSrc,
+        }
+        setDesignElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
+    }
+    
+    const removeElement = (elementId: string) => {
+        setDesignElements(prev => prev.filter(el => el.id !== elementId));
+        if (selectedElementId === elementId) {
+            setSelectedElementId(null);
+        }
+    }
+    
+    const reorderElement = (elementId: string, direction: 'up' | 'down') => {
+        const index = designElements.findIndex(el => el.id === elementId);
+        if(index === -1) return;
+
+        const newIndex = direction === 'up' ? index + 1 : index - 1;
+        if(newIndex < 0 || newIndex >= designElements.length) return;
+
+        const newElements = [...designElements];
+        const element = newElements.splice(index, 1)[0];
+        newElements.splice(newIndex, 0, element);
+        setDesignElements(newElements);
+    }
+    
+    const selectedElement = useMemo(() => designElements.find(el => el.id === selectedElementId), [designElements, selectedElementId]);
 
     const handleAddToCart = (buyNow = false) => {
         if (!product) return;
-        addToCart({ product, customizations });
+        const customizationsForCart: { [key: string]: Partial<CustomizationValue> } = {};
+        designElements.forEach(el => {
+            if (el.type === 'text' && el.originalAreaId) {
+                customizationsForCart[el.originalAreaId] = {
+                    text: el.text,
+                    fontFamily: el.fontFamily,
+                    fontSize: el.fontSize,
+                    fontWeight: el.fontWeight,
+                    textColor: el.textColor,
+                    textAlign: el.textAlign,
+                    curveIntensity: el.curveIntensity
+                }
+            }
+        });
+        
+        addToCart({ product, customizations: customizationsForCart });
         toast({
             title: "Customized Product Added!",
             description: `${product.name} has been added to your cart.`,
@@ -173,7 +286,12 @@ export default function CustomizeProductPage() {
         notFound();
     }
     
-    const currentCustomizationAreas = product.customizationAreas?.[activeSide] || [];
+    const currentVendorCustomizationAreas = product.customizationAreas?.[activeSide] || [];
+    
+    // Filter elements to only those that belong to vendor-defined areas on the current side
+    const textElementsForCurrentSide = designElements.filter(el => 
+        el.type === 'text' && currentVendorCustomizationAreas.some(area => `text-${area.id}` === el.id)
+    );
 
     return (
         <div className="h-screen flex flex-col bg-muted/40">
@@ -198,7 +316,7 @@ export default function CustomizeProductPage() {
                 {/* Left Panel: Preview */}
                 <div className="md:col-span-2 lg:col-span-3 h-full flex flex-col items-center justify-center gap-4">
                      <div className="relative h-full flex-1 w-full flex items-center justify-center bg-background rounded-lg shadow-md p-4">
-                        <CustomizationRenderer product={product} activeSide={activeSide} customizations={customizations} />
+                        <CustomizationRenderer product={product} activeSide={activeSide} designElements={designElements} />
                     </div>
                      <div className="flex-shrink-0 flex items-center justify-center gap-2 bg-background p-2 rounded-lg shadow-md">
                          {imageSides.map(side => {
@@ -239,107 +357,150 @@ export default function CustomizeProductPage() {
                             <TabsTrigger value="notes" className="flex-col h-14"><StickyNote className="h-5 w-5 mb-1"/>Notes</TabsTrigger>
                         </TabsList>
                         
-                        <div className="flex-1 overflow-y-auto p-4">
-                            <TabsContent value="text" className="mt-0 space-y-4">
-                               {currentCustomizationAreas.length > 0 ? (
-                                    currentCustomizationAreas.map((area: any) => {
-                                        const value = customizations[area.id] as any || {};
-                                        return (
-                                            <div key={area.id} className="space-y-4 border p-4 rounded-lg">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor={`text-${area.id}`}>{area.label}</Label>
-                                                    <Input
-                                                        id={`text-${area.id}`}
-                                                        placeholder={`Enter text...`}
-                                                        value={value.text || ""}
-                                                        onChange={(e) => handleCustomizationChange(area.id, { text: e.target.value })}
-                                                        maxLength={area.maxLength || 50}
-                                                    />
-                                                </div>
+                        <ScrollArea className="flex-1">
+                            <div className="p-4">
+                                <TabsContent value="text" className="mt-0 space-y-4">
+                                {textElementsForCurrentSide.length > 0 ? (
+                                        textElementsForCurrentSide.map((element) => {
+                                            const area = currentVendorCustomizationAreas.find(a => `text-${a.id}` === element.id)!;
+                                            return (
+                                                <div key={element.id} className="space-y-4 border p-4 rounded-lg">
+                                                    <div className="space-y-2">
+                                                        <Label htmlFor={`text-${area.id}`}>{area.label}</Label>
+                                                        <Input
+                                                            id={`text-${area.id}`}
+                                                            placeholder={`Enter text...`}
+                                                            value={element.text || ""}
+                                                            onChange={(e) => handleElementChange(element.id, { text: e.target.value })}
+                                                            maxLength={area.maxLength || 50}
+                                                        />
+                                                    </div>
 
-                                                <div className="grid grid-cols-2 gap-4">
-                                                     <div className="space-y-2">
-                                                        <Label>Font</Label>
-                                                        <Select value={value.fontFamily} onValueChange={(v) => handleCustomizationChange(area.id, { fontFamily: v })}>
-                                                            <SelectTrigger><SelectValue/></SelectTrigger>
-                                                            <SelectContent>
-                                                                <SelectItem value="sans-serif">Sans Serif</SelectItem>
-                                                                <SelectItem value="serif">Serif</SelectItem>
-                                                                <SelectItem value="monospace">Monospace</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Label>Font</Label>
+                                                            <Select value={element.fontFamily} onValueChange={(v) => handleElementChange(element.id, { fontFamily: v })}>
+                                                                <SelectTrigger><SelectValue/></SelectTrigger>
+                                                                <SelectContent>
+                                                                    <SelectItem value="sans-serif">Sans Serif</SelectItem>
+                                                                    <SelectItem value="serif">Serif</SelectItem>
+                                                                    <SelectItem value="monospace">Monospace</SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Font Size</Label>
+                                                            <Input type="number" value={element.fontSize} onChange={(e) => handleElementChange(element.id, { fontSize: parseInt(e.target.value) || 14 })}/>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="space-y-2">
+                                                            <Label>Alignment</Label>
+                                                            <ToggleGroup type="single" value={element.textAlign} onValueChange={(v) => v && handleElementChange(element.id, {textAlign: v as any})} className="w-full">
+                                                                <ToggleGroupItem value="left" className="flex-1"><PilcrowLeft className="h-4 w-4"/></ToggleGroupItem>
+                                                                <ToggleGroupItem value="center" className="flex-1"><Pilcrow className="h-4 w-4"/></ToggleGroupItem>
+                                                                <ToggleGroupItem value="right" className="flex-1"><PilcrowRight className="h-4 w-4"/></ToggleGroupItem>
+                                                            </ToggleGroup>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>Style</Label>
+                                                            <ToggleGroup type="multiple" value={element.fontWeight === 'bold' ? ['bold'] : []} onValueChange={(v) => handleElementChange(element.id, {fontWeight: v.includes('bold') ? 'bold' : 'normal'})} className="w-full">
+                                                                <ToggleGroupItem value="bold" className="flex-1"><Bold className="h-4 w-4"/></ToggleGroupItem>
+                                                            </ToggleGroup>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div className="space-y-2">
+                                                        <Label>Color</Label>
+                                                        <Input type="color" value={element.textColor} onChange={(e) => handleElementChange(element.id, { textColor: e.target.value })} className="h-10 p-1" />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label>Font Size</Label>
-                                                        <Input type="number" value={value.fontSize} onChange={(e) => handleCustomizationChange(area.id, { fontSize: parseInt(e.target.value) || 14 })}/>
+                                                        <Label>Curvature</Label>
+                                                        <Slider min={-100} max={100} step={1} value={[element.curveIntensity || 0]} onValueChange={([v]) => handleElementChange(element.id, { curveIntensity: v })} />
                                                     </div>
                                                 </div>
-                                                
-                                                <div className="grid grid-cols-2 gap-4">
-                                                    <div className="space-y-2">
-                                                        <Label>Alignment</Label>
-                                                        <ToggleGroup type="single" value={value.textAlign} onValueChange={(v) => v && handleCustomizationChange(area.id, {textAlign: v as any})} className="w-full">
-                                                            <ToggleGroupItem value="left" className="flex-1"><PilcrowLeft className="h-4 w-4"/></ToggleGroupItem>
-                                                            <ToggleGroupItem value="center" className="flex-1"><Pilcrow className="h-4 w-4"/></ToggleGroupItem>
-                                                            <ToggleGroupItem value="right" className="flex-1"><PilcrowRight className="h-4 w-4"/></ToggleGroupItem>
-                                                        </ToggleGroup>
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <Label>Style</Label>
-                                                         <ToggleGroup type="multiple" value={value.fontWeight === 'bold' ? ['bold'] : []} onValueChange={(v) => handleCustomizationChange(area.id, {fontWeight: v.includes('bold') ? 'bold' : 'normal'})} className="w-full">
-                                                            <ToggleGroupItem value="bold" className="flex-1"><Bold className="h-4 w-4"/></ToggleGroupItem>
-                                                        </ToggleGroup>
-                                                    </div>
-                                                </div>
-                                                
-                                                <div className="space-y-2">
-                                                    <Label>Color</Label>
-                                                    <Input type="color" value={value.textColor} onChange={(e) => handleCustomizationChange(area.id, { textColor: e.target.value })} className="h-10 p-1" />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>Curvature</Label>
-                                                    <Slider min={-100} max={100} step={1} value={[value.curveIntensity]} onValueChange={([v]) => handleCustomizationChange(area.id, { curveIntensity: v })} />
-                                                </div>
+                                            )
+                                        })
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground text-center py-8">
+                                            No customizable text areas on this side.
+                                        </p>
+                                    )}
+                                </TabsContent>
+
+                                <TabsContent value="upload" className="mt-0">
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="text-base">Upload Your Image</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <label htmlFor="customer-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                                <Upload className="h-8 w-8 text-muted-foreground"/>
+                                                <span className="text-sm text-muted-foreground text-center mt-1">Click to upload</span>
+                                            </label>
+                                            <input id="customer-image-upload" type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} />
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
+                                <TabsContent value="art" className="mt-0">
+                                     <Card>
+                                        <CardHeader><CardTitle className="text-base">Add Clipart</CardTitle></CardHeader>
+                                        <CardContent className="grid grid-cols-4 gap-2">
+                                            {mockArt.map(art => {
+                                                const ArtIcon = art.icon;
+                                                return (
+                                                <Button key={art.id} variant="outline" className="h-16 flex-col" onClick={() => addArtElement(art.src)}>
+                                                    <ArtIcon className="h-8 w-8 text-muted-foreground" />
+                                                </Button>
+                                            )})}
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
+                                <TabsContent value="colors" className="mt-0 text-center text-sm text-muted-foreground py-8">
+                                    Product color options coming soon!
+                                </TabsContent>
+                                <TabsContent value="notes" className="mt-0">
+                                    <Card>
+                                        <CardHeader>
+                                            <CardTitle className="text-base">Design Notes</CardTitle>
+                                            <CardDescription className="text-xs">Add any special instructions for the vendor.</CardDescription>
+                                        </CardHeader>
+                                        <CardContent>
+                                        <Textarea placeholder="e.g. 'Please match the text color to the main logo.'" />
+                                        </CardContent>
+                                    </Card>
+                                </TabsContent>
+                            </div>
+                        </ScrollArea>
+                        <div className="p-4 border-t">
+                             <Card>
+                                <CardHeader className="flex flex-row items-center justify-between p-2">
+                                    <CardTitle className="text-sm font-semibold flex items-center gap-2"><Layers className="h-4 w-4"/> Layers</CardTitle>
+                                    <p className="text-xs text-muted-foreground">{designElements.length} items</p>
+                                </CardHeader>
+                                <CardContent className="p-2 space-y-2 max-h-48 overflow-y-auto">
+                                    {designElements.length > 0 ? (
+                                        [...designElements].reverse().map(element => (
+                                            <div 
+                                                key={element.id}
+                                                className={cn("flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer", selectedElementId === element.id ? "bg-accent" : "hover:bg-muted/50")}
+                                                onClick={() => setSelectedElementId(element.id)}
+                                            >
+                                                {element.type === 'text' && <Type className="h-4 w-4 text-muted-foreground"/>}
+                                                {element.type === 'image' && <Upload className="h-4 w-4 text-muted-foreground"/>}
+                                                {element.type === 'art' && <Wand2 className="h-4 w-4 text-muted-foreground"/>}
+                                                <span className="text-sm truncate flex-1">
+                                                    {element.type === 'text' ? (element.text || 'Untitled Text') : 'Uploaded Image'}
+                                                </span>
+                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); removeElement(element.id)}}><Trash2 className="h-4 w-4"/></Button>
                                             </div>
-                                        )
-                                    })
-                                ) : (
-                                    <p className="text-sm text-muted-foreground text-center py-8">
-                                        No customizable text areas on this side.
-                                    </p>
-                                )}
-                            </TabsContent>
-
-                            <TabsContent value="upload" className="mt-0">
-                                <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-base">Upload Your Image</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                                            <Upload className="h-8 w-8 text-muted-foreground"/>
-                                            <span className="text-sm text-muted-foreground text-center mt-1">Click to upload</span>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
-                             <TabsContent value="art" className="mt-0 text-center text-sm text-muted-foreground py-8">
-                                Clipart library coming soon!
-                            </TabsContent>
-                             <TabsContent value="colors" className="mt-0 text-center text-sm text-muted-foreground py-8">
-                                Product color options coming soon!
-                            </TabsContent>
-                             <TabsContent value="notes" className="mt-0">
-                                 <Card>
-                                    <CardHeader>
-                                        <CardTitle className="text-base">Design Notes</CardTitle>
-                                        <CardDescription className="text-xs">Add any special instructions for the vendor.</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                       <Textarea placeholder="e.g. 'Please match the text color to the main logo.'" />
-                                    </CardContent>
-                                </Card>
-                            </TabsContent>
+                                        ))
+                                    ) : (
+                                        <p className="text-xs text-muted-foreground text-center py-4">Your design is empty.</p>
+                                    )}
+                                </CardContent>
+                            </Card>
                         </div>
                     </Tabs>
                 </div>
