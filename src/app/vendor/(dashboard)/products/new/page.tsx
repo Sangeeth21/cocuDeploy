@@ -110,12 +110,14 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             const modifierKey = isMac ? event.metaKey : event.ctrlKey;
 
             if (modifierKey) {
-                event.preventDefault();
                 if (event.key.toLowerCase() === 'z') {
+                    event.preventDefault();
                     event.shiftKey ? redo() : undo();
                 } else if (event.key.toLowerCase() === 'y') {
+                    event.preventDefault();
                     redo();
                 } else if (event.key.toLowerCase() === 'b') {
+                    event.preventDefault();
                     if (selectedArea) {
                         const newWeight = selectedArea.fontWeight === 'bold' ? 'normal' : 'bold';
                         updateAreaProperty(selectedArea.id, 'fontWeight', newWeight);
@@ -247,13 +249,27 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             { cursor: 'nwse-resize', position: 'bottom-0 right-0', handle: 'se' },
         ];
         
+        const curveIntensity = area.curveIntensity ?? 0;
         const numSlices = 20;
-        const totalAngle = area.curveIntensity ?? 0;
-        
+
+        const Content = () => (
+             <div
+                className="w-full h-full flex items-center justify-center p-1"
+                style={{
+                    fontFamily: area.fontFamily,
+                    fontSize: `${area.fontSize}px`,
+                    fontWeight: area.fontWeight as React.CSSProperties['fontWeight'],
+                    color: area.textColor,
+                }}
+            >
+                <span className="truncate">{area.label}</span>
+            </div>
+        );
+
         const SlicedContent = () => (
             <>
                 {Array.from({ length: numSlices }).map((_, i) => {
-                    const sliceAngle = ((i - numSlices / 2) / numSlices) * totalAngle;
+                    const sliceAngle = ((i - numSlices / 2 + 0.5) / numSlices) * curveIntensity;
                     return (
                         <div
                             key={i}
@@ -262,6 +278,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                                 left: `${(i / numSlices) * 100}%`,
                                 width: `${100 / numSlices}%`,
                                 transform: `rotateY(${sliceAngle}deg)`,
+                                transformOrigin: `50% 50% -${area.width / 2}px`,
                             }}
                         >
                             <div
@@ -292,31 +309,27 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     top: `${area.y}%`,
                     width: `${area.width}%`,
                     height: `${area.height}%`,
-                    perspective: totalAngle > 0 ? '500px' : undefined,
-                    transformStyle: totalAngle > 0 ? 'preserve-3d' : undefined,
                 }}
                 className={cn(
-                    "border-2 border-dashed border-primary cursor-grab active:cursor-grabbing",
-                    isSelected && "bg-primary/20 ring-2 ring-primary",
-                    area.shape === 'ellipse' && "rounded-full"
+                    "cursor-grab active:cursor-grabbing",
+                    isSelected && "ring-2 ring-primary ring-offset-2 ring-offset-background"
                 )}
                 onPointerDown={(e) => handlePointerDown(e, area.id, 'drag')}
             >
-                {totalAngle > 0 ? (
-                    <div className="relative w-full h-full" style={{transformStyle: 'preserve-3d'}}><SlicedContent /></div>
-                ) : (
-                    <div
-                        className="w-full h-full flex items-center justify-center pointer-events-none select-none p-1"
-                        style={{
-                            fontFamily: area.fontFamily,
-                            fontSize: `${area.fontSize}px`,
-                            fontWeight: area.fontWeight as React.CSSProperties['fontWeight'],
-                            color: area.textColor,
-                        }}
-                    >
-                         <span className="truncate">{area.label}</span>
-                    </div>
-                )}
+                <div
+                    className={cn(
+                        "w-full h-full border-2 border-dashed border-primary",
+                         area.shape === 'ellipse' && "rounded-full"
+                    )}
+                     style={{
+                        perspective: curveIntensity > 0 ? '500px' : undefined,
+                        transformStyle: curveIntensity > 0 ? 'preserve-3d' : undefined,
+                        background: isSelected ? 'rgba(66, 133, 244, 0.2)' : 'transparent',
+                     }}
+                >
+                    {curveIntensity > 0 ? <SlicedContent /> : <Content />}
+                </div>
+
                 {isSelected && resizeHandles.map(handle => (
                     <div
                         key={handle.handle}
