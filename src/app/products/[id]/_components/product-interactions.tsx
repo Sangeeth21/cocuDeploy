@@ -86,10 +86,6 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
   }, [isChatOpen, product.name, conversation.messages.length])
 
   const handleAddToCart = () => {
-    if (isCustomizable) {
-        router.push(`/customize/${product.id}`);
-        return;
-    }
     if (product.requiresConfirmation) {
         setIsConfirmationOpen(true);
         // Here you would also trigger a backend notification to the vendor
@@ -109,10 +105,6 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
   const handleBuyNow = () => {
     if (!isLoggedIn) {
         openDialog('login');
-        return;
-    }
-    if (isCustomizable) {
-        router.push(`/customize/${product.id}?buyNow=true`);
         return;
     }
     addToCart({product, customizations: {}});
@@ -267,7 +259,7 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
         {isCustomizable ? (
           <div className="space-y-2">
             <Button size="lg" className="w-full" onClick={handleCustomize}>
-                <Wand2 className="mr-2 h-5 w-5" /> Customize
+                <Wand2 className="mr-2 h-5 w-5" /> Customize Now
             </Button>
             <div className="grid grid-cols-2 gap-2">
                 <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>

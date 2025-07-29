@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy, Share2, Twitter, Facebook, Instagram, Linkedin, User as UserIcon } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy, Share2, Twitter, Facebook, Instagram, Linkedin, User as UserIcon, Wand2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -145,6 +145,10 @@ function WishlistTabContent() {
         setSelectedRatings([]);
         setPriceRange([0, MAX_PRICE]);
     }
+    
+    const isCustomizable = (product: DisplayProduct) => {
+        return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
+    }
 
     const filteredWishlistItems = useMemo(() => {
         let products: DisplayProduct[] = wishlistItems;
@@ -165,7 +169,7 @@ function WishlistTabContent() {
 
 
     const handleMoveToCart = (product: DisplayProduct) => {
-        addToCart(product);
+        addToCart({product, customizations: {}});
         removeFromWishlist(product.id);
         toast({
             title: "Moved to Cart",
@@ -178,9 +182,13 @@ function WishlistTabContent() {
             openDialog('login');
             return;
         }
-        addToCart(product);
+        addToCart({product, customizations: {}});
         removeFromWishlist(product.id);
         router.push('/checkout');
+    }
+    
+    const handleCustomize = (product: DisplayProduct) => {
+        router.push(`/customize/${product.id}`);
     }
 
     if (wishlistItems.length === 0) {
@@ -215,7 +223,13 @@ function WishlistTabContent() {
                                 <ProductCard product={product} />
                                 </div>
                                 <div className="p-2 border-t flex flex-col gap-2">
-                                    <Button size="sm" variant="outline" onClick={() => handleMoveToCart(product)}>
+                                     {isCustomizable(product) && (
+                                        <Button size="sm" onClick={() => handleCustomize(product)}>
+                                            <Wand2 className="mr-2 h-4 w-4" />
+                                            Customize
+                                        </Button>
+                                    )}
+                                    <Button size="sm" variant="secondary" onClick={() => handleMoveToCart(product)}>
                                         <ShoppingCart className="h-4 w-4 mr-2" />
                                         Move to Cart
                                     </Button>
