@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -75,27 +74,9 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const router = useRouter();
     const { toast } = useToast();
     const { login } = useUser();
-    const { setAsVerified, setAsUnverified } = useVerification();
-
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        
-        // Vendor test accounts
-        if (email === "vendor@example.com" && password === "vendorpass") {
-          setAsVerified();
-          toast({ title: "Login Successful", description: "Redirecting to your vendor dashboard." });
-          router.push("/vendor/dashboard");
-          onLoginSuccess();
-          return;
-        }
-        if (email === "unverified@example.com" && password === "vendorpass") {
-          setAsUnverified();
-          toast({ title: "Login Successful", description: "Please complete your verification." });
-          router.push("/vendor/dashboard");
-          onLoginSuccess();
-          return;
-        }
         
         // Customer account
         if (email === "customer@example.com" && password === "customerpass") {
