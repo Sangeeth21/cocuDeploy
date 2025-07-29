@@ -100,7 +100,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
 
     const selectedArea = useMemo(() => areas.find(a => a.id === selectedAreaId), [areas, selectedAreaId]);
     
-    const updateAreaProperty = useCallback(<K extends keyof Omit<CustomizationArea, 'id'>> (id: string, property: K, value: CustomizationArea[K]) => {
+    const updateAreaProperty = useCallback(<K extends keyof Omit<CustomizationArea, 'id' | 'placeholderText'>> (id: string, property: K, value: CustomizationArea[K]) => {
         setAreas(prevAreas => prevAreas.map(a => a.id === id ? { ...a, [property]: value } : a));
     }, [setAreas]);
 
@@ -948,10 +948,12 @@ export default function NewProductPage() {
                             <Label htmlFor={option.id} className="font-normal text-sm text-primary">{option.label}</Label>
                         </div>
                     ))}
-                    <div className="flex items-center space-x-2">
-                        <Checkbox id="add-more" onCheckedChange={(checked) => checked && setIsAddMoreOpen(true)} />
-                        <Label htmlFor="add-more" className="font-normal text-sm">Add More...</Label>
-                    </div>
+                    {selectedCategory && (
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="add-more" onCheckedChange={(checked) => checked && setIsAddMoreOpen(true)} />
+                            <Label htmlFor="add-more" className="font-normal text-sm">Add More...</Label>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
         </div>
