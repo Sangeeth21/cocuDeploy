@@ -50,16 +50,19 @@ type ProductImages = {
 };
 
 // Custom hook for managing state with undo/redo
-function useHistoryState<T>(initialState: T): [T, (newState: T) => void, () => void, () => void, boolean, boolean] {
+function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T) => T)) => void, () => void, () => void, boolean, boolean] {
     const [history, setHistory] = useState([initialState]);
     const [index, setIndex] = useState(0);
 
-    const setState = (newState: T) => {
-        const newHistory = history.slice(0, index + 1);
-        newHistory.push(newState);
-        setHistory(newHistory);
-        setIndex(newHistory.length - 1);
-    };
+    const setState = useCallback((newState: T | ((prevState: T) => T)) => {
+        setHistory(currentHistory => {
+            const newHistory = currentHistory.slice(0, index + 1);
+            const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(newHistory[index]) : newState;
+            newHistory.push(resolvedState);
+            setIndex(newHistory.length - 1);
+            return newHistory;
+        });
+    }, [index]);
 
     const undo = () => {
         if (index > 0) {
@@ -91,13 +94,13 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
     const selectedArea = useMemo(() => areas.find(a => a.id === selectedAreaId), [areas, selectedAreaId]);
     
     const updateAreaProperty = useCallback(<K extends keyof CustomizationArea>(id: string, property: K, value: CustomizationArea[K]) => {
-        setAreas(areas.map(a => a.id === id ? { ...a, [property]: value } : a));
-    }, [areas, setAreas]);
+        setAreas(prevAreas => prevAreas.map(a => a.id === id ? { ...a, [property]: value } : a));
+    }, [setAreas]);
 
-    // Add keyboard shortcuts for undo/redo and bold
+    // Add keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
-            const isMac = navigator.userAgent.includes('Mac');
+            const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
             const isUndo = (isMac ? event.metaKey : event.ctrlKey) && event.key === 'z' && !event.shiftKey;
             const isRedo = (isMac ? event.metaKey && event.shiftKey && event.key === 'z' : event.ctrlKey && event.key === 'y');
             const isBold = (isMac ? event.metaKey : event.ctrlKey) && event.key === 'b';
@@ -137,7 +140,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             fontWeight: 'normal',
             textColor: '#000000',
         };
-        setAreas([...areas, newArea]);
+        setAreas(prevAreas => [...prevAreas, newArea]);
         setSelectedAreaId(newArea.id);
     };
 
@@ -152,7 +155,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         document.body.style.cursor = handle.includes('resize') ? `${handle}-resize` : 'grabbing';
     }
 
-    const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    const handlePointerMove = useCallback((e: PointerEvent) => {
         if (!activeInteraction || !startArea.current) return;
         e.preventDefault();
         
@@ -162,71 +165,67 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         const dx = (e.clientX - startMousePos.current.x) / containerWidth * 100;
         const dy = (e.clientY - startMousePos.current.y) / containerHeight * 100;
 
-        const updatedAreas = areas.map(area => {
-            if (area.id !== activeInteraction.id || !startArea.current) return area;
+        // Directly update state without history for live feedback
+        setHistory(currentHistory => {
+            const historyToUpdate = [...currentHistory];
+            const areasToUpdate = [...historyToUpdate[index]];
+            const areaIndex = areasToUpdate.findIndex(a => a.id === activeInteraction.id);
+            if (areaIndex === -1) return currentHistory;
 
-            const newArea = { ...area };
+            const area = { ...areasToUpdate[areaIndex] };
 
             if (activeInteraction.type === 'drag') {
-                newArea.x = Math.max(0, Math.min(100 - newArea.width, startArea.current.x + dx));
-                newArea.y = Math.max(0, Math.min(100 - newArea.height, startArea.current.y + dy));
+                area.x = Math.max(0, Math.min(100 - area.width, startArea.current!.x + dx));
+                area.y = Math.max(0, Math.min(100 - area.height, startArea.current!.y + dy));
             } else { // resize
                 const handle = activeInteraction.handle;
-                
-                if (handle.includes('e')) {
-                    newArea.width = Math.max(5, Math.min(100 - startArea.current.x, startArea.current.width + dx));
-                }
+                if (handle.includes('e')) area.width = Math.max(5, Math.min(100 - startArea.current!.x, startArea.current!.width + dx));
                 if (handle.includes('w')) {
-                    const newWidth = Math.max(5, startArea.current.width - dx);
-                    newArea.x = startArea.current.x + dx;
-                    newArea.width = newWidth;
+                    const newWidth = Math.max(5, startArea.current!.width - dx);
+                    area.x = startArea.current!.x + dx;
+                    area.width = newWidth;
                 }
-                if (handle.includes('s')) {
-                    newArea.height = Math.max(5, Math.min(100 - startArea.current.y, startArea.current.height + dy));
-                }
+                if (handle.includes('s')) area.height = Math.max(5, Math.min(100 - startArea.current!.y, startArea.current!.height + dy));
                 if (handle.includes('n')) {
-                    const newHeight = Math.max(5, startArea.current.height - dy);
-                    newArea.y = startArea.current.y + dy;
-                    newArea.height = newHeight;
+                    const newHeight = Math.max(5, startArea.current!.height - dy);
+                    area.y = startArea.current!.y + dy;
+                    area.height = newHeight;
                 }
             }
-            return newArea;
+            
+            areasToUpdate[areaIndex] = area;
+            historyToUpdate[index] = areasToUpdate;
+            return historyToUpdate;
         });
-        
-        // This is a direct update without pushing to history for performance during drag/resize
-        // The final state is pushed on pointer up.
-        // For simplicity in this context, we will update state directly. A more advanced implementation
-        // would debounce this or only update on pointer up.
-        setAreas(updatedAreas)
 
-    }, [activeInteraction, areas, setAreas]);
+    }, [activeInteraction, index]);
 
     const handlePointerUp = useCallback(() => {
-        // Here you would push the final state to the history
-        // For now, our useHistoryState pushes on every setAreas call
+        if(activeInteraction) {
+            // Push the final state to history after drag/resize ends
+            setAreas(areas);
+        }
         setActiveInteraction(null);
         startArea.current = null;
         document.body.style.cursor = 'default';
-    }, []);
+    }, [activeInteraction, areas, setAreas]);
 
     useEffect(() => {
         const container = containerRef.current;
-        if (container) {
+        if (container && activeInteraction) {
             const handleMove = (e: PointerEvent) => handlePointerMove(e as any);
-            const handleUp = () => handlePointerUp();
-
-            container.addEventListener('pointermove', handleMove);
-            window.addEventListener('pointerup', handleUp);
+            window.addEventListener('pointermove', handleMove);
+            window.addEventListener('pointerup', handlePointerUp);
 
             return () => {
-                container.removeEventListener('pointermove', handleMove);
-                window.removeEventListener('pointerup', handleUp);
+                window.removeEventListener('pointermove', handleMove);
+                window.removeEventListener('pointerup', handlePointerUp);
             };
         }
-    }, [handlePointerMove, handlePointerUp]);
+    }, [activeInteraction, handlePointerMove, handlePointerUp]);
 
     const handleRemoveArea = (idToRemove: string) => {
-        setAreas(areas.filter(a => a.id !== idToRemove));
+        setAreas(prevAreas => prevAreas.filter(a => a.id !== idToRemove));
         if (selectedAreaId === idToRemove) {
             setSelectedAreaId(null);
         }
@@ -302,8 +301,8 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                 </div>
             </DialogHeader>
 
-            <div className="flex-1 grid grid-cols-5 gap-6 min-h-0 p-4">
-                <div className="col-span-3 flex flex-col gap-4">
+            <div className="flex-1 grid grid-cols-5 gap-6 min-h-0">
+                <div className="col-span-3 flex flex-col gap-4 p-4 pl-6">
                     <div ref={containerRef} className="flex-1 relative w-full h-full bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center" onPointerDown={() => setSelectedAreaId(null)}>
                         <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
                         {areas.map(area => <DraggableArea key={area.id} area={area} />)}
@@ -337,7 +336,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     </Card>
                 </div>
 
-                <div className="col-span-2 flex flex-col gap-4">
+                <div className="col-span-2 flex flex-col gap-4 p-4 pr-6">
                      <Card>
                         <CardHeader className="p-4">
                             <CardTitle className="text-base">Tools</CardTitle>
