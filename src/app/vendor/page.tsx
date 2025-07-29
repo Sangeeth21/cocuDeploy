@@ -87,7 +87,7 @@ export default function VendorPage() {
           Manage your products, track sales, and connect with your customers all in one place.
         </p>
         <Button className="mt-6" asChild>
-          <Link href="/login">Access Your Dashboard</Link>
+          <Link href="/vendor/login">Access Your Dashboard</Link>
         </Button>
       </div>
 
@@ -180,9 +180,9 @@ export default function VendorPage() {
                                      <DialogHeader>
                                         <DialogTitle className="sr-only">Preview of {template.name} template</DialogTitle>
                                     </DialogHeader>
-                                    <div className="relative w-[375px] h-[667px] scale-[0.8] rounded-2xl overflow-hidden border-4 border-foreground bg-background">
+                                    <div className="relative w-[375px] max-w-[90vw] h-[667px] max-h-[80vh] scale-[0.8] rounded-2xl overflow-hidden border-4 border-foreground bg-background">
                                       <TemplatePreview templateName={template.name} />
-                                       <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary text-white bg-black/50">
+                                       <DialogClose className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary text-white bg-black/50 z-10">
                                             <X className="h-4 w-4" />
                                             <span className="sr-only">Close</span>
                                         </DialogClose>

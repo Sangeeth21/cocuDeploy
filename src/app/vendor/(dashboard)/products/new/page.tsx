@@ -522,9 +522,9 @@ export default function NewProductPage() {
         <AlertDialogContent>
             <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2"><ShieldCheck className="text-primary"/> Enable Pre-Order Check?</AlertDialogTitle>
-                <AlertDialogDescriptionComponent>
+                <AlertDialogDescription>
                     By enabling this, you commit to responding to customer requests within 5 hours. Failure to respond will result in the request being automatically rejected.
-                </AlertDialogDescriptionComponent>
+                </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
@@ -535,5 +535,3 @@ export default function NewProductPage() {
     </>
   );
 }
-
-

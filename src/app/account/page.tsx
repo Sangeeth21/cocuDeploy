@@ -41,6 +41,9 @@ import { useCart } from "@/context/cart-context";
 import { Progress } from "@/components/ui/progress";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
 
 type Attachment = {
     name: string;
@@ -322,7 +325,7 @@ export default function AccountPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
   // Chat state
-  const [conversations, setConversations] = useState(initialConversations);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -446,78 +449,46 @@ export default function AccountPage() {
     setAttachments(prev => prev.filter(file => file !== fileToRemove));
   }, []);
   
-  const handleSendMessage = useCallback((e: React.FormEvent) => {
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() && attachments.length === 0 || !selectedConversationId) return;
+    if (!selectedConversationId || (!newMessage.trim() && attachments.length === 0)) return;
 
     const lowerCaseMessage = newMessage.toLowerCase();
     const hasForbiddenKeyword = FORBIDDEN_KEYWORDS.some(keyword => lowerCaseMessage.includes(keyword));
 
     if (hasForbiddenKeyword) {
-        setConversations(prev => prev.map(c => c.id === selectedConversationId ? {...c, status: 'flagged'} : c));
+        // This is a client-side check. A server-side function would be needed for robust flagging.
+        // For now, we'll just show a toast.
         toast({
             variant: "destructive",
-            title: "Message Flagged",
-            description: "Your message appears to violate our policies and has been flagged for review. This chat is now disabled.",
+            title: "Message Not Sent",
+            description: "Your message appears to violate our policies. Please remove any contact information.",
         });
-        setNewMessage("");
-        setAttachments([]);
         return;
     }
 
-    const newAttachments: Attachment[] = attachments.map(file => ({
-        name: file.name,
-        type: file.type.startsWith("image/") ? "image" : "file",
-        url: URL.createObjectURL(file),
-    }));
-
-    const newMessageObj: Message = { 
-        id: Math.random().toString(),
+    const newMessageObj = { 
         sender: "customer", 
         text: newMessage,
-        timestamp: new Date(),
-        ...(newAttachments.length > 0 && { attachments: newAttachments })
+        timestamp: serverTimestamp(), // Use server-side timestamp
+        // attachments will need to be uploaded to storage first, this is a placeholder
     };
 
-    setConversations(prev =>
-      prev.map(convo => {
-        if (convo.id !== selectedConversationId) return convo;
-        
-        const updatedConvo = {
-            ...convo,
-            messages: [...convo.messages, newMessageObj],
-            unread: false,
-            userMessageCount: convo.userMessageCount + 1
-        };
-
-        if (updatedConvo.userMessageCount === 9) {
-            updatedConvo.awaitingVendorDecision = true;
-            updatedConvo.messages.push({
-                id: 'system-wait',
-                sender: 'system',
-                text: 'You have reached the initial message limit. Please wait for the vendor to respond.',
-                timestamp: new Date(),
-            });
-        }
-        
-        return updatedConvo;
-      })
-    );
+    // Add message to the subcollection in Firestore
+    const messagesCol = collection(db, 'conversations', selectedConversationId, 'messages');
+    await addDoc(messagesCol, newMessageObj);
+    
     setNewMessage("");
     setAttachments([]);
   }, [attachments, newMessage, selectedConversationId, toast]);
 
   const handleSelectConversation = useCallback((id: string) => {
     setSelectedConversationId(id);
-    setConversations(prev =>
-        prev.map(convo => 
-            convo.id === id ? { ...convo, unread: false } : convo
-        )
-    );
+    // Logic to mark as read would happen here, e.g., update a document in Firestore
   }, []);
   
   const handleReportConversation = (id: string) => {
-    setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'flagged' } : c));
+    // In a real app, this would trigger a backend function to flag the conversation.
     toast({
         title: "Conversation Reported",
         description: "Thank you. Our moderation team will review this chat.",
