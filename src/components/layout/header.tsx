@@ -29,7 +29,7 @@ import { useAuthDialog } from "@/context/auth-dialog-context";
 const navLinks = [
   { href: "/products", label: "All Products" },
   { href: "/#categories", label: "Categories" },
-  { href: "/vendor/login", label: "For Vendors" },
+  { href: "/vendor", label: "For Vendors" },
 ];
 
 const customerNotifications = [
