@@ -1,5 +1,12 @@
 
 
+export type CustomizationArea = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
 export type DisplayProduct = {
   id: string;
   name: string;
@@ -50,7 +57,7 @@ export type Message = {
   id: string;
   sender: "customer" | "vendor" | "system";
   text: string;
-  timestamp: Date;
+  timestamp: any;
   attachments?: Attachment[];
   status?: 'sent' | 'delivered' | 'read';
 };
@@ -89,7 +96,7 @@ export type User = {
 }
 
 export type Conversation = {
-  id: string;
+  id: string | number;
   vendorId: string;
   customerId?: string; // For vendor/admin view
   avatar: string;

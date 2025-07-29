@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -9,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, MousePointer2 } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -22,6 +23,7 @@ import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
 import { useVerification } from "@/context/vendor-verification-context"
+import type { CustomizationArea } from "@/lib/types";
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -35,13 +37,93 @@ const imageSides: { key: ImageSide; label: string }[] = [
     { key: "bottom", label: "Bottom" },
 ];
 
+type ProductImage = {
+    file?: File;
+    src: string;
+    isGenerated?: boolean;
+    customArea?: CustomizationArea;
+}
+
 type ProductImages = {
-    [key in ImageSide]?: {
-        file?: File;
-        src: string;
-        isGenerated?: boolean;
-    };
+    [key in ImageSide]?: ProductImage
 };
+
+function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductImage, onSave: (area: CustomizationArea) => void, onCancel: () => void }) {
+    const imageRef = useRef<HTMLImageElement>(null);
+    const [area, setArea] = useState<CustomizationArea | null>(image.customArea || null);
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [startPoint, setStartPoint] = useState<{ x: number, y: number } | null>(null);
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!imageRef.current) return;
+        const rect = imageRef.current.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width * 100;
+        const y = (e.clientY - rect.top) / rect.height * 100;
+        setStartPoint({ x, y });
+        setIsDrawing(true);
+        setArea(null); // Reset area on new draw
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isDrawing || !startPoint || !imageRef.current) return;
+        const rect = imageRef.current.getBoundingClientRect();
+        const currentX = (e.clientX - rect.left) / rect.width * 100;
+        const currentY = (e.clientY - rect.top) / rect.height * 100;
+        
+        const newArea = {
+            x: Math.min(startPoint.x, currentX),
+            y: Math.min(startPoint.y, currentY),
+            width: Math.abs(currentX - startPoint.x),
+            height: Math.abs(currentY - startPoint.y),
+        };
+        setArea(newArea);
+    };
+
+    const handleMouseUp = () => {
+        setIsDrawing(false);
+        setStartPoint(null);
+    };
+
+    const handleSave = () => {
+        if (area) {
+            onSave(area);
+        }
+    };
+
+    return (
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+            <DialogHeader>
+                <DialogTitle>Define Customizable Area</DialogTitle>
+                <DialogDescription>Click and drag on the image to draw the area where customers can add their design.</DialogDescription>
+            </DialogHeader>
+            <div 
+                className="relative w-full h-full cursor-crosshair overflow-hidden"
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+            >
+                <Image ref={imageRef} src={image.src} alt="Product to customize" fill className="object-contain select-none" />
+                {area && (
+                    <div 
+                        className="absolute border-2 border-dashed border-primary bg-primary/20 pointer-events-none"
+                        style={{
+                            left: `${area.x}%`,
+                            top: `${area.y}%`,
+                            width: `${area.width}%`,
+                            height: `${area.height}%`,
+                        }}
+                    />
+                )}
+            </div>
+            <DialogFooter>
+                <Button variant="outline" onClick={() => setArea(null)} disabled={!area}>Clear Area</Button>
+                <Button variant="secondary" onClick={onCancel}>Cancel</Button>
+                <Button onClick={handleSave} disabled={!area}>Save Area</Button>
+            </DialogFooter>
+        </DialogContent>
+    )
+}
 
 function ImagePreview3D({ images }: { images: ProductImages }) {
     const [rotation, setRotation] = useState({ x: -20, y: 30 });
@@ -146,6 +228,7 @@ export default function NewProductPage() {
     const [isGenerating, setIsGenerating] = useState(false);
     const [isConfirmationAlertOpen, setIsConfirmationAlertOpen] = useState(false);
     const [isDraftInfoOpen, setIsDraftInfoOpen] = useState(false);
+    const [editingSide, setEditingSide] = useState<ImageSide | null>(null);
     
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
@@ -209,6 +292,21 @@ export default function NewProductPage() {
             toast({ title: "Product Saved as Draft" });
         }
     };
+    
+    const handleSaveCustomArea = (area: CustomizationArea) => {
+        if (editingSide) {
+            setImages(prev => ({
+                ...prev,
+                [editingSide!]: {
+                    ...prev[editingSide!],
+                    customArea: area,
+                }
+            }));
+            setEditingSide(null);
+            toast({ title: "Customization area saved!" });
+        }
+    };
+
 
     const handleGenerate = useCallback(async () => {
         if (!images.front?.src) {
@@ -315,17 +413,28 @@ export default function NewProductPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline">Media</CardTitle>
-                    <CardDescription>Upload images for each side of your product, or use AI to generate them.</CardDescription>
+                    <CardTitle className="font-headline">Media & Customization</CardTitle>
+                    <CardDescription>Upload images and define areas for customer personalization.</CardDescription>
                 </CardHeader>
                 <CardContent>
                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {imageSides.map(side => (
-                           <div key={side.key}>
+                           <div key={side.key} className="space-y-1">
                                 <Label className="text-xs font-medium text-muted-foreground">{side.label}</Label>
                                 {images[side.key]?.src ? (
-                                    <div className="relative group aspect-square rounded-md border mt-1">
+                                    <div className="relative group aspect-square rounded-md border">
                                         <Image src={images[side.key]!.src} alt={`${side.label} product image`} fill className="object-cover rounded-md" />
+                                        {images[side.key]?.customArea && (
+                                            <div 
+                                                className="absolute border-2 border-dashed border-primary/70 bg-primary/20 pointer-events-none"
+                                                style={{
+                                                    left: `${images[side.key]!.customArea!.x}%`,
+                                                    top: `${images[side.key]!.customArea!.y}%`,
+                                                    width: `${images[side.key]!.customArea!.width}%`,
+                                                    height: `${images[side.key]!.customArea!.height}%`,
+                                                }}
+                                            />
+                                        )}
                                         <Button
                                             variant="destructive"
                                             size="icon"
@@ -339,18 +448,28 @@ export default function NewProductPage() {
                                         )}
                                     </div>
                                 ) : (
-                                    <label htmlFor={`image-upload-${side.key}`} className="mt-1 flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                    <label htmlFor={`image-upload-${side.key}`} className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
                                         <Upload className="h-6 w-6 text-muted-foreground"/>
                                         <span className="text-xs text-muted-foreground text-center mt-1">Upload</span>
                                         <input id={`image-upload-${side.key}`} type="file" accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e, side.key)} />
                                     </label>
                                 )}
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="w-full text-xs h-7"
+                                    disabled={!images[side.key]}
+                                    onClick={() => setEditingSide(side.key)}
+                                >
+                                    <Square className="mr-1.5 h-3 w-3"/>
+                                    Define Area
+                                </Button>
                            </div>
                         ))}
                     </div>
                     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg bg-muted/40">
                        <div className="text-center sm:text-left">
-                           <h3 className="text-base font-semibold">AI-Powered 3D Preview</h3>
+                           <h3 className="text-base font-semibold">AI-Powered Image Generation</h3>
                            <p className="text-sm text-muted-foreground">Upload a Front image, then click to generate missing views.</p>
                        </div>
                         <Button onClick={handleGenerate} disabled={isGenerating || !images.front?.src || !productName.trim()}>
@@ -496,6 +615,26 @@ export default function NewProductPage() {
         </Button>
       </div>
     </div>
+    
+    <Dialog open={!!editingSide} onOpenChange={(open) => !open && setEditingSide(null)}>
+        {editingSide && images[editingSide] && (
+            <CustomizationAreaEditor 
+                image={images[editingSide]!}
+                onSave={handleSaveCustomArea}
+                onCancel={() => setEditingSide(null)}
+            />
+        )}
+    </Dialog>
+
+    <Dialog open={show3DPreview} onOpenChange={setShow3DPreview}>
+        <DialogContent className="max-w-3xl h-3/4 flex flex-col p-8">
+            <DialogHeader>
+                <DialogTitle>3D Rotatable Preview</DialogTitle>
+            </DialogHeader>
+            <ImagePreview3D images={images} />
+        </DialogContent>
+    </Dialog>
+
     <Dialog open={isDraftInfoOpen} onOpenChange={setIsDraftInfoOpen}>
         <DialogContent>
             <DialogHeader>
@@ -510,14 +649,7 @@ export default function NewProductPage() {
             </DialogFooter>
         </DialogContent>
     </Dialog>
-    <Dialog open={show3DPreview} onOpenChange={setShow3DPreview}>
-        <DialogContent className="max-w-3xl h-3/4 flex flex-col p-8">
-            <DialogHeader>
-                <DialogTitle>3D Rotatable Preview</DialogTitle>
-            </DialogHeader>
-            <ImagePreview3D images={images} />
-        </DialogContent>
-    </Dialog>
+    
     <AlertDialog open={isConfirmationAlertOpen} onOpenChange={setIsConfirmationAlertOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
