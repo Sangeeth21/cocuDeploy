@@ -15,7 +15,7 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription } from "@/components/ui/alert-dialog"
 import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
@@ -90,12 +90,17 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
 
     const selectedArea = useMemo(() => areas.find(a => a.id === selectedAreaId), [areas, selectedAreaId]);
     
-    // Add keyboard shortcuts for undo/redo
+    const updateAreaProperty = useCallback(<K extends keyof CustomizationArea>(id: string, property: K, value: CustomizationArea[K]) => {
+        setAreas(areas.map(a => a.id === id ? { ...a, [property]: value } : a));
+    }, [areas, setAreas]);
+
+    // Add keyboard shortcuts for undo/redo and bold
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             const isMac = navigator.userAgent.includes('Mac');
             const isUndo = (isMac ? event.metaKey : event.ctrlKey) && event.key === 'z' && !event.shiftKey;
-            const isRedo = (isMac ? event.metaKey && event.shiftKey && event.key === 'z' : event.ctrlKey && event.key === 'y') || (event.ctrlKey && event.shiftKey && event.key === 'z');
+            const isRedo = (isMac ? event.metaKey && event.shiftKey && event.key === 'z' : event.ctrlKey && event.key === 'y');
+            const isBold = (isMac ? event.metaKey : event.ctrlKey) && event.key === 'b';
 
             if (isUndo) {
                 event.preventDefault();
@@ -103,6 +108,12 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             } else if (isRedo) {
                 event.preventDefault();
                 redo();
+            } else if (isBold) {
+                event.preventDefault();
+                if (selectedArea) {
+                    const newWeight = selectedArea.fontWeight === 'bold' ? 'normal' : 'bold';
+                    updateAreaProperty(selectedArea.id, 'fontWeight', newWeight);
+                }
             }
         };
 
@@ -110,7 +121,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [undo, redo]);
+    }, [undo, redo, selectedArea, updateAreaProperty]);
 
     const handleAddArea = (shape: 'rect' | 'ellipse') => {
         const newArea: CustomizationArea = {
@@ -214,10 +225,6 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         }
     }, [handlePointerMove, handlePointerUp]);
 
-    const updateAreaProperty = <K extends keyof CustomizationArea>(id: string, property: K, value: CustomizationArea[K]) => {
-        setAreas(areas.map(a => a.id === id ? { ...a, [property]: value } : a));
-    };
-
     const handleRemoveArea = (idToRemove: string) => {
         setAreas(areas.filter(a => a.id !== idToRemove));
         if (selectedAreaId === idToRemove) {
@@ -278,27 +285,56 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
     }
 
     return (
-        <div className="h-full flex flex-col">
-            <DialogHeader className="flex-row items-center gap-2 pr-12 flex-shrink-0">
-                 <DialogTitle>Define Customizable Areas</DialogTitle>
-                 <TooltipProvider delayDuration={100}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <DialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4"/></Button>
-                            </DialogTrigger>
-                        </TooltipTrigger>
-                        <TooltipContent><p>How to use the editor</p></TooltipContent>
-                    </Tooltip>
-                </TooltipProvider>
+        <>
+            <DialogHeader className="p-4 pr-16 border-b flex-shrink-0">
+                <div className="flex items-center gap-2">
+                    <DialogTitle>Define Customizable Areas</DialogTitle>
+                    <TooltipProvider delayDuration={100}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <DialogTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6"><Info className="h-4 w-4"/></Button>
+                                </DialogTrigger>
+                            </TooltipTrigger>
+                            <TooltipContent><p>How to use the editor</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                </div>
             </DialogHeader>
 
-            <div className="flex-1 grid grid-cols-5 gap-6 min-h-0 pt-4">
+            <div className="flex-1 grid grid-cols-5 gap-6 min-h-0 p-4">
                 <div className="col-span-3 flex flex-col gap-4">
                     <div ref={containerRef} className="flex-1 relative w-full h-full bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center" onPointerDown={() => setSelectedAreaId(null)}>
                         <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
                         {areas.map(area => <DraggableArea key={area.id} area={area} />)}
                     </div>
+                     <Card>
+                        <CardHeader className="p-2 border-b">
+                            <CardTitle className="text-sm">Defined Areas</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-2">
+                            {areas.length > 0 ? (
+                                <div className="flex flex-wrap gap-2">
+                                    {areas.map(area => (
+                                        <div 
+                                            key={area.id}
+                                            className={cn("flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors",
+                                                selectedAreaId === area.id ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"
+                                            )}
+                                            onClick={() => setSelectedAreaId(area.id)}
+                                        >
+                                            <span>{area.label}</span>
+                                            <button onClick={(e) => {e.stopPropagation(); handleRemoveArea(area.id)}} className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-black/20">
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-muted-foreground text-center py-2">No areas defined yet.</p>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
 
                 <div className="col-span-2 flex flex-col gap-4">
@@ -326,7 +362,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                                 <div className="space-y-4">
                                      <div className="space-y-2">
                                         <Label htmlFor="area-label">Area Label</Label>
-                                        <Input id="area-label" value={selectedArea.label} onChange={(e) => updateAreaProperty(selectedArea.id, 'label', e.target.value)} placeholder="e.g., Your Name Here" />
+                                        <Input id="area-label" value={selectedArea.label} onChange={(e) => updateAreaProperty(selectedArea.id, 'label', e.target.value)} />
                                     </div>
                                     
                                     <div className="grid grid-cols-2 gap-4">
@@ -376,25 +412,31 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     </Card>
                 </div>
             </div>
-             <DialogFooter className="pt-4 flex-shrink-0">
+             <DialogFooter className="p-4 border-t flex-shrink-0">
                 <Button variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button onClick={() => onSave(areas)}>Save Changes</Button>
             </DialogFooter>
+
              <Dialog>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>How to Define Areas</DialogTitle>
+                        <DialogTitle>How to Use the Editor</DialogTitle>
                     </DialogHeader>
-                    <div className="text-sm text-muted-foreground space-y-4">
+                    <div className="text-sm text-muted-foreground space-y-4 py-2">
                         <p><strong className="text-foreground">1. Add a Shape:</strong> Use the "Rectangle" or "Ellipse" buttons to add a new area.</p>
-                        <p><strong className="text-foreground">2. Position & Resize:</strong> Click and drag an area to move it. Drag the handles on its edges and corners to resize it.</p>
-                        <p><strong className="text-foreground">3. Customize:</strong> With an area selected, use the "Properties" panel to change its label and text styling.</p>
-                        <p><strong className="text-foreground">4. Undo/Redo:</strong> Use the undo and redo buttons or keyboard shortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Y) to step through your changes.</p>
-                        <p><strong className="text-foreground">5. Save:</strong> When you're finished, click "Save Changes" to apply your work to the product image.</p>
+                        <p><strong className="text-foreground">2. Position & Resize:</strong> Click and drag an area on the image to move it. Drag the handles on its edges to resize it.</p>
+                        <p><strong className="text-foreground">3. Customize:</strong> Select an area (by clicking it on the image or on its tag below) to edit its label and text styling in the "Properties" panel.</p>
+                        <p><strong className="text-foreground">4. Undo/Redo:</strong> Use the undo/redo buttons or keyboard shortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Y) to step through your changes.</p>
+                        <p><strong className="text-foreground">5. Save:</strong> When you're finished, click "Save Changes" to apply your work to this image.</p>
                     </div>
+                     <DialogFooter>
+                        <DialogClose asChild>
+                            <Button>Got it</Button>
+                        </DialogClose>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
+        </>
     );
 }
 
