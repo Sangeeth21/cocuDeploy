@@ -86,6 +86,14 @@ function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T)
 function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductImage, onSave: (areas: CustomizationArea[]) => void, onCancel: () => void }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [areas, setAreas, undo, redo, canUndo, canRedo] = useHistoryState<CustomizationArea[]>(image.customAreas || []);
+    
+    // Local state for live dragging/resizing to avoid polluting history
+    const [liveAreas, setLiveAreas] = useState(areas);
+    
+    useEffect(() => {
+      setLiveAreas(areas);
+    }, [areas]);
+    
     const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
     const [activeInteraction, setActiveInteraction] = useState<{ id: string, type: 'drag' | 'resize', handle: string } | null>(null);
     const startMousePos = useRef({ x: 0, y: 0 });
@@ -101,17 +109,15 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
             const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
-            const isUndo = (isMac ? event.metaKey : event.ctrlKey) && event.key === 'z' && !event.shiftKey;
-            const isRedo = (isMac ? event.metaKey && event.shiftKey && event.key === 'z' : event.ctrlKey && event.key === 'y');
-            const isBold = (isMac ? event.metaKey : event.ctrlKey) && event.key === 'b';
+            const modifierKey = isMac ? event.metaKey : event.ctrlKey;
 
-            if (isUndo) {
+            if (modifierKey && event.key === 'z') {
                 event.preventDefault();
-                undo();
-            } else if (isRedo) {
+                event.shiftKey ? redo() : undo();
+            } else if (modifierKey && event.key === 'y') {
                 event.preventDefault();
                 redo();
-            } else if (isBold) {
+            } else if (modifierKey && event.key === 'b') {
                 event.preventDefault();
                 if (selectedArea) {
                     const newWeight = selectedArea.fontWeight === 'bold' ? 'normal' : 'bold';
@@ -155,7 +161,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         document.body.style.cursor = handle.includes('resize') ? `${handle}-resize` : 'grabbing';
     }
 
-    const handlePointerMove = useCallback((e: PointerEvent) => {
+     const handlePointerMove = useCallback((e: PointerEvent) => {
         if (!activeInteraction || !startArea.current) return;
         e.preventDefault();
         
@@ -165,60 +171,53 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
         const dx = (e.clientX - startMousePos.current.x) / containerWidth * 100;
         const dy = (e.clientY - startMousePos.current.y) / containerHeight * 100;
 
-        // Directly update state without history for live feedback
-        setHistory(currentHistory => {
-            const historyToUpdate = [...currentHistory];
-            const areasToUpdate = [...historyToUpdate[index]];
-            const areaIndex = areasToUpdate.findIndex(a => a.id === activeInteraction.id);
-            if (areaIndex === -1) return currentHistory;
+        setLiveAreas(currentLiveAreas => {
+            return currentLiveAreas.map(area => {
+                 if (area.id !== activeInteraction.id) return area;
 
-            const area = { ...areasToUpdate[areaIndex] };
+                 const newArea = { ...area };
 
-            if (activeInteraction.type === 'drag') {
-                area.x = Math.max(0, Math.min(100 - area.width, startArea.current!.x + dx));
-                area.y = Math.max(0, Math.min(100 - area.height, startArea.current!.y + dy));
-            } else { // resize
-                const handle = activeInteraction.handle;
-                if (handle.includes('e')) area.width = Math.max(5, Math.min(100 - startArea.current!.x, startArea.current!.width + dx));
-                if (handle.includes('w')) {
-                    const newWidth = Math.max(5, startArea.current!.width - dx);
-                    area.x = startArea.current!.x + dx;
-                    area.width = newWidth;
+                if (activeInteraction.type === 'drag') {
+                    newArea.x = Math.max(0, Math.min(100 - startArea.current!.width, startArea.current!.x + dx));
+                    newArea.y = Math.max(0, Math.min(100 - startArea.current!.height, startArea.current!.y + dy));
+                } else { // resize
+                    const handle = activeInteraction.handle;
+                    if (handle.includes('e')) newArea.width = Math.max(5, Math.min(100 - startArea.current!.x, startArea.current!.width + dx));
+                    if (handle.includes('w')) {
+                        const newWidth = Math.max(5, startArea.current!.width - dx);
+                        newArea.x = startArea.current!.x + dx;
+                        newArea.width = newWidth;
+                    }
+                    if (handle.includes('s')) newArea.height = Math.max(5, Math.min(100 - startArea.current!.y, startArea.current!.height + dy));
+                    if (handle.includes('n')) {
+                        const newHeight = Math.max(5, startArea.current!.height - dy);
+                        newArea.y = startArea.current!.y + dy;
+                        newArea.height = newHeight;
+                    }
                 }
-                if (handle.includes('s')) area.height = Math.max(5, Math.min(100 - startArea.current!.y, startArea.current!.height + dy));
-                if (handle.includes('n')) {
-                    const newHeight = Math.max(5, startArea.current!.height - dy);
-                    area.y = startArea.current!.y + dy;
-                    area.height = newHeight;
-                }
-            }
-            
-            areasToUpdate[areaIndex] = area;
-            historyToUpdate[index] = areasToUpdate;
-            return historyToUpdate;
+                 return newArea;
+            });
         });
+    }, [activeInteraction]);
 
-    }, [activeInteraction, index]);
 
     const handlePointerUp = useCallback(() => {
         if(activeInteraction) {
             // Push the final state to history after drag/resize ends
-            setAreas(areas);
+            setAreas(liveAreas);
         }
         setActiveInteraction(null);
         startArea.current = null;
         document.body.style.cursor = 'default';
-    }, [activeInteraction, areas, setAreas]);
+    }, [activeInteraction, liveAreas, setAreas]);
 
     useEffect(() => {
-        const container = containerRef.current;
-        if (container && activeInteraction) {
-            const handleMove = (e: PointerEvent) => handlePointerMove(e as any);
-            window.addEventListener('pointermove', handleMove);
+        if (activeInteraction) {
+            window.addEventListener('pointermove', handlePointerMove);
             window.addEventListener('pointerup', handlePointerUp);
 
             return () => {
-                window.removeEventListener('pointermove', handleMove);
+                window.removeEventListener('pointermove', handlePointerMove);
                 window.removeEventListener('pointerup', handlePointerUp);
             };
         }
@@ -301,42 +300,15 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                 </div>
             </DialogHeader>
 
-            <div className="flex-1 grid grid-cols-5 gap-6 min-h-0">
-                <div className="col-span-3 flex flex-col gap-4 p-4 pl-6">
+            <div className="grid grid-cols-5 gap-6 p-6 flex-1 min-h-0">
+                <div className="col-span-3 flex flex-col gap-4">
                     <div ref={containerRef} className="flex-1 relative w-full h-full bg-muted/20 rounded-lg overflow-hidden flex items-center justify-center" onPointerDown={() => setSelectedAreaId(null)}>
                         <Image src={image.src} alt="Product to customize" fill className="object-contain select-none" />
-                        {areas.map(area => <DraggableArea key={area.id} area={area} />)}
+                        {liveAreas.map(area => <DraggableArea key={area.id} area={area} />)}
                     </div>
-                     <Card>
-                        <CardHeader className="p-2 border-b">
-                            <CardTitle className="text-sm">Defined Areas</CardTitle>
-                        </CardHeader>
-                        <CardContent className="p-2">
-                            {areas.length > 0 ? (
-                                <div className="flex flex-wrap gap-2">
-                                    {areas.map(area => (
-                                        <div 
-                                            key={area.id}
-                                            className={cn("flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors",
-                                                selectedAreaId === area.id ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"
-                                            )}
-                                            onClick={() => setSelectedAreaId(area.id)}
-                                        >
-                                            <span>{area.label}</span>
-                                            <button onClick={(e) => {e.stopPropagation(); handleRemoveArea(area.id)}} className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-black/20">
-                                                <X className="h-3 w-3" />
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-xs text-muted-foreground text-center py-2">No areas defined yet.</p>
-                            )}
-                        </CardContent>
-                    </Card>
                 </div>
 
-                <div className="col-span-2 flex flex-col gap-4 p-4 pr-6">
+                <div className="col-span-2 flex flex-col gap-4">
                      <Card>
                         <CardHeader className="p-4">
                             <CardTitle className="text-base">Tools</CardTitle>
@@ -351,16 +323,16 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                              </TooltipProvider>
                         </CardContent>
                     </Card>
-                    <Card className="flex-1">
+                    <Card className="flex-1 flex flex-col">
                         <CardHeader className="p-4">
                             <CardTitle className="text-base">Properties</CardTitle>
                         </CardHeader>
-                        <CardContent className="p-4 pt-0">
+                        <CardContent className="p-4 pt-0 flex-1">
                             {selectedArea ? (
                                 <ScrollArea className="h-[45vh] pr-2">
                                 <div className="space-y-4">
                                      <div className="space-y-2">
-                                        <Label htmlFor="area-label">Area Label</Label>
+                                        <Label htmlFor="area-label">Area Label (Placeholder)</Label>
                                         <Input id="area-label" value={selectedArea.label} onChange={(e) => updateAreaProperty(selectedArea.id, 'label', e.target.value)} />
                                     </div>
                                     
@@ -412,6 +384,31 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                 </div>
             </div>
              <DialogFooter className="p-4 border-t flex-shrink-0">
+                 <Card>
+                    <CardContent className="p-2">
+                        {areas.length > 0 ? (
+                            <div className="flex flex-wrap gap-2">
+                                {areas.map(area => (
+                                    <div 
+                                        key={area.id}
+                                        className={cn("flex items-center gap-1.5 pl-3 pr-1 py-1 rounded-full text-xs font-medium cursor-pointer transition-colors",
+                                            selectedAreaId === area.id ? "bg-primary text-primary-foreground" : "bg-muted hover:bg-muted/80"
+                                        )}
+                                        onClick={() => setSelectedAreaId(area.id)}
+                                    >
+                                        <span>{area.label}</span>
+                                        <button onClick={(e) => {e.stopPropagation(); handleRemoveArea(area.id)}} className="h-4 w-4 rounded-full flex items-center justify-center hover:bg-black/20">
+                                            <X className="h-3 w-3" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-xs text-muted-foreground text-center py-2">No areas defined yet.</p>
+                        )}
+                    </CardContent>
+                </Card>
+                <div className="flex-grow"></div>
                 <Button variant="outline" onClick={onCancel}>Cancel</Button>
                 <Button onClick={() => onSave(areas)}>Save Changes</Button>
             </DialogFooter>
