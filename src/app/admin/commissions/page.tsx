@@ -11,10 +11,14 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { mockCategories } from "@/lib/mock-data";
 import { DollarSign, Percent, Edit, Search } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 type CommissionRule = {
     commission: number; // percentage
-    buffer: number; // fixed amount
+    buffer: {
+        type: 'fixed' | 'percentage';
+        value: number;
+    };
 };
 
 type CategoryCommissions = {
@@ -22,7 +26,7 @@ type CategoryCommissions = {
 };
 
 const initialCommissions: CategoryCommissions = mockCategories.reduce((acc, category) => {
-    acc[category.name] = { commission: 15, buffer: 2.00 }; // Default values
+    acc[category.name] = { commission: 15, buffer: { type: 'fixed', value: 2.00 } }; // Default to fixed buffer
     return acc;
 }, {} as CategoryCommissions);
 
@@ -33,7 +37,7 @@ export default function CommissionEnginePage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
     const [currentCommission, setCurrentCommission] = useState(0);
-    const [currentBuffer, setCurrentBuffer] = useState(0);
+    const [currentBuffer, setCurrentBuffer] = useState({ type: 'fixed' as 'fixed' | 'percentage', value: 0 });
 
     const handleEditClick = (categoryName: string) => {
         setSelectedCategory(categoryName);
@@ -58,6 +62,13 @@ export default function CommissionEnginePage() {
         });
         setIsDialogOpen(false);
     };
+
+    const formatBuffer = (buffer: CommissionRule['buffer']) => {
+        if (buffer.type === 'fixed') {
+            return `$${buffer.value.toFixed(2)}`;
+        }
+        return `${buffer.value}%`;
+    }
 
     return (
         <div>
@@ -90,7 +101,7 @@ export default function CommissionEnginePage() {
                                         <TableRow key={category}>
                                             <TableCell className="font-medium">{category}</TableCell>
                                             <TableCell>{rule.commission}%</TableCell>
-                                            <TableCell>${rule.buffer.toFixed(2)}</TableCell>
+                                            <TableCell>{formatBuffer(rule.buffer)}</TableCell>
                                             <TableCell className="text-right">
                                                 <Button variant="outline" size="sm" onClick={() => handleEditClick(category)}>
                                                     <Edit className="mr-2 h-3 w-3" /> Edit
@@ -138,12 +149,12 @@ export default function CommissionEnginePage() {
                     <DialogHeader>
                         <DialogTitle>Edit Commission for: {selectedCategory}</DialogTitle>
                         <DialogDescription>
-                            Set the percentage commission and a fixed buffer amount to be added to the product's base price.
+                            Set the percentage commission and a buffer to be added to the product's base price.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid grid-cols-2 gap-6 py-4">
                         <div className="space-y-2">
-                            <Label htmlFor="commission-rate">Commission Rate</Label>
+                            <Label htmlFor="commission-rate">Commission Rate (%)</Label>
                              <div className="relative">
                                 <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                 <Input 
@@ -154,18 +165,35 @@ export default function CommissionEnginePage() {
                                 />
                             </div>
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="buffer-amount">Price Buffer</Label>
-                            <div className="relative">
+                         <div className="space-y-2">
+                            <Label>Buffer Type</Label>
+                             <RadioGroup value={currentBuffer.type} onValueChange={(value) => setCurrentBuffer(prev => ({ ...prev, type: value as 'fixed' | 'percentage' }))}>
+                                 <div className="flex items-center space-x-2">
+                                     <RadioGroupItem value="fixed" id="r-fixed" />
+                                     <Label htmlFor="r-fixed">Fixed Buffer ($)</Label>
+                                 </div>
+                                 <div className="flex items-center space-x-2">
+                                     <RadioGroupItem value="percentage" id="r-percent" />
+                                     <Label htmlFor="r-percent">Percentage Buffer (%)</Label>
+                                 </div>
+                             </RadioGroup>
+                        </div>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="buffer-value">Buffer Value</Label>
+                         <div className="relative">
+                             {currentBuffer.type === 'fixed' ? (
                                 <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                    id="buffer-amount" 
-                                    type="number" 
-                                    value={currentBuffer}
-                                    onChange={(e) => setCurrentBuffer(Number(e.target.value))}
-                                    className="pl-8"
-                                />
-                            </div>
+                            ) : (
+                                <Percent className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            )}
+                            <Input 
+                                id="buffer-value" 
+                                type="number" 
+                                value={currentBuffer.value}
+                                onChange={(e) => setCurrentBuffer(prev => ({...prev, value: Number(e.target.value)}))}
+                                className={currentBuffer.type === 'fixed' ? "pl-8" : ""}
+                            />
                         </div>
                     </div>
                     <DialogFooter>
