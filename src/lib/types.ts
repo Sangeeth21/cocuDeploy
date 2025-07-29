@@ -10,7 +10,6 @@ export type CustomizationArea = {
   fontFamily: string;
   fontSize: number;
   fontWeight: string;
-  textAlign: 'left' | 'center' | 'right';
   textColor: string;
 };
 
