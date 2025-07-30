@@ -349,7 +349,7 @@ export default function CustomizeProductPage() {
                 setSelectedElementId(initialElements[0].id)
             }
         }
-    }, [firstCustomizableSide, product, setDesignElements]);
+    }, [product, setDesignElements, firstCustomizableSide]);
 
     const handleElementChange = useCallback((elementId: string, value: Partial<DesignElement>) => {
         setDesignElements(prev => prev.map(el => el.id === elementId ? { ...el, ...value } : el));
@@ -700,5 +700,3 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
-
-    
