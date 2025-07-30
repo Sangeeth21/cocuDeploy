@@ -21,7 +21,8 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 type TextShape = 'normal' | 'arch' | 'valley' | 'bulge' | 'pinch' | 'perspective-left' | 'perspective-right' | 'wave' | 'flag' | 'slant-up' | 'slant-down';
 
@@ -51,59 +52,61 @@ type DesignElement = {
 
 // Custom hook for managing state with undo/redo
 function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T) => T)) => void, () => void, () => void, boolean, boolean] {
-    const [state, setState] = useState({
-        past: [] as T[],
+    const historyRef = useRef<{past: T[], present: T, future: T[]}>({
+        past: [],
         present: initialState,
-        future: [] as T[],
+        future: []
     });
-
-    const canUndo = state.past.length > 0;
-    const canRedo = state.future.length > 0;
+    
+    const [, forceUpdate] = useState({});
 
     const set = useCallback((newState: T | ((prevState: T) => T)) => {
-        setState(currentState => {
-            const newPresent = typeof newState === 'function' ? (newState as (prevState: T) => T)(currentState.present) : newState;
-            
-            if (JSON.stringify(newPresent) === JSON.stringify(currentState.present)) {
-                return currentState;
-            }
+        const { past, present } = historyRef.current;
+        const newPresent = typeof newState === 'function' ? (newState as (prevState: T) => T)(present) : newState;
+        
+        if (JSON.stringify(newPresent) === JSON.stringify(present)) {
+            return;
+        }
 
-            return {
-                past: [...currentState.past, currentState.present],
-                present: newPresent,
-                future: [],
-            };
-        });
+        historyRef.current = {
+            past: [...past, present],
+            present: newPresent,
+            future: [],
+        };
+        forceUpdate({});
     }, []);
 
-
     const undo = useCallback(() => {
-        if (!canUndo) return;
-        setState(currentState => {
-            const newPresent = currentState.past[currentState.past.length - 1];
-            const newPast = currentState.past.slice(0, currentState.past.length - 1);
-            return {
-                past: newPast,
-                present: newPresent,
-                future: [currentState.present, ...currentState.future],
-            };
-        });
-    }, [canUndo]);
+        const { past, present, future } = historyRef.current;
+        if (past.length === 0) return;
+        const newPresent = past[past.length - 1];
+        const newPast = past.slice(0, past.length - 1);
+        historyRef.current = {
+            past: newPast,
+            present: newPresent,
+            future: [present, ...future],
+        };
+        forceUpdate({});
+    }, []);
 
     const redo = useCallback(() => {
-        if (!canRedo) return;
-        setState(currentState => {
-            const newPresent = currentState.future[0];
-            const newFuture = currentState.future.slice(1);
-            return {
-                past: [...currentState.past, currentState.present],
-                present: newPresent,
-                future: newFuture,
-            };
-        });
-    }, [canRedo]);
+        const { past, present, future } = historyRef.current;
+        if (future.length === 0) return;
+        const newPresent = future[0];
+        const newFuture = future.slice(1);
+        historyRef.current = {
+            past: [...past, present],
+            present: newPresent,
+            future: newFuture,
+        };
+        forceUpdate({});
+    }, []);
 
-    return [state.present, set, undo, redo, canUndo, canRedo];
+    const { past, future } = historyRef.current;
+    const canUndo = past.length > 0;
+    const canRedo = future.length > 0;
+
+    return [historyRef.current.present, set, undo, redo, canUndo, canRedo];
 }
 
 
@@ -134,7 +137,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
         color: textColor,
         textAlign,
         lineHeight: 1,
-        filter: outlineColor && outlineWidth ? `url(#${svgFilterId})` : 'none',
+        filter: outlineColor && outlineWidth && outlineWidth > 0 ? `url(#${svgFilterId})` : 'none',
         display: 'inline-block',
         whiteSpace: 'pre-wrap',
     };
@@ -143,7 +146,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
 
     const getTransformStyle = (): React.CSSProperties => {
         switch (textShape) {
-            case 'bulge':
+             case 'bulge':
                 return { transform: `scaleY(${1 + intensity * 0.5})` };
             case 'pinch':
                 return { transform: `scaleY(${1 - Math.abs(intensity * 0.5)})` };
@@ -180,7 +183,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
     if (pathData) {
         return (
              <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
-                 {outlineColor && outlineWidth && (
+                 {outlineColor && outlineWidth && outlineWidth > 0 && (
                     <defs>
                         <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
                             <feMorphology operator="dilate" radius={outlineWidth} in="SourceAlpha" result="dilated" />
@@ -203,7 +206,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
 
     return (
         <div className="w-full h-full flex items-center justify-center p-1" style={getTransformStyle()}>
-            {outlineColor && outlineWidth && (
+            {outlineColor && outlineWidth && outlineWidth > 0 && (
                 <svg style={{ position: 'absolute', width: 0, height: 0 }}>
                     <defs>
                         <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
@@ -634,9 +637,9 @@ export default function CustomizeProductPage() {
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                         <div className="space-y-2">
-                                            <Label>Color</Label>
-                                            <Input type="color" value={selectedElement.textColor} onChange={(e) => handleElementChange(selectedElementId!, { textColor: e.target.value })} className="h-10 p-1" />
+                                        <div className="space-y-2">
+                                            <Label>Text Color</Label>
+                                            <ColorPicker value={selectedElement.textColor || '#000000'} onChange={(color) => handleElementChange(selectedElementId!, { textColor: color })} />
                                         </div>
                                          <div className="space-y-2">
                                             <Label>Rotation</Label>
@@ -645,10 +648,10 @@ export default function CustomizeProductPage() {
                                                 <Input type="number" value={selectedElement.rotation || 0} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
                                             </div>
                                         </div>
-                                         <div className="space-y-2">
+                                        <div className="space-y-2">
                                             <Label>Outline</Label>
-                                            <div className="flex items-center gap-2">
-                                                <Input type="color" value={selectedElement.outlineColor || '#ffffff'} onChange={(e) => handleElementChange(selectedElementId!, { outlineColor: e.target.value })} className="h-10 p-1 w-14" />
+                                            <div className="space-y-2">
+                                                <ColorPicker value={selectedElement.outlineColor || '#ffffff'} onChange={(color) => handleElementChange(selectedElementId!, { outlineColor: color })} />
                                                 <Slider min={0} max={5} step={0.1} value={[selectedElement.outlineWidth || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { outlineWidth: v })} />
                                             </div>
                                         </div>
@@ -767,5 +770,3 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
-
-    
