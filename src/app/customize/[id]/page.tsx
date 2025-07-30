@@ -570,7 +570,7 @@ export default function CustomizeProductPage() {
 
             <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6 p-6 overflow-hidden">
                 {/* Left Panel: Preview */}
-                <div className="md:col-span-2 lg:col-span-3 h-full flex flex-col items-center justify-center gap-4">
+                <div className="md:col-span-2 lg:col-span-3 h-full flex flex-col items-center justify-start gap-4">
                      <div className="relative w-full max-h-full aspect-square flex items-center justify-center bg-background rounded-lg shadow-md p-4">
                         <CustomizationRenderer product={product} activeSide={activeSide} designElements={designElements} />
                     </div>
