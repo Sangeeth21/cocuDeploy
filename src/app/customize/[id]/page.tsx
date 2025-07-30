@@ -51,34 +51,58 @@ type DesignElement = {
 
 // Custom hook for managing state with undo/redo
 function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T) => T)) => void, () => void, () => void, boolean, boolean] {
-    const historyRef = useRef([initialState]);
-    const [index, setIndex] = useState(0);
+    const [state, setState] = useState({
+        past: [] as T[],
+        present: initialState,
+        future: [] as T[],
+    });
 
-    const setState = useCallback((newState: T | ((prevState: T) => T)) => {
-        const currentState = historyRef.current[index];
-        const newHistory = historyRef.current.slice(0, index + 1);
-        const resolvedState = typeof newState === 'function' ? (newState as (prevState: T) => T)(currentState) : newState;
-        newHistory.push(resolvedState);
-        historyRef.current = newHistory;
-        setIndex(newHistory.length - 1);
-    }, [index]);
+    const canUndo = state.past.length > 0;
+    const canRedo = state.future.length > 0;
 
-    const undo = () => {
-        if (index > 0) {
-            setIndex(index - 1);
-        }
-    };
+    const set = useCallback((newState: T | ((prevState: T) => T)) => {
+        setState(currentState => {
+            const newPresent = typeof newState === 'function' ? (newState as (prevState: T) => T)(currentState.present) : newState;
+            
+            if (JSON.stringify(newPresent) === JSON.stringify(currentState.present)) {
+                return currentState;
+            }
 
-    const redo = () => {
-        if (index < historyRef.current.length - 1) {
-            setIndex(index + 1);
-        }
-    };
-    
-    const canUndo = index > 0;
-    const canRedo = index < historyRef.current.length - 1;
+            return {
+                past: [...currentState.past, currentState.present],
+                present: newPresent,
+                future: [],
+            };
+        });
+    }, []);
 
-    return [historyRef.current[index], setState, undo, redo, canUndo, canRedo];
+    const undo = useCallback(() => {
+        if (!canUndo) return;
+        setState(currentState => {
+            const newPresent = currentState.past[currentState.past.length - 1];
+            const newPast = currentState.past.slice(0, currentState.past.length - 1);
+            return {
+                past: newPast,
+                present: newPresent,
+                future: [currentState.present, ...currentState.future],
+            };
+        });
+    }, [canUndo]);
+
+    const redo = useCallback(() => {
+        if (!canRedo) return;
+        setState(currentState => {
+            const newPresent = currentState.future[0];
+            const newFuture = currentState.future.slice(1);
+            return {
+                past: [...currentState.past, currentState.present],
+                present: newPresent,
+                future: newFuture,
+            };
+        });
+    }, [canRedo]);
+
+    return [state.present, set, undo, redo, canUndo, canRedo];
 }
 
 
@@ -700,3 +724,5 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
+
+    
