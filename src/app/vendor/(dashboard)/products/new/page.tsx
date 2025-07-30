@@ -930,7 +930,7 @@ export default function NewProductPage() {
                            <h3 className="text-base font-semibold">AI-Powered Image Generation</h3>
                            <p className="text-sm text-muted-foreground">Upload a Front image, then click to generate missing views.</p>
                        </div>
-                        <Button onClick={handleGenerate} disabled={isGenerating || !images.front?.src || !productName.trim()}>
+                        <Button onClick={handleGenerate} disabled={isGenerating || !images.front?.file || !productName.trim()}>
                             {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
                             {isGenerating ? 'Generating...' : 'Generate Views'}
                         </Button>
