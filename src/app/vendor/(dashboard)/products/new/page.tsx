@@ -751,12 +751,12 @@ export default function NewProductPage() {
 
 
     const handleGenerate = useCallback(async () => {
-        if (!images.front?.file) {
-            toast({ variant: 'destructive', title: 'Please upload a front image first.' });
+        if (!productName.trim()) {
+            toast({ variant: 'destructive', title: 'Product Name Required', description: 'Please enter a product name before generating images.' });
             return;
         }
-        if (!productName.trim()) {
-            toast({ variant: 'destructive', title: 'Please enter a product name.' });
+        if (!images.front?.file) {
+            toast({ variant: 'destructive', title: 'Front Image Required', description: 'Please upload a front image first.' });
             return;
         }
 
@@ -855,7 +855,7 @@ export default function NewProductPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="name">Product Name</Label>
+                        <Label htmlFor="name">Product Name <span className="text-destructive">*</span></Label>
                         <Input id="name" placeholder="e.g. Classic Leather Watch" value={productName} onChange={e => setProductName(e.target.value)} />
                     </div>
                     <div className="space-y-2">
