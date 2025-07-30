@@ -931,7 +931,7 @@ export default function NewProductPage() {
                            <p className="text-sm text-muted-foreground">Upload a Front image, then click to generate missing views.</p>
                        </div>
                         <Button onClick={handleGenerate} disabled={isGenerating || !images.front?.file || !productName.trim()}>
-                            {isGenerating ? <Loader2 className="mr-2 animate-spin" /> : <Wand2 className="mr-2" />}
+                            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2" />}
                             {isGenerating ? 'Generating...' : 'Generate Views'}
                         </Button>
                     </div>
@@ -1219,3 +1219,4 @@ export default function NewProductPage() {
     </>
   );
 }
+
