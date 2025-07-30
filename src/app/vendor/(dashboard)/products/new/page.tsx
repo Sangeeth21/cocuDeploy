@@ -751,7 +751,7 @@ export default function NewProductPage() {
 
 
     const handleGenerate = useCallback(async () => {
-        if (!images.front?.src) {
+        if (!images.front?.file) {
             toast({ variant: 'destructive', title: 'Please upload a front image first.' });
             return;
         }
@@ -762,10 +762,8 @@ export default function NewProductPage() {
 
         setIsGenerating(true);
         try {
-            const response = await fetch(images.front.src);
-            const blob = await response.blob();
             const reader = new FileReader();
-            reader.readAsDataURL(blob);
+            reader.readAsDataURL(images.front.file);
             reader.onloadend = async () => {
                 const base64data = reader.result as string;
                 const result = await generateProductImages({ 
@@ -779,18 +777,26 @@ export default function NewProductPage() {
                 }
 
                 if (result.images) {
-                    const generatedImages: ProductImages = {};
-                    if(result.images.back && !images.back) generatedImages.back = {src: result.images.back, isGenerated: true};
-                    if(result.images.left && !images.left) generatedImages.left = {src: result.images.left, isGenerated: true};
-                    if(result.images.right && !images.right) generatedImages.right = {src: result.images.right, isGenerated: true};
-                    
-                    setImages(prev => ({...prev, ...generatedImages}));
+                    const newImages: ProductImages = {};
+                    if (result.images.back) newImages.back = { src: result.images.back, isGenerated: true, customAreas: [] };
+                    if (result.images.left) newImages.left = { src: result.images.left, isGenerated: true, customAreas: [] };
+                    if (result.images.right) newImages.right = { src: result.images.right, isGenerated: true, customAreas: [] };
+
+                    setImages(prev => ({
+                        ...prev,
+                        ...(!prev.back && newImages.back ? { back: newImages.back } : {}),
+                        ...(!prev.left && newImages.left ? { left: newImages.left } : {}),
+                        ...(!prev.right && newImages.right ? { right: newImages.right } : {}),
+                    }));
 
                     toast({
                         title: 'Generation Complete',
                         description: 'Missing product views have been generated.',
                     });
                 }
+            };
+            reader.onerror = () => {
+                throw new Error('Failed to read the uploaded image file.');
             };
         } catch (error: any) {
             toast({
@@ -801,8 +807,8 @@ export default function NewProductPage() {
         } finally {
             setIsGenerating(false);
         }
-    }, [images, productName, productDescription, toast]);
-    
+    }, [images.front, productName, productDescription, toast]);
+
     const canPreview3D = useMemo(() => {
        return is3DEnabled && images.front?.src && images.left?.src && images.right?.src;
     }, [images, is3DEnabled]);
