@@ -139,34 +139,43 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
 
     const intensity = (shapeIntensity - 50) / 50; // Map slider 0-100 to -1 to 1
 
-    const getTransform = (): string => {
+    const getTransformStyle = (): React.CSSProperties => {
+        switch (textShape) {
+            case 'bulge':
+                return { transform: `scaleY(${1 + intensity * 0.5})` };
+            case 'pinch':
+                return { transform: `scaleY(${1 - Math.abs(intensity * 0.5)})` };
+            case 'perspective-left':
+                return { transform: `perspective(150px) rotateY(${intensity * 30}deg)` };
+            case 'perspective-right':
+                return { transform: `perspective(150px) rotateY(${-intensity * 30}deg)` };
+            case 'slant-up':
+                return { transform: `skewY(${-intensity * 15}deg)` };
+            case 'slant-down':
+                return { transform: `skewY(${intensity * 15}deg)` };
+            default:
+                return {};
+        }
+    };
+    
+    const getPathData = (): string | null => {
         switch (textShape) {
             case 'arch':
-                return `path('M 0,${50 - intensity * 25} C ${intensity * 50},${50 - intensity * 75} ${100 - intensity * 50},${50 - intensity * 75} 100,${50 - intensity * 25}')`;
+                return `M 0,${50 - intensity * 25} C ${intensity * 50},${50 - intensity * 75} ${100 - intensity * 50},${50 - intensity * 75} 100,${50 - intensity * 25}`;
             case 'valley':
-                 return `path('M 0,50 C 25,${50 + intensity * 50} 75,${50 + intensity * 50} 100,50')`;
-            case 'bulge':
-                 return `transform: scaleY(${1 + intensity * 0.5})`;
-            case 'pinch':
-                 return `transform: scaleY(${1 - Math.abs(intensity * 0.5)})`;
-            case 'perspective-left':
-                 return `transform: perspective(150px) rotateY(${intensity * 30}deg)`;
-            case 'perspective-right':
-                 return `transform: perspective(150px) rotateY(${-intensity * 30}deg)`;
+                 return `M 0,50 C 25,${50 + intensity * 50} 75,${50 + intensity * 50} 100,50`;
             case 'wave':
-                 return `path('M 0,50 C 25,${50 - intensity * 25} 50,${50 + intensity * 25} 75,${50 - intensity * 25} 100,50')`
+                 return `M 0,50 C 25,${50 - intensity * 25} 50,${50 + intensity * 25} 75,${50 - intensity * 25} 100,50`;
             case 'flag':
-                 return `path('M 0,${50 + intensity * 15} C 25,${50 - intensity * 15} 50,${50 + intensity * 15} 75,${50 - intensity * 15} 100,${50 + intensity * 15}')`
-            case 'slant-up':
-                 return `transform: skewY(${-intensity * 15}deg)`;
-            case 'slant-down':
-                 return `transform: skewY(${intensity * 15}deg)`;
+                 return `M 0,${50 + intensity * 15} C 25,${50 - intensity * 15} 50,${50 + intensity * 15} 75,${50 - intensity * 15} 100,${50 + intensity * 15}`;
             default:
-                return 'none';
+                return null;
         }
     }
     
-    if (textShape !== 'normal' && !['bulge', 'pinch', 'perspective-left', 'perspective-right', 'slant-up', 'slant-down'].includes(textShape)) {
+    const pathData = getPathData();
+
+    if (pathData) {
         return (
              <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
                  {outlineColor && outlineWidth && (
@@ -182,7 +191,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
                         </filter>
                     </defs>
                  )}
-                 <path id={`path-${element.id}`} d={getTransform().replace("path('", "").slice(0,-2)} fill="transparent" />
+                 <path id={`path-${element.id}`} d={pathData} fill="transparent" />
                  <text style={{...textStyle, filter: 'none'}} dy={textShape === 'arch' ? fontSize!*0.25 : 0}>
                     <textPath href={`#path-${element.id}`} startOffset="50%" textAnchor="middle">{text}</textPath>
                  </text>
@@ -191,7 +200,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
     }
 
     return (
-        <div className="w-full h-full flex items-center justify-center p-1" style={{transform: textShape !== 'normal' ? getTransform() : 'none'}}>
+        <div className="w-full h-full flex items-center justify-center p-1" style={getTransformStyle()}>
             {outlineColor && outlineWidth && (
                 <svg style={{ position: 'absolute', width: 0, height: 0 }}>
                     <defs>
