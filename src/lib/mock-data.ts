@@ -49,6 +49,14 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'TS-ORG-M',
     stock: 150,
     status: 'Archived',
+    customizationAreas: {
+      front: [
+        { id: 'front-text', shape: 'rect', x: 25, y: 40, width: 50, height: 20, label: 'Front Text', fontFamily: 'sans-serif', fontSize: 16, fontWeight: 'bold', textColor: '#000000', curveIntensity: 0 },
+      ],
+      back: [
+         { id: 'back-text', shape: 'rect', x: 25, y: 70, width: 50, height: 10, label: 'Back Text', fontFamily: 'monospace', fontSize: 12, fontWeight: 'normal', textColor: '#333333', curveIntensity: 0 },
+      ]
+    }
   },
   {
     id: '4',
@@ -65,6 +73,11 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'CM-HND-BL',
     stock: 8,
     status: 'Live',
+    customizationAreas: {
+      front: [
+         { id: 'mug-text', shape: 'ellipse', x: 15, y: 35, width: 70, height: 30, label: 'Your Name', fontFamily: 'serif', fontSize: 18, fontWeight: 'normal', textColor: '#FFFFFF', curveIntensity: 30 },
+      ]
+    }
   },
   {
     id: '5',
