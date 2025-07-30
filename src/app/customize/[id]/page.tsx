@@ -486,7 +486,7 @@ export default function CustomizeProductPage() {
         const element = newElements.splice(index, 1)[0];
         newElements.splice(newIndex, 0, element);
         setDesignElements(newElements);
-    }
+    };
     
     const duplicateElement = (elementId: string) => {
         const elementToCopy = designElements.find(el => el.id === elementId);
