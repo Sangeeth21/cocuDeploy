@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -23,7 +23,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
-type TextShape = 'normal' | 'arch' | 'valley' | 'bulge' | 'pinch' | 'perspective-left' | 'perspective-right';
+type TextShape = 'normal' | 'arch' | 'valley' | 'bulge' | 'pinch' | 'perspective-left' | 'perspective-right' | 'wave' | 'flag' | 'slant-up' | 'slant-down';
 
 type DesignElement = {
     id: string;
@@ -61,20 +61,19 @@ function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T)
     const canRedo = state.future.length > 0;
 
     const set = useCallback((newState: T | ((prevState: T) => T)) => {
-        setState(currentState => {
-            const newPresent = typeof newState === 'function' ? (newState as (prevState: T) => T)(currentState.present) : newState;
-            
-            if (JSON.stringify(newPresent) === JSON.stringify(currentState.present)) {
-                return currentState;
-            }
+        const newPresent = typeof newState === 'function' ? (newState as (prevState: T) => T)(state.present) : newState;
+        
+        if (JSON.stringify(newPresent) === JSON.stringify(state.present)) {
+            return;
+        }
 
-            return {
-                past: [...currentState.past, currentState.present],
-                present: newPresent,
-                future: [],
-            };
-        });
-    }, []);
+        setState(currentState => ({
+            past: [...currentState.past, currentState.present],
+            present: newPresent,
+            future: [],
+        }));
+    }, [state.present]);
+
 
     const undo = useCallback(() => {
         if (!canUndo) return;
@@ -154,12 +153,20 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
                  return `transform: perspective(150px) rotateY(${intensity * 30}deg)`;
             case 'perspective-right':
                  return `transform: perspective(150px) rotateY(${-intensity * 30}deg)`;
+            case 'wave':
+                 return `path('M 0,50 C 25,${50 - intensity * 25} 50,${50 + intensity * 25} 75,${50 - intensity * 25} 100,50')`
+            case 'flag':
+                 return `path('M 0,${50 + intensity * 15} C 25,${50 - intensity * 15} 50,${50 + intensity * 15} 75,${50 - intensity * 15} 100,${50 + intensity * 15}')`
+            case 'slant-up':
+                 return `transform: skewY(${-intensity * 15}deg)`;
+            case 'slant-down':
+                 return `transform: skewY(${intensity * 15}deg)`;
             default:
                 return 'none';
         }
     }
     
-    if (textShape !== 'normal' && textShape !== 'bulge' && textShape !== 'pinch' && textShape !== 'perspective-left' && textShape !== 'perspective-right') {
+    if (textShape !== 'normal' && !['bulge', 'pinch', 'perspective-left', 'perspective-right', 'slant-up', 'slant-down'].includes(textShape)) {
         return (
              <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
                  {outlineColor && outlineWidth && (
@@ -268,15 +275,37 @@ const mockArt = [
     { id: 'art-4', src: '/art/brush.svg', icon: Brush },
 ];
 
-const textShapes: { id: TextShape; label: string }[] = [
-    { id: 'normal', label: 'Normal' },
-    { id: 'arch', label: 'Arch' },
-    { id: 'valley', label: 'Valley' },
-    { id: 'bulge', label: 'Bulge' },
-    { id: 'pinch', label: 'Pinch' },
-    { id: 'perspective-left', label: 'Perspective Left' },
-    { id: 'perspective-right', label: 'Perspective Right' },
+const textShapes: { id: TextShape; label: string; icon: React.ElementType }[] = [
+    { id: 'normal', label: 'Normal', icon: Type },
+    { id: 'arch', label: 'Arch', icon: Pilcrow },
+    { id: 'valley', label: 'Valley', icon: Pilcrow },
+    { id: 'bulge', label: 'Bulge', icon: Pilcrow },
+    { id: 'pinch', label: 'Pinch', icon: Pilcrow },
+    { id: 'wave', label: 'Wave', icon: Waves },
+    { id: 'flag', label: 'Flag', icon: Flag },
+    { id: 'slant-up', label: 'Slant Up', icon: CaseUpper },
+    { id: 'slant-down', label: 'Slant Down', icon: CaseUpper },
+    { id: 'perspective-left', label: 'Perspective Left', icon: PilcrowLeft },
+    { id: 'perspective-right', label: 'Perspective Right', icon: PilcrowRight },
 ];
+
+const ShapePreview = ({ shape, intensity, label, isSelected, onClick }: { shape: TextShape, intensity: number, label: string, isSelected: boolean, onClick: () => void }) => {
+    const previewElement: DesignElement = {
+        id: `preview-${shape}`, type: 'text',
+        x: 0, y: 0, width: 100, height: 100, rotation: 0,
+        text: 'Text', fontFamily: 'sans-serif', fontSize: 24, fontWeight: 'bold', textColor: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--foreground))', textAlign: 'center',
+        textShape: shape, shapeIntensity: intensity,
+    }
+    
+    return (
+        <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={onClick}>
+            <div className={cn("w-full h-20 bg-muted/50 rounded-md border-2 p-2", isSelected ? "border-primary" : "border-transparent")}>
+                <TextRenderer element={previewElement} />
+            </div>
+            <span className="text-xs font-medium">{label}</span>
+        </div>
+    )
+}
 
 function TextShapeDialog({ open, onOpenChange, element, onElementChange }: { open: boolean, onOpenChange: (open: boolean) => void, element: DesignElement | undefined, onElementChange: (id: string, value: Partial<DesignElement>) => void }) {
     if (!element) return null;
@@ -296,23 +325,24 @@ function TextShapeDialog({ open, onOpenChange, element, onElementChange }: { ope
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Choose Text Shape</DialogTitle>
                 </DialogHeader>
-                 <div className="grid grid-cols-3 gap-2">
+                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 py-4">
                     {textShapes.map(shape => (
-                        <Button 
+                        <ShapePreview 
                             key={shape.id} 
-                            variant={currentShape === shape.id ? "default" : "outline"}
+                            shape={shape.id}
+                            label={shape.label}
+                            intensity={currentIntensity}
+                            isSelected={currentShape === shape.id}
                             onClick={() => setCurrentShape(shape.id)}
-                        >
-                            {shape.label}
-                        </Button>
+                        />
                     ))}
                 </div>
                  <div className="space-y-2 pt-4">
-                    <Label>Choose shape settings</Label>
+                    <Label>Intensity</Label>
                     <Slider value={[currentIntensity]} onValueChange={([val]) => setCurrentIntensity(val)} />
                 </div>
                 <DialogFooter>
@@ -724,5 +754,3 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
-
-    
