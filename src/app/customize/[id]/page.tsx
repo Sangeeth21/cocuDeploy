@@ -61,18 +61,20 @@ function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T)
     const canRedo = state.future.length > 0;
 
     const set = useCallback((newState: T | ((prevState: T) => T)) => {
-        const newPresent = typeof newState === 'function' ? (newState as (prevState: T) => T)(state.present) : newState;
-        
-        if (JSON.stringify(newPresent) === JSON.stringify(state.present)) {
-            return;
-        }
+        setState(currentState => {
+            const newPresent = typeof newState === 'function' ? (newState as (prevState: T) => T)(currentState.present) : newState;
+            
+            if (JSON.stringify(newPresent) === JSON.stringify(currentState.present)) {
+                return currentState;
+            }
 
-        setState(currentState => ({
-            past: [...currentState.past, currentState.present],
-            present: newPresent,
-            future: [],
-        }));
-    }, [state.present]);
+            return {
+                past: [...currentState.past, currentState.present],
+                present: newPresent,
+                future: [],
+            };
+        });
+    }, []);
 
 
     const undo = useCallback(() => {
@@ -180,8 +182,8 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
              <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
                  {outlineColor && outlineWidth && (
                     <defs>
-                        <filter id={svgFilterId}>
-                            <feMorphology operator="dilate" radius={outlineWidth} in="SourceGraphic" result="dilated" />
+                        <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
+                            <feMorphology operator="dilate" radius={outlineWidth} in="SourceAlpha" result="dilated" />
                             <feFlood floodColor={outlineColor} result="color" />
                             <feComposite in="color" in2="dilated" operator="in" result="outline" />
                             <feMerge>
@@ -192,7 +194,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
                     </defs>
                  )}
                  <path id={`path-${element.id}`} d={pathData} fill="transparent" />
-                 <text style={{...textStyle, filter: 'none'}} dy={textShape === 'arch' ? fontSize!*0.25 : 0}>
+                 <text style={{...textStyle, filter: 'none'}} dy={textShape === 'arch' ? fontSize!*0.25 : 0} fill={textColor}>
                     <textPath href={`#path-${element.id}`} startOffset="50%" textAnchor="middle">{text}</textPath>
                  </text>
              </svg>
@@ -204,8 +206,8 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
             {outlineColor && outlineWidth && (
                 <svg style={{ position: 'absolute', width: 0, height: 0 }}>
                     <defs>
-                        <filter id={svgFilterId}>
-                            <feMorphology operator="dilate" radius={outlineWidth} in="SourceGraphic" result="dilated" />
+                        <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
+                            <feMorphology operator="dilate" radius={outlineWidth} in="SourceAlpha" result="dilated" />
                             <feFlood floodColor={outlineColor} result="color" />
                             <feComposite in="color" in2="dilated" operator="in" result="outline" />
                             <feMerge>
@@ -374,8 +376,8 @@ export default function CustomizeProductPage() {
     const id = params.id as string;
     const product = useMemo(() => mockProducts.find((p) => p.id === id), [id]);
 
-    const [activeSide, setActiveSide] = useState<ImageSide>("front");
     const [designElements, setDesignElements, undo, redo, canUndo, canRedo] = useHistoryState<DesignElement[]>([]);
+    const [activeSide, setActiveSide] = useState<ImageSide>("front");
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
     const [isTextShapeOpen, setIsTextShapeOpen] = useState(false);
 
@@ -431,6 +433,8 @@ export default function CustomizeProductPage() {
             textAlign: 'center',
             textShape: 'normal',
             shapeIntensity: 50,
+            outlineColor: '#FFFFFF',
+            outlineWidth: 0,
         };
         setDesignElements(prev => [...prev, newElement]);
         setSelectedElementId(newElement.id);
@@ -644,7 +648,7 @@ export default function CustomizeProductPage() {
                                          <div className="space-y-2">
                                             <Label>Outline</Label>
                                             <div className="flex items-center gap-2">
-                                                <Input type="color" value={selectedElement.outlineColor} onChange={(e) => handleElementChange(selectedElementId!, { outlineColor: e.target.value })} className="h-10 p-1 w-14" />
+                                                <Input type="color" value={selectedElement.outlineColor || '#ffffff'} onChange={(e) => handleElementChange(selectedElementId!, { outlineColor: e.target.value })} className="h-10 p-1 w-14" />
                                                 <Slider min={0} max={5} step={0.1} value={[selectedElement.outlineWidth || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { outlineWidth: v })} />
                                             </div>
                                         </div>
@@ -763,3 +767,5 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
+
+    
