@@ -62,7 +62,7 @@ export function AddressStep({ onComplete }: { onComplete: () => void }) {
             </Button>
 
             {validationResult && (
-                <Alert variant={validationResult === 'DELIVERABLE' ? "default" : "destructive"} className={validationResult === 'DELIVERABLE' ? "bg-green-50 border-green-200" : ""}>
+                <Alert variant={validationResult === 'DELIVERABLE' ? "default" : "destructive"} className={validationResult === 'DELIVERABLE' ? "bg-green-50 border-green-200 dark:bg-green-950/20 dark:border-green-800" : ""}>
                     <AlertTitle>{validationResult === 'DELIVERABLE' ? 'Validation Successful' : 'Validation Failed'}</AlertTitle>
                     <AlertDescription>
                        {validationResult === 'DELIVERABLE' 

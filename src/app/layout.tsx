@@ -22,6 +22,7 @@ import Image from 'next/image';
 import { AuthDialogProvider } from '@/context/auth-dialog-context';
 import { CustomerAuthDialog } from '@/components/customer-auth-dialog';
 import { app } from '@/lib/firebase';
+import { PageLoader } from '@/components/page-loader';
 
 const ptSans = PT_Sans({
   subsets: ['latin'],
@@ -108,6 +109,7 @@ export default function RootLayout({
         <meta name="description" content="Your one-stop online marketplace." />
       </head>
       <body className={cn('min-h-screen bg-background font-body antialiased flex flex-col', ptSans.variable)}>
+        <PageLoader />
         <UserProvider>
           <AuthDialogProvider>
             <CartProvider>

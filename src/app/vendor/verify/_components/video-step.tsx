@@ -96,7 +96,7 @@ export function VideoStep({ onComplete }: { onComplete: () => void }) {
                     hasCameraPermission === false ? (
                         <div className="text-white text-center">
                             <Camera className="h-12 w-12 mx-auto mb-2" />
-                            <p>Camera access is required for this step.</p>
+                            <p className="text-sm">Camera access is required for this step.</p>
                         </div>
                     ) : (
                         <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
@@ -106,7 +106,7 @@ export function VideoStep({ onComplete }: { onComplete: () => void }) {
 
             {isRecording && (
                 <div className="space-y-2">
-                    <Progress value={(recordingTime / 20) * 100} />
+                    <Progress value={(recordingTime / 20) * 100} className="h-2" />
                     <p className="text-sm text-center text-muted-foreground">{recordingTime}s / 20s</p>
                 </div>
             )}
