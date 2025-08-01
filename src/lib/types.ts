@@ -87,7 +87,7 @@ export type Attachment = {
 
 export type Message = {
   id: string;
-  sender: "customer" | "vendor" | "system";
+  sender: "customer" | "vendor" | "system" | "admin";
   text: string;
   timestamp?: any;
   attachments?: Attachment[];
@@ -137,7 +137,6 @@ export type Conversation = {
   userMessageCount: number;
   awaitingVendorDecision: boolean;
   status: 'active' | 'flagged' | 'locked' | 'resolved';
-  isSupportTicket?: boolean;
 };
 
 
@@ -265,3 +264,14 @@ export type Program = {
     endDate: Date;
     expiryDays?: number;
 };
+
+// Support
+export interface SupportTicket {
+    id: string;
+    vendor: User;
+    subject: string;
+    message: string;
+    date: string;
+    status: "Pending" | "In-Progress" | "Resolved";
+    messages: Message[];
+}

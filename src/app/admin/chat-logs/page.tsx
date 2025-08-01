@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +13,12 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import type { Message, Conversation as AdminConversation } from "@/lib/types";
 import { useSearchParams, useRouter } from "next/navigation";
+import Image from "next/image";
 
 
 type Conversation = Omit<AdminConversation, 'awaitingVendorDecision' | 'userMessageCount'> & {
   customerAvatar: string;
   vendorAvatar: string;
-  isSupportTicket?: boolean;
 }
 
 const initialConversations: Conversation[] = [
@@ -52,52 +52,16 @@ export default function AdminChatLogsPage() {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const { toast } = useToast();
-  const searchParams = useSearchParams();
-  const router = useRouter();
   
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-
-  // Must be defined before the useEffect hooks that use it
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+  
+  const selectedConversation = useMemo(() => conversations.find(c => c.id === selectedConversationId), [conversations, selectedConversationId]);
 
   useEffect(() => {
-    const supportTicketId = searchParams.get('support_ticket_id');
-    if (supportTicketId) {
-      const existingConvo = conversations.find(c => c.id === supportTicketId);
-      if (existingConvo) {
-        setSelectedConversationId(existingConvo.id);
-      } else {
-        const vendorId = searchParams.get('vendorId');
-        const vendorName = searchParams.get('vendorName');
-        const vendorAvatar = searchParams.get('vendorAvatar');
-        const initialMessage = searchParams.get('initialMessage');
-
-        if(vendorId && vendorName && vendorAvatar && initialMessage) {
-            const newSupportConversation: Conversation = {
-                id: supportTicketId,
-                customerId: vendorName, // Display vendor name as customer in this context
-                vendorId: "Admin", // Admin is the other party
-                customerAvatar: vendorAvatar,
-                vendorAvatar: "https://placehold.co/40x40.png", // Admin avatar
-                status: 'active',
-                isSupportTicket: true,
-                messages: [
-                    { id: `msg-support-${Date.now()}`, sender: 'customer', text: initialMessage, timestamp: new Date() },
-                ],
-                avatar: ''
-            };
-            setConversations(prev => [newSupportConversation, ...prev]);
-            setSelectedConversationId(supportTicketId);
-        }
-      }
-      // Clean up URL
-      router.replace('/admin/chat-logs', {scroll: false});
-    } else {
-        if(!selectedConversationId && conversations.length > 0){
-            setSelectedConversationId(conversations[0].id);
-        }
+    if(!selectedConversationId && conversations.length > 0){
+        setSelectedConversationId(conversations[0].id);
     }
-  }, [searchParams, conversations, router, selectedConversationId]);
+  }, [conversations, selectedConversationId]);
 
   useEffect(() => {
     if (messagesContainerRef.current) {
@@ -110,7 +74,7 @@ export default function AdminChatLogsPage() {
     setSelectedConversationId(id);
   }
 
-  const handleModerationAction = (action: "warn_vendor" | "warn_customer" | "approve" | "lock" | "resolve") => {
+  const handleModerationAction = (action: "warn_vendor" | "warn_customer" | "approve" | "lock") => {
       if (!selectedConversation) return;
 
       const customer = selectedConversation.customerId;
@@ -130,10 +94,6 @@ export default function AdminChatLogsPage() {
         case 'lock':
             setConversations(prev => prev.map(c => c.id === selectedConversation.id ? {...c, status: 'locked'} : c));
             toast({ variant: 'destructive', title: "Chat Locked", description: `The conversation between ${customer} and ${vendor} has been permanently locked.` });
-            break;
-        case 'resolve':
-            setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, status: 'resolved', messages: [...c.messages, {id: `sys-${Date.now()}`, sender: 'system', text: 'Admin marked this conversation as resolved.'}] } : c));
-            toast({ title: "Ticket Resolved", description: `The support ticket from ${customer} has been closed.` });
             break;
       }
   }
@@ -187,11 +147,6 @@ export default function AdminChatLogsPage() {
                          {selectedConversation.status !== 'active' && <Badge variant={selectedConversation.status === 'flagged' || selectedConversation.status === 'locked' ? 'destructive' : 'secondary'} className="capitalize">{selectedConversation.status}</Badge>}
                     </div>
                     <div className="flex gap-2">
-                        {selectedConversation.isSupportTicket && selectedConversation.status === 'active' && (
-                             <Button variant="secondary" size="sm" onClick={() => handleModerationAction('resolve')}>
-                                <CheckCircle className="mr-2 h-4 w-4"/> Mark as Resolved
-                            </Button>
-                        )}
                         {selectedConversation.status === 'flagged' && (
                             <>
                                 <Button variant="secondary" size="sm" onClick={() => handleModerationAction('approve')}>
@@ -210,8 +165,8 @@ export default function AdminChatLogsPage() {
                         </Button>
                     </div>
                 </div>
-                <div className="flex-1 bg-muted/20 overflow-y-auto" ref={messagesContainerRef}>
-                    <div className="p-4 space-y-4">
+                <ScrollArea className="flex-1 bg-muted/20">
+                    <div ref={messagesContainerRef} className="p-4 space-y-4">
                     {selectedConversation.messages.map((msg, index) => (
                          msg.sender === 'system' ? (
                             <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
@@ -226,7 +181,7 @@ export default function AdminChatLogsPage() {
                         )
                     ))}
                     </div>
-                </div>
+                </ScrollArea>
                 </>
             ) : (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">
