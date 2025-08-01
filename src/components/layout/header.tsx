@@ -30,6 +30,7 @@ const navLinks = [
   { href: "/products", label: "All Products" },
   { href: "/#categories", label: "Categories" },
   { href: "/vendor", label: "For Vendors" },
+  { href: "/corporate", label: "Corporate" },
 ];
 
 const customerNotifications = [
