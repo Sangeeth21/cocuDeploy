@@ -1,7 +1,9 @@
 
+
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +50,7 @@ const mockTickets: Ticket[] = [
 
 export default function AdminSupportPage() {
     const { toast } = useToast();
+    const router = useRouter();
     const [tickets, setTickets] = useState(mockTickets);
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(mockTickets[0]);
 
@@ -66,8 +69,16 @@ export default function AdminSupportPage() {
             description: `A chat has been initiated with ${ticket.vendor.name}.`,
         });
         
-        // Here, you would trigger the creation of a new conversation
-        // between the admin and the vendor in your backend.
+        // Navigate to chat logs, passing ticket info via query params
+        const queryParams = new URLSearchParams({
+            support_ticket_id: ticket.id,
+            vendorId: ticket.vendor.id,
+            vendorName: ticket.vendor.name,
+            vendorAvatar: ticket.vendor.avatar,
+            initialMessage: ticket.message
+        });
+
+        router.push(`/admin/chat-logs?${queryParams.toString()}`);
     };
 
     return (

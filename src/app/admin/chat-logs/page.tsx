@@ -7,15 +7,18 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, MessageSquare, AlertTriangle, ShieldCheck, Lock, Unlock } from "lucide-react";
+import { Search, MessageSquare, AlertTriangle, ShieldCheck, Lock, Unlock, CheckCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import type { Message, Conversation as AdminConversation } from "@/lib/types";
+import { useSearchParams, useRouter } from "next/navigation";
+
 
 type Conversation = Omit<AdminConversation, 'awaitingVendorDecision' | 'userMessageCount'> & {
   customerAvatar: string;
   vendorAvatar: string;
+  isSupportTicket?: boolean;
 }
 
 const initialConversations: Conversation[] = [
@@ -47,17 +50,67 @@ const initialConversations: Conversation[] = [
 
 export default function AdminChatLogsPage() {
   const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>("1");
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const { toast } = useToast();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
+  // Must be defined before the useEffect hooks that use it
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+
+  useEffect(() => {
+    const supportTicketId = searchParams.get('support_ticket_id');
+    if (supportTicketId) {
+      const existingConvo = conversations.find(c => c.id === supportTicketId);
+      if (existingConvo) {
+        setSelectedConversationId(existingConvo.id);
+      } else {
+        const vendorId = searchParams.get('vendorId');
+        const vendorName = searchParams.get('vendorName');
+        const vendorAvatar = searchParams.get('vendorAvatar');
+        const initialMessage = searchParams.get('initialMessage');
+
+        if(vendorId && vendorName && vendorAvatar && initialMessage) {
+            const newSupportConversation: Conversation = {
+                id: supportTicketId,
+                customerId: vendorName, // Display vendor name as customer in this context
+                vendorId: "Admin", // Admin is the other party
+                customerAvatar: vendorAvatar,
+                vendorAvatar: "https://placehold.co/40x40.png", // Admin avatar
+                status: 'active',
+                isSupportTicket: true,
+                messages: [
+                    { id: `msg-support-${Date.now()}`, sender: 'customer', text: initialMessage, timestamp: new Date() },
+                ],
+                avatar: ''
+            };
+            setConversations(prev => [newSupportConversation, ...prev]);
+            setSelectedConversationId(supportTicketId);
+        }
+      }
+      // Clean up URL
+      router.replace('/admin/chat-logs', {scroll: false});
+    } else {
+        if(!selectedConversationId && conversations.length > 0){
+            setSelectedConversationId(conversations[0].id);
+        }
+    }
+  }, [searchParams, conversations, router, selectedConversationId]);
+
+  useEffect(() => {
+    if (messagesContainerRef.current) {
+        messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    }
+  }, [selectedConversationId, selectedConversation?.messages.length]);
+
 
   const handleSelectConversation = (id: string) => {
     setSelectedConversationId(id);
   }
 
-  const handleModerationAction = (action: "warn_vendor" | "warn_customer" | "approve" | "lock") => {
+  const handleModerationAction = (action: "warn_vendor" | "warn_customer" | "approve" | "lock" | "resolve") => {
       if (!selectedConversation) return;
 
       const customer = selectedConversation.customerId;
@@ -78,17 +131,12 @@ export default function AdminChatLogsPage() {
             setConversations(prev => prev.map(c => c.id === selectedConversation.id ? {...c, status: 'locked'} : c));
             toast({ variant: 'destructive', title: "Chat Locked", description: `The conversation between ${customer} and ${vendor} has been permanently locked.` });
             break;
+        case 'resolve':
+            setConversations(prev => prev.map(c => c.id === selectedConversation.id ? { ...c, status: 'resolved', messages: [...c.messages, {id: `sys-${Date.now()}`, sender: 'system', text: 'Admin marked this conversation as resolved.'}] } : c));
+            toast({ title: "Ticket Resolved", description: `The support ticket from ${customer} has been closed.` });
+            break;
       }
   }
-
-    useEffect(() => {
-        if (scrollAreaRef.current) {
-             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-             if(scrollableView){
-                 scrollableView.scrollTop = scrollableView.scrollHeight;
-             }
-        }
-    }, [selectedConversation?.messages, selectedConversationId]);
 
   return (
       <div>
@@ -113,7 +161,7 @@ export default function AdminChatLogsPage() {
                     "flex flex-col p-4 cursor-pointer hover:bg-muted/50 border-b",
                     selectedConversationId === convo.id && "bg-muted"
                     )}
-                    onClick={() => handleSelectConversation(convo.id)}
+                    onClick={() => handleSelectConversation(convo.id as string)}
                 >
                     <div className="flex justify-between items-center text-sm font-semibold">
                         <span className="truncate">{convo.customerId}</span>
@@ -136,9 +184,14 @@ export default function AdminChatLogsPage() {
                 <div className="p-4 border-b flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <h2 className="text-lg font-semibold">{selectedConversation.customerId} &harr; {selectedConversation.vendorId}</h2>
-                         {selectedConversation.status !== 'active' && <Badge variant={selectedConversation.status === 'flagged' ? 'destructive' : 'secondary'} className="capitalize">{selectedConversation.status}</Badge>}
+                         {selectedConversation.status !== 'active' && <Badge variant={selectedConversation.status === 'flagged' || selectedConversation.status === 'locked' ? 'destructive' : 'secondary'} className="capitalize">{selectedConversation.status}</Badge>}
                     </div>
                     <div className="flex gap-2">
+                        {selectedConversation.isSupportTicket && selectedConversation.status === 'active' && (
+                             <Button variant="secondary" size="sm" onClick={() => handleModerationAction('resolve')}>
+                                <CheckCircle className="mr-2 h-4 w-4"/> Mark as Resolved
+                            </Button>
+                        )}
                         {selectedConversation.status === 'flagged' && (
                             <>
                                 <Button variant="secondary" size="sm" onClick={() => handleModerationAction('approve')}>
@@ -157,14 +210,14 @@ export default function AdminChatLogsPage() {
                         </Button>
                     </div>
                 </div>
-                <ScrollArea className="flex-1 bg-muted/20" ref={scrollAreaRef}>
+                <div className="flex-1 bg-muted/20 overflow-y-auto" ref={messagesContainerRef}>
                     <div className="p-4 space-y-4">
                     {selectedConversation.messages.map((msg, index) => (
                          msg.sender === 'system' ? (
                             <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
                         ) : (
                         <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
-                        {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.customerAvatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId.charAt(0)}</AvatarFallback></Avatar>}
+                        {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.customerAvatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
                         <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
                             {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
                         </div>
@@ -173,7 +226,7 @@ export default function AdminChatLogsPage() {
                         )
                     ))}
                     </div>
-                </ScrollArea>
+                </div>
                 </>
             ) : (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">

@@ -136,7 +136,8 @@ export type Conversation = {
   unread?: boolean;
   userMessageCount: number;
   awaitingVendorDecision: boolean;
-  status: 'active' | 'flagged' | 'locked';
+  status: 'active' | 'flagged' | 'locked' | 'resolved';
+  isSupportTicket?: boolean;
 };
 
 
