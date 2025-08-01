@@ -14,6 +14,7 @@ import { useVerification } from "@/context/vendor-verification-context";
 import { useAdminAuth } from "@/context/admin-auth-context";
 import Link from "next/link";
 import { AdminAuthProvider } from "@/context/admin-auth-context";
+import { VerificationProvider } from "@/context/vendor-verification-context";
 
 function VendorLoginForm() {
   const [email, setEmail] = useState("");
@@ -153,7 +154,9 @@ function CorporatePageContent() {
 export default function CorporatePage() {
     return (
         <div className="flex items-center justify-center min-h-[calc(100vh-8rem)] py-12 bg-muted/40">
-            <CorporatePageContent />
+            <VerificationProvider>
+                <CorporatePageContent />
+            </VerificationProvider>
         </div>
     )
 }
