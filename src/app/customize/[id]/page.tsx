@@ -157,7 +157,6 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
     const { 
         text, 
         fontFamily, 
-        fontSize, 
         fontWeight, 
         textColor, 
         textAlign, 
@@ -167,11 +166,30 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
         outlineWidth,
     } = element;
     
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [dynamicFontSize, setDynamicFontSize] = useState(element.fontSize);
+
+     useEffect(() => {
+        if (!containerRef.current) return;
+
+        // For non-path based text, we can use the container height to estimate a good font size.
+        // This is a simplified approach. A more complex one might check width as well.
+        if (!getPathData()) {
+           const newSize = (containerRef.current.clientHeight * 0.7); // 70% of the container height
+           setDynamicFontSize(newSize);
+        } else {
+             // For path-based text, the font size is more about fitting the path length.
+             // We'll keep the user-defined size or a default for these.
+            setDynamicFontSize(element.fontSize || 14);
+        }
+    }, [element.height, element.width, textShape, element.fontSize]);
+
+
     const svgFilterId = `outline-${element.id}`;
     
     const textStyle: React.CSSProperties = {
         fontFamily,
-        fontSize: `${fontSize}px`,
+        fontSize: `${dynamicFontSize}px`,
         fontWeight: fontWeight as React.CSSProperties['fontWeight'],
         color: textColor,
         textAlign,
@@ -235,7 +253,6 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
     }
     
     const pathData = getPathData();
-    const clipPathId = `clip-${element.id}`;
 
     if (pathData) {
         return (
@@ -254,7 +271,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
                     </defs>
                  )}
                  <path id={`path-${element.id}`} d={pathData} fill="transparent" />
-                 <text style={{...textStyle, filter: 'none'}} dy={textShape === 'arch-up' ? fontSize!*0.25 : 0} fill={textColor} filter={outlineColor && outlineWidth && outlineWidth > 0 ? `url(#${svgFilterId})` : 'none'}>
+                 <text style={{...textStyle, fontSize: `${element.fontSize}px`, filter: 'none'}} dy={textShape === 'arch-up' ? (element.fontSize || 14) * 0.25 : 0} fill={textColor} filter={outlineColor && outlineWidth && outlineWidth > 0 ? `url(#${svgFilterId})` : 'none'}>
                     <textPath href={`#path-${element.id}`} startOffset="50%" textAnchor="middle">{text}</textPath>
                  </text>
              </svg>
@@ -270,11 +287,11 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
          if (fadeDirection === 'down') maskImage = 'linear-gradient(to top, transparent, black 70%)';
          
          const fadedStyle = { ...textStyle, maskImage, WebkitMaskImage: maskImage };
-         return <div className="w-full h-full flex items-center justify-center p-1"><span style={fadedStyle}>{text}</span></div>
+         return <div ref={containerRef} className="w-full h-full flex items-center justify-center p-1"><span style={fadedStyle}>{text}</span></div>
     }
 
     return (
-        <div className="w-full h-full flex items-center justify-center p-1" style={getTransformStyle()}>
+        <div ref={containerRef} className="w-full h-full flex items-center justify-center p-1" style={getTransformStyle()}>
             {outlineColor && outlineWidth && outlineWidth > 0 && (
                 <svg style={{ position: 'absolute', width: 0, height: 0 }}>
                     <defs>
@@ -877,7 +894,7 @@ export default function CustomizeProductPage() {
                                                 <Label>Rotation</Label>
                                                 <div className="flex items-center gap-2">
                                                     <Slider min={-180} max={180} step={1} value={[selectedElement.rotation || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { rotation: v })} />
-                                                    <Input type="number" value={selectedElement.rotation || 0} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
+                                                    <Input type="number" value={selectedElement.rotation ?? ''} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
