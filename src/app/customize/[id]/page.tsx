@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -25,7 +25,7 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ColorPicker } from "@/components/ui/color-picker";
 
-type TextShape = 'normal' | 'arch' | 'valley' | 'bulge' | 'pinch' | 'perspective-left' | 'perspective-right' | 'wave' | 'flag' | 'slant-up' | 'slant-down';
+type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
 
 type DesignElement = {
     id: string;
@@ -177,7 +177,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
         color: textColor,
         textAlign,
         lineHeight: 1,
-        filter: outlineColor && outlineWidth && outlineWidth > 0 && textShape === 'normal' ? `url(#${svgFilterId})` : 'none',
+        filter: outlineColor && outlineWidth && outlineWidth > 0 && !getPathData() ? `url(#${svgFilterId})` : 'none',
         display: 'inline-block',
         whiteSpace: 'pre-wrap',
     };
@@ -198,27 +198,45 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
                 return { transform: `skewY(${-intensity * 15}deg)` };
             case 'slant-down':
                 return { transform: `skewY(${intensity * 15}deg)` };
+            case 'funnel-in':
+                 return { transform: `perspective(100px) rotateX(${intensity * 20}deg)` };
+            case 'funnel-out':
+                 return { transform: `perspective(100px) rotateX(${-intensity * 20}deg)` };
             default:
                 return {};
         }
     };
     
-    const getPathData = (): string | null => {
+    function getPathData(): string | null {
         switch (textShape) {
-            case 'arch':
+            case 'arch-up':
                 return `M 0,${50 - intensity * 25} C ${intensity * 50},${50 - intensity * 75} ${100 - intensity * 50},${50 - intensity * 75} 100,${50 - intensity * 25}`;
-            case 'valley':
+            case 'arch-down':
                  return `M 0,50 C 25,${50 + intensity * 50} 75,${50 + intensity * 50} 100,50`;
+            case 'circle':
+                 const radius = 50 - Math.abs(intensity * 20);
+                 return `M ${50 - radius}, 50 a ${radius},${radius} 0 1,1 ${radius * 2},0 a ${radius},${radius} 0 1,1 -${radius * 2},0`;
             case 'wave':
                  return `M 0,50 C 25,${50 - intensity * 25} 50,${50 + intensity * 25} 75,${50 - intensity * 25} 100,50`;
             case 'flag':
                  return `M 0,${50 + intensity * 15} C 25,${50 - intensity * 15} 50,${50 + intensity * 15} 75,${50 - intensity * 15} 100,${50 + intensity * 15}`;
+            case 'bridge':
+                 return `M 0,${50 + intensity * 25} C 25,${50 - intensity * 25} 75,${50 - intensity * 25} 100,${50 + intensity * 25}`;
+            case 'triangle-up':
+                 return `M 0,${50 + intensity * 25} L 50,${50 - intensity * 25} L 100,${50 + intensity * 25}`;
+            case 'triangle-down':
+                 return `M 0,${50 - intensity * 25} L 50,${50 + intensity * 25} L 100,${50 - intensity * 25}`;
+            case 'stairs-up':
+                return `M 0,75 L 25,75 L 25,50 L 50,50 L 50,25 L 75,25 L 75,0`;
+            case 'stairs-down':
+                return `M 0,0 L 25,0 L 25,25 L 50,25 L 50,50 L 75,50 L 75,75`;
             default:
                 return null;
         }
     }
     
     const pathData = getPathData();
+    const clipPathId = `clip-${element.id}`;
 
     if (pathData) {
         return (
@@ -237,11 +255,23 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
                     </defs>
                  )}
                  <path id={`path-${element.id}`} d={pathData} fill="transparent" />
-                 <text style={{...textStyle, filter: 'none'}} dy={textShape === 'arch' ? fontSize!*0.25 : 0} fill={textColor} filter={outlineColor && outlineWidth && outlineWidth > 0 ? `url(#${svgFilterId})` : 'none'}>
+                 <text style={{...textStyle, filter: 'none'}} dy={textShape === 'arch-up' ? fontSize!*0.25 : 0} fill={textColor} filter={outlineColor && outlineWidth && outlineWidth > 0 ? `url(#${svgFilterId})` : 'none'}>
                     <textPath href={`#path-${element.id}`} startOffset="50%" textAnchor="middle">{text}</textPath>
                  </text>
              </svg>
         )
+    }
+
+    if (textShape?.startsWith('fade-')) {
+         const fadeDirection = textShape.split('-')[1];
+         let maskImage = '';
+         if (fadeDirection === 'left') maskImage = 'linear-gradient(to right, transparent, black 70%)';
+         if (fadeDirection === 'right') maskImage = 'linear-gradient(to left, transparent, black 70%)';
+         if (fadeDirection === 'up') maskImage = 'linear-gradient(to bottom, transparent, black 70%)';
+         if (fadeDirection === 'down') maskImage = 'linear-gradient(to top, transparent, black 70%)';
+         
+         const fadedStyle = { ...textStyle, maskImage, WebkitMaskImage: maskImage };
+         return <div className="w-full h-full flex items-center justify-center p-1"><span style={fadedStyle}>{text}</span></div>
     }
 
     return (
@@ -331,16 +361,28 @@ const mockArt = [
 
 const textShapes: { id: TextShape; label: string; icon: React.ElementType }[] = [
     { id: 'normal', label: 'Normal', icon: Type },
-    { id: 'arch', label: 'Arch', icon: Pilcrow },
-    { id: 'valley', label: 'Valley', icon: Pilcrow },
-    { id: 'bulge', label: 'Bulge', icon: Pilcrow },
-    { id: 'pinch', label: 'Pinch', icon: Pilcrow },
+    { id: 'arch-up', label: 'Arch Up', icon: Pilcrow },
+    { id: 'arch-down', label: 'Arch Down', icon: Pilcrow },
+    { id: 'circle', label: 'Circle', icon: Circle },
+    { id: 'bulge', label: 'Bulge', icon: ChevronsUpDown },
+    { id: 'pinch', label: 'Pinch', icon: FoldVertical },
     { id: 'wave', label: 'Wave', icon: Waves },
     { id: 'flag', label: 'Flag', icon: Flag },
-    { id: 'slant-up', label: 'Slant Up', icon: CaseUpper },
-    { id: 'slant-down', label: 'Slant Down', icon: CaseUpper },
+    { id: 'slant-up', label: 'Slant Up', icon: CornerDownRight },
+    { id: 'slant-down', label: 'Slant Down', icon: CornerDownLeft },
     { id: 'perspective-left', label: 'Perspective Left', icon: PilcrowLeft },
     { id: 'perspective-right', label: 'Perspective Right', icon: PilcrowRight },
+    { id: 'triangle-up', label: 'Triangle Up', icon: Pilcrow },
+    { id: 'triangle-down', label: 'Triangle Down', icon: Pilcrow },
+    { id: 'fade-left', label: 'Fade Left', icon: Type },
+    { id: 'fade-right', label: 'Fade Right', icon: Type },
+    { id: 'fade-up', label: 'Fade Up', icon: Type },
+    { id: 'fade-down', label: 'Fade Down', icon: Type },
+    { id: 'bridge', label: 'Bridge', icon: Pilcrow },
+    { id: 'funnel-in', label: 'Funnel In', icon: Maximize },
+    { id: 'funnel-out', label: 'Funnel Out', icon: Maximize },
+    { id: 'stairs-up', label: 'Stairs Up', icon: CornerDownRight },
+    { id: 'stairs-down', label: 'Stairs Down', icon: CornerDownLeft },
 ];
 
 const ShapePreview = ({ shape, intensity, label, isSelected, onClick }: { shape: TextShape, intensity: number, label: string, isSelected: boolean, onClick: () => void }) => {
@@ -605,39 +647,41 @@ export default function CustomizeProductPage() {
 
              <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 min-h-0">
                 {/* Left Panel: Preview */}
-                <ScrollArea className="md:col-span-2 lg:col-span-4 bg-background rounded-lg shadow-md">
-                    <div className="h-full flex flex-col items-center justify-start gap-4 p-4">
-                        <div className="relative w-full max-h-full aspect-square flex items-center justify-center">
-                            <CustomizationRenderer product={product} activeSide={activeSide} designElements={designElements} />
+                <div className="md:col-span-2 lg:col-span-4 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
+                    <ScrollArea className="flex-grow">
+                        <div className="h-full flex flex-col items-center justify-start gap-4 p-4">
+                            <div className="relative w-full max-h-full aspect-square flex items-center justify-center">
+                                <CustomizationRenderer product={product} activeSide={activeSide} designElements={designElements} />
+                            </div>
                         </div>
-                        <div className="flex-shrink-0 flex items-center justify-center gap-2 bg-muted/50 p-2 rounded-lg">
-                            {imageSides.map(side => {
-                                const hasImage = !!product.images?.[imageSides.indexOf(side)];
-                                return (
-                                    <button 
-                                        key={side}
-                                        onClick={() => setActiveSide(side)}
-                                        disabled={!hasImage}
-                                        className={cn(
-                                            "relative w-16 h-16 rounded-md border-2 overflow-hidden disabled:opacity-50 transition-all",
-                                            activeSide === side ? "border-primary" : "border-transparent hover:border-muted-foreground/50"
-                                        )}
-                                    >
-                                        {hasImage ? (
-                                            <Image src={product.images![imageSides.indexOf(side)]} alt={`${side} view thumbnail`} fill className="object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground capitalize">{side}</div>
-                                        )}
-                                    </button>
-                                )
-                            })}
-                            <button className="w-16 h-16 rounded-md border flex flex-col items-center justify-center text-xs text-muted-foreground hover:bg-muted">
-                                <ZoomIn className="h-5 w-5 mb-1" />
-                                Zoom
-                            </button>
-                        </div>
+                    </ScrollArea>
+                    <div className="flex-shrink-0 flex items-center justify-center gap-2 bg-muted/50 p-2 rounded-b-lg border-t">
+                        {imageSides.map(side => {
+                            const hasImage = !!product.images?.[imageSides.indexOf(side)];
+                            return (
+                                <button 
+                                    key={side}
+                                    onClick={() => setActiveSide(side)}
+                                    disabled={!hasImage}
+                                    className={cn(
+                                        "relative w-16 h-16 rounded-md border-2 overflow-hidden disabled:opacity-50 transition-all",
+                                        activeSide === side ? "border-primary" : "border-transparent hover:border-muted-foreground/50"
+                                    )}
+                                >
+                                    {hasImage ? (
+                                        <Image src={product.images![imageSides.indexOf(side)]} alt={`${side} view thumbnail`} fill className="object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground capitalize">{side}</div>
+                                    )}
+                                </button>
+                            )
+                        })}
+                        <button className="w-16 h-16 rounded-md border flex flex-col items-center justify-center text-xs text-muted-foreground hover:bg-muted">
+                            <ZoomIn className="h-5 w-5 mb-1" />
+                            Zoom
+                        </button>
                     </div>
-                </ScrollArea>
+                </div>
 
                 {/* Right Panel: Tools */}
                 <div className="lg:col-span-1 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
