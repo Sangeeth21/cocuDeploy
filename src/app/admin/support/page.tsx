@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 
-const mockTickets: SupportTicket[] = [
+const initialTickets: SupportTicket[] = [
     {
         id: "TKT001",
         vendor: { id: "VDR001", name: "Timeless Co.", email: "contact@timeless.co", role: "Vendor", status: "Active", joinedDate: "2024-02-20", avatar: "https://placehold.co/40x40.png" },
@@ -52,8 +52,8 @@ const mockTickets: SupportTicket[] = [
 export default function AdminSupportPage() {
     const { toast } = useToast();
     const router = useRouter();
-    const [tickets, setTickets] = useState(mockTickets);
-    const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(mockTickets[0]);
+    const [tickets, setTickets] = useState(initialTickets);
+    const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(initialTickets[0]);
 
     const messagesContainerRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
