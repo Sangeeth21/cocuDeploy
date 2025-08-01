@@ -42,27 +42,38 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const cartReducer = (state: CartState, action: CartAction): CartState => {
     switch (action.type) {
         case 'ADD_TO_CART': {
-            const hasCustomizations = Object.keys(action.payload.customizations).length > 0;
-            const existingItemIndex = state.cartItems.findIndex(item => item.product.id === action.payload.product.id && !hasCustomizations && Object.keys(item.customizations).length === 0);
+            const { product, customizations } = action.payload;
+            const hasCustomizations = Object.keys(customizations).length > 0;
 
-            if (existingItemIndex !== -1 && !hasCustomizations) {
-                // If item exists and has no customizations, just increase quantity
-                const updatedCartItems = [...state.cartItems];
-                updatedCartItems[existingItemIndex].quantity += 1;
-                return { ...state, cartItems: updatedCartItems };
-            } else {
-                 // Add as a new item if it has customizations or doesn't exist
-                const newCartItem: CartItem = {
-                    instanceId: `${action.payload.product.id}-${Date.now()}`, // Simple unique ID
-                    product: action.payload.product,
-                    quantity: 1,
-                    customizations: action.payload.customizations,
-                };
-                return {
-                    ...state,
-                    cartItems: [...state.cartItems, newCartItem],
-                };
+            // If the item has no customizations, check if it already exists in the cart.
+            if (!hasCustomizations) {
+                const existingItemIndex = state.cartItems.findIndex(
+                    (item) => item.product.id === product.id && Object.keys(item.customizations).length === 0
+                );
+
+                if (existingItemIndex !== -1) {
+                    // Item exists, so we just increment its quantity.
+                    const updatedCartItems = [...state.cartItems];
+                    updatedCartItems[existingItemIndex] = {
+                        ...updatedCartItems[existingItemIndex],
+                        quantity: updatedCartItems[existingItemIndex].quantity + 1,
+                    };
+                    return { ...state, cartItems: updatedCartItems };
+                }
             }
+
+            // If the item has customizations OR it's a new non-customized item, add it as a new line item.
+            const newCartItem: CartItem = {
+                instanceId: `${product.id}-${Date.now()}`, // Simple unique ID for each instance
+                product,
+                quantity: 1,
+                customizations,
+            };
+
+            return {
+                ...state,
+                cartItems: [...state.cartItems, newCartItem],
+            };
         }
         case 'REMOVE_FROM_CART':
             return {
