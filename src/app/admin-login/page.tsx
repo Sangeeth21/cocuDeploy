@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { useAdminAuth } from "@/context/admin-auth-context";
+import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
 
-export default function AdminLoginPage() {
+function AdminLoginContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -36,9 +36,8 @@ export default function AdminLoginPage() {
         });
     }
   };
-
+  
   return (
-    <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
       <Card className="w-full max-w-md">
         <form onSubmit={handleLogin}>
           <CardHeader className="text-center">
@@ -68,6 +67,15 @@ export default function AdminLoginPage() {
           </CardFooter>
         </form>
       </Card>
-    </div>
-  );
+  )
+}
+
+export default function AdminLoginPage() {
+    return (
+        <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
+            <AdminAuthProvider>
+                <AdminLoginContent />
+            </AdminAuthProvider>
+        </div>
+    )
 }
