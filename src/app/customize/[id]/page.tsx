@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -296,7 +296,137 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
     );
 };
 
-const CustomizationRenderer = ({ product, activeSide, designElements }: { product: any, activeSide: ImageSide, designElements: DesignElement[] }) => {
+const DraggableElement = ({
+    element,
+    isSelected,
+    onSelect,
+    onDelete,
+    onDuplicate,
+    onUpdate,
+}: {
+    element: DesignElement;
+    isSelected: boolean;
+    onSelect: (id: string) => void;
+    onDelete: (id: string) => void;
+    onDuplicate: (id: string) => void;
+    onUpdate: (id: string, updates: Partial<DesignElement>) => void;
+}) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [interactionState, setInteractionState] = useState<{
+        type: 'drag' | 'resize';
+        startX: number;
+        startY: number;
+        startLeft: number;
+        startTop: number;
+        startWidth?: number;
+        startHeight?: number;
+    } | null>(null);
+
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, type: 'drag' | 'resize') => {
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect(element.id);
+        const parentRect = ref.current?.offsetParent?.getBoundingClientRect();
+        if (!parentRect) return;
+
+        setInteractionState({
+            type,
+            startX: e.clientX,
+            startY: e.clientY,
+            startLeft: (element.x / 100) * parentRect.width,
+            startTop: (element.y / 100) * parentRect.height,
+            startWidth: type === 'resize' ? (element.width / 100) * parentRect.width : undefined,
+            startHeight: type === 'resize' ? (element.height / 100) * parentRect.height : undefined,
+        });
+    };
+
+    useEffect(() => {
+        const handlePointerMove = (e: PointerEvent) => {
+            if (!interactionState) return;
+            const parentRect = ref.current?.offsetParent?.getBoundingClientRect();
+            if (!parentRect) return;
+
+            const dx = e.clientX - interactionState.startX;
+            const dy = e.clientY - interactionState.startY;
+
+            if (interactionState.type === 'drag') {
+                const newLeft = Math.max(0, Math.min(parentRect.width - (element.width/100 * parentRect.width), interactionState.startLeft + dx));
+                const newTop = Math.max(0, Math.min(parentRect.height - (element.height/100 * parentRect.height), interactionState.startTop + dy));
+                onUpdate(element.id, { x: (newLeft / parentRect.width) * 100, y: (newTop / parentRect.height) * 100 });
+            } else if (interactionState.type === 'resize' && interactionState.startWidth && interactionState.startHeight) {
+                const newWidth = Math.max(20, interactionState.startWidth + dx);
+                const newHeight = Math.max(20, interactionState.startHeight + dy);
+                onUpdate(element.id, { width: (newWidth / parentRect.width) * 100, height: (newHeight / parentRect.height) * 100 });
+            }
+        };
+
+        const handlePointerUp = () => {
+            setInteractionState(null);
+        };
+
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', handlePointerUp);
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+        };
+    }, [interactionState, element.id, element.width, element.height, onUpdate]);
+
+    return (
+        <div
+            ref={ref}
+            onPointerDown={(e) => handlePointerDown(e, 'drag')}
+            style={{
+                position: 'absolute',
+                left: `${element.x}%`,
+                top: `${element.y}%`,
+                width: `${element.width}%`,
+                height: `${element.height}%`,
+                transform: `rotate(${element.rotation}deg)`,
+                outline: isSelected ? '1px solid hsl(var(--primary))' : 'none',
+                cursor: interactionState?.type === 'drag' ? 'grabbing' : 'grab',
+            }}
+        >
+            {element.type === 'image' && element.imageUrl && (
+                <Image src={element.imageUrl} alt="Uploaded art" fill className="object-contain pointer-events-none" />
+            )}
+            {element.type === 'art' && element.imageUrl && (
+                <Image src={element.imageUrl} alt="Clipart" fill className="object-contain pointer-events-none" />
+            )}
+            {element.type === 'text' && <TextRenderer element={element} />}
+
+            {isSelected && (
+                <>
+                    {/* Delete Button */}
+                    <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => onDelete(element.id)}
+                        className="absolute -top-3 -left-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-pointer"
+                    >
+                        <X className="h-4 w-4 text-destructive" />
+                    </button>
+                    {/* Duplicate Button */}
+                    <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => onDuplicate(element.id)}
+                        className="absolute -bottom-3 -left-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-pointer"
+                    >
+                        <CopyIcon className="h-4 w-4 text-primary" />
+                    </button>
+                    {/* Resize Handle */}
+                    <div
+                        onPointerDown={(e) => handlePointerDown(e, 'resize')}
+                        className="absolute -bottom-3 -right-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-nwse-resize"
+                    >
+                        <Expand className="h-4 w-4 text-primary" />
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
+const CustomizationRenderer = ({ product, activeSide, designElements, selectedElementId, onSelect, onDelete, onDuplicate, onUpdate }: { product: any, activeSide: ImageSide, designElements: DesignElement[], selectedElementId: string | null, onSelect: (id: string) => void, onDelete: (id: string) => void, onDuplicate: (id: string) => void, onUpdate: (id: string, updates: Partial<DesignElement>) => void; }) => {
     const productSrc = product.images?.[imageSides.indexOf(activeSide)];
 
     if (!productSrc) {
@@ -308,28 +438,21 @@ const CustomizationRenderer = ({ product, activeSide, designElements }: { produc
     }
 
     return (
-        <div className="relative w-full h-full">
+        <div className="relative w-full h-full" onPointerDown={() => onSelect('')}>
             <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
             {designElements.map((element) => {
                 if(element.type === 'text' && element.originalAreaId) return null; // These are handled by vendor areas
 
                 return (
-                    <div key={element.id} style={{
-                        position: 'absolute',
-                        left: `${element.x}%`,
-                        top: `${element.y}%`,
-                        width: `${element.width}%`,
-                        height: `${element.height}%`,
-                        transform: `rotate(${element.rotation}deg)`,
-                    }}>
-                        {element.type === 'image' && element.imageUrl && (
-                            <Image src={element.imageUrl} alt="Uploaded art" fill className="object-contain"/>
-                        )}
-                        {element.type === 'art' && element.imageUrl && (
-                            <Image src={element.imageUrl} alt="Clipart" fill className="object-contain"/>
-                        )}
-                        {element.type === 'text' && <TextRenderer element={element} />}
-                    </div>
+                    <DraggableElement
+                        key={element.id}
+                        element={element}
+                        isSelected={selectedElementId === element.id}
+                        onSelect={onSelect}
+                        onDelete={onDelete}
+                        onDuplicate={onDuplicate}
+                        onUpdate={onUpdate}
+                    />
                 )
             })}
             {product.customizationAreas?.[activeSide]?.map((area: any) => {
@@ -343,7 +466,16 @@ const CustomizationRenderer = ({ product, activeSide, designElements }: { produc
                         top: `${area.y}%`,
                         width: `${area.width}%`,
                         height: `${area.height}%`,
-                    }}>
+                    }}
+                    className={cn(
+                        "outline-dashed outline-1 outline-muted-foreground/50",
+                        selectedElementId === element.id && "outline-primary outline-solid"
+                    )}
+                     onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect(element.id)
+                    }}
+                    >
                         <TextRenderer element={element} />
                     </div>
                  )
@@ -645,13 +777,22 @@ export default function CustomizeProductPage() {
                 </div>
             </header>
 
-             <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 min-h-0">
+            <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 min-h-0">
                 {/* Left Panel: Preview */}
                 <div className="md:col-span-2 lg:col-span-4 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
                     <ScrollArea className="flex-grow">
                         <div className="h-full flex flex-col items-center justify-start gap-4 p-4">
                             <div className="relative w-full max-h-full aspect-square flex items-center justify-center">
-                                <CustomizationRenderer product={product} activeSide={activeSide} designElements={designElements} />
+                                <CustomizationRenderer 
+                                    product={product} 
+                                    activeSide={activeSide} 
+                                    designElements={designElements} 
+                                    selectedElementId={selectedElementId}
+                                    onSelect={setSelectedElementId}
+                                    onDelete={removeElement}
+                                    onDuplicate={duplicateElement}
+                                    onUpdate={handleElementChange}
+                                />
                             </div>
                         </div>
                     </ScrollArea>
