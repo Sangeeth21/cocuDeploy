@@ -130,8 +130,9 @@ export default function RootLayout({
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
   const isVendorRoute = pathname.startsWith('/vendor');
+  const isCorporateRoute = pathname.startsWith('/corporate/dashboard');
   
-  const showHeaderAndFooter = !isAdminRoute && !isVendorRoute;
+  const showHeaderAndFooter = !isAdminRoute && !isVendorRoute && !isCorporateRoute;
 
   return (
     <html lang="en" suppressHydrationWarning>
