@@ -568,39 +568,41 @@ export default function CustomizeProductPage() {
                 </div>
             </header>
 
-            <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 overflow-hidden">
+            <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 min-h-0">
                 {/* Left Panel: Preview */}
-                <div className="md:col-span-2 lg:col-span-4 h-full flex flex-col items-center justify-start gap-4">
-                     <div className="relative w-full max-h-full aspect-square flex items-center justify-center bg-background rounded-lg shadow-md p-4">
-                        <CustomizationRenderer product={product} activeSide={activeSide} designElements={designElements} />
+                <ScrollArea className="md:col-span-2 lg:col-span-4 h-full">
+                    <div className="h-full flex flex-col items-center justify-start gap-4">
+                        <div className="relative w-full max-h-full aspect-square flex items-center justify-center bg-background rounded-lg shadow-md p-4">
+                            <CustomizationRenderer product={product} activeSide={activeSide} designElements={designElements} />
+                        </div>
+                        <div className="flex-shrink-0 flex items-center justify-center gap-2 bg-background p-2 rounded-lg shadow-md">
+                            {imageSides.map(side => {
+                                const hasImage = !!product.images?.[imageSides.indexOf(side)];
+                                return (
+                                    <button 
+                                        key={side}
+                                        onClick={() => setActiveSide(side)}
+                                        disabled={!hasImage}
+                                        className={cn(
+                                            "relative w-16 h-16 rounded-md border-2 overflow-hidden disabled:opacity-50 transition-all",
+                                            activeSide === side ? "border-primary" : "border-transparent hover:border-muted-foreground/50"
+                                        )}
+                                    >
+                                        {hasImage ? (
+                                            <Image src={product.images![imageSides.indexOf(side)]} alt={`${side} view thumbnail`} fill className="object-cover" />
+                                        ) : (
+                                            <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground capitalize">{side}</div>
+                                        )}
+                                    </button>
+                                )
+                            })}
+                            <button className="w-16 h-16 rounded-md border flex flex-col items-center justify-center text-xs text-muted-foreground hover:bg-muted">
+                                <ZoomIn className="h-5 w-5 mb-1" />
+                                Zoom
+                            </button>
+                        </div>
                     </div>
-                     <div className="flex-shrink-0 flex items-center justify-center gap-2 bg-background p-2 rounded-lg shadow-md">
-                         {imageSides.map(side => {
-                            const hasImage = !!product.images?.[imageSides.indexOf(side)];
-                            return (
-                                <button 
-                                    key={side}
-                                    onClick={() => setActiveSide(side)}
-                                    disabled={!hasImage}
-                                    className={cn(
-                                        "relative w-16 h-16 rounded-md border-2 overflow-hidden disabled:opacity-50 transition-all",
-                                        activeSide === side ? "border-primary" : "border-transparent hover:border-muted-foreground/50"
-                                    )}
-                                >
-                                    {hasImage ? (
-                                        <Image src={product.images![imageSides.indexOf(side)]} alt={`${side} view thumbnail`} fill className="object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground capitalize">{side}</div>
-                                    )}
-                                </button>
-                            )
-                         })}
-                         <button className="w-16 h-16 rounded-md border flex flex-col items-center justify-center text-xs text-muted-foreground hover:bg-muted">
-                            <ZoomIn className="h-5 w-5 mb-1" />
-                            Zoom
-                         </button>
-                    </div>
-                </div>
+                </ScrollArea>
 
                 {/* Right Panel: Tools */}
                 <div className="lg:col-span-1 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
@@ -615,7 +617,7 @@ export default function CustomizeProductPage() {
                             </TabsList>
                             
                             <div className="flex items-center p-2 border-b">
-                                <span className="text-sm font-semibold pl-2">Edit Text</span>
+                                <span className="text-sm font-semibold pl-2">Edit Tools</span>
                                 <div className="ml-auto flex items-center gap-1">
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={!canUndo}><Undo2 className="h-4 w-4"/></Button>
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={!canRedo}><Redo2 className="h-4 w-4"/></Button>
