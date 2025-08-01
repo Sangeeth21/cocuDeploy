@@ -7,7 +7,7 @@ import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditC
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchBar } from "@/components/search-bar";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -41,8 +41,14 @@ const customerNotifications = [
 
 export function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const { avatar, isLoggedIn, logout } = useUser();
   const { openDialog } = useAuthDialog();
+
+  const handleLogout = () => {
+    logout();
+    router.push('/');
+  }
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -153,7 +159,7 @@ export function Header() {
                     <Link href="/account?tab=settings"><Settings className="mr-2 h-4 w-4"/> Settings</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout}>
+                  <DropdownMenuItem onClick={handleLogout}>
                     <LogOut className="mr-2 h-4 w-4"/> Log Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
