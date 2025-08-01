@@ -2,8 +2,7 @@
 
 "use client";
 
-import type { Metadata } from 'next';
-import { PT_Sans } from 'next/font/google';
+import { PT_Sans, Roboto, Lato, Montserrat, Oswald, Playfair_Display, Merriweather, Lobster, Pacifico, Inconsolata, Dancing_Script } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { Header } from '@/components/layout/header';
@@ -30,6 +29,67 @@ const ptSans = PT_Sans({
   weight: ['400', '700'],
   variable: '--font-pt-sans',
 });
+
+const roboto = Roboto({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-roboto',
+});
+
+const lato = Lato({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-lato',
+});
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-montserrat',
+});
+
+const oswald = Oswald({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-oswald',
+});
+
+const playfairDisplay = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-playfair-display',
+});
+
+const merriweather = Merriweather({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-merriweather',
+});
+
+const lobster = Lobster({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-lobster',
+});
+
+const pacifico = Pacifico({
+  subsets: ['latin'],
+  weight: ['400'],
+  variable: '--font-pacifico',
+});
+
+const inconsolata = Inconsolata({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-inconsolata',
+});
+
+const dancingScript = Dancing_Script({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-dancing-script',
+});
+
 
 function CampaignBanner() {
     const bannerCampaign = mockCampaigns.find(c => c.status === 'Active' && c.placement === 'banner');
@@ -109,7 +169,20 @@ export default function RootLayout({
         <title>ShopSphere</title>
         <meta name="description" content="Your one-stop online marketplace." />
       </head>
-      <body className={cn('min-h-screen bg-background font-body antialiased flex flex-col', ptSans.variable)}>
+      <body className={cn(
+          'min-h-screen bg-background font-body antialiased flex flex-col', 
+          ptSans.variable,
+          roboto.variable,
+          lato.variable,
+          montserrat.variable,
+          oswald.variable,
+          playfairDisplay.variable,
+          merriweather.variable,
+          lobster.variable,
+          pacifico.variable,
+          inconsolata.variable,
+          dancingScript.variable
+        )}>
         <BrandedLoader />
         <PageLoader />
         <UserProvider>

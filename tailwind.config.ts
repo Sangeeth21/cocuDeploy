@@ -18,8 +18,19 @@ export default {
     extend: {
       fontFamily: {
         body: ['var(--font-pt-sans)', 'sans-serif'],
-        headline: ['var(--font-pt-sans)', 'serif'],
-        code: ['monospace'],
+        headline: ['var(--font-playfair-display)', 'serif'],
+        code: ['var(--font-inconsolata)', 'monospace'],
+        'pt-sans': ['var(--font-pt-sans)'],
+        roboto: ['var(--font-roboto)'],
+        lato: ['var(--font-lato)'],
+        montserrat: ['var(--font-montserrat)'],
+        oswald: ['var(--font-oswald)'],
+        'playfair-display': ['var(--font-playfair-display)'],
+        merriweather: ['var(--font-merriweather)'],
+        lobster: ['var(--font-lobster)'],
+        pacifico: ['var(--font-pacifico)'],
+        inconsolata: ['var(--font-inconsolata)'],
+        'dancing-script': ['var(--font-dancing-script)'],
       },
       colors: {
         background: 'hsl(var(--background))',

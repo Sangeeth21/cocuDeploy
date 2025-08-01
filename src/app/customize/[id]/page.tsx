@@ -119,6 +119,20 @@ type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
 
 const imageSides: ImageSide[] = ["front", "back", "left", "right", "top", "bottom"];
 
+const fontOptions = [
+    { value: 'var(--font-pt-sans)', label: 'PT Sans' },
+    { value: 'var(--font-roboto)', label: 'Roboto' },
+    { value: 'var(--font-lato)', label: 'Lato' },
+    { value: 'var(--font-montserrat)', label: 'Montserrat' },
+    { value: 'var(--font-oswald)', label: 'Oswald' },
+    { value: 'var(--font-playfair-display)', label: 'Playfair Display' },
+    { value: 'var(--font-merriweather)', label: 'Merriweather' },
+    { value: 'var(--font-lobster)', label: 'Lobster' },
+    { value: 'var(--font-pacifico)', label: 'Pacifico' },
+    { value: 'var(--font-inconsolata)', label: 'Inconsolata' },
+    { value: 'var(--font-dancing-script)', label: 'Dancing Script' },
+];
+
 const TextRenderer = ({ element }: { element: DesignElement }) => {
     const { 
         text, 
@@ -407,7 +421,7 @@ export default function CustomizeProductPage() {
                         x: area.x, y: area.y, width: area.width, height: area.height,
                         rotation: 0,
                         text: `Your ${area.label}`,
-                        fontFamily: area.fontFamily || 'sans-serif',
+                        fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
                         fontSize: area.fontSize || 14,
                         fontWeight: 'normal',
                         textColor: '#000000',
@@ -436,7 +450,7 @@ export default function CustomizeProductPage() {
             type: 'text',
             x: 25, y: 40, width: 50, height: 20, rotation: 0,
             text: 'New Text',
-            fontFamily: 'sans-serif',
+            fontFamily: 'var(--font-pt-sans)',
             fontSize: 24,
             fontWeight: 'normal',
             textColor: '#000000',
@@ -568,14 +582,14 @@ export default function CustomizeProductPage() {
                 </div>
             </header>
 
-            <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 min-h-0">
+             <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 min-h-0">
                 {/* Left Panel: Preview */}
-                <ScrollArea className="md:col-span-2 lg:col-span-4 h-full">
-                    <div className="h-full flex flex-col items-center justify-start gap-4">
-                        <div className="relative w-full max-h-full aspect-square flex items-center justify-center bg-background rounded-lg shadow-md p-4">
+                <ScrollArea className="md:col-span-2 lg:col-span-4 bg-background rounded-lg shadow-md">
+                    <div className="h-full flex flex-col items-center justify-start gap-4 p-4">
+                        <div className="relative w-full max-h-full aspect-square flex items-center justify-center">
                             <CustomizationRenderer product={product} activeSide={activeSide} designElements={designElements} />
                         </div>
-                        <div className="flex-shrink-0 flex items-center justify-center gap-2 bg-background p-2 rounded-lg shadow-md">
+                        <div className="flex-shrink-0 flex items-center justify-center gap-2 bg-muted/50 p-2 rounded-lg">
                             {imageSides.map(side => {
                                 const hasImage = !!product.images?.[imageSides.indexOf(side)];
                                 return (
@@ -607,7 +621,7 @@ export default function CustomizeProductPage() {
                 {/* Right Panel: Tools */}
                 <div className="lg:col-span-1 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
                     <Tabs defaultValue="text" className="flex flex-col h-full">
-                        <div className="flex-shrink-0">
+                         <div className="flex-shrink-0">
                             <TabsList className="grid w-full grid-cols-5 p-1 h-auto">
                                 <TabsTrigger value="text" className="flex-col h-14"><Type className="h-5 w-5 mb-1"/>Text</TabsTrigger>
                                 <TabsTrigger value="upload" className="flex-col h-14"><Upload className="h-5 w-5 mb-1"/>Upload</TabsTrigger>
@@ -624,119 +638,123 @@ export default function CustomizeProductPage() {
                                 </div>
                             </div>
                         </div>
-
-                        <ScrollArea className="flex-1">
-                            <div className="p-4">
-                                <TabsContent value="text" className="mt-0 space-y-4">
-                                {selectedElement?.type === 'text' ? (
-                                    <div className="space-y-4">
-                                        <Input
-                                            placeholder="Your text here"
-                                            value={selectedElement.text || ""}
-                                            onChange={(e) => handleElementChange(selectedElementId!, { text: e.target.value })}
-                                        />
-                                        <Separator/>
-                                        <div className="space-y-2">
-                                            <Label>Font</Label>
-                                            <Select value={selectedElement.fontFamily} onValueChange={(v) => handleElementChange(selectedElementId!, { fontFamily: v })}>
-                                                <SelectTrigger><SelectValue/></SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="sans-serif">Sans Serif</SelectItem>
-                                                    <SelectItem value="serif">Serif</SelectItem>
-                                                    <SelectItem value="monospace">Monospace</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Text Color</Label>
-                                            <ColorPicker value={selectedElement.textColor || '#000000'} onChange={(color) => handleElementChange(selectedElementId!, { textColor: color })} />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Rotation</Label>
-                                            <div className="flex items-center gap-2">
-                                                <Slider min={-180} max={180} step={1} value={[selectedElement.rotation || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { rotation: v })} />
-                                                <Input type="number" value={selectedElement.rotation || 0} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Outline</Label>
+                        
+                         <div className="flex-1 flex flex-col min-h-0">
+                            <ScrollArea className="flex-grow">
+                                <div className="p-4">
+                                    <TabsContent value="text" className="mt-0 space-y-4">
+                                    {selectedElement?.type === 'text' ? (
+                                        <div className="space-y-4">
+                                            <Input
+                                                placeholder="Your text here"
+                                                value={selectedElement.text || ""}
+                                                onChange={(e) => handleElementChange(selectedElementId!, { text: e.target.value })}
+                                            />
+                                            <Separator/>
                                             <div className="space-y-2">
-                                                <ColorPicker value={selectedElement.outlineColor || '#ffffff'} onChange={(color) => handleElementChange(selectedElementId!, { outlineColor: color })} />
-                                                <Slider min={0} max={5} step={0.1} value={[selectedElement.outlineWidth || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { outlineWidth: v })} />
+                                                <Label>Font</Label>
+                                                <Select value={selectedElement.fontFamily} onValueChange={(v) => handleElementChange(selectedElementId!, { fontFamily: v })}>
+                                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                                    <SelectContent>
+                                                        {fontOptions.map(font => (
+                                                            <SelectItem key={font.value} value={font.value}>
+                                                                <span style={{ fontFamily: font.value }}>{font.label}</span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                             </div>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <Label>Text Shape</Label>
-                                            <Button variant="outline" className="w-full justify-start" onClick={() => setIsTextShapeOpen(true)}>
-                                                <Shapes className="mr-2 h-4 w-4" />
-                                                <span className="capitalize">{selectedElement.textShape?.replace('-', ' ') || 'Normal'}</span>
-                                            </Button>
-                                        </div>
-                                        <Separator/>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <Button variant="outline" size="sm" onClick={() => duplicateElement(selectedElementId!)}>Duplicate</Button>
-                                            <div className="col-span-2">
-                                                <ToggleGroup type="single" value={selectedElement.textAlign} onValueChange={(v) => v && handleElementChange(selectedElementId!, {textAlign: v as any})} className="w-full">
-                                                    <ToggleGroupItem value="left" className="flex-1"><AlignLeft className="h-4 w-4"/></ToggleGroupItem>
-                                                    <ToggleGroupItem value="center" className="flex-1"><AlignCenter className="h-4 w-4"/></ToggleGroupItem>
-                                                    <ToggleGroupItem value="right" className="flex-1"><AlignRight className="h-4 w-4"/></ToggleGroupItem>
-                                                </ToggleGroup>
+                                            <div className="space-y-2">
+                                                <Label>Text Color</Label>
+                                                <ColorPicker value={selectedElement.textColor || '#000000'} onChange={(color) => handleElementChange(selectedElementId!, { textColor: color })} />
                                             </div>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-8 text-muted-foreground">
-                                        <p>Select a text layer to edit it, or add new text.</p>
-                                        <Button variant="secondary" className="mt-4" onClick={addTextElement}>Add Text</Button>
-                                    </div>
-                                )}
-                                </TabsContent>
-
-                                <TabsContent value="upload" className="mt-0">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="text-base">Upload Your Image</CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <label htmlFor="customer-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                                                <Upload className="h-8 w-8 text-muted-foreground"/>
-                                                <span className="text-sm text-muted-foreground text-center mt-1">Click to upload</span>
-                                            </label>
-                                            <input id="customer-image-upload" type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} />
-                                        </CardContent>
-                                    </Card>
-                                </TabsContent>
-                                <TabsContent value="art" className="mt-0">
-                                    <Card>
-                                        <CardHeader><CardTitle className="text-base">Add Clipart</CardTitle></CardHeader>
-                                        <CardContent className="grid grid-cols-4 gap-2">
-                                            {mockArt.map(art => {
-                                                const ArtIcon = art.icon;
-                                                return (
-                                                <Button key={art.id} variant="outline" className="h-16 flex-col" onClick={() => addArtElement(art.src)}>
-                                                    <ArtIcon className="h-8 w-8 text-muted-foreground" />
+                                            <div className="space-y-2">
+                                                <Label>Rotation</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <Slider min={-180} max={180} step={1} value={[selectedElement.rotation || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { rotation: v })} />
+                                                    <Input type="number" value={selectedElement.rotation || 0} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Outline</Label>
+                                                <div className="space-y-2">
+                                                    <ColorPicker value={selectedElement.outlineColor || '#ffffff'} onChange={(color) => handleElementChange(selectedElementId!, { outlineColor: color })} />
+                                                    <Slider min={0} max={5} step={0.1} value={[selectedElement.outlineWidth || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { outlineWidth: v })} />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Text Shape</Label>
+                                                <Button variant="outline" className="w-full justify-start" onClick={() => setIsTextShapeOpen(true)}>
+                                                    <Shapes className="mr-2 h-4 w-4" />
+                                                    <span className="capitalize">{selectedElement.textShape?.replace('-', ' ') || 'Normal'}</span>
                                                 </Button>
-                                            )})}
-                                        </CardContent>
-                                    </Card>
-                                </TabsContent>
-                                <TabsContent value="colors" className="mt-0 text-center text-sm text-muted-foreground py-8">
-                                    Product color options coming soon!
-                                </TabsContent>
-                                <TabsContent value="notes" className="mt-0">
-                                    <Card>
-                                        <CardHeader>
-                                            <CardTitle className="text-base">Design Notes</CardTitle>
-                                            <CardDescription className="text-xs">Add any special instructions for the vendor.</CardDescription>
-                                        </CardHeader>
-                                        <CardContent>
-                                        <Textarea placeholder="e.g. 'Please match the text color to the main logo.'" />
-                                        </CardContent>
-                                    </Card>
-                                </TabsContent>
-                            </div>
+                                            </div>
+                                            <Separator/>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => duplicateElement(selectedElementId!)}>Duplicate</Button>
+                                                <div className="col-span-2">
+                                                    <ToggleGroup type="single" value={selectedElement.textAlign} onValueChange={(v) => v && handleElementChange(selectedElementId!, {textAlign: v as any})} className="w-full">
+                                                        <ToggleGroupItem value="left" className="flex-1"><AlignLeft className="h-4 w-4"/></ToggleGroupItem>
+                                                        <ToggleGroupItem value="center" className="flex-1"><AlignCenter className="h-4 w-4"/></ToggleGroupItem>
+                                                        <ToggleGroupItem value="right" className="flex-1"><AlignRight className="h-4 w-4"/></ToggleGroupItem>
+                                                    </ToggleGroup>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            <p>Select a text layer to edit it, or add new text.</p>
+                                            <Button variant="secondary" className="mt-4" onClick={addTextElement}>Add Text</Button>
+                                        </div>
+                                    )}
+                                    </TabsContent>
+
+                                    <TabsContent value="upload" className="mt-0">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="text-base">Upload Your Image</CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <label htmlFor="customer-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                                    <Upload className="h-8 w-8 text-muted-foreground"/>
+                                                    <span className="text-sm text-muted-foreground text-center mt-1">Click to upload</span>
+                                                </label>
+                                                <input id="customer-image-upload" type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} />
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
+                                    <TabsContent value="art" className="mt-0">
+                                        <Card>
+                                            <CardHeader><CardTitle className="text-base">Add Clipart</CardTitle></CardHeader>
+                                            <CardContent className="grid grid-cols-4 gap-2">
+                                                {mockArt.map(art => {
+                                                    const ArtIcon = art.icon;
+                                                    return (
+                                                    <Button key={art.id} variant="outline" className="h-16 flex-col" onClick={() => addArtElement(art.src)}>
+                                                        <ArtIcon className="h-8 w-8 text-muted-foreground" />
+                                                    </Button>
+                                                )})}
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
+                                    <TabsContent value="colors" className="mt-0 text-center text-sm text-muted-foreground py-8">
+                                        Product color options coming soon!
+                                    </TabsContent>
+                                    <TabsContent value="notes" className="mt-0">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="text-base">Design Notes</CardTitle>
+                                                <CardDescription className="text-xs">Add any special instructions for the vendor.</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                            <Textarea placeholder="e.g. 'Please match the text color to the main logo.'" />
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
+                                </div>
+                            </ScrollArea>
                             
-                            <div className="p-4 border-t">
+                            <div className="p-4 border-t flex-shrink-0">
                                 <Card>
                                     <CardHeader className="flex flex-row items-center justify-between p-2">
                                         <CardTitle className="text-sm font-semibold flex items-center gap-2"><Layers className="h-4 w-4"/> Layers</CardTitle>
@@ -745,30 +763,34 @@ export default function CustomizeProductPage() {
                                             <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!selectedElementId} onClick={() => reorderElement(selectedElementId!, 'down')}><ChevronsDown className="h-4 w-4"/></Button>
                                         </div>
                                     </CardHeader>
-                                    <CardContent className="p-2 space-y-2 max-h-48 overflow-y-auto">
-                                        {designElements.length > 0 ? (
-                                            [...designElements].reverse().map(element => (
-                                                <div 
-                                                    key={element.id}
-                                                    className={cn("flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer", selectedElementId === element.id ? "bg-accent" : "hover:bg-muted/50")}
-                                                    onClick={() => setSelectedElementId(element.id)}
-                                                >
-                                                    {element.type === 'text' && <Type className="h-4 w-4 text-muted-foreground"/>}
-                                                    {element.type === 'image' && <Upload className="h-4 w-4 text-muted-foreground"/>}
-                                                    {element.type === 'art' && <Wand2 className="h-4 w-4 text-muted-foreground"/>}
-                                                    <span className="text-sm truncate flex-1">
-                                                        {element.type === 'text' ? (element.text || 'Untitled Text') : (element.type === 'image' ? 'Uploaded Image' : 'Clipart')}
-                                                    </span>
-                                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); removeElement(element.id)}}><Trash2 className="h-4 w-4"/></Button>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <p className="text-xs text-muted-foreground text-center py-4">Your design is empty.</p>
-                                        )}
+                                    <CardContent className="p-2">
+                                        <ScrollArea className="max-h-48">
+                                            <div className="space-y-2 pr-2">
+                                            {designElements.length > 0 ? (
+                                                [...designElements].reverse().map(element => (
+                                                    <div 
+                                                        key={element.id}
+                                                        className={cn("flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer", selectedElementId === element.id ? "bg-accent" : "hover:bg-muted/50")}
+                                                        onClick={() => setSelectedElementId(element.id)}
+                                                    >
+                                                        {element.type === 'text' && <Type className="h-4 w-4 text-muted-foreground"/>}
+                                                        {element.type === 'image' && <Upload className="h-4 w-4 text-muted-foreground"/>}
+                                                        {element.type === 'art' && <Wand2 className="h-4 w-4 text-muted-foreground"/>}
+                                                        <span className="text-sm truncate flex-1">
+                                                            {element.type === 'text' ? (element.text || 'Untitled Text') : (element.type === 'image' ? 'Uploaded Image' : 'Clipart')}
+                                                        </span>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); removeElement(element.id)}}><Trash2 className="h-4 w-4"/></Button>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-xs text-muted-foreground text-center py-4">Your design is empty.</p>
+                                            )}
+                                            </div>
+                                        </ScrollArea>
                                     </CardContent>
                                 </Card>
                             </div>
-                        </ScrollArea>
+                        </div>
                     </Tabs>
                 </div>
             </main>
