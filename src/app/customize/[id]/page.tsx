@@ -120,17 +120,38 @@ type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
 const imageSides: ImageSide[] = ["front", "back", "left", "right", "top", "bottom"];
 
 const fontOptions = [
+    // Sans-Serif
     { value: 'var(--font-pt-sans)', label: 'PT Sans' },
     { value: 'var(--font-roboto)', label: 'Roboto' },
     { value: 'var(--font-lato)', label: 'Lato' },
     { value: 'var(--font-montserrat)', label: 'Montserrat' },
-    { value: 'var(--font-oswald)', label: 'Oswald' },
+    { value: 'var(--font-poppins)', label: 'Poppins' },
+    { value: 'var(--font-nunito-sans)', label: 'Nunito Sans' },
+    { value: 'var(--font-raleway)', label: 'Raleway' },
+    { value: 'var(--font-rubik)', label: 'Rubik' },
+    { value: 'var(--font-work-sans)', label: 'Work Sans' },
+    // Serif
     { value: 'var(--font-playfair-display)', label: 'Playfair Display' },
     { value: 'var(--font-merriweather)', label: 'Merriweather' },
+    { value: 'var(--font-lora)', label: 'Lora' },
+    { value: 'var(--font-cormorant-garamond)', label: 'Cormorant Garamond' },
+    { value: 'var(--font-bitter)', label: 'Bitter' },
+    { value: 'var(--font-arvo)', label: 'Arvo' },
+    // Display
+    { value: 'var(--font-oswald)', label: 'Oswald' },
+    { value: 'var(--font-anton)', label: 'Anton' },
+    { value: 'var(--font-bebas-neue)', label: 'Bebas Neue' },
+    { value: 'var(--font-alfa-slab-one)', label: 'Alfa Slab One' },
+    // Script & Handwriting
     { value: 'var(--font-lobster)', label: 'Lobster' },
     { value: 'var(--font-pacifico)', label: 'Pacifico' },
-    { value: 'var(--font-inconsolata)', label: 'Inconsolata' },
     { value: 'var(--font-dancing-script)', label: 'Dancing Script' },
+    { value: 'var(--font-caveat)', label: 'Caveat' },
+    { value: 'var(--font-satisfy)', label: 'Satisfy' },
+    { value: 'var(--font-sacramento)', label: 'Sacramento' },
+    // Monospace
+    { value: 'var(--font-inconsolata)', label: 'Inconsolata' },
+    { value: 'var(--font-jetbrains-mono)', label: 'JetBrains Mono' },
 ];
 
 const TextRenderer = ({ element }: { element: DesignElement }) => {
