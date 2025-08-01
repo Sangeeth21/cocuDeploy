@@ -5,11 +5,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
 import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles, ChevronsLeft, ChevronsRight, Combine, Gift, LifeBuoy } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockActivity } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useAdminAuth } from "@/context/admin-auth-context";
 
 
 const navLinks = [
@@ -49,6 +50,13 @@ function CustomSidebarTrigger() {
 
 export function AdminSidebarLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const router = useRouter();
+    const { adminLogout } = useAdminAuth();
+
+    const handleLogout = () => {
+        adminLogout();
+        router.push('/admin-login');
+    }
 
     return (
         <div className="flex min-h-screen">
@@ -113,11 +121,9 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                          <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
-                                <Link href="/admin-login">
-                                    <LogOut />
-                                    <span>Log Out</span>
-                                </Link>
+                            <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
+                                <LogOut />
+                                <span>Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>

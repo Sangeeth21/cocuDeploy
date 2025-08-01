@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { useAdminAuth } from "@/context/admin-auth-context";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -16,10 +17,12 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
+  const { adminLogin } = useAdminAuth();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (email === "admin@example.com" && password === "adminpass") {
+      adminLogin();
       toast({
         title: "Admin Login Successful",
         description: "Redirecting to the admin dashboard.",
