@@ -6,7 +6,7 @@ import Link from 'next/link';
 import type { DisplayProduct } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, Star, Wand2 } from 'lucide-react';
+import { Heart, Star, Wand2, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/context/cart-context';
@@ -115,10 +115,6 @@ export function ProductCard({ product }: ProductCardProps) {
                     <Wand2 className="mr-2 h-4 w-4" />
                     Customize Now
                 </Button>
-                 <div className="flex gap-2">
-                    <Button variant="secondary" size="sm" className="w-full" onClick={handleAddToCart}>Add to Cart</Button>
-                    <Button size="sm" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
-                </div>
             </div>
         ) : (
             <div className="w-full flex gap-2">

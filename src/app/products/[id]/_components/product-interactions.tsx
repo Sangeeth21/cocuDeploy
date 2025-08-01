@@ -63,7 +63,8 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   const MAX_MESSAGE_LENGTH = 1500;
 
   const isChatDisabled = !hasMadePurchase && uniqueVendorChats >= MAX_CHATS_WITHOUT_PURCHASE;
@@ -245,11 +246,8 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
     }, [newMessage]);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-             if(scrollableView){
-                 scrollableView.scrollTop = scrollableView.scrollHeight;
-             }
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
     }, [conversation.messages]);
   
@@ -257,17 +255,9 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
     <>
       <div className="space-y-4">
         {isCustomizable ? (
-          <div className="space-y-2">
             <Button size="lg" className="w-full" onClick={handleCustomize}>
                 <Wand2 className="mr-2 h-5 w-5" /> Customize Now
             </Button>
-            <div className="grid grid-cols-2 gap-2">
-                <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
-                    <ShoppingCart className="mr-2 h-4 w-4" /> Add to Cart
-                </Button>
-                <Button size="lg" variant="secondary" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
-            </div>
-          </div>
         ) : (
            <div className="flex flex-col sm:flex-row gap-2">
               <Button size="lg" className="w-full" onClick={handleAddToCart}>
@@ -317,8 +307,8 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
                      </DialogDescription>
                 </DialogHeader>
                  <div className="flex-1 overflow-hidden min-h-0">
-                    <ScrollArea className="h-full bg-muted/20" ref={scrollAreaRef}>
-                        <div className="p-4 space-y-4">
+                    <ScrollArea className="h-full bg-muted/20">
+                        <div className="p-4 space-y-4" ref={messagesContainerRef}>
                         {conversation.messages.map((msg, index) => (
                              msg.sender === 'system' ? (
                                 <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>

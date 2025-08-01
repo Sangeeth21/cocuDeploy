@@ -223,17 +223,18 @@ function WishlistTabContent() {
                                 <ProductCard product={product} />
                                 </div>
                                 <div className="p-2 border-t flex flex-col gap-2">
-                                     {isCustomizable(product) && (
+                                     {isCustomizable(product) ? (
                                         <Button size="sm" onClick={() => handleCustomize(product)}>
                                             <Wand2 className="mr-2 h-4 w-4" />
                                             Customize
                                         </Button>
+                                    ) : (
+                                        <Button size="sm" onClick={() => handleMoveToCart(product)}>
+                                            <ShoppingCart className="h-4 w-4 mr-2" />
+                                            Add to Cart
+                                        </Button>
                                     )}
-                                    <Button size="sm" variant="secondary" onClick={() => handleMoveToCart(product)}>
-                                        <ShoppingCart className="h-4 w-4 mr-2" />
-                                        Move to Cart
-                                    </Button>
-                                    <Button size="sm" onClick={() => handleBuyNow(product)}>
+                                    <Button size="sm" variant="secondary" onClick={() => handleBuyNow(product)}>
                                         Buy Now
                                     </Button>
                                 </div>
@@ -325,7 +326,8 @@ export default function AccountPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [messagesContainerRef, setMessagesContainerRef] = useState<HTMLDivElement | null>(null);
+
 
   const [tab, setTab] = useState(searchParams.get('tab') || 'profile');
   
@@ -549,13 +551,11 @@ export default function AccountPage() {
     }, [newMessage]);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-             if(scrollableView){
-                 scrollableView.scrollTop = scrollableView.scrollHeight;
-             }
+        if (messagesContainerRef?.lastElementChild) {
+            (messagesContainerRef.lastElementChild as HTMLElement).scrollIntoView({ behavior: 'smooth' });
         }
-    }, [selectedConversation?.messages]);
+    }, [selectedConversation?.messages, messagesContainerRef]);
+
 
     const copyReferralCode = () => {
         navigator.clipboard.writeText(MOCK_USER_DATA.referralCode);
@@ -847,8 +847,8 @@ export default function AccountPage() {
                           </div>
                       ) : (
                           <>
-                            <ScrollArea className="flex-1 bg-muted/20" ref={scrollAreaRef}>
-                                <div className="p-4 space-y-4">
+                            <ScrollArea className="flex-1 bg-muted/20">
+                                <div className="p-4 space-y-4" ref={setMessagesContainerRef}>
                                 {selectedConversation.messages.map((msg, index) => (
                                     msg.sender === 'system' ? (
                                         <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>

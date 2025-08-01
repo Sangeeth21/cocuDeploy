@@ -17,6 +17,11 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'LW-001',
     stock: 25,
     status: 'Live',
+    customizationAreas: {
+      back: [
+        { id: 'watch-engraving', shape: 'rect', x: 25, y: 45, width: 50, height: 10, label: 'Engraving', fontFamily: 'serif', fontSize: 10, fontWeight: 'normal', textColor: '#333333', curveIntensity: 0 },
+      ]
+    }
   },
   {
     id: '2',
@@ -33,6 +38,11 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'HP-202',
     stock: 50,
     status: 'Live',
+    customizationAreas: {
+      right: [
+        { id: 'headphone-logo', shape: 'rect', x: 40, y: 40, width: 20, height: 20, label: 'Logo', fontFamily: 'sans-serif', fontSize: 14, fontWeight: 'bold', textColor: '#FFFFFF', curveIntensity: 0 },
+      ]
+    }
   },
   {
     id: '3',
@@ -94,6 +104,7 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'CB-COL-12',
     stock: 0,
     status: 'Archived',
+    // Non-customizable
   },
   {
     id: '6',
@@ -110,6 +121,11 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'YM-PRO-BLK',
     stock: 35,
     status: 'Needs Review',
+    customizationAreas: {
+      top: [
+        { id: 'mat-corner-logo', shape: 'rect', x: 85, y: 85, width: 10, height: 10, label: 'Logo', fontFamily: 'sans-serif', fontSize: 8, fontWeight: 'bold', textColor: '#333333', curveIntensity: 0 },
+      ]
+    }
   },
   {
     id: '7',
@@ -126,6 +142,7 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'DSK-MIN-OAK',
     stock: 12,
     status: 'Live',
+    // Non-customizable
   },
   {
     id: '8',
@@ -142,6 +159,7 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'SKN-SET-NAT',
     stock: 40,
     status: 'Live',
+    // Non-customizable
   },
   {
     id: '9',
@@ -158,6 +176,11 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'CNDL-SOY-LV',
     stock: 60,
     status: 'Live',
+    customizationAreas: {
+      front: [
+        { id: 'candle-label', shape: 'rect', x: 20, y: 40, width: 60, height: 20, label: 'Custom Label', fontFamily: 'serif', fontSize: 14, fontWeight: 'normal', textColor: '#000000', curveIntensity: 0 },
+      ]
+    }
   },
 ];
 
