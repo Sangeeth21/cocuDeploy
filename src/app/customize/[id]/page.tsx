@@ -604,9 +604,9 @@ export default function CustomizeProductPage() {
 
                 {/* Right Panel: Tools */}
                 <div className="lg:col-span-1 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
-                    <ScrollArea className="h-full">
-                        <Tabs defaultValue="text" className="flex flex-col h-full">
-                            <TabsList className="grid w-full grid-cols-5 p-1 h-auto flex-shrink-0 sticky top-0 bg-background z-10">
+                    <Tabs defaultValue="text" className="flex flex-col h-full">
+                        <div className="flex-shrink-0">
+                            <TabsList className="grid w-full grid-cols-5 p-1 h-auto">
                                 <TabsTrigger value="text" className="flex-col h-14"><Type className="h-5 w-5 mb-1"/>Text</TabsTrigger>
                                 <TabsTrigger value="upload" className="flex-col h-14"><Upload className="h-5 w-5 mb-1"/>Upload</TabsTrigger>
                                 <TabsTrigger value="art" className="flex-col h-14"><Wand2 className="h-5 w-5 mb-1"/>Art</TabsTrigger>
@@ -614,14 +614,16 @@ export default function CustomizeProductPage() {
                                 <TabsTrigger value="notes" className="flex-col h-14"><StickyNote className="h-5 w-5 mb-1"/>Notes</TabsTrigger>
                             </TabsList>
                             
-                            <div className="flex items-center p-2 border-b flex-shrink-0">
+                            <div className="flex items-center p-2 border-b">
                                 <span className="text-sm font-semibold pl-2">Edit Text</span>
                                 <div className="ml-auto flex items-center gap-1">
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={!canUndo}><Undo2 className="h-4 w-4"/></Button>
                                     <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={!canRedo}><Redo2 className="h-4 w-4"/></Button>
                                 </div>
                             </div>
+                        </div>
 
+                        <ScrollArea className="flex-1">
                             <div className="p-4">
                                 <TabsContent value="text" className="mt-0 space-y-4">
                                 {selectedElement?.type === 'text' ? (
@@ -764,8 +766,8 @@ export default function CustomizeProductPage() {
                                     </CardContent>
                                 </Card>
                             </div>
-                        </Tabs>
-                    </ScrollArea>
+                        </ScrollArea>
+                    </Tabs>
                 </div>
             </main>
             <TextShapeDialog 
