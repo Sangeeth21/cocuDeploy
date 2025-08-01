@@ -756,7 +756,7 @@ export default function NewProductPage() {
             return;
         }
         if (!images.front?.file) {
-            toast({ variant: 'destructive', title: 'Front Image Required', description: 'Please upload a front image first.' });
+            toast({ variant: 'destructive', title: 'Front Image Required', description: 'Please upload a front image file first.' });
             return;
         }
 
@@ -795,7 +795,8 @@ export default function NewProductPage() {
                     });
                 }
             };
-            reader.onerror = () => {
+            reader.onerror = (error) => {
+                 console.error("FileReader error:", error);
                 throw new Error('Failed to read the uploaded image file.');
             };
         } catch (error: any) {
@@ -871,7 +872,7 @@ export default function NewProductPage() {
                     <CardDescription>Upload images and define areas for customer personalization.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                         {imageSides.map(side => (
                            <div key={side.key} className="space-y-1">
                                 <Label className="text-xs font-medium text-muted-foreground">{side.label}</Label>
@@ -907,21 +908,30 @@ export default function NewProductPage() {
                                     </div>
                                 ) : (
                                     <label htmlFor={`image-upload-${side.key}`} className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                                        <Upload className="h-6 w-6 text-muted-foreground"/>
+                                        <Upload className="h-8 w-8 text-muted-foreground"/>
                                         <span className="text-xs text-muted-foreground text-center mt-1">Upload</span>
                                         <input id={`image-upload-${side.key}`} type="file" accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e, side.key)} />
                                     </label>
                                 )}
-                                <Button 
-                                    variant="outline" 
-                                    size="sm" 
-                                    className="w-full text-xs h-7"
-                                    disabled={!images[side.key]}
-                                    onClick={() => setEditingSide(side.key)}
-                                >
-                                    <Square className="mr-1.5 h-3 w-3"/>
-                                    Define Area
-                                </Button>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                             <Button 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="w-full text-xs h-7"
+                                                disabled={!images[side.key]}
+                                                onClick={() => setEditingSide(side.key)}
+                                            >
+                                                <Square className="mr-1.5 h-3 w-3"/>
+                                                Define Area
+                                            </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Define customizable areas on this image.</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
                            </div>
                         ))}
                     </div>
@@ -1219,4 +1229,3 @@ export default function NewProductPage() {
     </>
   );
 }
-
