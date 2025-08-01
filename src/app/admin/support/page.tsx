@@ -137,38 +137,28 @@ export default function AdminSupportPage() {
 
         // Simulate sending the message
         setTimeout(() => {
-            setTickets(prevTickets => prevTickets.map(t => {
+            const updateToSent = (tickets: SupportTicket[]) => tickets.map(t => {
                 if (t.id === currentTicketId) {
                     const updatedMessages = t.messages.map(m => m.id === adminMessageId ? { ...m, status: 'sent' } : m);
                     return { ...t, messages: updatedMessages };
                 }
                 return t;
-            }));
-            setSelectedTicket(prev => prev ? {...prev, messages: prev.messages.map(m => m.id === adminMessageId ? { ...m, status: 'sent' } : m)} : null);
+            });
+            setTickets(updateToSent);
+            setSelectedTicket(prev => prev ? { ...prev, messages: updateToSent(prev ? [prev] : [])[0].messages} : null);
 
-             // Simulate vendor reply
+            // Simulate message being read by vendor
             setTimeout(() => {
-                const vendorMessage: Message = {
-                    id: `vendor-${Date.now()}`,
-                    sender: 'vendor',
-                    text: vendorReplies[Math.floor(Math.random() * vendorReplies.length)],
-                    timestamp: new Date()
-                }
-                 setTickets(prevTickets => prevTickets.map(t => t.id === currentTicketId ? { ...t, messages: [...t.messages, vendorMessage] } : t));
-                 setSelectedTicket(prev => prev ? {...prev, messages: [...prev.messages, vendorMessage]} : null);
-
-                 // Mark admin's message as read after vendor replies
-                 setTimeout(() => {
-                      setTickets(prevTickets => prevTickets.map(t => {
-                          if (t.id === currentTicketId) {
-                              const updatedMessages = t.messages.map(m => m.id === adminMessageId ? { ...m, status: 'read' } : m);
-                              return { ...t, messages: updatedMessages };
-                          }
-                          return t;
-                      }));
-                      setSelectedTicket(prev => prev ? {...prev, messages: prev.messages.map(m => m.id === adminMessageId ? { ...m, status: 'read' } : m)} : null);
-                 }, 500)
-            }, 1500);
+                const updateToRead = (tickets: SupportTicket[]) => tickets.map(t => {
+                    if (t.id === currentTicketId) {
+                        const updatedMessages = t.messages.map(m => m.id === adminMessageId ? { ...m, status: 'read' } : m);
+                        return { ...t, messages: updatedMessages };
+                    }
+                    return t;
+                });
+                setTickets(updateToRead);
+                setSelectedTicket(prev => prev ? { ...prev, messages: updateToRead(prev ? [prev] : [])[0].messages} : null);
+            }, 2000); // Mark as read after 2 seconds
 
         }, 1000);
 
