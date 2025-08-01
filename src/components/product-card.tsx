@@ -115,6 +115,10 @@ export function ProductCard({ product }: ProductCardProps) {
                     <Wand2 className="mr-2 h-4 w-4" />
                     Customize Now
                 </Button>
+                 <div className="w-full flex gap-2">
+                    <Button variant="secondary" size="sm" className="w-full" onClick={handleAddToCart}>Add to Cart</Button>
+                    <Button variant="secondary" size="sm" className="w-full" onClick={handleBuyNow}>Buy Now</Button>
+                </div>
             </div>
         ) : (
             <div className="w-full flex gap-2">

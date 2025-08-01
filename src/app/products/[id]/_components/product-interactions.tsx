@@ -255,9 +255,17 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
     <>
       <div className="space-y-4">
         {isCustomizable ? (
-            <Button size="lg" className="w-full" onClick={handleCustomize}>
-                <Wand2 className="mr-2 h-5 w-5" /> Customize Now
-            </Button>
+            <div className="grid grid-cols-1 gap-2">
+                <Button size="lg" className="w-full" onClick={handleCustomize}>
+                    <Wand2 className="mr-2 h-5 w-5" /> Customize Now
+                </Button>
+                 <div className="grid grid-cols-2 gap-2">
+                    <Button size="lg" variant="secondary" onClick={handleAddToCart}>
+                        Add to Cart
+                    </Button>
+                    <Button size="lg" variant="secondary" onClick={handleBuyNow}>Buy Now</Button>
+                </div>
+            </div>
         ) : (
            <div className="flex flex-col sm:flex-row gap-2">
               <Button size="lg" className="w-full" onClick={handleAddToCart}>
