@@ -3,7 +3,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar, SidebarMenuBadge } from "@/components/ui/sidebar";
-import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building, Package, FileText, User, ShoppingCart, Scale } from "lucide-react";
+import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building, Package, FileText, User, ShoppingCart, Scale, PlusCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ import { ComparisonPreview } from "@/components/comparison-preview";
 const navLinks = [
   { href: "/corporate/dashboard", label: "Marketplace", icon: Building },
   { href: "/corporate/products", label: "Products", icon: Package },
+  { href: "/corporate/bids/new", label: "Create Bid", icon: PlusCircle },
   { href: "/cart", label: "Cart", icon: ShoppingCart, id: "cart" },
   { href: "/compare", label: "Compare", icon: Scale, id: "compare" },
   { href: "/corporate/bids", label: "Active Bids", icon: Gavel },
@@ -120,8 +121,8 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                     <Link href="/corporate/dashboard" className="flex items-center gap-2 mr-6">
                         <Store className="h-6 w-6 text-primary" />
                         <div className="flex items-baseline gap-2">
-                          <span className="font-bold text-lg font-headline hidden sm:inline-block">ShopSphere</span>
-                          <span className="font-bold text-lg font-headline hidden sm:inline-block">Corporate</span>
+                          <span className="font-bold text-lg font-headline">ShopSphere</span>
+                          <span className="font-bold text-lg font-headline">Corporate</span>
                         </div>
                     </Link>
                     <div className="flex-1 flex justify-center px-4">
