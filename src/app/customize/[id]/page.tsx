@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
@@ -194,7 +195,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
         color: textColor,
         textAlign,
         lineHeight: 1,
-        filter: outlineColor && outlineWidth && outlineWidth > 0 && !getPathData() ? `url(#${svgFilterId})` : 'none',
+        filter: outlineColor && outlineWidth && outlineWidth > 0 ? `url(#${svgFilterId})` : 'none',
         display: 'inline-block',
         whiteSpace: 'pre-wrap',
     };
@@ -260,7 +261,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
                  {outlineColor && outlineWidth && outlineWidth > 0 && (
                     <defs>
                         <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
-                            <feMorphology operator="dilate" radius={outlineWidth} in="SourceAlpha" result="dilated" />
+                            <feMorphology operator="dilate" radius={outlineWidth / 10} in="SourceAlpha" result="dilated" />
                             <feFlood floodColor={outlineColor} result="color" />
                             <feComposite in="color" in2="dilated" operator="in" result="outline" />
                             <feMerge>
@@ -292,21 +293,19 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
 
     return (
         <div ref={containerRef} className="w-full h-full flex items-center justify-center p-1" style={getTransformStyle()}>
-            {outlineColor && outlineWidth && outlineWidth > 0 && (
-                <svg style={{ position: 'absolute', width: 0, height: 0 }}>
-                    <defs>
-                        <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
-                            <feMorphology operator="dilate" radius={outlineWidth} in="SourceAlpha" result="dilated" />
-                            <feFlood floodColor={outlineColor} result="color" />
-                            <feComposite in="color" in2="dilated" operator="in" result="outline" />
-                            <feMerge>
-                                <feMergeNode in="outline" />
-                                <feMergeNode in="SourceGraphic" />
-                            </feMerge>
-                        </filter>
-                    </defs>
-                </svg>
-            )}
+            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+                <defs>
+                    <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
+                        <feMorphology operator="dilate" radius={outlineWidth} in="SourceAlpha" result="dilated" />
+                        <feFlood floodColor={outlineColor} result="color" />
+                        <feComposite in="color" in2="dilated" operator="in" result="outline" />
+                        <feMerge>
+                            <feMergeNode in="outline" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+            </svg>
             <span style={textStyle}>{text}</span>
         </div>
     );
@@ -897,9 +896,16 @@ export default function CustomizeProductPage() {
                                             </div>
                                             <div className="space-y-2">
                                                 <Label>Outline</Label>
-                                                <div className="space-y-2">
+                                                <div className="space-y-3">
                                                     <ColorPicker value={selectedElement.outlineColor || '#ffffff'} onChange={(color) => handleElementChange(selectedElementId!, { outlineColor: color })} />
-                                                    <Slider min={0} max={5} step={0.1} value={[selectedElement.outlineWidth || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { outlineWidth: v })} />
+                                                    <Slider 
+                                                        aria-label="Outline thickness"
+                                                        min={0} 
+                                                        max={5} 
+                                                        step={0.1} 
+                                                        value={[selectedElement.outlineWidth || 0]} 
+                                                        onValueChange={([v]) => handleElementChange(selectedElementId!, { outlineWidth: v })} 
+                                                    />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
