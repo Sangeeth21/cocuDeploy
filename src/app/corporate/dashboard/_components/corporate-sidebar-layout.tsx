@@ -34,7 +34,11 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
     return (
         <div className="flex min-h-screen">
         <SidebarProvider>
-            <Sidebar collapsible="icon" className="border-r hidden md:flex">
+            <Sidebar 
+                collapsible="icon" 
+                className="border-r hidden md:flex" 
+                defaultOpen={false}
+            >
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
                         <div className="flex items-center gap-2">
@@ -53,7 +57,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton
                                     asChild
-                                    isActive={pathname.startsWith(link.href) && (link.href !== "/corporate/dashboard" || pathname === "/corporate/dashboard")}
+                                    isActive={pathname === link.href}
                                     tooltip={{children: link.label}}
                                 >
                                     <Link href={link.href}>
@@ -90,3 +94,4 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
         </div>
     );
 }
+

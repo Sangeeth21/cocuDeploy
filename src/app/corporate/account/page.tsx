@@ -53,7 +53,7 @@ function PlaceBidDialog({ product }: { product: typeof mockProducts[0] }) {
                 </div>
                  <DialogFooter>
                     <Button onClick={handlePlaceBid}>Submit Bid</Button>
-                </DialogFooter>
+                 </DialogFooter>
             </DialogContent>
         </Dialog>
     )

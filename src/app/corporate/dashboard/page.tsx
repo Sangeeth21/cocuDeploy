@@ -5,11 +5,9 @@ import { useState, useMemo } from "react";
 import { mockProducts } from "@/lib/mock-data";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DisplayProduct } from "@/lib/types";
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
 import { B2bProductCard } from "../_components/b2b-product-card";
+import { Button } from "@/components/ui/button";
 
 
 const MAX_PRICE = 500;
