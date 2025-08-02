@@ -6,10 +6,13 @@ import Link from 'next/link';
 import type { DisplayProduct } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, Truck, BarChart2, Wand2 } from 'lucide-react';
+import { Star, Truck, Wand2, ShoppingCart, Scale } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
+import { useCart } from '@/context/cart-context';
+import { useComparison } from '@/context/comparison-context';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -17,6 +20,9 @@ interface ProductCardProps {
 
 export function B2bProductCard({ product }: ProductCardProps) {
   const router = useRouter();
+  const { addToCart } = useCart();
+  const { toggleCompare, isComparing } = useComparison();
+  const { toast } = useToast();
 
   const isCustomizable = useMemo(() => {
     return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
@@ -29,6 +35,22 @@ export function B2bProductCard({ product }: ProductCardProps) {
         router.push(`/corporate/quote/${product.id}`);
     }
   };
+
+  const handleAddToCart = () => {
+    addToCart({product, customizations: {}});
+    toast({
+      title: "Added to Cart",
+      description: `${product.name} has been added to your cart.`
+    });
+  }
+
+  const handleToggleCompare = () => {
+      toggleCompare(product);
+      toast({
+          title: isComparing(product.id) ? "Removed from Comparison" : "Added to Comparison",
+          description: product.name,
+      });
+  }
 
   const lowestTierPrice = product.tierPrices && product.tierPrices.length > 0
     ? Math.min(...product.tierPrices.map(p => p.price))
@@ -75,6 +97,15 @@ export function B2bProductCard({ product }: ProductCardProps) {
         <Button size="sm" className="w-full" onClick={handleRequestQuote}>
             {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
         </Button>
+        <div className="w-full flex gap-2">
+            <Button size="sm" variant="secondary" className="w-full" onClick={handleAddToCart}>
+                <ShoppingCart className="h-4 w-4 mr-2" /> Add to Cart
+            </Button>
+             <Button size="sm" variant="outline" className="w-full" onClick={handleToggleCompare}>
+                <Scale className="h-4 w-4 mr-2" />
+                {isComparing(product.id) ? 'Remove' : 'Compare'}
+            </Button>
+        </div>
       </CardFooter>
     </Card>
   );
