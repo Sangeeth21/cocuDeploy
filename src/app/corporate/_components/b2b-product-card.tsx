@@ -6,9 +6,10 @@ import Link from 'next/link';
 import type { DisplayProduct } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, Truck, BarChart2 } from 'lucide-react';
+import { Star, Truck, BarChart2, Wand2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { useMemo } from 'react';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -17,8 +18,16 @@ interface ProductCardProps {
 export function B2bProductCard({ product }: ProductCardProps) {
   const router = useRouter();
 
+  const isCustomizable = useMemo(() => {
+    return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
+  }, [product]);
+
   const handleRequestQuote = () => {
-    router.push(`/corporate/quote/${product.id}`);
+    if (isCustomizable) {
+        router.push(`/corporate/customize/${product.id}`);
+    } else {
+        router.push(`/corporate/quote/${product.id}`);
+    }
   };
 
   const lowestTierPrice = product.tierPrices && product.tierPrices.length > 0
@@ -37,6 +46,12 @@ export function B2bProductCard({ product }: ProductCardProps) {
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`}
             />
+             {isCustomizable && (
+              <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
+                <Wand2 className="h-3 w-3" />
+                <span>Customizable</span>
+              </div>
+            )}
           </div>
         </Link>
       </CardHeader>
@@ -58,7 +73,7 @@ export function B2bProductCard({ product }: ProductCardProps) {
             <p className="text-xl font-semibold font-body">${lowestTierPrice.toFixed(2)} / unit</p>
          </div>
         <Button size="sm" className="w-full" onClick={handleRequestQuote}>
-            Request a Quote
+            {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
         </Button>
       </CardFooter>
     </Card>

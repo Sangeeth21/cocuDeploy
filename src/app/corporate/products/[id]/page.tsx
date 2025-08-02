@@ -2,32 +2,52 @@
 "use client";
 
 import Image from "next/image";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { mockProducts } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Truck } from "lucide-react";
+import { Star, Truck, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ReviewsPreview } from "./_components/reviews-preview";
+import { useMemo } from "react";
 
 export default function B2BProductDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
   const product = mockProducts.find((p) => p.id === id);
+
+  const isCustomizable = useMemo(() => {
+    return Object.values(product?.customizationAreas || {}).some(areas => areas && areas.length > 0);
+  }, [product]);
 
   if (!product || !product.b2bEnabled) {
     notFound();
   }
   
+  const handleRequestQuote = () => {
+    if (isCustomizable) {
+      router.push(`/corporate/customize/${product.id}`);
+    } else {
+      router.push(`/corporate/quote/${product.id}`);
+    }
+  }
+
   return (
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12 items-start">
         <div>
           <div className="aspect-square relative w-full overflow-hidden rounded-lg shadow-lg">
             <Image src={product.imageUrl} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+             {isCustomizable && (
+              <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-2">
+                <Wand2 className="h-4 w-4" />
+                <span>Customizable</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -72,8 +92,8 @@ export default function B2BProductDetailPage() {
             </CardContent>
           </Card>
           
-          <Button size="lg" className="w-full" asChild>
-            <Link href={`/corporate/quote/${product.id}`}>Request a Quote</Link>
+          <Button size="lg" className="w-full" onClick={handleRequestQuote}>
+             {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
           </Button>
         </div>
       </div>
