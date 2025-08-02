@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { useComparison } from "@/context/comparison-context";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
+import { CorporateProductInteractions } from "./_components/product-interactions";
 
 export default function B2BProductDetailPage() {
   const params = useParams();
@@ -201,6 +202,7 @@ export default function B2BProductDetailPage() {
                     Add to Cart
                 </Button>
             </div>
+            <CorporateProductInteractions product={product} isCustomizable={isCustomizable} />
           </div>
         </div>
       </div>

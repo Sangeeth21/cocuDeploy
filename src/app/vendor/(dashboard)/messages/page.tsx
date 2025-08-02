@@ -85,7 +85,7 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
                     </DialogDescription>
                 </DialogHeader>
                 <p className="text-sm text-muted-foreground">
-                    Continuing the chat will grant 6 more messages. Ending the chat will lock the conversation.
+                    Continuing the chat will grant 8 more messages. Ending the chat will lock the conversation.
                 </p>
                 <DialogFooter>
                     <Button variant="outline" onClick={onEnd}>End Chat</Button>
@@ -132,13 +132,13 @@ export default function VendorMessagesPage() {
             return {
                 ...c,
                 awaitingVendorDecision: false,
-                messages: [...c.messages, {id: 'system-continue', sender: 'system' as const, text: 'Vendor extended the chat. 6 messages remaining.'}]
+                messages: [...c.messages, {id: 'system-continue', sender: 'system' as const, text: 'Vendor extended the chat. 8 messages remaining.'}]
             };
         }
         return c;
     }));
     setIsConversionDialogOpen(false);
-    toast({ title: 'Chat Extended', description: 'You can now send 6 more messages.' });
+    toast({ title: 'Chat Extended', description: 'You can now send 8 more messages.' });
   }
 
   const handleEndChat = () => {
@@ -148,7 +148,7 @@ export default function VendorMessagesPage() {
             return {
                 ...c,
                 awaitingVendorDecision: false,
-                userMessageCount: 15, // Lock the chat
+                userMessageCount: 23, // 15 + 8, to lock it
                 messages: [...c.messages, {id: 'system-end', sender: 'system' as const, text: 'Vendor has ended the chat.'}]
             };
         }
@@ -202,10 +202,9 @@ export default function VendorMessagesPage() {
         const updatedConvo = {
             ...convo,
             messages: [...convo.messages, newMessageObj],
-            userMessageCount: convo.userMessageCount + 1
         };
 
-        if (updatedConvo.userMessageCount === 9) {
+        if (updatedConvo.userMessageCount === 15) {
             updatedConvo.awaitingVendorDecision = true;
         }
         
@@ -253,8 +252,8 @@ export default function VendorMessagesPage() {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
       const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
 
-      const INITIAL_LIMIT = 9;
-      const EXTENDED_LIMIT = 15;
+      const INITIAL_LIMIT = 15;
+      const EXTENDED_LIMIT = 15 + 8;
 
       const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
       let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
@@ -343,7 +342,7 @@ export default function VendorMessagesPage() {
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached') : 'Chat disabled'}
+                        {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} messages left` : 'Message limit reached') : 'Chat disabled'}
                     </div>
                 </div>
               </div>
@@ -429,7 +428,7 @@ export default function VendorMessagesPage() {
                           <label htmlFor="vendor-file-upload"><Paperclip className="h-5 w-5" /></label>
                       </Button>
                       <input id="vendor-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} disabled={isLocked} />
-                      <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
+                      <Button type="submit" size="icon" disabled={isLocked || (!newMessage.trim() && attachments.length === 0)}><Send className="h-4 w-4" /></Button>
                   </div>
                 </form>
               </>
