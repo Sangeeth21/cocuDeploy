@@ -775,7 +775,7 @@ export default function CustomizeProductPage() {
     );
 
     return (
-        <div className="h-screen flex flex-col bg-muted/40">
+        <div className="h-screen flex flex-col bg-muted/40 overflow-hidden">
             <header className="bg-background border-b shadow-sm flex-shrink-0">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                      <Button variant="outline" size="sm" onClick={() => router.back()}>
@@ -795,24 +795,22 @@ export default function CustomizeProductPage() {
 
             <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 min-h-0">
                 {/* Left Panel: Preview */}
-                <div className="md:col-span-2 lg:col-span-4 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
-                    <ScrollArea className="flex-grow">
-                        <div className="h-full flex flex-col items-center justify-start gap-4 p-4">
-                            <div className="relative w-full max-h-full aspect-square flex items-center justify-center">
-                                <CustomizationRenderer 
-                                    product={product} 
-                                    activeSide={activeSide} 
-                                    designElements={designElements} 
-                                    selectedElementId={selectedElementId}
-                                    onSelect={setSelectedElementId}
-                                    onDelete={removeElement}
-                                    onDuplicate={duplicateElement}
-                                    onUpdate={handleElementChange}
-                                />
-                            </div>
+                 <ScrollArea className="md:col-span-2 lg:col-span-4 bg-background rounded-lg shadow-md h-full">
+                    <div className="h-full flex flex-col items-center justify-start gap-4 p-4">
+                        <div className="relative w-full max-h-full aspect-square flex items-center justify-center">
+                            <CustomizationRenderer 
+                                product={product} 
+                                activeSide={activeSide} 
+                                designElements={designElements} 
+                                selectedElementId={selectedElementId}
+                                onSelect={setSelectedElementId}
+                                onDelete={removeElement}
+                                onDuplicate={duplicateElement}
+                                onUpdate={handleElementChange}
+                            />
                         </div>
-                    </ScrollArea>
-                    <div className="flex-shrink-0 flex items-center justify-center gap-2 bg-muted/50 p-2 rounded-b-lg border-t">
+                    </div>
+                    <div className="sticky bottom-0 flex-shrink-0 flex items-center justify-center gap-2 bg-muted/50 p-2 rounded-b-lg border-t mt-auto">
                         {imageSides.map(side => {
                             const hasImage = !!product.images?.[imageSides.indexOf(side)];
                             return (
@@ -838,10 +836,10 @@ export default function CustomizeProductPage() {
                             Zoom
                         </button>
                     </div>
-                </div>
+                </ScrollArea>
 
                 {/* Right Panel: Tools */}
-                <div className="lg:col-span-1 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
+                 <div className="lg:col-span-1 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
                     <Tabs defaultValue="text" className="flex flex-col h-full">
                          <div className="flex-shrink-0">
                             <TabsList className="grid w-full grid-cols-5 p-1 h-auto">
@@ -1025,3 +1023,5 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
+
+    
