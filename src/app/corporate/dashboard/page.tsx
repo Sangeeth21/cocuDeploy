@@ -45,8 +45,8 @@ const DefaultHeroSlide = () => (
 
 
 export default function CorporateMarketplacePage() {
-    const heroCampaigns = mockCorporateCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active' && c.creatives);
-    const inlineCampaign = mockCorporateCampaigns.find(c => c.placement === 'inline-banner' && c.status === 'Active');
+    const heroCampaigns = (mockCorporateCampaigns || []).filter(c => c.placement === 'hero' && c.status === 'Active' && c.creatives);
+    const inlineCampaign = (mockCorporateCampaigns || []).find(c => c.placement === 'inline-banner' && c.status === 'Active');
 
   return (
     <div className="space-y-8">

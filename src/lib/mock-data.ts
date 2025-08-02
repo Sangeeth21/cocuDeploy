@@ -494,6 +494,41 @@ export const mockCampaigns: MarketingCampaign[] = [
     }
 ]
 
+export const mockCorporateCampaigns: MarketingCampaign[] = [
+    {
+        id: "CORP_CAMP001",
+        name: "Q3 Bulk Discount Drive",
+        type: "Sale",
+        status: "Active",
+        startDate: "2024-07-01",
+        endDate: "2024-09-30",
+        placement: "hero",
+        creatives: [{
+            id: 1,
+            title: "Equip Your Team for Success",
+            description: "Bulk discounts on premium office supplies and tech accessories. Get a custom quote today.",
+            cta: "Browse Corporate Gifts",
+            imageUrl: "https://placehold.co/1920x1080.png",
+        }]
+    },
+    {
+        id: "CORP_CAMP002",
+        name: "Client Appreciation Event",
+        type: "Promotion",
+        status: "Active",
+        startDate: "2024-06-15",
+        endDate: "2024-08-30",
+        placement: "inline-banner",
+        creatives: [{
+            id: 1,
+            title: "The Art of Appreciation",
+            description: "Customizable gift kits to strengthen your client relationships.",
+            cta: "View Gifting Kits",
+            imageUrl: "https://placehold.co/1200x400.png",
+        }]
+    },
+]
+
 export const mockFlashDeals: FlashDeal[] = [
     {
         product: mockProducts[1],
