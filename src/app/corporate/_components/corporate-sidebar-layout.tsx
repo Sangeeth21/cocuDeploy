@@ -60,6 +60,16 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
         adminLogout();
         router.push('/corporate');
     }
+    
+    const { setOpen } = useSidebar();
+    
+    const handleMouseEnter = () => {
+      setOpen(true)
+    }
+
+    const handleMouseLeave = () => {
+       setOpen(false)
+    }
 
     return (
         <div className="flex min-h-screen bg-background">
@@ -67,6 +77,8 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
             <Sidebar 
                 collapsible="icon" 
                 className="border-r hidden md:flex"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
             >
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
