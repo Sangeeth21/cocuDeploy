@@ -9,6 +9,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/context/admin-auth-context";
+import { mockCorporateCampaigns } from "@/lib/mock-data";
+import { Footer } from "@/components/layout/footer";
 
 
 const navLinks = [
@@ -20,6 +22,20 @@ const navLinks = [
   { href: "/corporate/account", label: "Account", icon: User },
   { href: "/corporate/settings", label: "Settings", icon: Settings },
 ];
+
+function CorporateCampaignBanner() {
+    const bannerCampaign = mockCorporateCampaigns.find(c => c.status === 'Active' && c.placement === 'banner');
+    
+    if (!bannerCampaign) return null;
+    
+    return (
+        <div className="bg-primary text-primary-foreground p-2 text-sm text-center">
+            <Link href={`/corporate/products?campaign=${bannerCampaign.id}`} className="hover:underline">
+                {bannerCampaign.creatives?.[0].title} - {bannerCampaign.creatives?.[0].description}
+            </Link>
+        </div>
+    )
+}
 
 export function CorporateSidebarLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
@@ -36,7 +52,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
         <SidebarProvider defaultOpen={false}>
             <Sidebar 
                 collapsible="icon" 
-                className="border-r hidden md:flex" 
+                className="border-r hidden md:flex"
             >
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -85,9 +101,13 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                          <span className="font-bold hidden max-md:inline-block">Corporate Portal</span>
                     </div>
                  </header>
-                 <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-x-hidden">
-                    {children}
-                </main>
+                 <div className="flex-1 flex flex-col">
+                    <CorporateCampaignBanner />
+                    <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-x-hidden">
+                        {children}
+                    </main>
+                    <Footer />
+                 </div>
             </div>
         </SidebarProvider>
         </div>
