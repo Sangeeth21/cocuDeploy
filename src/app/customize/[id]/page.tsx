@@ -408,7 +408,7 @@ const DraggableElement = ({
             {element.type === 'art' && element.imageUrl && (
                 <Image src={element.imageUrl} alt="Clipart" fill className="object-contain pointer-events-none" />
             )}
-            {element.type === 'text' && element.text && <TextRenderer element={element} />}
+            {element.type === 'text' && <TextRenderer element={element} />}
 
             {isSelected && (
                 <>
@@ -630,7 +630,7 @@ export default function CustomizeProductPage() {
                         originalAreaId: area.id,
                         x: area.x, y: area.y, width: area.width, height: area.height,
                         rotation: 0,
-                        text: `Your ${area.label}`,
+                        text: '',
                         fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
                         fontSize: area.fontSize || 14,
                         fontWeight: 'normal',
