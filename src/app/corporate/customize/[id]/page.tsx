@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue, CustomizationArea } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Send, Loader2 } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Send, Loader2, QrCode } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -26,12 +26,13 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import tinycolor from 'tinycolor2';
+import QRCode from 'qrcode.react';
 
 type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
 
 type DesignElement = {
     id: string;
-    type: 'text' | 'image' | 'art';
+    type: 'text' | 'image' | 'art' | 'qr';
     x: number;
     y: number;
     width: number;
@@ -48,7 +49,7 @@ type DesignElement = {
     shapeIntensity?: number;
     outlineColor?: string;
     outlineWidth?: number;
-    // Image properties
+    // Image/QR properties
     imageUrl?: string;
     // Art properties
     artContent?: string | React.FC<any>; // Emoji (string) or Icon component
@@ -436,6 +437,11 @@ const DraggableElement = ({
                     React.createElement(element.artContent as React.FC<any>, { className: "w-full h-full object-contain pointer-events-none text-foreground" })
                 )
             )}
+             {element.type === 'qr' && element.text && (
+                 <div className="w-full h-full bg-white p-2">
+                    <QRCode value={element.text} style={{ width: '100%', height: '100%' }} bgColor="#FFFFFF" fgColor="#000000" level="Q" />
+                 </div>
+            )}
             {element.type === 'text' && <TextRenderer element={element} />}
 
             {isSelected && (
@@ -609,6 +615,7 @@ export default function CorporateCustomizePage() {
     const [activeSide, setActiveSide] = useState<ImageSide>("front");
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
     const [isTextShapeOpen, setIsTextShapeOpen] = useState(false);
+    const [qrValue, setQrValue] = useState("");
 
     const firstCustomizableSide = useMemo(() => {
         if (!product?.customizationAreas) return "front";
@@ -725,6 +732,25 @@ export default function CorporateCustomizePage() {
         setDesignElements(prev => [...prev, newElement]);
         setSelectedElementId(newElement.id);
     }
+
+     const addQrElement = () => {
+        if (!qrValue.trim()) {
+            toast({
+                variant: 'destructive',
+                title: 'QR Code Error',
+                description: 'Please enter a URL or text for the QR code.',
+            });
+            return;
+        }
+        const newElement: DesignElement = {
+            id: `qr-${Date.now()}`,
+            type: 'qr',
+            x: 35, y: 35, width: 30, height: 30, rotation: 0,
+            text: qrValue,
+        };
+        setDesignElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
+    };
     
     const removeElement = (elementId: string) => {
         setDesignElements(prev => prev.filter(el => el.id !== elementId));
@@ -864,8 +890,9 @@ export default function CorporateCustomizePage() {
                  <div className="lg:col-span-1 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
                     <Tabs defaultValue="text" className="flex flex-col h-full">
                          <div className="flex-shrink-0">
-                            <TabsList className="grid w-full grid-cols-5 p-1 h-auto">
+                            <TabsList className="grid w-full grid-cols-6 p-1 h-auto">
                                 <TabsTrigger value="text" className="flex-col h-14"><Type className="h-5 w-5 mb-1"/>Text</TabsTrigger>
+                                <TabsTrigger value="qr" className="flex-col h-14"><QrCode className="h-5 w-5 mb-1"/>QR</TabsTrigger>
                                 <TabsTrigger value="upload" className="flex-col h-14"><Upload className="h-5 w-5 mb-1"/>Upload</TabsTrigger>
                                 <TabsTrigger value="art" className="flex-col h-14"><Wand2 className="h-5 w-5 mb-1"/>Art</TabsTrigger>
                                 <TabsTrigger value="colors" className="flex-col h-14"><Paintbrush className="h-5 w-5 mb-1"/>Colors</TabsTrigger>
@@ -978,6 +1005,25 @@ export default function CorporateCustomizePage() {
                                         </div>
                                     )}
                                     </TabsContent>
+                                     <TabsContent value="qr" className="mt-0 space-y-4">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="text-base">QR Code Generator</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="qr-value">URL or Text</Label>
+                                                    <Input
+                                                        id="qr-value"
+                                                        value={qrValue}
+                                                        onChange={(e) => setQrValue(e.target.value)}
+                                                        placeholder="https://example.com"
+                                                    />
+                                                </div>
+                                                <Button className="w-full" onClick={addQrElement}>Add QR Code to Design</Button>
+                                            </CardContent>
+                                        </Card>
+                                     </TabsContent>
 
                                     <TabsContent value="upload" className="mt-0">
                                         <Card>
@@ -1076,8 +1122,9 @@ export default function CorporateCustomizePage() {
                                                         {element.type === 'text' && <Type className="h-4 w-4 text-muted-foreground"/>}
                                                         {element.type === 'image' && <Upload className="h-4 w-4 text-muted-foreground"/>}
                                                         {element.type === 'art' && <Wand2 className="h-4 w-4 text-muted-foreground"/>}
+                                                        {element.type === 'qr' && <QrCode className="h-4 w-4 text-muted-foreground"/>}
                                                         <span className="text-sm truncate flex-1">
-                                                            {element.type === 'text' ? (element.text || 'Untitled Text') : (element.type === 'image' ? 'Uploaded Image' : 'Clipart')}
+                                                            {element.type === 'text' ? (element.text || 'Untitled Text') : (element.type === 'image' ? 'Uploaded Image' : (element.type === 'qr' ? 'QR Code' : 'Clipart'))}
                                                         </span>
                                                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); removeElement(element.id)}}><Trash2 className="h-4 w-4"/></Button>
                                                     </div>
@@ -1103,5 +1150,3 @@ export default function CorporateCustomizePage() {
         </div>
     );
 }
-
-    
