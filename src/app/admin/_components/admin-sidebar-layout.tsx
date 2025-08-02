@@ -3,7 +3,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles, ChevronsLeft, ChevronsRight, Combine, Gift, LifeBuoy, Building } from "lucide-react";
+import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles, ChevronsLeft, ChevronsRight, Combine, Gift, LifeBuoy, Building, Gavel } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { NotificationPopover } from "@/components/notification-popover";
@@ -19,6 +19,7 @@ const navLinks = [
   { href: "/admin/customers", label: "Users", icon: Users },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ListChecks },
+  { href: "/admin/bids", label: "Bids", icon: Gavel },
   { href: "/admin/commissions", label: "Commissions", icon: DollarSign },
   { href: "/admin/chat-logs", label: "Chat Logs", icon: MessageSquare },
   { href: "/admin/analytics", label: "Analytics", icon: BarChart3 },
