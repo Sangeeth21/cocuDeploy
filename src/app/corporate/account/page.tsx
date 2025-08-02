@@ -60,12 +60,19 @@ function PlaceBidDialog({ product }: { product: typeof mockProducts[0] }) {
 }
 
 export default function CorporateAccountPage() {
+  const recentBids = mockProducts.slice(0, 3).filter(p => p.b2bEnabled);
+
   return (
-    <>
-      <div className="flex items-center justify-between space-y-2">
+    <div>
+      <div className="flex items-center justify-between space-y-2 mb-8">
         <h1 className="text-3xl font-bold tracking-tight font-headline">Account Dashboard</h1>
+         <Button asChild>
+          <Link href="/corporate/products">
+            <Search className="mr-2 h-4 w-4" /> Browse Products
+          </Link>
+        </Button>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3 my-8">
+      <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3 mb-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -107,6 +114,61 @@ export default function CorporateAccountPage() {
           </CardContent>
         </Card>
       </div>
-    </>
+       <Card>
+        <CardHeader className="flex flex-row items-center">
+            <div className="grid gap-2">
+                <CardTitle>Recent Bids & Quick Actions</CardTitle>
+                <CardDescription>
+                Quickly place new bids on previously quoted items.
+                </CardDescription>
+            </div>
+            <Button asChild size="sm" className="ml-auto gap-1">
+                <Link href="/corporate/bids">
+                View All Bids
+                <ArrowUpRight className="h-4 w-4" />
+                </Link>
+            </Button>
+        </CardHeader>
+        <CardContent>
+            <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Product</TableHead>
+                    <TableHead className="text-right">Last Quoted Price</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {recentBids.map(product => (
+                    <TableRow key={product.id}>
+                        <TableCell>
+                             <div className="flex items-center gap-4">
+                                <div className="relative h-12 w-12 rounded-md overflow-hidden">
+                                     <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+                                </div>
+                                <div>
+                                    <div className="font-medium">{product.name}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                        Vendor: {product.vendorId}
+                                    </div>
+                                </div>
+                            </div>
+                        </TableCell>
+                        <TableCell className="text-right">${(product.price * 0.9).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">
+                           <div className="flex gap-2 justify-end">
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link href={`/corporate/quote/${product.id}`}>Request New Quote</Link>
+                                </Button>
+                                <PlaceBidDialog product={product} />
+                           </div>
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+            </Table>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
