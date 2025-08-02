@@ -1,64 +1,769 @@
 
 "use client";
 
-import { useState, useMemo, useCallback } from 'react';
-import { notFound, useParams, useRouter } from 'next/navigation';
-import { mockProducts } from '@/lib/mock-data';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import Image from 'next/image';
-import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Loader2, Send } from 'lucide-react';
-import Link from 'next/link';
+import * as React from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { notFound, useParams, useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { cn } from '@/lib/utils';
-import type { CustomizationArea } from '@/lib/types';
+import { mockProducts } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
+import type { CustomizationValue, CustomizationArea } from "@/lib/types";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Send, Loader2 } from "lucide-react";
+import { useCart } from "@/context/cart-context";
+import { useToast } from "@/hooks/use-toast";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { ColorPicker } from "@/components/ui/color-picker";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import tinycolor from 'tinycolor2';
 
+type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
 
-type CustomizationValues = {
-    [areaId: string]: string;
-};
+type DesignElement = {
+    id: string;
+    type: 'text' | 'image' | 'art';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    // Text properties
+    text?: string;
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: string;
+    textColor?: string;
+    textAlign?: 'left' | 'center' | 'right';
+    textShape?: TextShape;
+    shapeIntensity?: number;
+    outlineColor?: string;
+    outlineWidth?: number;
+    // Image properties
+    imageUrl?: string;
+    // Art properties
+    artContent?: string | React.FC<any>; // Emoji (string) or Icon component
+    artType?: 'emoji' | 'icon';
+    originalAreaId?: string; // Links text element back to a vendor-defined area
+}
+
+// Custom hook for managing state with undo/redo
+function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T) => T)) => void, () => void, () => void, boolean, boolean] {
+    const historyRef = useRef<{
+        past: T[],
+        present: T,
+        future: T[]
+    }>({
+        past: [],
+        present: initialState,
+        future: [],
+    });
+    
+    const [, forceUpdate] = useState({});
+
+    const set = useCallback((newState: T | ((prevState: T) => T)) => {
+        const { past, present } = historyRef.current;
+        const newPresent = typeof newState === 'function' ? (newState as (prevState: T) => T)(present) : newState;
+        
+        if (JSON.stringify(newPresent) === JSON.stringify(present)) {
+            return;
+        }
+
+        historyRef.current = {
+            past: [...past, present],
+            present: newPresent,
+            future: [],
+        };
+        forceUpdate({});
+    }, []);
+
+    const undo = useCallback(() => {
+        const { past, present, future } = historyRef.current;
+        if (past.length === 0) return;
+        const newPresent = past[past.length - 1];
+        const newPast = past.slice(0, past.length - 1);
+        historyRef.current = {
+            past: newPast,
+            present: newPresent,
+            future: [present, ...future],
+        };
+        forceUpdate({});
+    }, []);
+
+    const redo = useCallback(() => {
+        const { past, present, future } = historyRef.current;
+        if (future.length === 0) return;
+        const newPresent = future[0];
+        const newFuture = future.slice(1);
+        historyRef.current = {
+            past: [...past, present],
+            present: newPresent,
+            future: newFuture,
+        };
+        forceUpdate({});
+    }, []);
+
+    const { past, future } = historyRef.current;
+    const canUndo = past.length > 0;
+    const canRedo = future.length > 0;
+
+    return [historyRef.current.present, set, undo, redo, canUndo, canRedo];
+}
+
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
 
 const imageSides: ImageSide[] = ["front", "back", "left", "right", "top", "bottom"];
 
+const fontOptions = [
+    // Sans-Serif
+    { value: 'var(--font-pt-sans)', label: 'PT Sans' },
+    { value: 'var(--font-roboto)', label: 'Roboto' },
+    { value: 'var(--font-lato)', label: 'Lato' },
+    { value: 'var(--font-montserrat)', label: 'Montserrat' },
+    { value: 'var(--font-poppins)', label: 'Poppins' },
+    { value: 'var(--font-nunito-sans)', label: 'Nunito Sans' },
+    { value: 'var(--font-raleway)', label: 'Raleway' },
+    { value: 'var(--font-rubik)', label: 'Rubik' },
+    { value: 'var(--font-work-sans)', label: 'Work Sans' },
+    // Serif
+    { value: 'var(--font-playfair-display)', label: 'Playfair Display' },
+    { value: 'var(--font-merriweather)', label: 'Merriweather' },
+    { value: 'var(--font-lora)', label: 'Lora' },
+    { value: 'var(--font-cormorant-garamond)', label: 'Cormorant Garamond' },
+    { value: 'var(--font-bitter)', label: 'Bitter' },
+    { value: 'var(--font-arvo)', label: 'Arvo' },
+    // Display
+    { value: 'var(--font-oswald)', label: 'Oswald' },
+    { value: 'var(--font-anton)', label: 'Anton' },
+    { value: 'var(--font-bebas-neue)', label: 'Bebas Neue' },
+    { value: 'var(--font-alfa-slab-one)', label: 'Alfa Slab One' },
+    // Script & Handwriting
+    { value: 'var(--font-lobster)', label: 'Lobster' },
+    { value: 'var(--font-pacifico)', label: 'Pacifico' },
+    { value: 'var(--font-dancing-script)', label: 'Dancing Script' },
+    { value: 'var(--font-caveat)', label: 'Caveat' },
+    { value: 'var(--font-satisfy)', label: 'Satisfy' },
+    { value: 'var(--font-sacramento)', label: 'Sacramento' },
+    // Monospace
+    { value: 'var(--font-inconsolata)', label: 'Inconsolata' },
+    { value: 'var(--font-jetbrains-mono)', label: 'JetBrains Mono' },
+];
+
+const artLibrary = {
+    'Smileys & People': [
+        { type: 'emoji', content: '😀' }, { type: 'emoji', content: '😂' }, { type: 'emoji', content: '😍' }, { type: 'emoji', content: '😎' },
+        { type: 'emoji', content: '🤔' }, { type: 'emoji', content: '😢' }, { type: 'emoji', content: '🥳' }, { type: 'emoji', content: '🤯' },
+        { type: 'emoji', content: '👍' }, { type: 'emoji', content: '👎' }, { type: 'emoji', content: '❤️' }, { type: 'emoji', content: '🔥' },
+        { type: 'emoji', content: '💯' }, { type: 'emoji', content: '🙏' }, { type: 'emoji', content: '🎉' }, { type: 'emoji', content: '✨' },
+    ],
+    'Animals & Nature': [
+        { type: 'icon', content: Cat }, { type: 'icon', content: Dog }, { type: 'icon', content: TreePine }, { type: 'icon', content: Cloud },
+        { type: 'emoji', content: '🌸' }, { type: 'emoji', content: '🌍' }, { type: 'emoji', content: '☀️' }, { type: 'emoji', content: '🌙' },
+        { type: 'emoji', content: '🐳' }, { type: 'emoji', content: '🦋' }, { type: 'emoji', content: '🦁' }, { type: 'emoji', content: '🦄' },
+    ],
+    'Food & Drink': [
+        { type: 'icon', content: Pizza }, { type: 'emoji', content: '🍔' }, { type: 'emoji', content: '🍟' }, { type: 'emoji', content: '🍩' },
+        { type: 'emoji', content: '☕️' }, { type: 'emoji', content: '🍺' }, { type: 'emoji', content: '🍹' }, { type: 'emoji', content: '🍾' },
+    ],
+    'Objects & Symbols': [
+        { type: 'icon', content: Music }, { type: 'icon', content: Gamepad2 }, { type: 'icon', content: Plane }, { type: 'icon', content: Car },
+        { type: 'icon', content: Building }, { type: 'icon', content: Sparkles }, { type: 'icon', content: Heart }, { type: 'icon', content: StarIcon },
+        { type: 'emoji', content: '💻' }, { type: 'emoji', content: '📱' }, { type: 'emoji', content: '💰' }, { type: 'emoji', content: '💡' },
+    ]
+};
+
+const TextRenderer = ({ element }: { element: DesignElement }) => {
+    const { 
+        text, 
+        fontFamily, 
+        fontWeight, 
+        textColor, 
+        textAlign, 
+        textShape = 'normal',
+        shapeIntensity = 50,
+        outlineColor,
+        outlineWidth,
+    } = element;
+    
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [dynamicFontSize, setDynamicFontSize] = useState(element.fontSize);
+
+     useEffect(() => {
+        if (!containerRef.current) return;
+
+        if (!getPathData()) {
+           const newSize = (containerRef.current.clientHeight * 0.7); 
+           setDynamicFontSize(newSize);
+        } else {
+            setDynamicFontSize(element.fontSize || 14);
+        }
+    }, [element.height, element.width, textShape, element.fontSize]);
+
+
+    const svgFilterId = `outline-${element.id}`;
+    
+    const textStyle: React.CSSProperties = {
+        fontFamily,
+        fontSize: `${dynamicFontSize}px`,
+        fontWeight: fontWeight as React.CSSProperties['fontWeight'],
+        color: textColor,
+        textAlign,
+        lineHeight: 1,
+        filter: outlineColor && outlineWidth && outlineWidth > 0 ? `url(#${svgFilterId})` : 'none',
+        display: 'inline-block',
+        whiteSpace: 'pre-wrap',
+    };
+
+    const intensity = (shapeIntensity - 50) / 50; // Map slider 0-100 to -1 to 1
+
+    const getTransformStyle = (): React.CSSProperties => {
+        switch (textShape) {
+            case 'bulge':
+                return { transform: `scaleY(${1 + intensity * 0.5})` };
+            case 'pinch':
+                return { transform: `scaleY(${1 - Math.abs(intensity * 0.5)})` };
+            case 'perspective-left':
+                return { transform: `perspective(150px) rotateY(${intensity * 30}deg)` };
+            case 'perspective-right':
+                return { transform: `perspective(150px) rotateY(${-intensity * 30}deg)` };
+            case 'slant-up':
+                return { transform: `skewY(${-intensity * 15}deg)` };
+            case 'slant-down':
+                return { transform: `skewY(${intensity * 15}deg)` };
+            case 'funnel-in':
+                 return { transform: `perspective(100px) rotateX(${intensity * 20}deg)` };
+            case 'funnel-out':
+                 return { transform: `perspective(100px) rotateX(${-intensity * 20}deg)` };
+            default:
+                return {};
+        }
+    };
+    
+    function getPathData(): string | null {
+        switch (textShape) {
+            case 'arch-up':
+                return `M 0,${50 - intensity * 25} C ${intensity * 50},${50 - intensity * 75} ${100 - intensity * 50},${50 - intensity * 75} 100,${50 - intensity * 25}`;
+            case 'arch-down':
+                 return `M 0,50 C 25,${50 + intensity * 50} 75,${50 + intensity * 50} 100,50`;
+            case 'circle':
+                 const radius = 50 - Math.abs(intensity * 20);
+                 return `M ${50 - radius}, 50 a ${radius},${radius} 0 1,1 ${radius * 2},0 a ${radius},${radius} 0 1,1 -${radius * 2},0`;
+            case 'wave':
+                 return `M 0,50 C 25,${50 - intensity * 25} 50,${50 + intensity * 25} 75,${50 - intensity * 25} 100,50`;
+            case 'flag':
+                 return `M 0,${50 + intensity * 15} C 25,${50 - intensity * 15} 50,${50 + intensity * 15} 75,${50 - intensity * 15} 100,${50 + intensity * 15}`;
+            case 'bridge':
+                 return `M 0,${50 + intensity * 25} C 25,${50 - intensity * 25} 75,${50 - intensity * 25} 100,${50 + intensity * 25}`;
+            case 'triangle-up':
+                 return `M 0,${50 + intensity * 25} L 50,${50 - intensity * 25} L 100,${50 + intensity * 25}`;
+            case 'triangle-down':
+                 return `M 0,${50 - intensity * 25} L 50,${50 + intensity * 25} L 100,${50 - intensity * 25}`;
+            case 'stairs-up':
+                return `M 0,75 L 25,75 L 25,50 L 50,50 L 50,25 L 75,25 L 75,0`;
+            case 'stairs-down':
+                return `M 0,0 L 25,0 L 25,25 L 50,25 L 50,50 L 75,50 L 75,75`;
+            default:
+                return null;
+        }
+    }
+    
+    const pathData = getPathData();
+
+    if (pathData) {
+        return (
+             <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+                 {outlineColor && outlineWidth && outlineWidth > 0 && (
+                    <defs>
+                        <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
+                            <feMorphology operator="dilate" radius={outlineWidth / 10} in="SourceAlpha" result="dilated" />
+                            <feFlood floodColor={outlineColor} result="color" />
+                            <feComposite in="color" in2="dilated" operator="in" result="outline" />
+                            <feMerge>
+                                <feMergeNode in="outline" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                    </defs>
+                 )}
+                 <path id={`path-${element.id}`} d={pathData} fill="transparent" />
+                 <text style={{...textStyle, fontSize: `${element.fontSize}px`, filter: 'none'}} dy={textShape === 'arch-up' ? (element.fontSize || 14) * 0.25 : 0} fill={textColor} filter={outlineColor && outlineWidth && outlineWidth > 0 ? `url(#${svgFilterId})` : 'none'}>
+                    <textPath href={`#path-${element.id}`} startOffset="50%" textAnchor="middle">{text}</textPath>
+                 </text>
+             </svg>
+        )
+    }
+
+    if (textShape?.startsWith('fade-')) {
+         const fadeDirection = textShape.split('-')[1];
+         let maskImage = '';
+         if (fadeDirection === 'left') maskImage = 'linear-gradient(to right, transparent, black 70%)';
+         if (fadeDirection === 'right') maskImage = 'linear-gradient(to left, transparent, black 70%)';
+         if (fadeDirection === 'up') maskImage = 'linear-gradient(to bottom, transparent, black 70%)';
+         if (fadeDirection === 'down') maskImage = 'linear-gradient(to top, transparent, black 70%)';
+         
+         const fadedStyle = { ...textStyle, maskImage, WebkitMaskImage: maskImage };
+         return <div ref={containerRef} className="w-full h-full flex items-center justify-center p-1"><span style={fadedStyle}>{text}</span></div>
+    }
+
+    return (
+        <div ref={containerRef} className="w-full h-full flex items-center justify-center p-1" style={getTransformStyle()}>
+            <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+                <defs>
+                    <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
+                        <feMorphology operator="dilate" radius={outlineWidth} in="SourceAlpha" result="dilated" />
+                        <feFlood floodColor={outlineColor} result="color" />
+                        <feComposite in="color" in2="dilated" operator="in" result="outline" />
+                        <feMerge>
+                            <feMergeNode in="outline" />
+                            <feMergeNode in="SourceGraphic" />
+                        </feMerge>
+                    </filter>
+                </defs>
+            </svg>
+            <span style={textStyle}>{text}</span>
+        </div>
+    );
+};
+
+const DraggableElement = ({
+    element,
+    isSelected,
+    onSelect,
+    onDelete,
+    onDuplicate,
+    onUpdate,
+}: {
+    element: DesignElement;
+    isSelected: boolean;
+    onSelect: (id: string) => void;
+    onDelete: (id: string) => void;
+    onDuplicate: (id: string) => void;
+    onUpdate: (id: string, updates: Partial<DesignElement>) => void;
+}) => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [interactionState, setInteractionState] = useState<{
+        type: 'drag' | 'resize';
+        startX: number;
+        startY: number;
+        startLeft: number;
+        startTop: number;
+        startWidth?: number;
+        startHeight?: number;
+    } | null>(null);
+
+    const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, type: 'drag' | 'resize') => {
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect(element.id);
+        const parentRect = ref.current?.offsetParent?.getBoundingClientRect();
+        if (!parentRect) return;
+
+        setInteractionState({
+            type,
+            startX: e.clientX,
+            startY: e.clientY,
+            startLeft: (element.x / 100) * parentRect.width,
+            startTop: (element.y / 100) * parentRect.height,
+            startWidth: type === 'resize' ? (element.width / 100) * parentRect.width : undefined,
+            startHeight: type === 'resize' ? (element.height / 100) * parentRect.height : undefined,
+        });
+    };
+
+    useEffect(() => {
+        const handlePointerMove = (e: PointerEvent) => {
+            if (!interactionState) return;
+            const parentRect = ref.current?.offsetParent?.getBoundingClientRect();
+            if (!parentRect) return;
+
+            const dx = e.clientX - interactionState.startX;
+            const dy = e.clientY - interactionState.startY;
+
+            if (interactionState.type === 'drag') {
+                const newLeft = Math.max(0, Math.min(parentRect.width - (element.width/100 * parentRect.width), interactionState.startLeft + dx));
+                const newTop = Math.max(0, Math.min(parentRect.height - (element.height/100 * parentRect.height), interactionState.startTop + dy));
+                onUpdate(element.id, { x: (newLeft / parentRect.width) * 100, y: (newTop / parentRect.height) * 100 });
+            } else if (interactionState.type === 'resize' && interactionState.startWidth && interactionState.startHeight) {
+                const newWidth = Math.max(20, interactionState.startWidth + dx);
+                const newHeight = Math.max(20, interactionState.startHeight + dy);
+                onUpdate(element.id, { width: (newWidth / parentRect.width) * 100, height: (newHeight / parentRect.height) * 100 });
+            }
+        };
+
+        const handlePointerUp = () => {
+            setInteractionState(null);
+        };
+
+        window.addEventListener('pointermove', handlePointerMove);
+        window.addEventListener('pointerup', handlePointerUp);
+        return () => {
+            window.removeEventListener('pointermove', handlePointerMove);
+            window.removeEventListener('pointerup', handlePointerUp);
+        };
+    }, [interactionState, element.id, element.width, element.height, onUpdate]);
+
+    return (
+        <div
+            ref={ref}
+            onPointerDown={(e) => handlePointerDown(e, 'drag')}
+            style={{
+                position: 'absolute',
+                left: `${element.x}%`,
+                top: `${element.y}%`,
+                width: `${element.width}%`,
+                height: `${element.height}%`,
+                transform: `rotate(${element.rotation}deg)`,
+                outline: isSelected ? '1px solid hsl(var(--primary))' : 'none',
+                cursor: interactionState?.type === 'drag' ? 'grabbing' : 'grab',
+            }}
+        >
+            {element.type === 'image' && element.imageUrl && (
+                <Image src={element.imageUrl} alt="Uploaded art" fill className="object-contain pointer-events-none" />
+            )}
+             {element.type === 'art' && (
+                element.artType === 'emoji' ? (
+                     <div className="w-full h-full flex items-center justify-center text-6xl pointer-events-none" style={{fontSize: 'min(15vw, 15vh)'}}>{element.artContent}</div>
+                ) : (
+                    React.createElement(element.artContent as React.FC<any>, { className: "w-full h-full object-contain pointer-events-none text-foreground" })
+                )
+            )}
+            {element.type === 'text' && <TextRenderer element={element} />}
+
+            {isSelected && (
+                <>
+                    {/* Delete Button */}
+                    <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => onDelete(element.id)}
+                        className="absolute -top-3 -left-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-pointer"
+                    >
+                        <X className="h-4 w-4 text-destructive" />
+                    </button>
+                    {/* Duplicate Button */}
+                    <button
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => onDuplicate(element.id)}
+                        className="absolute -bottom-3 -left-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-pointer"
+                    >
+                        <CopyIcon className="h-4 w-4 text-primary" />
+                    </button>
+                    {/* Resize Handle */}
+                    <div
+                        onPointerDown={(e) => handlePointerDown(e, 'resize')}
+                        className="absolute -bottom-3 -right-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-nwse-resize"
+                    >
+                        <Expand className="h-4 w-4 text-primary" />
+                    </div>
+                </>
+            )}
+        </div>
+    );
+};
+
+const CustomizationRenderer = ({ product, activeSide, designElements, selectedElementId, onSelect, onDelete, onDuplicate, onUpdate }: { product: any, activeSide: ImageSide, designElements: DesignElement[], selectedElementId: string | null, onSelect: (id: string) => void, onDelete: (id: string) => void, onDuplicate: (id: string) => void, onUpdate: (id: string, updates: Partial<DesignElement>) => void; }) => {
+    const productSrc = product.images?.[imageSides.indexOf(activeSide)];
+
+    if (!productSrc) {
+        return (
+            <div className="w-full h-full flex items-center justify-center bg-muted/20">
+                <p className="text-muted-foreground">No preview available for this side.</p>
+            </div>
+        )
+    }
+
+    return (
+        <div className="relative w-full h-full" onClick={() => onSelect('')}>
+            <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
+            {designElements.map((element) => {
+                const isVendorArea = !!element.originalAreaId;
+                const elementIsOnActiveSide = product.customizationAreas?.[activeSide]?.some((area: CustomizationArea) => area.id === element.originalAreaId);
+
+                if (isVendorArea && !elementIsOnActiveSide) return null; // Don't render vendor areas on wrong side
+                
+                return (
+                    <DraggableElement
+                        key={element.id}
+                        element={element}
+                        isSelected={selectedElementId === element.id}
+                        onSelect={onSelect}
+                        onDelete={onDelete}
+                        onDuplicate={onDuplicate}
+                        onUpdate={onUpdate}
+                    />
+                )
+            })}
+        </div>
+    )
+}
+
+const textShapes: { id: TextShape; label: string; icon: React.ElementType }[] = [
+    { id: 'normal', label: 'Normal', icon: Type },
+    { id: 'arch-up', label: 'Arch Up', icon: Pilcrow },
+    { id: 'arch-down', label: 'Arch Down', icon: Pilcrow },
+    { id: 'circle', label: 'Circle', icon: Circle },
+    { id: 'bulge', label: 'Bulge', icon: ChevronsUpDown },
+    { id: 'pinch', label: 'Pinch', icon: FoldVertical },
+    { id: 'wave', label: 'Wave', icon: Waves },
+    { id: 'flag', label: 'Flag', icon: Flag },
+    { id: 'slant-up', label: 'Slant Up', icon: CornerDownRight },
+    { id: 'slant-down', label: 'Slant Down', icon: CornerDownLeft },
+    { id: 'perspective-left', label: 'Perspective Left', icon: PilcrowLeft },
+    { id: 'perspective-right', label: 'Perspective Right', icon: PilcrowRight },
+    { id: 'triangle-up', label: 'Triangle Up', icon: Pilcrow },
+    { id: 'triangle-down', label: 'Triangle Down', icon: Pilcrow },
+    { id: 'fade-left', label: 'Fade Left', icon: Type },
+    { id: 'fade-right', label: 'Fade Right', icon: Type },
+    { id: 'fade-up', label: 'Fade Up', icon: Type },
+    { id: 'fade-down', label: 'Fade Down', icon: Type },
+    { id: 'bridge', label: 'Bridge', icon: Pilcrow },
+    { id: 'funnel-in', label: 'Funnel In', icon: Maximize },
+    { id: 'funnel-out', label: 'Funnel Out', icon: Maximize },
+    { id: 'stairs-up', label: 'Stairs Up', icon: CornerDownRight },
+    { id: 'stairs-down', label: 'Stairs Down', icon: CornerDownLeft },
+];
+
+const ShapePreview = ({ shape, intensity, label, isSelected, onClick }: { shape: TextShape, intensity: number, label: string, isSelected: boolean, onClick: () => void }) => {
+    const previewElement: DesignElement = {
+        id: `preview-${shape}`, type: 'text',
+        x: 0, y: 0, width: 100, height: 100, rotation: 0,
+        text: 'Text', fontFamily: 'sans-serif', fontSize: 24, fontWeight: 'bold', textColor: isSelected ? 'hsl(var(--primary))' : 'hsl(var(--foreground))', textAlign: 'center',
+        textShape: shape, shapeIntensity: intensity,
+    }
+    
+    return (
+        <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={onClick}>
+            <div className={cn("w-full h-20 bg-muted/50 rounded-md border-2 p-2", isSelected ? "border-primary" : "border-transparent")}>
+                <TextRenderer element={previewElement} />
+            </div>
+            <span className="text-xs font-medium">{label}</span>
+        </div>
+    )
+}
+
+function TextShapeDialog({ open, onOpenChange, element, onElementChange }: { open: boolean, onOpenChange: (open: boolean) => void, element: DesignElement | undefined, onElementChange: (id: string, value: Partial<DesignElement>) => void }) {
+    if (!element) return null;
+
+    const [currentShape, setCurrentShape] = useState(element.textShape || 'normal');
+    const [currentIntensity, setCurrentIntensity] = useState(element.shapeIntensity || 50);
+
+    const handleDone = () => {
+        onElementChange(element.id, { textShape: currentShape, shapeIntensity: currentIntensity });
+        onOpenChange(false);
+    }
+    
+    const handleRemoveShape = () => {
+        onElementChange(element.id, { textShape: 'normal', shapeIntensity: 50 });
+        onOpenChange(false);
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Choose Text Shape</DialogTitle>
+                </DialogHeader>
+                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4 py-4">
+                    {textShapes.map(shape => (
+                        <ShapePreview 
+                            key={shape.id} 
+                            shape={shape.id}
+                            label={shape.label}
+                            intensity={currentIntensity}
+                            isSelected={currentShape === shape.id}
+                            onClick={() => setCurrentShape(shape.id)}
+                        />
+                    ))}
+                </div>
+                 <div className="space-y-2 pt-4">
+                    <Label>Intensity</Label>
+                    <Slider value={[currentIntensity]} onValueChange={([val]) => setCurrentIntensity(val)} />
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={handleRemoveShape}>Remove Shape</Button>
+                    <Button onClick={handleDone}>Done</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
 export default function CorporateCustomizePage() {
     const params = useParams();
     const router = useRouter();
     const { toast } = useToast();
+
     const id = params.id as string;
     const product = useMemo(() => mockProducts.find((p) => p.id === id), [id]);
+
+    const [designElements, setDesignElements, undo, redo, canUndo, canRedo] = useHistoryState<DesignElement[]>([]);
+    const [activeSide, setActiveSide] = useState<ImageSide>("front");
+    const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    const [isTextShapeOpen, setIsTextShapeOpen] = useState(false);
 
     const firstCustomizableSide = useMemo(() => {
         if (!product?.customizationAreas) return "front";
         return imageSides.find(side => product.customizationAreas![side]?.length) || "front";
     }, [product]);
-
-    const [activeSide, setActiveSide] = useState<ImageSide>(firstCustomizableSide);
+    
+    // Corporate-specific state
     const [quantity, setQuantity] = useState(product?.moq || 100);
     const [notes, setNotes] = useState("");
-    const [customizationValues, setCustomizationValues] = useState<CustomizationValues>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
 
-    const handleCustomizationChange = (areaId: string, value: string) => {
-        setCustomizationValues(prev => ({ ...prev, [areaId]: value }));
+    useEffect(() => {
+        if (product) {
+            const initialElements = Object.entries(product.customizationAreas || {}).flatMap(([side, areas]) => 
+                (areas || []).map((area: CustomizationArea) => ({
+                    id: `text-${area.id}`,
+                    type: 'text',
+                    originalAreaId: area.id,
+                    x: area.x, y: area.y, width: area.width, height: area.height,
+                    rotation: 0,
+                    text: '', // Start with empty text
+                    fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
+                    fontSize: area.fontSize || 14,
+                    fontWeight: 'normal',
+                    textColor: '#000000',
+                    textAlign: 'center',
+                    textShape: 'normal',
+                    shapeIntensity: 50,
+                    outlineColor: '#FFFFFF',
+                    outlineWidth: 0,
+                }))
+            );
+            // This now populates based on vendor data, but starts empty on canvas
+            // We need a mechanism for user to *activate* these.
+            setDesignElements([]);
+            setActiveSide(firstCustomizableSide);
+            setSelectedElementId(null);
+        }
+    }, [product, firstCustomizableSide, setDesignElements]);
+    
+     useEffect(() => {
+        setSelectedElementId(null);
+    }, [activeSide]);
+
+    const handleElementChange = useCallback((elementId: string, value: Partial<DesignElement>) => {
+        setDesignElements(prev => prev.map(el => el.id === elementId ? { ...el, ...value } : el));
+    }, [setDesignElements]);
+    
+    const addVendorTextElement = (area: CustomizationArea) => {
+        const newElement: DesignElement = {
+            id: `text-${area.id}`,
+            type: 'text',
+            originalAreaId: area.id,
+            x: area.x, y: area.y, width: area.width, height: area.height,
+            rotation: 0,
+            text: '', // Start with empty text
+            fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
+            fontSize: area.fontSize || 14,
+            fontWeight: 'normal',
+            textColor: '#000000',
+            textAlign: 'center',
+            textShape: 'normal',
+            shapeIntensity: 50,
+            outlineColor: '#FFFFFF',
+            outlineWidth: 0,
+        };
+        setDesignElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
+    }
+    
+    const addTextElement = () => {
+        const newElement: DesignElement = {
+            id: `text-${Date.now()}`,
+            type: 'text',
+            x: 25, y: 40, width: 50, height: 20, rotation: 0,
+            text: 'New Text',
+            fontFamily: 'var(--font-pt-sans)',
+            fontSize: 24,
+            fontWeight: 'normal',
+            textColor: '#000000',
+            textAlign: 'center',
+            textShape: 'normal',
+            shapeIntensity: 50,
+            outlineColor: '#FFFFFF',
+            outlineWidth: 0,
+        };
+        setDesignElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
+    }
+    
+    const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+            const file = event.target.files[0];
+            const newElement: DesignElement = {
+                id: `image-${Date.now()}`,
+                type: 'image',
+                x: 25, y: 25, width: 50, height: 50, rotation: 0,
+                imageUrl: URL.createObjectURL(file)
+            }
+            setDesignElements(prev => [...prev, newElement]);
+            setSelectedElementId(newElement.id);
+        }
     };
+    
+    const addArtElement = (art: { type: 'emoji', content: string } | { type: 'icon', content: React.FC<any> }) => {
+        const newElement: DesignElement = {
+            id: `art-${Date.now()}`,
+            type: 'art',
+            x: 35, y: 35, width: 30, height: 30, rotation: 0,
+            artType: art.type,
+            artContent: art.content,
+            textColor: '#000000', // for icons
+        }
+        setDesignElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
+    }
+    
+    const removeElement = (elementId: string) => {
+        setDesignElements(prev => prev.filter(el => el.id !== elementId));
+        if (selectedElementId === elementId) {
+            setSelectedElementId(null);
+        }
+    }
+    
+    const reorderElement = (elementId: string, direction: 'up' | 'down') => {
+        const index = designElements.findIndex(el => el.id === elementId);
+        if(index === -1) return;
 
-    const estimatedPrice = useMemo(() => {
-        if (!product || !product.tierPrices) return product?.price || 0;
-        const applicableTier = product.tierPrices
-            .slice()
-            .sort((a, b) => b.quantity - a.quantity)
-            .find(tier => quantity >= tier.quantity);
-        return applicableTier ? applicableTier.price : product.price;
-    }, [product, quantity]);
+        const newIndex = direction === 'up' ? index + 1 : index - 1;
+        if(newIndex < 0 || newIndex >= designElements.length) return;
 
-    const handleSubmitQuote = (e: React.FormEvent) => {
+        const newElements = [...designElements];
+        const element = newElements.splice(index, 1)[0];
+        newElements.splice(newIndex, 0, element);
+        setDesignElements(newElements);
+    };
+    
+    const duplicateElement = (elementId: string) => {
+        const elementToCopy = designElements.find(el => el.id === elementId);
+        if (!elementToCopy) return;
+
+        const newElement = {
+            ...elementToCopy,
+            id: `${elementToCopy.type}-${Date.now()}`,
+            x: elementToCopy.x + 5,
+            y: elementToCopy.y + 5,
+        };
+        
+        setDesignElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
+    };
+    
+    const selectedElement = useMemo(() => designElements.find(el => el.id === selectedElementId), [designElements, selectedElementId]);
+
+     const handleSubmitQuote = (e: React.FormEvent) => {
         e.preventDefault();
         if (!product) return;
 
@@ -81,157 +786,322 @@ export default function CorporateCustomizePage() {
             router.push('/corporate/dashboard');
         }, 1500);
     };
-
-    if (!product || !product.b2bEnabled) {
+    
+    if (!product) {
         notFound();
     }
     
-    const allCustomizationAreas = useMemo(() => {
-        if (!product.customizationAreas) return [];
-        return imageSides.flatMap(side => 
-            (product.customizationAreas?.[side] || []).map(area => ({ ...area, side }))
-        );
-    }, [product.customizationAreas]);
-
-    const currentSideAreas = product.customizationAreas?.[activeSide] || [];
-    
-    const CustomizationPreview = () => (
-         <div className="relative w-full h-full" onClick={() => setSelectedAreaId(null)}>
-            <Image src={product.images?.[imageSides.indexOf(activeSide)] || product.imageUrl} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
-            {currentSideAreas.map((area: CustomizationArea) => (
-                 <div
-                    key={area.id}
-                    className={cn(
-                        "absolute border-2 border-dashed border-primary/70 bg-primary/10 flex items-center justify-center p-1 cursor-pointer hover:bg-primary/20",
-                        selectedAreaId === area.id && "ring-2 ring-primary bg-primary/20",
-                        area.shape === 'ellipse' && "rounded-full"
-                    )}
-                    style={{
-                        left: `${area.x}%`,
-                        top: `${area.y}%`,
-                        width: `${area.width}%`,
-                        height: `${area.height}%`,
-                        fontFamily: area.fontFamily,
-                        fontSize: `${area.fontSize}px`,
-                        fontWeight: area.fontWeight as any,
-                        color: area.textColor,
-                    }}
-                    onClick={(e) => { e.stopPropagation(); setSelectedAreaId(area.id); }}
-                 >
-                    <span className="truncate w-full h-full text-center">
-                        {customizationValues[area.id] || area.label}
-                    </span>
-                 </div>
-            ))}
-        </div>
-    );
+    const currentVendorCustomizationAreas = product.customizationAreas?.[activeSide] || [];
+    const addedVendorAreaIds = designElements.filter(el => el.originalAreaId).map(el => el.originalAreaId);
 
     return (
-         <div className="container py-12">
-             <Button variant="outline" size="sm" className="mb-4" asChild>
-                <Link href={`/corporate/products/${product.id}`}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Product
-                </Link>
-            </Button>
-            <form onSubmit={handleSubmitQuote}>
-                <div className="grid lg:grid-cols-3 gap-8 items-start">
-                    <div className="lg:col-span-2 space-y-8">
-                        <Card>
-                             <CardHeader>
-                                <CardTitle className="text-2xl font-headline">Live Preview</CardTitle>
-                                <CardDescription>Your customizations will appear here instantly. Click an area to select it.</CardDescription>
-                            </CardHeader>
-                             <CardContent className="h-[500px] bg-muted/20 rounded-md">
-                                <CustomizationPreview />
-                            </CardContent>
-                             <CardContent>
-                               <Tabs value={activeSide} onValueChange={(value) => setActiveSide(value as ImageSide)}>
-                                    <TabsList className="grid w-full grid-cols-6">
-                                        {imageSides.map(side => (
-                                             <TabsTrigger key={side} value={side} disabled={!product.customizationAreas?.[side] || product.customizationAreas[side]!.length === 0} className="capitalize">
-                                                {side}
-                                            </TabsTrigger>
-                                        ))}
-                                    </TabsList>
-                                </Tabs>
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-2xl font-headline">Enter Details</CardTitle>
-                                <CardDescription>Fill out the customization fields and desired quantity.</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                               <div className="space-y-4">
-                                {allCustomizationAreas.length > 0 ? allCustomizationAreas.map(area => (
-                                    <div key={area.id} className={cn(selectedAreaId === area.id && "p-2 bg-muted rounded-md")}>
-                                        <Label htmlFor={area.id}>{area.label} ({area.side})</Label>
-                                        <Input
-                                            id={area.id}
-                                            placeholder={`Enter text for ${area.label}...`}
-                                            value={customizationValues[area.id] || ''}
-                                            onChange={(e) => handleCustomizationChange(area.id, e.target.value)}
-                                            maxLength={area.maxLength}
-                                            onFocus={() => { setActiveSide(area.side as ImageSide); setSelectedAreaId(area.id); }}
-                                        />
-                                    </div>
-                                )) : <p className="text-sm text-muted-foreground">This product has no defined customization areas.</p>}
-                               </div>
-                               <div className="space-y-2">
-                                    <Label htmlFor="notes">Additional Notes</Label>
-                                    <Textarea
-                                        id="notes"
-                                        placeholder="Special instructions, desired delivery date, etc..."
-                                        rows={4}
-                                        value={notes}
-                                        onChange={(e) => setNotes(e.target.value)}
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    <div className="lg:col-span-1 space-y-8 sticky top-24">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Quote Summary</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="quantity">Quantity</Label>
-                                    <Input 
-                                        id="quantity" 
-                                        type="number" 
-                                        value={quantity}
-                                        onChange={(e) => setQuantity(Number(e.target.value))}
-                                        min={product.moq}
-                                        required
-                                    />
-                                    <p className="text-xs text-muted-foreground">
-                                        Minimum Order Quantity (MOQ): {product.moq} units
-                                    </p>
-                                </div>
-                                <div className="p-4 bg-muted/50 rounded-lg text-center">
-                                    <p className="text-sm text-muted-foreground">Estimated Price per Unit</p>
-                                    <p className="text-3xl font-bold">${estimatedPrice.toFixed(2)}</p>
-                                </div>
-                                 <div className="p-4 bg-muted/50 rounded-lg text-center">
-                                    <p className="text-sm text-muted-foreground">Estimated Total</p>
-                                    <p className="text-3xl font-bold">${(estimatedPrice * quantity).toFixed(2)}</p>
-                                </div>
-                                <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
-                                    {isSubmitting ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Send className="mr-2 h-4 w-4" />
-                                    )}
-                                    Submit Quote Request
-                                </Button>
-                            </CardContent>
-                        </Card>
+        <div className="h-screen flex flex-col bg-muted/40">
+            <header className="bg-background border-b shadow-sm flex-shrink-0">
+                <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+                     <Button variant="outline" size="sm" onClick={() => router.back()}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Product
+                    </Button>
+                     <p className="hidden md:block text-sm font-medium">{product.name}</p>
+                    <div className="flex items-center gap-2">
+                         <Button size="sm" variant="secondary" onClick={handleSubmitQuote} disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Send className="mr-2 h-4 w-4" />
+                            )}
+                            Submit Quote
+                        </Button>
                     </div>
                 </div>
-            </form>
+            </header>
+
+            <main className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 p-6 min-h-0">
+                {/* Left Panel: Preview */}
+                 <ScrollArea className="md:col-span-2 lg:col-span-4 bg-background rounded-lg shadow-md h-full">
+                    <div className="h-full flex flex-col items-center justify-start gap-4 p-4">
+                        <div className="relative w-full max-h-full aspect-square flex items-center justify-center">
+                            <CustomizationRenderer 
+                                product={product} 
+                                activeSide={activeSide} 
+                                designElements={designElements} 
+                                selectedElementId={selectedElementId}
+                                onSelect={setSelectedElementId}
+                                onDelete={removeElement}
+                                onDuplicate={duplicateElement}
+                                onUpdate={handleElementChange}
+                            />
+                        </div>
+                    </div>
+                    <div className="sticky bottom-0 flex-shrink-0 flex items-center justify-center gap-2 bg-muted/50 p-2 rounded-b-lg border-t mt-auto">
+                        {imageSides.map(side => {
+                            const hasImage = !!product.images?.[imageSides.indexOf(side)];
+                            return (
+                                <button 
+                                    key={side}
+                                    onClick={() => setActiveSide(side)}
+                                    disabled={!hasImage}
+                                    className={cn(
+                                        "relative w-16 h-16 rounded-md border-2 overflow-hidden disabled:opacity-50 transition-all",
+                                        activeSide === side ? "border-primary" : "border-transparent hover:border-muted-foreground/50"
+                                    )}
+                                >
+                                    {hasImage ? (
+                                        <Image src={product.images![imageSides.indexOf(side)]} alt={`${side} view thumbnail`} fill className="object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full bg-muted flex items-center justify-center text-xs text-muted-foreground capitalize">{side}</div>
+                                    )}
+                                </button>
+                            )
+                        })}
+                        <button className="w-16 h-16 rounded-md border flex flex-col items-center justify-center text-xs text-muted-foreground hover:bg-muted">
+                            <ZoomIn className="h-5 w-5 mb-1" />
+                            Zoom
+                        </button>
+                    </div>
+                </ScrollArea>
+
+                {/* Right Panel: Tools */}
+                 <div className="lg:col-span-1 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
+                    <Tabs defaultValue="text" className="flex flex-col h-full">
+                         <div className="flex-shrink-0">
+                            <TabsList className="grid w-full grid-cols-5 p-1 h-auto">
+                                <TabsTrigger value="text" className="flex-col h-14"><Type className="h-5 w-5 mb-1"/>Text</TabsTrigger>
+                                <TabsTrigger value="upload" className="flex-col h-14"><Upload className="h-5 w-5 mb-1"/>Upload</TabsTrigger>
+                                <TabsTrigger value="art" className="flex-col h-14"><Wand2 className="h-5 w-5 mb-1"/>Art</TabsTrigger>
+                                <TabsTrigger value="colors" className="flex-col h-14"><Paintbrush className="h-5 w-5 mb-1"/>Colors</TabsTrigger>
+                                <TabsTrigger value="notes" className="flex-col h-14"><StickyNote className="h-5 w-5 mb-1"/>Notes</TabsTrigger>
+                            </TabsList>
+                            
+                            <div className="flex items-center p-2 border-b">
+                                <span className="text-sm font-semibold pl-2">Edit Tools</span>
+                                <div className="ml-auto flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={undo} disabled={!canUndo}><Undo2 className="h-4 w-4"/></Button>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={redo} disabled={!canRedo}><Redo2 className="h-4 w-4"/></Button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                         <div className="flex-1 flex flex-col min-h-0">
+                            <ScrollArea className="flex-grow">
+                                <div className="p-4">
+                                    <TabsContent value="text" className="mt-0 space-y-4">
+                                    {selectedElement?.type === 'text' ? (
+                                        <div className="space-y-4">
+                                            <Input
+                                                placeholder="Your text here"
+                                                value={selectedElement.text || ""}
+                                                onChange={(e) => handleElementChange(selectedElementId!, { text: e.target.value })}
+                                            />
+                                            <Separator/>
+                                            <div className="space-y-2">
+                                                <Label>Font</Label>
+                                                <Select value={selectedElement.fontFamily} onValueChange={(v) => handleElementChange(selectedElementId!, { fontFamily: v })}>
+                                                    <SelectTrigger><SelectValue/></SelectTrigger>
+                                                    <SelectContent>
+                                                        {fontOptions.map(font => (
+                                                            <SelectItem key={font.value} value={font.value}>
+                                                                <span style={{ fontFamily: font.value }}>{font.label}</span>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Text Color</Label>
+                                                <ColorPicker value={selectedElement.textColor || '#000000'} onChange={(color) => handleElementChange(selectedElementId!, { textColor: color })} />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Rotation</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <Slider min={-180} max={180} step={1} value={[selectedElement.rotation ?? 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { rotation: v })} />
+                                                    <Input type="number" value={selectedElement.rotation ?? ''} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Outline</Label>
+                                                <div className="space-y-3">
+                                                    <ColorPicker value={selectedElement.outlineColor || '#ffffff'} onChange={(color) => handleElementChange(selectedElementId!, { outlineColor: color })} />
+                                                    <Slider 
+                                                        aria-label="Outline thickness"
+                                                        min={0} 
+                                                        max={5} 
+                                                        step={0.1} 
+                                                        value={[selectedElement.outlineWidth || 0]} 
+                                                        onValueChange={([v]) => handleElementChange(selectedElementId!, { outlineWidth: v })} 
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Text Shape</Label>
+                                                <Button variant="outline" className="w-full justify-start" onClick={() => setIsTextShapeOpen(true)}>
+                                                    <Shapes className="mr-2 h-4 w-4" />
+                                                    <span className="capitalize">{selectedElement.textShape?.replace('-', ' ') || 'Normal'}</span>
+                                                </Button>
+                                            </div>
+                                            <Separator/>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <Button variant="outline" size="sm" onClick={() => duplicateElement(selectedElementId!)}>Duplicate</Button>
+                                                <div className="col-span-2">
+                                                    <ToggleGroup type="single" value={selectedElement.textAlign} onValueChange={(v) => v && handleElementChange(selectedElementId!, {textAlign: v as any})} className="w-full">
+                                                        <ToggleGroupItem value="left" className="flex-1"><AlignLeft className="h-4 w-4"/></ToggleGroupItem>
+                                                        <ToggleGroupItem value="center" className="flex-1"><AlignCenter className="h-4 w-4"/></ToggleGroupItem>
+                                                        <ToggleGroupItem value="right" className="flex-1"><AlignRight className="h-4 w-4"/></ToggleGroupItem>
+                                                    </ToggleGroup>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-4 text-muted-foreground space-y-4">
+                                            {currentVendorCustomizationAreas.length > 0 && (
+                                                <Card className="text-left">
+                                                    <CardHeader className="p-2"><CardTitle className="text-sm font-semibold">Vendor Areas</CardTitle></CardHeader>
+                                                    <CardContent className="p-2 space-y-2">
+                                                        {currentVendorCustomizationAreas.map(area => (
+                                                            <Button 
+                                                                key={area.id}
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="w-full justify-start"
+                                                                onClick={() => addVendorTextElement(area)}
+                                                                disabled={addedVendorAreaIds.includes(area.id)}
+                                                            >
+                                                                Add text to "{area.label}"
+                                                            </Button>
+                                                        ))}
+                                                    </CardContent>
+                                                </Card>
+                                            )}
+                                             <div className="space-y-2 pt-4">
+                                                 <p className="text-sm">Select a layer or add a new one.</p>
+                                                 <Button variant="secondary" className="w-full" onClick={addTextElement}>Add Freeform Text</Button>
+                                             </div>
+                                        </div>
+                                    )}
+                                    </TabsContent>
+
+                                    <TabsContent value="upload" className="mt-0">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="text-base">Upload Your Image</CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <label htmlFor="customer-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                                    <Upload className="h-8 w-8 text-muted-foreground"/>
+                                                    <span className="text-sm text-muted-foreground text-center mt-1">Click to upload</span>
+                                                </label>
+                                                <input id="customer-image-upload" type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} />
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
+                                    <TabsContent value="art" className="mt-0">
+                                        <Accordion type="multiple" defaultValue={['Smileys & People']}>
+                                            {Object.entries(artLibrary).map(([category, items]) => (
+                                                <AccordionItem key={category} value={category}>
+                                                    <AccordionTrigger>{category}</AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <div className="grid grid-cols-5 gap-2 pt-2">
+                                                            {items.map((art, index) => (
+                                                                <button
+                                                                    key={`${category}-${index}`}
+                                                                    className="flex items-center justify-center h-12 rounded-md hover:bg-accent"
+                                                                    onClick={() => addArtElement(art)}
+                                                                >
+                                                                    {art.type === 'emoji' ? (
+                                                                        <span className="text-3xl">{art.content}</span>
+                                                                    ) : (
+                                                                        React.createElement(art.content, { className: "h-6 w-6 text-muted-foreground" })
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                    </TabsContent>
+                                    <TabsContent value="colors" className="mt-0 text-center text-sm text-muted-foreground py-8">
+                                        Product color options coming soon!
+                                    </TabsContent>
+                                    <TabsContent value="notes" className="mt-0">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="text-base">Design Notes for Vendor</CardTitle>
+                                                <CardDescription className="text-xs">Add any special instructions for this design.</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. 'Please match the text color to the main logo.'" />
+                                            </CardContent>
+                                        </Card>
+                                         <Card className="mt-4">
+                                            <CardHeader>
+                                                <CardTitle className="text-base">Quantity</CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <Input 
+                                                    id="quantity" 
+                                                    type="number" 
+                                                    value={quantity}
+                                                    onChange={(e) => setQuantity(Number(e.target.value))}
+                                                    min={product.moq}
+                                                    required
+                                                />
+                                                <p className="text-xs text-muted-foreground mt-2">
+                                                    Minimum Order Quantity (MOQ): {product.moq} units
+                                                </p>
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
+                                </div>
+                            </ScrollArea>
+                            
+                            <div className="p-4 border-t flex-shrink-0">
+                                <Card>
+                                    <CardHeader className="flex flex-row items-center justify-between p-2">
+                                        <CardTitle className="text-sm font-semibold flex items-center gap-2"><Layers className="h-4 w-4"/> Layers</CardTitle>
+                                        <div className="flex items-center gap-1">
+                                            <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!selectedElementId} onClick={() => reorderElement(selectedElementId!, 'up')}><ChevronsUp className="h-4 w-4"/></Button>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6" disabled={!selectedElementId} onClick={() => reorderElement(selectedElementId!, 'down')}><ChevronsDown className="h-4 w-4"/></Button>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="p-2">
+                                        <ScrollArea className="max-h-48">
+                                            <div className="space-y-2 pr-2">
+                                            {designElements.length > 0 ? (
+                                                [...designElements].reverse().map(element => (
+                                                    <div 
+                                                        key={element.id}
+                                                        className={cn("flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer", selectedElementId === element.id ? "bg-accent" : "hover:bg-muted/50")}
+                                                        onClick={() => setSelectedElementId(element.id)}
+                                                    >
+                                                        {element.type === 'text' && <Type className="h-4 w-4 text-muted-foreground"/>}
+                                                        {element.type === 'image' && <Upload className="h-4 w-4 text-muted-foreground"/>}
+                                                        {element.type === 'art' && <Wand2 className="h-4 w-4 text-muted-foreground"/>}
+                                                        <span className="text-sm truncate flex-1">
+                                                            {element.type === 'text' ? (element.text || 'Untitled Text') : (element.type === 'image' ? 'Uploaded Image' : 'Clipart')}
+                                                        </span>
+                                                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); removeElement(element.id)}}><Trash2 className="h-4 w-4"/></Button>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <p className="text-xs text-muted-foreground text-center py-4">Your design is empty.</p>
+                                            )}
+                                            </div>
+                                        </ScrollArea>
+                                    </CardContent>
+                                </Card>
+                            </div>
+                        </div>
+                    </Tabs>
+                </div>
+            </main>
+            <TextShapeDialog 
+                open={isTextShapeOpen} 
+                onOpenChange={setIsTextShapeOpen}
+                element={selectedElement}
+                onElementChange={handleElementChange}
+            />
         </div>
     );
 }
+
+    
