@@ -121,7 +121,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                         <Store className="h-6 w-6 text-primary" />
                         <div className="flex items-baseline gap-2">
                           <span className="font-bold text-lg font-headline hidden sm:inline-block">ShopSphere</span>
-                          <span className="text-sm text-muted-foreground hidden sm:inline-block">Corporate</span>
+                          <span className="font-bold text-lg font-headline hidden sm:inline-block">Corporate</span>
                         </div>
                     </Link>
                     <div className="flex-1 flex justify-center px-4">
