@@ -17,7 +17,7 @@ import { CartProvider } from '@/context/cart-context';
 import { UserProvider } from '@/context/user-context';
 import { WishlistProvider } from '@/context/wishlist-context';
 import { usePathname } from 'next/navigation';
-import { mockCampaigns } from '@/lib/mock-data';
+import { mockCampaigns, mockCorporateCampaigns } from "@/lib/mock-data";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -28,6 +28,7 @@ import { CustomerAuthDialog } from '@/components/customer-auth-dialog';
 import { app } from '@/lib/firebase';
 import { PageLoader } from '@/components/page-loader';
 import { BrandedLoader } from '@/components/branded-loader';
+import { ComparisonProvider } from '@/context/comparison-context';
 
 // Existing Fonts
 const ptSans = PT_Sans({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-pt-sans' });
@@ -156,6 +157,7 @@ export default function RootLayout({
           <AuthDialogProvider>
             <CartProvider>
               <WishlistProvider>
+                <ComparisonProvider>
                   {showHeaderAndFooter && (
                     <>
                       <CampaignBanner />
@@ -171,6 +173,7 @@ export default function RootLayout({
                   )}
                   <CustomerAuthDialog />
                   <Toaster />
+                  </ComparisonProvider>
               </WishlistProvider>
             </CartProvider>
           </AuthDialogProvider>

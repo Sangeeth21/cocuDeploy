@@ -24,6 +24,7 @@ import { WishlistPreview } from "@/components/wishlist-preview";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockActivity } from "@/lib/mock-data";
 import { useAuthDialog } from "@/context/auth-dialog-context";
+import { ComparisonPreview } from "../comparison-preview";
 
 
 const navLinks = [
@@ -114,6 +115,7 @@ export function Header() {
 
         <div className="flex items-center justify-end gap-1 sm:gap-2">
           {isLoggedIn && <NotificationPopover notifications={customerNotifications} />}
+          <ComparisonPreview />
           <WishlistPreview />
           <CartPreview />
           {isLoggedIn ? (

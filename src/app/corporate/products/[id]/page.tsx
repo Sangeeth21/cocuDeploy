@@ -6,7 +6,7 @@ import { notFound, useParams, useRouter } from "next/navigation";
 import { mockProducts } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Truck, Wand2, DollarSign, Info } from "lucide-react";
+import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,15 +15,22 @@ import { useMemo, useState, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useComparison } from "@/context/comparison-context";
+import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/context/cart-context";
 
 export default function B2BProductDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { toast } = useToast();
   const id = params.id as string;
   const product = mockProducts.find((p) => p.id === id);
 
   const [activeImage, setActiveImage] = useState(product?.imageUrl || 'https://placehold.co/600x600.png');
   const [quantity, setQuantity] = useState(product?.moq || 100);
+  
+  const { addToCart } = useCart();
+  const { isComparing, toggleCompare } = useComparison();
 
   const isCustomizable = useMemo(() => {
     return Object.values(product?.customizationAreas || {}).some(areas => areas && areas.length > 0);
@@ -66,6 +73,19 @@ export default function B2BProductDetailPage() {
     } else {
       router.push(`/corporate/quote/${product.id}`);
     }
+  }
+  
+  const handleAddToCart = () => {
+      addToCart({product, customizations: {}});
+      toast({title: "Added to Cart", description: `${product.name} has been added to your cart.`});
+  }
+
+  const handleCompareClick = () => {
+      toggleCompare(product);
+      toast({
+          title: isComparing(product.id) ? "Removed from Comparison" : "Added to Comparison",
+          description: product.name,
+      });
   }
 
   const allImages = [product.imageUrl, ...(product.images || [])].filter((img, index, self) => img && self.indexOf(img) === index);
@@ -167,9 +187,21 @@ export default function B2BProductDetailPage() {
             </CardContent>
           </Card>
           
-          <Button size="lg" className="w-full" onClick={handleRequestQuote}>
-             {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
-          </Button>
+           <div className="space-y-2">
+            <Button size="lg" className="w-full" onClick={handleRequestQuote}>
+                {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
+            </Button>
+            <div className="grid grid-cols-2 gap-2">
+                <Button size="lg" variant="outline" className="w-full" onClick={handleCompareClick}>
+                    <Scale className="mr-2 h-5 w-5" />
+                    {isComparing(product.id) ? 'Remove from Compare' : 'Add to Compare'}
+                </Button>
+                <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
+                    <ShoppingCart className="mr-2 h-5 w-5" />
+                    Add to Cart
+                </Button>
+            </div>
+          </div>
         </div>
       </div>
 
