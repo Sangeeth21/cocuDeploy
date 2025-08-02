@@ -1,5 +1,6 @@
 
-import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign, CustomizationOption } from './types';
+
+import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign, CustomizationOption, CorporateBid } from './types';
 
 export const mockProducts: DisplayProduct[] = [
   {
@@ -631,3 +632,40 @@ export const mockWishlistedCombos: WishlistedCombo[] = [
     ],
   },
 ];
+
+export const mockCorporateBids: CorporateBid[] = [
+    {
+        id: 'B2XJ5K1M',
+        products: [mockProducts[0], mockProducts[3]],
+        quantity: 250,
+        status: 'Active',
+        createdAt: '2024-07-22',
+        expiresAt: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(), // Expires in 2 days
+        responses: [
+            { vendorId: 'VDR001', vendorName: 'Timeless Co.', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 165.00, estimatedDelivery: '10 business days' },
+            { vendorId: 'VDR004', vendorName: 'Crafty Creations', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 170.50, estimatedDelivery: '8 business days', notes: 'We can offer a faster turnaround if needed.' },
+        ]
+    },
+    {
+        id: 'A9S3H7F2',
+        products: [mockProducts[1]],
+        quantity: 100,
+        status: 'Expired',
+        createdAt: '2024-07-20',
+        expiresAt: '2024-07-22T12:00:00Z',
+        responses: [
+            { vendorId: 'VDR002', vendorName: 'Gadget Guru', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 120.00, estimatedDelivery: '5 business days' },
+        ]
+    },
+     {
+        id: 'P4G8R2T9',
+        products: [mockProducts[8], mockProducts[4]],
+        quantity: 500,
+        status: 'Awarded',
+        createdAt: '2024-07-18',
+        expiresAt: '2024-07-20T10:00:00Z',
+        responses: [
+             { vendorId: 'VDR004', vendorName: 'Crafty Creations', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 18.50, estimatedDelivery: '12 business days' },
+        ]
+    }
+]

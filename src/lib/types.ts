@@ -281,3 +281,23 @@ export interface SupportTicket {
     status: "Pending" | "In-Progress" | "Resolved";
     messages: Message[];
 }
+
+// Bidding
+export type VendorBid = {
+  vendorId: string;
+  vendorName: string;
+  vendorAvatar: string;
+  pricePerUnit: number;
+  estimatedDelivery: string;
+  notes?: string;
+}
+
+export type CorporateBid = {
+  id: string;
+  products: DisplayProduct[];
+  quantity: number;
+  status: 'Active' | 'Expired' | 'Awarded';
+  createdAt: string;
+  expiresAt: string;
+  responses: VendorBid[];
+}
