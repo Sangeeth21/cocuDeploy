@@ -42,6 +42,12 @@ export type DisplayProduct = {
   stock?: number;
   status?: 'Live' | 'Archived' | 'Needs Review' | 'Draft';
   requiresConfirmation?: boolean;
+  b2bEnabled?: boolean;
+  moq?: number;
+  tierPrices?: {
+    quantity: number;
+    price: number;
+  }[];
   customizationAreas?: {
       front?: CustomizationArea[];
       back?: CustomizationArea[];

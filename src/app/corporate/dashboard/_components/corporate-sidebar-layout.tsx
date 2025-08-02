@@ -3,7 +3,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building } from "lucide-react";
+import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building, Package, FileText, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,13 @@ import { useAdminAuth } from "@/context/admin-auth-context";
 
 
 const navLinks = [
-  { href: "/corporate/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/corporate/dashboard/bids", label: "Active Bids", icon: Gavel },
-  { href: "/corporate/dashboard/orders", label: "Order History", icon: Briefcase },
-  { href: "/corporate/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/corporate/dashboard", label: "Marketplace", icon: Building },
+  { href: "/corporate/products", label: "Products", icon: Package },
+  { href: "/corporate/bids", label: "Active Bids", icon: Gavel },
+  { href: "/corporate/orders", label: "Order History", icon: Briefcase },
+  { href: "/corporate/quotes", label: "My Quotes", icon: FileText },
+  { href: "/corporate/account", label: "Account", icon: User },
+  { href: "/corporate/settings", label: "Settings", icon: Settings },
 ];
 
 export function CorporateSidebarLayout({ children }: { children: React.ReactNode }) {

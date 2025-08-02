@@ -17,6 +17,13 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'LW-001',
     stock: 25,
     status: 'Live',
+    b2bEnabled: true,
+    moq: 100,
+    tierPrices: [
+      { quantity: 500, price: 159.99 },
+      { quantity: 1000, price: 149.99 },
+      { quantity: 5000, price: 139.99 },
+    ],
     customizationAreas: {
       back: [
         { id: 'watch-engraving', shape: 'rect', x: 25, y: 45, width: 50, height: 10, label: 'Engraving', fontFamily: 'serif', fontSize: 10, fontWeight: 'normal', textColor: '#333333', curveIntensity: 0 },
@@ -38,6 +45,12 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'HP-202',
     stock: 50,
     status: 'Live',
+    b2bEnabled: true,
+    moq: 50,
+    tierPrices: [
+      { quantity: 200, price: 119.99 },
+      { quantity: 500, price: 109.99 },
+    ],
     customizationAreas: {
       right: [
         { id: 'headphone-logo', shape: 'rect', x: 40, y: 40, width: 20, height: 20, label: 'Logo', fontFamily: 'sans-serif', fontSize: 14, fontWeight: 'bold', textColor: '#FFFFFF', curveIntensity: 0 },
@@ -59,6 +72,12 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'TS-ORG-M',
     stock: 150,
     status: 'Archived',
+    b2bEnabled: true,
+    moq: 250,
+    tierPrices: [
+      { quantity: 1000, price: 19.99 },
+      { quantity: 5000, price: 15.99 },
+    ],
     customizationAreas: {
       front: [
         { id: 'front-text', shape: 'rect', x: 25, y: 40, width: 50, height: 20, label: 'Front Text', fontFamily: 'sans-serif', fontSize: 16, fontWeight: 'bold', textColor: '#000000', curveIntensity: 0 },
@@ -83,6 +102,12 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'CM-HND-BL',
     stock: 8,
     status: 'Live',
+    b2bEnabled: true,
+    moq: 200,
+    tierPrices: [
+      { quantity: 1000, price: 15.99 },
+      { quantity: 5000, price: 12.99 },
+    ],
     customizationAreas: {
       front: [
          { id: 'mug-text', shape: 'ellipse', x: 15, y: 35, width: 70, height: 30, label: 'Your Name', fontFamily: 'serif', fontSize: 18, fontWeight: 'normal', textColor: '#FFFFFF', curveIntensity: 30 },
@@ -104,7 +129,7 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'CB-COL-12',
     stock: 0,
     status: 'Archived',
-    // Non-customizable
+    b2bEnabled: false,
   },
   {
     id: '6',
@@ -121,6 +146,12 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'YM-PRO-BLK',
     stock: 35,
     status: 'Needs Review',
+    b2bEnabled: true,
+    moq: 100,
+    tierPrices: [
+        { quantity: 500, price: 59.99 },
+        { quantity: 1000, price: 54.99 },
+    ],
     customizationAreas: {
       top: [
         { id: 'mat-corner-logo', shape: 'rect', x: 85, y: 85, width: 10, height: 10, label: 'Logo', fontFamily: 'sans-serif', fontSize: 8, fontWeight: 'bold', textColor: '#333333', curveIntensity: 0 },
@@ -142,7 +173,7 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'DSK-MIN-OAK',
     stock: 12,
     status: 'Live',
-    // Non-customizable
+    b2bEnabled: false,
   },
   {
     id: '8',
@@ -159,7 +190,12 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'SKN-SET-NAT',
     stock: 40,
     status: 'Live',
-    // Non-customizable
+    b2bEnabled: true,
+    moq: 50,
+    tierPrices: [
+        { quantity: 250, price: 69.99 },
+        { quantity: 500, price: 64.99 },
+    ],
   },
   {
     id: '9',
@@ -176,6 +212,12 @@ export const mockProducts: DisplayProduct[] = [
     sku: 'CNDL-SOY-LV',
     stock: 60,
     status: 'Live',
+    b2bEnabled: true,
+    moq: 300,
+    tierPrices: [
+        { quantity: 1000, price: 14.99 },
+        { quantity: 5000, price: 11.99 },
+    ],
     customizationAreas: {
       front: [
         { id: 'candle-label', shape: 'rect', x: 20, y: 40, width: 60, height: 20, label: 'Custom Label', fontFamily: 'serif', fontSize: 14, fontWeight: 'normal', textColor: '#000000', curveIntensity: 0 },

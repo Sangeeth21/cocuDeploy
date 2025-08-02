@@ -5,16 +5,13 @@ import { useState, useMemo } from "react";
 import { mockProducts } from "@/lib/mock-data";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DisplayProduct } from "@/lib/types";
-import dynamic from "next/dynamic";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
 import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
 import { B2bProductCard } from "../_components/b2b-product-card";
-
+import { Button } from "@/components/ui/button";
 
 const MAX_PRICE = 500;
 
-export default function CorporateMarketplacePage() {
+export default function CorporateProductsPage() {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE]);
@@ -82,8 +79,8 @@ export default function CorporateMarketplacePage() {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold font-headline">Corporate Marketplace</h1>
-        <p className="text-muted-foreground mt-2">Browse products available for bulk ordering and corporate gifting.</p>
+        <h1 className="text-4xl font-bold font-headline">All Corporate Products</h1>
+        <p className="text-muted-foreground mt-2">Browse all products available for bulk purchasing.</p>
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8">
