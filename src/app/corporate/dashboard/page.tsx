@@ -2,131 +2,159 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { mockProducts } from "@/lib/mock-data";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import type { DisplayProduct } from "@/lib/types";
-import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
-import { B2bProductCard } from "../_components/b2b-product-card";
+import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { mockProducts, mockCategories, mockCorporateCampaigns } from "@/lib/mock-data";
+import { ArrowRight, Store } from "lucide-react";
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { B2bProductCard } from "../_components/b2b-product-card";
 
 
-const MAX_PRICE = 500;
+const DefaultHeroSlide = () => (
+    <div className="relative h-[60vh] md:h-[70vh]">
+        <Image
+            src={'https://placehold.co/1920x1080.png'}
+            alt="Welcome to the Corporate Portal"
+            fill
+            className="object-cover"
+            priority
+            data-ai-hint="abstract background"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+        <div className="absolute inset-0 flex items-center justify-center text-center">
+            <div className="container mx-auto text-white p-4">
+                <div className="flex justify-center items-center gap-4 mb-4">
+                    <Store className="h-12 w-12" />
+                    <h1 className="text-4xl md:text-6xl font-bold font-headline drop-shadow-lg">
+                        Corporate Gifting, Perfected
+                    </h1>
+                </div>
+                <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 drop-shadow-md">
+                    Discover premium products available for bulk purchase and customization.
+                </p>
+                <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" asChild>
+                    <Link href="/corporate/products">
+                        Browse All Products <ArrowRight className="ml-2 h-5 w-5" />
+                    </Link>
+                </Button>
+            </div>
+        </div>
+    </div>
+);
+
 
 export default function CorporateMarketplacePage() {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE]);
-  const [sortOption, setSortOption] = useState('featured');
-  
-
-  const handleCategoryChange = (categoryName: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryName)
-        ? prev.filter(c => c !== categoryName)
-        : [...prev, categoryName]
-    );
-  };
-
-  const handleRatingChange = (rating: number) => {
-    setSelectedRatings(prev =>
-      prev.includes(rating)
-        ? prev.filter(r => r !== rating)
-        : [...prev, rating]
-    );
-  };
-  
-  const clearFilters = () => {
-      setSelectedCategories([]);
-      setSelectedRatings([]);
-      setPriceRange([0, MAX_PRICE]);
-  }
-
-  const filteredAndSortedProducts = useMemo(() => {
-    let products: DisplayProduct[] = mockProducts.filter(p => p.b2bEnabled);
-
-    if (selectedCategories.length > 0) {
-      products = products.filter(p => selectedCategories.includes(p.category));
-    }
-
-    if (selectedRatings.length > 0) {
-      const minRating = Math.min(...selectedRatings);
-      products = products.filter(p => p.rating >= minRating);
-    }
-    
-    products = products.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
-
-    switch (sortOption) {
-      case 'price-asc':
-        products.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        products.sort((a, b) => b.price - a.price);
-        break;
-      case 'newest':
-        products.sort((a, b) => parseInt(b.id) - parseInt(a.id));
-        break;
-      case 'rating':
-        products.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'featured':
-      default:
-        break;
-    }
-
-    return products;
-  }, [selectedCategories, selectedRatings, sortOption, priceRange]);
-
+    const heroCampaigns = mockCorporateCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active' && c.creatives);
+    const inlineCampaign = mockCorporateCampaigns.find(c => c.placement === 'inline-banner' && c.status === 'Active');
 
   return (
     <div className="space-y-8">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold font-headline">Corporate Marketplace</h1>
-        <p className="text-muted-foreground mt-2">Browse products available for bulk ordering and corporate gifting.</p>
-      </div>
+      <section className="w-full -m-4 sm:-m-6 md:-m-8">
+         <Carousel
+            opts={{
+                loop: heroCampaigns.length > 1,
+            }}
+            className="w-full"
+            >
+            <CarouselContent>
+                {heroCampaigns.length > 0 ? heroCampaigns.map((campaign, index) => (
+                <CarouselItem key={index}>
+                    <div className="relative h-[50vh] md:h-[60vh]">
+                        <Image
+                            src={campaign.creatives![0].imageUrl || 'https://placehold.co/1920x1080.png'}
+                            alt={campaign.creatives![0].title}
+                            fill
+                            className="object-cover"
+                            priority={index === 0}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                        <div className="absolute inset-0 flex items-center justify-center text-center">
+                             <div className="container mx-auto text-white p-4">
+                                <h1 className="text-4xl md:text-6xl font-bold font-headline mb-4 drop-shadow-lg">
+                                    {campaign.creatives![0].title}
+                                </h1>
+                                <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 drop-shadow-md">
+                                    {campaign.creatives![0].description}
+                                </p>
+                                <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90" asChild>
+                                    <Link href={`/corporate/products?campaign=${campaign.id}`}>
+                                    {campaign.creatives![0].cta} <ArrowRight className="ml-2 h-5 w-5" />
+                                    </Link>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                </CarouselItem>
+                )) : (
+                    <CarouselItem>
+                        <DefaultHeroSlide />
+                    </CarouselItem>
+                )}
+            </CarouselContent>
+            {heroCampaigns.length > 1 && <>
+                <CarouselPrevious className="absolute left-4 top-1/2 -translate-y-1/2 hidden md:flex" />
+                <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex" />
+            </>}
+        </Carousel>
+      </section>
 
-      <div className="grid lg:grid-cols-4 gap-8">
-        <ProductFilterSidebar
-            selectedCategories={selectedCategories}
-            onCategoryChange={handleCategoryChange}
-            selectedRatings={selectedRatings}
-            onRatingChange={handleRatingChange}
-            priceRange={priceRange}
-            onPriceRangeChange={setPriceRange}
-            clearFilters={clearFilters}
-        />
-
-        <main className="lg:col-span-3">
-          <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-            <p className="text-muted-foreground w-full sm:w-auto text-center sm:text-left">{filteredAndSortedProducts.length} products</p>
-            <Select onValueChange={setSortOption} defaultValue="featured">
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="featured">Featured</SelectItem>
-                <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
-                <SelectItem value="rating">Average Rating</SelectItem>
-              </SelectContent>
-            </Select>
+      <section id="featured-b2b" className="pt-16">
+          <h2 className="text-3xl font-bold text-center mb-8 font-headline">Featured Bulk Products</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {mockProducts.filter(p => p.b2bEnabled).slice(0, 4).map((product) => (
+              <B2bProductCard key={product.id} product={product} />
+            ))}
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredAndSortedProducts.length > 0 ? (
-                filteredAndSortedProducts.map((product) => (
-                    <B2bProductCard key={product.id} product={product} />
-                ))
+      </section>
+      
+      <section className="py-16">
+            {inlineCampaign ? (
+                <div className="relative aspect-video md:aspect-[3/1] w-full rounded-lg overflow-hidden">
+                    <Image src={inlineCampaign.creatives![0].imageUrl || 'https://placehold.co/1200x400.png'} alt={inlineCampaign.creatives![0].title} fill className="object-cover" />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
+                        <div>
+                            <h2 className="text-xl md:text-3xl font-bold font-headline">{inlineCampaign.creatives![0].title}</h2>
+                            <p className="text-sm md:text-base mt-1 mb-2">{inlineCampaign.creatives![0].description}</p>
+                            <Button size="sm" asChild>
+                            <Link href={`/corporate/products?campaign=${inlineCampaign.id}`}>{inlineCampaign.creatives![0].cta}</Link>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
             ) : (
-                 <div className="sm:col-span-2 xl:col-span-3 text-center py-16">
-                    <h2 className="text-2xl font-semibold">No products found</h2>
-                    <p className="text-muted-foreground mt-2">Try adjusting your filters to find what you're looking for.</p>
-                     <Button variant="outline" className="mt-4" onClick={clearFilters}>Clear Filters</Button>
+                 <div>
+                    <h2 className="text-3xl font-bold text-center mb-8 font-headline">Top Tier Products</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {mockProducts.filter(p => p.b2bEnabled).slice(4, 8).map((product) => (
+                         <B2bProductCard key={product.id} product={product} />
+                        ))}
+                    </div>
                 </div>
             )}
+      </section>
+
+      <section id="categories-b2b" className="py-16 bg-muted/40 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8">
+          <h2 className="text-3xl font-bold text-center mb-8 font-headline">Shop by Category</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+            {mockCategories.map((category) => (
+              <Link href={`/corporate/products?category=${category.name}`} key={category.name}>
+                <div className="group text-center flex flex-col items-center">
+                  <div className="relative w-32 h-32 rounded-full overflow-hidden mb-2 border-2 border-transparent group-hover:border-primary transition-all duration-300 shadow-md">
+                    <Image
+                      src={category.imageUrl}
+                      alt={category.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      data-ai-hint={`${category.name.toLowerCase()}`}
+                    />
+                  </div>
+                  <h3 className="font-semibold text-foreground">{category.name}</h3>
+                </div>
+              </Link>
+            ))}
           </div>
-        </main>
-      </div>
+      </section>
     </div>
   );
 }
