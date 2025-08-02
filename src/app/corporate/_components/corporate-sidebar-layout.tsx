@@ -15,6 +15,7 @@ import { Store } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useComparison } from "@/context/comparison-context";
 import { NotificationPopover } from "@/components/notification-popover";
+import { SearchBar } from "@/components/search-bar";
 
 
 const navLinks = [
@@ -113,19 +114,24 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                     </SidebarMenu>
                 </SidebarFooter>
             </Sidebar>
-            <div className="flex flex-col flex-1">
-                 <header className="flex h-16 items-center justify-between px-4 border-b bg-card">
-                    <Link href="/corporate/dashboard" className="flex items-center gap-2">
+            <div className="flex flex-col flex-1 w-0">
+                 <header className="flex h-16 items-center px-4 border-b bg-card">
+                    <Link href="/corporate/dashboard" className="flex items-center gap-2 mr-6">
                         <Store className="h-6 w-6 text-primary" />
-                        <span className="font-bold text-lg font-headline">ShopSphere Corporate</span>
+                        <span className="font-bold text-lg font-headline hidden sm:inline-block">ShopSphere Corporate</span>
                     </Link>
+                    <div className="flex-1 flex justify-center px-4">
+                        <div className="w-full max-w-xl">
+                            <SearchBar />
+                        </div>
+                    </div>
                     <div className="flex items-center gap-2">
                          <NotificationPopover notifications={mockCorporateActivity} />
                     </div>
                  </header>
-                 <div className="flex-1 flex flex-col">
+                 <div className="flex-1 flex flex-col overflow-hidden">
                     <CorporateCampaignBanner />
-                    <main className="flex-1 overflow-x-hidden">
+                    <main className="flex-1 overflow-y-auto overflow-x-hidden">
                         {children}
                     </main>
                     <Footer />
