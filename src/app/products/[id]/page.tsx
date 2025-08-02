@@ -92,13 +92,6 @@ export default function ProductDetailPage() {
                 <Heart className={cn("h-5 w-5", isWishlisted(product.id) && "fill-destructive text-destructive")} />
             </Button>
           </div>
-          <div className="grid grid-cols-4 gap-2 mt-2">
-            {product.images?.slice(0,4).map((img, index) => (
-              <div key={index} className="aspect-square relative w-full overflow-hidden rounded-md border-2 hover:border-primary transition">
-                <Image src={img} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
-              </div>
-            ))}
-          </div>
         </div>
 
         <div className="space-y-6">

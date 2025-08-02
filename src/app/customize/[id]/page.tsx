@@ -409,7 +409,7 @@ const DraggableElement = ({
             {element.type === 'art' && element.imageUrl && (
                 <Image src={element.imageUrl} alt="Clipart" fill className="object-contain pointer-events-none" />
             )}
-            {element.type === 'text' && <TextRenderer element={element} />}
+            {element.type === 'text' && element.text && <TextRenderer element={element} />}
 
             {isSelected && (
                 <>
@@ -775,7 +775,7 @@ export default function CustomizeProductPage() {
     );
 
     return (
-        <div className="h-screen flex flex-col bg-muted/40 overflow-hidden">
+        <div className="h-screen flex flex-col bg-muted/40">
             <header className="bg-background border-b shadow-sm flex-shrink-0">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                      <Button variant="outline" size="sm" onClick={() => router.back()}>
@@ -1023,5 +1023,3 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
-
-    
