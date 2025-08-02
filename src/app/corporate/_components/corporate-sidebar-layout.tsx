@@ -26,7 +26,7 @@ const navLinks = [
   { href: "/corporate/products", label: "Products", icon: Package },
   { href: "/corporate/bids/new", label: "Create Bid", icon: PlusCircle, id: 'bid' },
   { href: "/cart", label: "Cart", icon: ShoppingCart, id: "cart" },
-  { href: "/compare", label: "Compare", icon: Scale, id: "compare" },
+  { href: "/corporate/compare", label: "Compare", icon: Scale, id: "compare" },
   { href: "/corporate/bids", label: "Active Bids", icon: Gavel },
   { href: "/corporate/orders", label: "Order History", icon: Briefcase },
   { href: "/corporate/quotes", label: "My Quotes", icon: FileText },
