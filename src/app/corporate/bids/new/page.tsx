@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { useBidRequest } from '@/context/bid-request-context';
+import Link from 'next/link';
 
 
 export default function NewBidPage() {
