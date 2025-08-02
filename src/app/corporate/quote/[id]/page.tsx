@@ -68,7 +68,7 @@ export default function QuoteRequestPage() {
     }
 
     return (
-        <div>
+        <>
              <Button variant="outline" size="sm" className="mb-4" asChild>
                 <Link href="/corporate/dashboard">
                     <ArrowLeft className="mr-2 h-4 w-4" /> Back to Marketplace
@@ -143,6 +143,6 @@ export default function QuoteRequestPage() {
                     </div>
                 </div>
             </form>
-        </div>
+        </>
     );
 }

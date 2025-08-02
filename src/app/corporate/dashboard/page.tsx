@@ -49,8 +49,8 @@ export default function CorporateMarketplacePage() {
     const inlineCampaign = (mockCorporateCampaigns || []).find(c => c.placement === 'inline-banner' && c.status === 'Active');
 
   return (
-    <div className="space-y-8">
-      <section className="w-full -m-4 sm:-m-6 md:-m-8">
+    <div className="space-y-12">
+      <section className="w-full">
          <Carousel
             opts={{
                 loop: heroCampaigns.length > 1,
@@ -99,7 +99,7 @@ export default function CorporateMarketplacePage() {
         </Carousel>
       </section>
 
-      <section id="featured-b2b" className="container pt-16 -mx-4 sm:-mx-6 md:-mx-8">
+      <section id="featured-b2b">
           <h2 className="text-3xl font-bold text-center mb-8 font-headline">Featured Bulk Products</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {mockProducts.filter(p => p.b2bEnabled).slice(0, 4).map((product) => (
@@ -108,7 +108,7 @@ export default function CorporateMarketplacePage() {
           </div>
       </section>
       
-      <section className="container py-16 -mx-4 sm:-mx-6 md:-mx-8">
+      <section>
             {inlineCampaign ? (
                 <div className="relative aspect-video md:aspect-[3/1] w-full rounded-lg overflow-hidden">
                     <Image src={inlineCampaign.creatives![0].imageUrl || 'https://placehold.co/1200x400.png'} alt={inlineCampaign.creatives![0].title} fill className="object-cover" />
