@@ -12,13 +12,15 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ReviewsPreview } from "./_components/reviews-preview";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 export default function B2BProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
   const product = mockProducts.find((p) => p.id === id);
+
+  const [activeImage, setActiveImage] = useState(product?.imageUrl || 'https://placehold.co/600x600.png');
 
   const isCustomizable = useMemo(() => {
     return Object.values(product?.customizationAreas || {}).some(areas => areas && areas.length > 0);
@@ -36,12 +38,14 @@ export default function B2BProductDetailPage() {
     }
   }
 
+  const allImages = [product.imageUrl, ...(product.images || [])].filter((img, index, self) => img && self.indexOf(img) === index);
+
   return (
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12 items-start">
         <div>
           <div className="aspect-square relative w-full overflow-hidden rounded-lg shadow-lg">
-            <Image src={product.imageUrl} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+            <Image src={activeImage} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
              {isCustomizable && (
               <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-2">
                 <Wand2 className="h-4 w-4" />
@@ -49,6 +53,22 @@ export default function B2BProductDetailPage() {
               </div>
             )}
           </div>
+          {allImages.length > 1 && (
+            <div className="grid grid-cols-5 gap-2 mt-4">
+              {allImages.map((img, index) => (
+                 <button
+                    key={index}
+                    onClick={() => setActiveImage(img)}
+                    className={cn(
+                        "relative aspect-square w-full rounded-md overflow-hidden transition-all",
+                        activeImage === img ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100"
+                    )}
+                 >
+                    <Image src={img} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
+                 </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">
