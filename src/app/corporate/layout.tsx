@@ -5,13 +5,14 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { CorporateSidebarLayout } from "./_components/corporate-sidebar-layout";
 import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
+import { Footer } from "@/components/layout/footer";
 
 function ProtectedCorporateLayout({ children }: { children: React.ReactNode }) {
   const { isAdminLoggedIn } = useAdminAuth();
   const router = useRouter();
 
+  // This check is a placeholder for corporate-specific authentication
   useEffect(() => {
-    // This check is a placeholder for corporate-specific authentication
     if (!isAdminLoggedIn) {
       router.replace("/corporate");
     }
@@ -34,6 +35,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <ProtectedCorporateLayout>
         {children}
       </ProtectedCorporateLayout>
+      <Footer />
     </AdminAuthProvider>
   );
 }

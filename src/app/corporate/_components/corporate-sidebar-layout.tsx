@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/context/admin-auth-context";
 import { mockCorporateCampaigns } from "@/lib/mock-data";
-import { Footer } from "@/components/layout/footer";
 
 
 const navLinks = [
@@ -106,7 +105,6 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                     <main className="flex-1 bg-background overflow-x-hidden">
                         {children}
                     </main>
-                    <Footer />
                  </div>
             </div>
         </SidebarProvider>

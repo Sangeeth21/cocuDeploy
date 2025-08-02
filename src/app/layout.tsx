@@ -130,7 +130,7 @@ export default function RootLayout({
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith('/admin');
   const isVendorRoute = pathname.startsWith('/vendor');
-  const isCorporateRoute = pathname.startsWith('/corporate/dashboard');
+  const isCorporateRoute = pathname.startsWith('/corporate');
   
   const showHeaderAndFooter = !isAdminRoute && !isVendorRoute && !isCorporateRoute;
 
