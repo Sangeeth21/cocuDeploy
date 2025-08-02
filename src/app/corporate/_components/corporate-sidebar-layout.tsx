@@ -119,7 +119,10 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                  <header className="flex h-16 items-center px-4 border-b bg-card">
                     <Link href="/corporate/dashboard" className="flex items-center gap-2 mr-6">
                         <Store className="h-6 w-6 text-primary" />
-                        <span className="font-bold text-lg font-headline hidden sm:inline-block">ShopSphere</span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="font-bold text-lg font-headline hidden sm:inline-block">ShopSphere</span>
+                          <span className="text-sm text-muted-foreground hidden sm:inline-block">Corporate</span>
+                        </div>
                     </Link>
                     <div className="flex-1 flex justify-center px-4">
                         <div className="w-full max-w-xl">
