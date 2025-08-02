@@ -53,7 +53,7 @@ export function ComparisonPreview() {
                                 </div>
                                 <Separator />
                                 <Button asChild className="w-full">
-                                    <Link href="/compare">Compare Items</Link>
+                                    <Link href="/corporate/compare">Compare Items</Link>
                                 </Button>
                             </>
                        ) : (
