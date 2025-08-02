@@ -72,7 +72,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton
                                     asChild
-                                    isActive={pathname === link.href}
+                                    isActive={pathname.startsWith(link.href) && (link.href !== "/corporate/dashboard" || pathname === "/corporate/dashboard")}
                                     tooltip={{children: link.label}}
                                 >
                                     <Link href={link.href}>

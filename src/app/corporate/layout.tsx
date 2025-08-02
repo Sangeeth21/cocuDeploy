@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { CorporateSidebarLayout } from "./dashboard/_components/corporate-sidebar-layout";
+import { CorporateSidebarLayout } from "./_components/corporate-sidebar-layout";
 import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
 
 function ProtectedCorporateLayout({ children }: { children: React.ReactNode }) {
