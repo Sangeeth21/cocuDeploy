@@ -13,7 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue, CustomizationArea } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -24,6 +24,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { ColorPicker } from "@/components/ui/color-picker";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import tinycolor from 'tinycolor2';
 
 type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
 
@@ -48,6 +50,9 @@ type DesignElement = {
     outlineWidth?: number;
     // Image properties
     imageUrl?: string;
+    // Art properties
+    artContent?: string | React.FC<any>; // Emoji (string) or Icon component
+    artType?: 'emoji' | 'icon';
     originalAreaId?: string; // Links text element back to a vendor-defined area
 }
 
@@ -153,6 +158,29 @@ const fontOptions = [
     { value: 'var(--font-inconsolata)', label: 'Inconsolata' },
     { value: 'var(--font-jetbrains-mono)', label: 'JetBrains Mono' },
 ];
+
+const artLibrary = {
+    'Smileys & People': [
+        { type: 'emoji', content: '😀' }, { type: 'emoji', content: '😂' }, { type: 'emoji', content: '😍' }, { type: 'emoji', content: '😎' },
+        { type: 'emoji', content: '🤔' }, { type: 'emoji', content: '😢' }, { type: 'emoji', content: '🥳' }, { type: 'emoji', content: '🤯' },
+        { type: 'emoji', content: '👍' }, { type: 'emoji', content: '👎' }, { type: 'emoji', content: '❤️' }, { type: 'emoji', content: '🔥' },
+        { type: 'emoji', content: '💯' }, { type: 'emoji', content: '🙏' }, { type: 'emoji', content: '🎉' }, { type: 'emoji', content: '✨' },
+    ],
+    'Animals & Nature': [
+        { type: 'icon', content: Cat }, { type: 'icon', content: Dog }, { type: 'icon', content: TreePine }, { type: 'icon', content: Cloud },
+        { type: 'emoji', content: '🌸' }, { type: 'emoji', content: '🌍' }, { type: 'emoji', content: '☀️' }, { type: 'emoji', content: '🌙' },
+        { type: 'emoji', content: '🐳' }, { type: 'emoji', content: '🦋' }, { type: 'emoji', content: '🦁' }, { type: 'emoji', content: '🦄' },
+    ],
+    'Food & Drink': [
+        { type: 'icon', content: Pizza }, { type: 'emoji', content: '🍔' }, { type: 'emoji', content: '🍟' }, { type: 'emoji', content: '🍩' },
+        { type: 'emoji', content: '☕️' }, { type: 'emoji', content: '🍺' }, { type: 'emoji', content: '🍹' }, { type: 'emoji', content: '🍾' },
+    ],
+    'Objects & Symbols': [
+        { type: 'icon', content: Music }, { type: 'icon', content: Gamepad2 }, { type: 'icon', content: Plane }, { type: 'icon', content: Car },
+        { type: 'icon', content: Building }, { type: 'icon', content: Sparkles }, { type: 'icon', content: Heart }, { type: 'icon', content: StarIcon },
+        { type: 'emoji', content: '💻' }, { type: 'emoji', content: '📱' }, { type: 'emoji', content: '💰' }, { type: 'emoji', content: '💡' },
+    ]
+};
 
 const TextRenderer = ({ element }: { element: DesignElement }) => {
     const { 
@@ -401,8 +429,12 @@ const DraggableElement = ({
             {element.type === 'image' && element.imageUrl && (
                 <Image src={element.imageUrl} alt="Uploaded art" fill className="object-contain pointer-events-none" />
             )}
-            {element.type === 'art' && element.imageUrl && (
-                <Image src={element.imageUrl} alt="Clipart" fill className="object-contain pointer-events-none" />
+             {element.type === 'art' && (
+                element.artType === 'emoji' ? (
+                     <div className="w-full h-full flex items-center justify-center text-6xl pointer-events-none" style={{fontSize: 'min(15vw, 15vh)'}}>{element.artContent}</div>
+                ) : (
+                    React.createElement(element.artContent as React.FC<any>, { className: "w-full h-full object-contain pointer-events-none text-foreground" })
+                )
             )}
             {element.type === 'text' && <TextRenderer element={element} />}
 
@@ -449,15 +481,14 @@ const CustomizationRenderer = ({ product, activeSide, designElements, selectedEl
     }
 
     return (
-        <div className="relative w-full h-full" onPointerDown={() => onSelect('')}>
+        <div className="relative w-full h-full" onClick={() => onSelect('')}>
             <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
             {designElements.map((element) => {
                 const isVendorArea = !!element.originalAreaId;
                 const elementIsOnActiveSide = product.customizationAreas?.[activeSide]?.some((area: CustomizationArea) => area.id === element.originalAreaId);
 
                 if (isVendorArea && !elementIsOnActiveSide) return null; // Don't render vendor areas on wrong side
-                if (isVendorArea) return null; // Vendor areas are rendered separately
-
+                
                 return (
                     <DraggableElement
                         key={element.id}
@@ -470,40 +501,9 @@ const CustomizationRenderer = ({ product, activeSide, designElements, selectedEl
                     />
                 )
             })}
-            {product.customizationAreas?.[activeSide]?.map((area: any) => {
-                 const element = designElements.find(el => el.originalAreaId === area.id);
-                 if (!element) return null;
-
-                 return (
-                     <div key={area.id} style={{
-                        position: 'absolute',
-                        left: `${area.x}%`,
-                        top: `${area.y}%`,
-                        width: `${area.width}%`,
-                        height: `${area.height}%`,
-                    }}
-                    className={cn(
-                        selectedElementId === element.id && "outline-primary outline-dashed outline-1"
-                    )}
-                     onClick={(e) => {
-                        e.stopPropagation();
-                        onSelect(element.id)
-                    }}
-                    >
-                        <TextRenderer element={element} />
-                    </div>
-                 )
-            })}
         </div>
     )
 }
-
-const mockArt = [
-    { id: 'art-1', src: '/art/smile.svg', icon: Smile },
-    { id: 'art-2', src: '/art/star.svg', icon: StarIcon },
-    { id: 'art-3', src: '/art/party.svg', icon: PartyPopper },
-    { id: 'art-4', src: '/art/brush.svg', icon: Brush },
-];
 
 const textShapes: { id: TextShape; label: string; icon: React.ElementType }[] = [
     { id: 'normal', label: 'Normal', icon: Type },
@@ -637,7 +637,7 @@ export default function CustomizeProductPage() {
             originalAreaId: area.id,
             x: area.x, y: area.y, width: area.width, height: area.height,
             rotation: 0,
-            text: area.label,
+            text: '', // Start with empty text
             fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
             fontSize: area.fontSize || 14,
             fontWeight: 'normal',
@@ -686,12 +686,14 @@ export default function CustomizeProductPage() {
         }
     };
     
-    const addArtElement = (artSrc: string) => {
-         const newElement: DesignElement = {
+    const addArtElement = (art: { type: 'emoji', content: string } | { type: 'icon', content: React.FC<any> }) => {
+        const newElement: DesignElement = {
             id: `art-${Date.now()}`,
             type: 'art',
             x: 35, y: 35, width: 30, height: 30, rotation: 0,
-            imageUrl: artSrc,
+            artType: art.type,
+            artContent: art.content,
+            textColor: '#000000', // for icons
         }
         setDesignElements(prev => [...prev, newElement]);
         setSelectedElementId(newElement.id);
@@ -886,7 +888,7 @@ export default function CustomizeProductPage() {
                                             <div className="space-y-2">
                                                 <Label>Rotation</Label>
                                                 <div className="flex items-center gap-2">
-                                                    <Slider min={-180} max={180} step={1} value={[selectedElement.rotation || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { rotation: v })} />
+                                                    <Slider min={-180} max={180} step={1} value={[selectedElement.rotation ?? 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { rotation: v })} />
                                                     <Input type="number" value={selectedElement.rotation ?? ''} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
                                                 </div>
                                             </div>
@@ -944,8 +946,10 @@ export default function CustomizeProductPage() {
                                                     </CardContent>
                                                 </Card>
                                             )}
-                                            <p className="text-sm pt-4">Select a layer to edit, or add a new one.</p>
-                                            <Button variant="secondary" className="w-full" onClick={addTextElement}>Add Freeform Text</Button>
+                                             <div className="space-y-2 pt-4">
+                                                 <p className="text-sm">Select a layer or add a new one.</p>
+                                                 <Button variant="secondary" className="w-full" onClick={addTextElement}>Add Freeform Text</Button>
+                                             </div>
                                         </div>
                                     )}
                                     </TabsContent>
@@ -965,18 +969,30 @@ export default function CustomizeProductPage() {
                                         </Card>
                                     </TabsContent>
                                     <TabsContent value="art" className="mt-0">
-                                        <Card>
-                                            <CardHeader><CardTitle className="text-base">Add Clipart</CardTitle></CardHeader>
-                                            <CardContent className="grid grid-cols-4 gap-2">
-                                                {mockArt.map(art => {
-                                                    const ArtIcon = art.icon;
-                                                    return (
-                                                    <Button key={art.id} variant="outline" className="h-16 flex-col" onClick={() => addArtElement(art.src)}>
-                                                        <ArtIcon className="h-8 w-8 text-muted-foreground" />
-                                                    </Button>
-                                                )})}
-                                            </CardContent>
-                                        </Card>
+                                        <Accordion type="multiple" defaultValue={['Smileys & People']}>
+                                            {Object.entries(artLibrary).map(([category, items]) => (
+                                                <AccordionItem key={category} value={category}>
+                                                    <AccordionTrigger>{category}</AccordionTrigger>
+                                                    <AccordionContent>
+                                                        <div className="grid grid-cols-5 gap-2 pt-2">
+                                                            {items.map((art, index) => (
+                                                                <button
+                                                                    key={`${category}-${index}`}
+                                                                    className="flex items-center justify-center h-12 rounded-md hover:bg-accent"
+                                                                    onClick={() => addArtElement(art)}
+                                                                >
+                                                                    {art.type === 'emoji' ? (
+                                                                        <span className="text-3xl">{art.content}</span>
+                                                                    ) : (
+                                                                        React.createElement(art.content, { className: "h-6 w-6 text-muted-foreground" })
+                                                                    )}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
                                     </TabsContent>
                                     <TabsContent value="colors" className="mt-0 text-center text-sm text-muted-foreground py-8">
                                         Product color options coming soon!
