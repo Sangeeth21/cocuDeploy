@@ -2,7 +2,7 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar, SidebarMenuBadge } from "@/components/ui/sidebar";
 import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building, Package, FileText, User, ShoppingCart, Scale } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -12,13 +12,15 @@ import { useAdminAuth } from "@/context/admin-auth-context";
 import { mockCorporateCampaigns } from "@/lib/mock-data";
 import { Footer } from "@/components/layout/footer";
 import { Store } from "lucide-react";
+import { useCart } from "@/context/cart-context";
+import { useComparison } from "@/context/comparison-context";
 
 
 const navLinks = [
   { href: "/corporate/dashboard", label: "Marketplace", icon: Building },
   { href: "/corporate/products", label: "Products", icon: Package },
-  { href: "/cart", label: "Cart", icon: ShoppingCart },
-  { href: "/compare", label: "Compare", icon: Scale },
+  { href: "/cart", label: "Cart", icon: ShoppingCart, id: "cart" },
+  { href: "/compare", label: "Compare", icon: Scale, id: "compare" },
   { href: "/corporate/bids", label: "Active Bids", icon: Gavel },
   { href: "/corporate/orders", label: "Order History", icon: Briefcase },
   { href: "/corporate/quotes", label: "My Quotes", icon: FileText },
@@ -44,6 +46,8 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
     const pathname = usePathname();
     const router = useRouter();
     const { adminLogout } = useAdminAuth();
+    const { totalItems: cartItemsCount } = useCart();
+    const { totalItems: comparisonItemsCount } = useComparison();
 
     const handleLogout = () => {
         adminLogout();
@@ -71,20 +75,30 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                 </SidebarHeader>
                 <SidebarContent className="p-2">
                      <SidebarMenu>
-                        {navLinks.map(link => (
-                            <SidebarMenuItem key={link.href}>
-                                <SidebarMenuButton
-                                    asChild
-                                    isActive={pathname.startsWith(link.href) && (link.href !== "/corporate/dashboard" || pathname === "/corporate/dashboard")}
-                                    tooltip={{children: link.label}}
-                                >
-                                    <Link href={link.href}>
-                                        <link.icon />
-                                        <span className="group-hover:group-data-[collapsible=icon]:inline-block group-data-[collapsible=icon]:hidden">{link.label}</span>
-                                    </Link>
-                                </SidebarMenuButton>
-                            </SidebarMenuItem>
-                        ))}
+                        {navLinks.map(link => {
+                            let badgeContent: string | undefined;
+                            if (link.id === 'cart' && cartItemsCount > 0) {
+                                badgeContent = cartItemsCount.toString();
+                            } else if (link.id === 'compare' && comparisonItemsCount > 0) {
+                                badgeContent = comparisonItemsCount.toString();
+                            }
+                            
+                            return (
+                                <SidebarMenuItem key={link.href}>
+                                    <SidebarMenuButton
+                                        asChild
+                                        isActive={pathname === link.href || (pathname.startsWith(link.href) && link.href !== "/corporate/dashboard")}
+                                        tooltip={{children: link.label}}
+                                    >
+                                        <Link href={link.href}>
+                                            <link.icon />
+                                            <span className="group-hover:group-data-[collapsible=icon]:inline-block group-data-[collapsible=icon]:hidden">{link.label}</span>
+                                             {badgeContent && <SidebarMenuBadge>{badgeContent}</SidebarMenuBadge>}
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )
+                        })}
                     </SidebarMenu>
                 </SidebarContent>
                 <SidebarFooter>
