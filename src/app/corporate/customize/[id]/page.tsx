@@ -900,8 +900,8 @@ export default function CorporateCustomizePage() {
                          <div className="flex-shrink-0">
                             <TabsList className="grid w-full grid-cols-6 p-1 h-auto">
                                 <TabsTrigger value="text" className="flex-col h-14"><Type className="h-5 w-5 mb-1"/>Text</TabsTrigger>
-                                <TabsTrigger value="qr" className="flex-col h-14"><QrCode className="h-5 w-5 mb-1"/>QR</TabsTrigger>
                                 <TabsTrigger value="upload" className="flex-col h-14"><Upload className="h-5 w-5 mb-1"/>Upload</TabsTrigger>
+                                <TabsTrigger value="qr" className="flex-col h-14"><QrCode className="h-5 w-5 mb-1"/>QR</TabsTrigger>
                                 <TabsTrigger value="art" className="flex-col h-14"><Wand2 className="h-5 w-5 mb-1"/>Art</TabsTrigger>
                                 <TabsTrigger value="colors" className="flex-col h-14"><Paintbrush className="h-5 w-5 mb-1"/>Colors</TabsTrigger>
                                 <TabsTrigger value="notes" className="flex-col h-14"><StickyNote className="h-5 w-5 mb-1"/>Notes</TabsTrigger>
@@ -1013,6 +1013,20 @@ export default function CorporateCustomizePage() {
                                         </div>
                                     )}
                                     </TabsContent>
+                                    <TabsContent value="upload" className="mt-0">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="text-base">Upload Your Image</CardTitle>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <label htmlFor="customer-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                                    <Upload className="h-8 w-8 text-muted-foreground"/>
+                                                    <span className="text-sm text-muted-foreground text-center mt-1">Click to upload</span>
+                                                </label>
+                                                <input id="customer-image-upload" type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} />
+                                            </CardContent>
+                                        </Card>
+                                    </TabsContent>
                                      <TabsContent value="qr" className="mt-0 space-y-4">
                                         <Card>
                                             <CardHeader>
@@ -1032,21 +1046,6 @@ export default function CorporateCustomizePage() {
                                             </CardContent>
                                         </Card>
                                      </TabsContent>
-
-                                    <TabsContent value="upload" className="mt-0">
-                                        <Card>
-                                            <CardHeader>
-                                                <CardTitle className="text-base">Upload Your Image</CardTitle>
-                                            </CardHeader>
-                                            <CardContent>
-                                                <label htmlFor="customer-image-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                                                    <Upload className="h-8 w-8 text-muted-foreground"/>
-                                                    <span className="text-sm text-muted-foreground text-center mt-1">Click to upload</span>
-                                                </label>
-                                                <input id="customer-image-upload" type="file" accept="image/*" className="sr-only" onChange={handleImageUpload} />
-                                            </CardContent>
-                                        </Card>
-                                    </TabsContent>
                                     <TabsContent value="art" className="mt-0">
                                         <Accordion type="multiple" defaultValue={['Smileys & People']}>
                                             {Object.entries(artLibrary).map(([category, items]) => (
