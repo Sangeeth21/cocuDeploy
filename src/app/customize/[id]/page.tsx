@@ -2,6 +2,7 @@
 
 "use client";
 
+import * as React from "react";
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { notFound, useParams, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -618,9 +619,33 @@ export default function CustomizeProductPage() {
     }, [product]);
 
     useEffect(() => {
-        setActiveSide(firstCustomizableSide);
-        setSelectedElementId(null);
-    }, [product, firstCustomizableSide]);
+        if (product) {
+            const initialElements = Object.entries(product.customizationAreas || {}).flatMap(([side, areas]) => 
+                (areas || []).map((area: CustomizationArea) => ({
+                    id: `text-${area.id}`,
+                    type: 'text',
+                    originalAreaId: area.id,
+                    x: area.x, y: area.y, width: area.width, height: area.height,
+                    rotation: 0,
+                    text: '', // Start with empty text
+                    fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
+                    fontSize: area.fontSize || 14,
+                    fontWeight: 'normal',
+                    textColor: '#000000',
+                    textAlign: 'center',
+                    textShape: 'normal',
+                    shapeIntensity: 50,
+                    outlineColor: '#FFFFFF',
+                    outlineWidth: 0,
+                }))
+            );
+            // This now populates based on vendor data, but starts empty on canvas
+            // We need a mechanism for user to *activate* these.
+            setDesignElements([]);
+            setActiveSide(firstCustomizableSide);
+            setSelectedElementId(null);
+        }
+    }, [product, firstCustomizableSide, setDesignElements]);
     
      useEffect(() => {
         setSelectedElementId(null);
