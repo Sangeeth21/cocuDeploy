@@ -17,12 +17,14 @@ import { useComparison } from "@/context/comparison-context";
 import { NotificationPopover } from "@/components/notification-popover";
 import { SearchBar } from "@/components/search-bar";
 import { ComparisonPreview } from "@/components/comparison-preview";
+import { BidPreview } from "@/components/bid-preview";
+import { useBidRequest } from "@/context/bid-request-context";
 
 
 const navLinks = [
   { href: "/corporate/dashboard", label: "Marketplace", icon: Building },
   { href: "/corporate/products", label: "Products", icon: Package },
-  { href: "/corporate/bids/new", label: "Create Bid", icon: PlusCircle },
+  { href: "/corporate/bids/new", label: "Create Bid", icon: PlusCircle, id: 'bid' },
   { href: "/cart", label: "Cart", icon: ShoppingCart, id: "cart" },
   { href: "/compare", label: "Compare", icon: Scale, id: "compare" },
   { href: "/corporate/bids", label: "Active Bids", icon: Gavel },
@@ -52,6 +54,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
     const { adminLogout } = useAdminAuth();
     const { totalItems: cartItemsCount } = useCart();
     const { totalItems: comparisonItemsCount } = useComparison();
+    const { totalItems: bidItemsCount } = useBidRequest();
 
     const handleLogout = () => {
         adminLogout();
@@ -85,6 +88,8 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                                 badgeContent = cartItemsCount.toString();
                             } else if (link.id === 'compare' && comparisonItemsCount > 0) {
                                 badgeContent = comparisonItemsCount.toString();
+                            } else if (link.id === 'bid' && bidItemsCount > 0) {
+                                badgeContent = bidItemsCount.toString();
                             }
                             
                             return (
@@ -131,6 +136,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                         <BidPreview />
                          <ComparisonPreview />
                          <NotificationPopover notifications={mockCorporateActivity} />
                     </div>

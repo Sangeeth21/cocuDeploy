@@ -6,7 +6,7 @@ import { notFound, useParams, useRouter } from "next/navigation";
 import { mockProducts } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale } from "lucide-react";
+import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -19,6 +19,7 @@ import { useComparison } from "@/context/comparison-context";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
 import { CorporateProductInteractions } from "./_components/product-interactions";
+import { useBidRequest } from "@/context/bid-request-context";
 
 export default function B2BProductDetailPage() {
   const params = useParams();
@@ -32,6 +33,7 @@ export default function B2BProductDetailPage() {
   
   const { addToCart } = useCart();
   const { isComparing, toggleCompare } = useComparison();
+  const { addToBid, isInBid } = useBidRequest();
 
   const isCustomizable = useMemo(() => {
     return Object.values(product?.customizationAreas || {}).some(areas => areas && areas.length > 0);
@@ -79,6 +81,10 @@ export default function B2BProductDetailPage() {
   const handleAddToCart = () => {
       addToCart({product, customizations: {}});
       toast({title: "Added to Cart", description: `${product.name} has been added to your cart.`});
+  }
+  
+  const handleAddToBid = () => {
+      addToBid(product);
   }
 
   const handleCompareClick = () => {
@@ -191,6 +197,10 @@ export default function B2BProductDetailPage() {
            <div className="space-y-2">
             <Button size="lg" className="w-full" onClick={handleRequestQuote}>
                 {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
+            </Button>
+             <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
+                <Gavel className="mr-2 h-5 w-5" />
+                {isInBid(product.id) ? 'Added to Bid Request' : 'Add to Bid Request'}
             </Button>
             <div className="grid grid-cols-2 gap-2">
                 <Button size="lg" variant="outline" className="w-full" onClick={handleCompareClick}>

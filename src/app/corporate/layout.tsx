@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CorporateSidebarLayout } from "./_components/corporate-sidebar-layout";
 import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
+import { BidRequestProvider } from "@/context/bid-request-context";
 
 function ProtectedCorporateLayout({ children }: { children: React.ReactNode }) {
   const { isAdminLoggedIn } = useAdminAuth();
@@ -41,9 +42,11 @@ function ProtectedCorporateLayout({ children }: { children: React.ReactNode }) {
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <AdminAuthProvider>
-      <ProtectedCorporateLayout>
-        {children}
-      </ProtectedCorporateLayout>
+        <BidRequestProvider>
+          <ProtectedCorporateLayout>
+            {children}
+          </ProtectedCorporateLayout>
+        </BidRequestProvider>
     </AdminAuthProvider>
   );
 }

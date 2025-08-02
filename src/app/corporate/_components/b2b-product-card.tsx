@@ -6,7 +6,7 @@ import Link from 'next/link';
 import type { DisplayProduct } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, Truck, Wand2, ShoppingCart, Scale } from 'lucide-react';
+import { Star, Truck, Wand2, ShoppingCart, Scale, Gavel } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
@@ -15,6 +15,7 @@ import { useComparison } from '@/context/comparison-context';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/context/user-context';
 import { useAuthDialog } from '@/context/auth-dialog-context';
+import { useBidRequest } from '@/context/bid-request-context';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -24,6 +25,7 @@ export function B2bProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const { addToCart } = useCart();
   const { toggleCompare, isComparing } = useComparison();
+  const { addToBid, isInBid } = useBidRequest();
   const { toast } = useToast();
   const { isLoggedIn } = useUser();
   const { openDialog } = useAuthDialog();
@@ -63,6 +65,10 @@ export function B2bProductCard({ product }: ProductCardProps) {
           title: isComparing(product.id) ? "Removed from Comparison" : "Added to Comparison",
           description: product.name,
       });
+  }
+  
+  const handleAddToBid = () => {
+      addToBid(product);
   }
 
   const lowestTierPrice = product.tierPrices && product.tierPrices.length > 0
@@ -115,13 +121,14 @@ export function B2bProductCard({ product }: ProductCardProps) {
                  <Button size="sm" variant="secondary" onClick={handleAddToCart}>
                     <ShoppingCart className="h-4 w-4 mr-2" /> Add to Cart
                 </Button>
-                 <Button size="sm" variant="secondary" onClick={handleBuyNow}>
-                    Buy Now
+                 <Button size="sm" variant="secondary" onClick={handleToggleCompare}>
+                    <Scale className="h-4 w-4 mr-2" />
+                    {isComparing(product.id) ? 'Remove' : 'Compare'}
                 </Button>
             </div>
-             <Button size="sm" variant="outline" className="w-full" onClick={handleToggleCompare}>
-                <Scale className="h-4 w-4 mr-2" />
-                {isComparing(product.id) ? 'Remove from Compare' : 'Add to Compare'}
+             <Button size="sm" variant="outline" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
+                <Gavel className="h-4 w-4 mr-2" />
+                {isInBid(product.id) ? 'Added to Bid' : 'Add to Bid'}
             </Button>
         </div>
       </CardFooter>
