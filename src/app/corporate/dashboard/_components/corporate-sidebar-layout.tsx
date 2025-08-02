@@ -33,11 +33,10 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
 
     return (
         <div className="flex min-h-screen">
-        <SidebarProvider>
+        <SidebarProvider defaultOpen={false}>
             <Sidebar 
                 collapsible="icon" 
                 className="border-r hidden md:flex" 
-                defaultOpen={false}
             >
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -45,7 +44,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                            <Avatar className="h-10 w-10">
                                <Building className="h-6 w-6"/>
                             </Avatar>
-                            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                            <div className="flex flex-col group-hover:group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:hidden">
                                 <span className="text-lg font-semibold">Corporate Client</span>
                             </div>
                         </div>
@@ -62,7 +61,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                                 >
                                     <Link href={link.href}>
                                         <link.icon />
-                                        <span>{link.label}</span>
+                                        <span className="group-hover:group-data-[collapsible=icon]:inline-block group-data-[collapsible=icon]:hidden">{link.label}</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -74,7 +73,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                          <SidebarMenuItem>
                             <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
                                 <LogOut />
-                                <span>Log Out</span>
+                                <span className="group-hover:group-data-[collapsible=icon]:inline-block group-data-[collapsible=icon]:hidden">Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
@@ -94,4 +93,3 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
         </div>
     );
 }
-

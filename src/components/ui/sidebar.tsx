@@ -178,6 +178,14 @@ const Sidebar = React.forwardRef<
   ) => {
     const { isMobile, state, open, setOpen, openMobile, setOpenMobile } = useSidebar()
 
+    const handleMouseEnter = () => {
+      if (collapsible === 'icon') setOpen(true)
+    }
+
+    const handleMouseLeave = () => {
+       if (collapsible === 'icon') setOpen(false)
+    }
+
     if (collapsible === "none") {
       return (
         <div
@@ -216,29 +224,29 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
-        className="group peer hidden md:block text-sidebar-foreground relative hover:w-[var(--sidebar-width)] transition-[width] duration-300 ease-in-out"
+        className="group peer hidden md:block text-sidebar-foreground relative"
         data-state={state}
         data-collapsible={state === "collapsed" ? collapsible : ""}
         data-variant={variant}
         data-side={side}
-        onMouseEnter={() => setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         {/* This is what handles the sidebar gap on desktop */}
         <div
           className={cn(
-            "duration-200 relative h-svh w-[var(--sidebar-width-icon)] bg-transparent transition-[width] ease-linear",
+            "duration-200 relative h-svh w-[var(--sidebar-width)] bg-transparent transition-[width] ease-linear",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[side=right]:rotate-180",
             variant === "floating" || variant === "inset"
               ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
-              : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
+              : "group-data-[collapsible=icon]:w-[var(--sidebar-width-icon)]"
           )}
         />
         <div
           className={cn(
-            "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width-icon] transition-[left,right,width] ease-in-out md:flex",
-            "group-hover:w-[var(--sidebar-width)]",
+            "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[var(--sidebar-width)] transition-[left,right,width] ease-in-out md:flex",
+            "group-data-[state=collapsed]:w-[var(--sidebar-width-icon)]",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
