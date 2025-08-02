@@ -17,7 +17,7 @@ export function SearchBar() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const debouncedQuery = useDebounce(query, 100);
+  const debouncedQuery = useDebounce(query, 300);
   const searchContainerRef = useRef<HTMLDivElement>(null);
 
 
