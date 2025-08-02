@@ -121,15 +121,20 @@ export function B2bProductCard({ product }: ProductCardProps) {
                  <Button size="sm" variant="secondary" onClick={handleAddToCart}>
                     <ShoppingCart className="h-4 w-4 mr-2" /> Add to Cart
                 </Button>
-                 <Button size="sm" variant="secondary" onClick={handleToggleCompare}>
+                 <Button size="sm" variant="secondary" onClick={handleBuyNow}>
+                    Buy Now
+                </Button>
+            </div>
+             <div className="grid grid-cols-2 gap-2">
+                <Button size="sm" variant="outline" className="w-full" onClick={handleToggleCompare}>
                     <Scale className="h-4 w-4 mr-2" />
                     {isComparing(product.id) ? 'Remove' : 'Compare'}
                 </Button>
+                 <Button size="sm" variant="outline" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
+                    <Gavel className="h-4 w-4 mr-2" />
+                    {isInBid(product.id) ? 'Added to Bid' : 'Add to Bid'}
+                </Button>
             </div>
-             <Button size="sm" variant="outline" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
-                <Gavel className="h-4 w-4 mr-2" />
-                {isInBid(product.id) ? 'Added to Bid' : 'Add to Bid'}
-            </Button>
         </div>
       </CardFooter>
     </Card>
