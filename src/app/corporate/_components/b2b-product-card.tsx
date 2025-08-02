@@ -13,6 +13,8 @@ import { useMemo } from 'react';
 import { useCart } from '@/context/cart-context';
 import { useComparison } from '@/context/comparison-context';
 import { useToast } from '@/hooks/use-toast';
+import { useUser } from '@/context/user-context';
+import { useAuthDialog } from '@/context/auth-dialog-context';
 
 interface ProductCardProps {
   product: DisplayProduct;
@@ -23,6 +25,8 @@ export function B2bProductCard({ product }: ProductCardProps) {
   const { addToCart } = useCart();
   const { toggleCompare, isComparing } = useComparison();
   const { toast } = useToast();
+  const { isLoggedIn } = useUser();
+  const { openDialog } = useAuthDialog();
 
   const isCustomizable = useMemo(() => {
     return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
@@ -43,6 +47,15 @@ export function B2bProductCard({ product }: ProductCardProps) {
       description: `${product.name} has been added to your cart.`
     });
   }
+
+  const handleBuyNow = () => {
+    if (!isLoggedIn) {
+      openDialog('login');
+      return;
+    }
+    addToCart({product, customizations: {}});
+    router.push('/checkout');
+  };
 
   const handleToggleCompare = () => {
       toggleCompare(product);
@@ -94,16 +107,21 @@ export function B2bProductCard({ product }: ProductCardProps) {
             <p className="text-xs text-muted-foreground">Starts from</p>
             <p className="text-xl font-semibold font-body">${lowestTierPrice.toFixed(2)} / unit</p>
          </div>
-        <Button size="sm" className="w-full" onClick={handleRequestQuote}>
-            {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
-        </Button>
-        <div className="w-full flex gap-2">
-            <Button size="sm" variant="secondary" className="w-full" onClick={handleAddToCart}>
-                <ShoppingCart className="h-4 w-4 mr-2" /> Add to Cart
+        <div className="w-full flex flex-col gap-2">
+            <Button size="sm" className="w-full" onClick={handleRequestQuote}>
+                {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
             </Button>
+            <div className="grid grid-cols-2 gap-2">
+                 <Button size="sm" variant="secondary" onClick={handleAddToCart}>
+                    <ShoppingCart className="h-4 w-4 mr-2" /> Add to Cart
+                </Button>
+                 <Button size="sm" variant="secondary" onClick={handleBuyNow}>
+                    Buy Now
+                </Button>
+            </div>
              <Button size="sm" variant="outline" className="w-full" onClick={handleToggleCompare}>
                 <Scale className="h-4 w-4 mr-2" />
-                {isComparing(product.id) ? 'Remove' : 'Compare'}
+                {isComparing(product.id) ? 'Remove from Compare' : 'Add to Compare'}
             </Button>
         </div>
       </CardFooter>
