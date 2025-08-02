@@ -4,15 +4,17 @@
 import Image from "next/image";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { mockProducts } from "@/lib/mock-data";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Star, Truck, Wand2 } from "lucide-react";
+import { Star, Truck, Wand2, DollarSign, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ReviewsPreview } from "./_components/reviews-preview";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function B2BProductDetailPage() {
   const params = useParams();
@@ -21,9 +23,37 @@ export default function B2BProductDetailPage() {
   const product = mockProducts.find((p) => p.id === id);
 
   const [activeImage, setActiveImage] = useState(product?.imageUrl || 'https://placehold.co/600x600.png');
+  const [quantity, setQuantity] = useState(product?.moq || 100);
 
   const isCustomizable = useMemo(() => {
     return Object.values(product?.customizationAreas || {}).some(areas => areas && areas.length > 0);
+  }, [product]);
+
+  const pricePerUnit = useMemo(() => {
+    if (!product || !product.tierPrices) return product?.price || 0;
+    const applicableTier = product.tierPrices
+        .slice()
+        .sort((a, b) => b.quantity - a.quantity)
+        .find(tier => quantity >= tier.quantity);
+    return applicableTier ? applicableTier.price : product.price;
+  }, [product, quantity]);
+
+  const totalPrice = useMemo(() => {
+    return pricePerUnit * quantity;
+  }, [pricePerUnit, quantity]);
+  
+  const handleQuantityChange = (value: string | number) => {
+      const numValue = Number(value);
+      if (!isNaN(numValue) && numValue >= 0) {
+          setQuantity(numValue);
+      }
+  }
+
+  useEffect(() => {
+      // Set initial quantity to MOQ when product loads
+      if (product?.moq) {
+          setQuantity(product.moq);
+      }
   }, [product]);
 
   if (!product || !product.b2bEnabled) {
@@ -80,35 +110,60 @@ export default function B2BProductDetailPage() {
               <span className="font-semibold">{product.rating}</span>
               <span className="text-muted-foreground text-sm">({product.reviewCount} reviews)</span>
             </div>
-             <div className="flex items-center gap-1">
-              <Truck className='h-5 w-5 text-muted-foreground' />
-              <span className="font-semibold">MOQ: {product.moq}</span>
-            </div>
           </div>
           
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           
           <Card>
             <CardHeader>
-                <CardTitle>Bulk Pricing Tiers</CardTitle>
+                <CardTitle>Bulk Pricing Calculator</CardTitle>
+                <CardDescription>Select a tier or enter a quantity to see your price.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Quantity</TableHead>
-                            <TableHead className="text-right">Price per Unit</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {product.tierPrices?.map((tier, index) => (
-                            <TableRow key={index}>
-                                <TableCell className="font-medium">{tier.quantity.toLocaleString()}+</TableCell>
-                                <TableCell className="text-right font-semibold">${tier.price.toFixed(2)}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label>Select Quantity Tier</Label>
+                         <Select onValueChange={(value) => handleQuantityChange(value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a tier" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {product.tierPrices?.map((tier, index) => (
+                                    <SelectItem key={index} value={String(tier.quantity)}>
+                                        {tier.quantity.toLocaleString()}+ (at ${tier.price.toFixed(2)} each)
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                     <div className="space-y-2">
+                        <Label htmlFor="manual-quantity">Or Enter Quantity</Label>
+                        <Input
+                            id="manual-quantity"
+                            type="number"
+                            value={quantity}
+                            onChange={(e) => handleQuantityChange(e.target.value)}
+                            min={product.moq}
+                        />
+                    </div>
+                </div>
+
+                <div className="p-4 bg-muted/50 rounded-lg space-y-4">
+                    <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Minimum Order Quantity (MOQ)</span>
+                        <span className="font-semibold">{product.moq?.toLocaleString()} units</span>
+                    </div>
+                    <Separator/>
+                     <div className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Price per Unit</span>
+                        <span className="font-semibold">${pricePerUnit.toFixed(2)}</span>
+                    </div>
+                    <Separator/>
+                    <div className="flex justify-between items-center font-bold text-lg">
+                        <span>Estimated Total</span>
+                        <span>${totalPrice.toFixed(2)}</span>
+                    </div>
+                </div>
             </CardContent>
           </Card>
           
