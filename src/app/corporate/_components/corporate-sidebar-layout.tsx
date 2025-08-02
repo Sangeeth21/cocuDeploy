@@ -9,11 +9,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/context/admin-auth-context";
-import { mockCorporateCampaigns } from "@/lib/mock-data";
+import { mockCorporateCampaigns, mockCorporateActivity } from "@/lib/mock-data";
 import { Footer } from "@/components/layout/footer";
 import { Store } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useComparison } from "@/context/comparison-context";
+import { NotificationPopover } from "@/components/notification-popover";
 
 
 const navLinks = [
@@ -113,20 +114,21 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                 </SidebarFooter>
             </Sidebar>
             <div className="flex flex-col flex-1">
-                 <header className="flex h-16 items-center justify-between p-4 border-b bg-card">
+                 <header className="flex h-16 items-center justify-between px-4 border-b bg-card">
                     <Link href="/corporate/dashboard" className="flex items-center gap-2">
                         <Store className="h-6 w-6 text-primary" />
                         <span className="font-bold text-lg font-headline">ShopSphere Corporate</span>
                     </Link>
-                    <div className="flex items-center gap-4">
-                         <span className="font-bold hidden max-md:inline-block">Corporate Portal</span>
+                    <div className="flex items-center gap-2">
+                         <NotificationPopover notifications={mockCorporateActivity} />
                     </div>
                  </header>
                  <div className="flex-1 flex flex-col">
                     <CorporateCampaignBanner />
-                    <main className="flex-1 bg-background overflow-x-hidden">
+                    <main className="flex-1 overflow-x-hidden">
                         {children}
                     </main>
+                    <Footer />
                  </div>
             </div>
         </SidebarProvider>

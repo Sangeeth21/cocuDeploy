@@ -382,6 +382,11 @@ export const mockActivity = [
     { type: 'confirmation_request', id: 'REQ001', text: 'Confirmation needed for "Professional Yoga Mat"', time: '1d ago', href: '/admin/orders' },
 ];
 
+export const mockCorporateActivity = [
+    { type: 'order_shipped', id: 'CORP_ORD001', text: 'Your bulk order #CORP_ORD001 has shipped!', time: '1d ago', href: '/corporate/orders', actions: [{label: 'Track Shipment', href: '/corporate/orders'}] },
+    { type: 'request_approved', id: 'QUOTE005', text: 'Your quote request for "Custom Logo T-Shirts" has been approved.', time: '2d ago', href: '/corporate/quotes', actions: [{label: 'View Quote', href: '/corporate/quotes'}] },
+];
+
 
 // Mock data for the new marketing features
 const futureDate = new Date();
