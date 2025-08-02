@@ -43,6 +43,7 @@ export default function CorporateCustomizePage() {
     const [notes, setNotes] = useState("");
     const [customizationValues, setCustomizationValues] = useState<CustomizationValues>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedAreaId, setSelectedAreaId] = useState<string | null>(null);
 
     const handleCustomizationChange = (areaId: string, value: string) => {
         setCustomizationValues(prev => ({ ...prev, [areaId]: value }));
@@ -95,12 +96,16 @@ export default function CorporateCustomizePage() {
     const currentSideAreas = product.customizationAreas?.[activeSide] || [];
     
     const CustomizationPreview = () => (
-         <div className="relative w-full h-full">
+         <div className="relative w-full h-full" onClick={() => setSelectedAreaId(null)}>
             <Image src={product.images?.[imageSides.indexOf(activeSide)] || product.imageUrl} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
             {currentSideAreas.map((area: CustomizationArea) => (
                  <div
                     key={area.id}
-                    className="absolute border-2 border-dashed border-primary/70 bg-primary/10 pointer-events-none flex items-center justify-center p-1"
+                    className={cn(
+                        "absolute border-2 border-dashed border-primary/70 bg-primary/10 flex items-center justify-center p-1 cursor-pointer hover:bg-primary/20",
+                        selectedAreaId === area.id && "ring-2 ring-primary bg-primary/20",
+                        area.shape === 'ellipse' && "rounded-full"
+                    )}
                     style={{
                         left: `${area.x}%`,
                         top: `${area.y}%`,
@@ -110,8 +115,8 @@ export default function CorporateCustomizePage() {
                         fontSize: `${area.fontSize}px`,
                         fontWeight: area.fontWeight as any,
                         color: area.textColor,
-                        borderRadius: area.shape === 'ellipse' ? '50%' : '0'
                     }}
+                    onClick={(e) => { e.stopPropagation(); setSelectedAreaId(area.id); }}
                  >
                     <span className="truncate w-full h-full text-center">
                         {customizationValues[area.id] || area.label}
@@ -131,12 +136,12 @@ export default function CorporateCustomizePage() {
             <form onSubmit={handleSubmitQuote}>
                 <div className="grid lg:grid-cols-3 gap-8 items-start">
                     <div className="lg:col-span-2 space-y-8">
-                         <Card>
+                        <Card>
                              <CardHeader>
                                 <CardTitle className="text-2xl font-headline">Live Preview</CardTitle>
-                                <CardDescription>Your customizations will appear here instantly.</CardDescription>
+                                <CardDescription>Your customizations will appear here instantly. Click an area to select it.</CardDescription>
                             </CardHeader>
-                             <CardContent className="h-96">
+                             <CardContent className="h-[500px] bg-muted/20 rounded-md">
                                 <CustomizationPreview />
                             </CardContent>
                              <CardContent>
@@ -158,8 +163,8 @@ export default function CorporateCustomizePage() {
                             </CardHeader>
                             <CardContent className="space-y-6">
                                <div className="space-y-4">
-                                {allCustomizationAreas.map(area => (
-                                    <div key={area.id}>
+                                {allCustomizationAreas.length > 0 ? allCustomizationAreas.map(area => (
+                                    <div key={area.id} className={cn(selectedAreaId === area.id && "p-2 bg-muted rounded-md")}>
                                         <Label htmlFor={area.id}>{area.label} ({area.side})</Label>
                                         <Input
                                             id={area.id}
@@ -167,9 +172,10 @@ export default function CorporateCustomizePage() {
                                             value={customizationValues[area.id] || ''}
                                             onChange={(e) => handleCustomizationChange(area.id, e.target.value)}
                                             maxLength={area.maxLength}
+                                            onFocus={() => { setActiveSide(area.side as ImageSide); setSelectedAreaId(area.id); }}
                                         />
                                     </div>
-                                ))}
+                                )) : <p className="text-sm text-muted-foreground">This product has no defined customization areas.</p>}
                                </div>
                                <div className="space-y-2">
                                     <Label htmlFor="notes">Additional Notes</Label>
