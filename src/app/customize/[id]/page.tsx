@@ -483,8 +483,7 @@ const CustomizationRenderer = ({ product, activeSide, designElements, selectedEl
                         height: `${area.height}%`,
                     }}
                     className={cn(
-                        "outline-dashed outline-1 outline-muted-foreground/50",
-                        selectedElementId === element.id && "outline-primary outline-solid"
+                        selectedElementId === element.id && "outline-primary outline-dashed outline-1"
                     )}
                      onClick={(e) => {
                         e.stopPropagation();
@@ -646,6 +645,10 @@ export default function CustomizeProductPage() {
             setDesignElements(initialElements);
         }
     }, [product, setDesignElements, firstCustomizableSide]);
+    
+     useEffect(() => {
+        setSelectedElementId(null);
+    }, [activeSide]);
 
     const handleElementChange = useCallback((elementId: string, value: Partial<DesignElement>) => {
         setDesignElements(prev => prev.map(el => el.id === elementId ? { ...el, ...value } : el));
@@ -888,7 +891,7 @@ export default function CustomizeProductPage() {
                                                 <Label>Rotation</Label>
                                                 <div className="flex items-center gap-2">
                                                     <Slider min={-180} max={180} step={1} value={[selectedElement.rotation || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { rotation: v })} />
-                                                    <Input type="number" value={selectedElement.rotation ?? ''} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
+                                                    <Input type="number" value={selectedElement.rotation || ''} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
