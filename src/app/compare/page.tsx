@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useComparison } from "@/context/comparison-context";
 import Image from "next/image";
-import { Star, Wand2, X } from "lucide-react";
+import { Star, Wand2, X, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
