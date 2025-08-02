@@ -77,7 +77,7 @@ export default function CorporateProductsPage() {
 
 
   return (
-    <div className="space-y-8">
+    <div className="container space-y-8">
       <div className="text-center">
         <h1 className="text-4xl font-bold font-headline">All Corporate Products</h1>
         <p className="text-muted-foreground mt-2">Browse all products available for bulk purchasing.</p>

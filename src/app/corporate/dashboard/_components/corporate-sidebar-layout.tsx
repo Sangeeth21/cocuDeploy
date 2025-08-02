@@ -24,7 +24,7 @@ const navLinks = [
 ];
 
 function CorporateCampaignBanner() {
-    const bannerCampaign = mockCorporateCampaigns.find(c => c.status === 'Active' && c.placement === 'banner');
+    const bannerCampaign = (mockCorporateCampaigns || []).find(c => c.status === 'Active' && c.placement === 'banner');
     
     if (!bannerCampaign) return null;
     
@@ -103,7 +103,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                  </header>
                  <div className="flex-1 flex flex-col">
                     <CorporateCampaignBanner />
-                    <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-x-hidden">
+                    <main className="flex-1 bg-background overflow-x-hidden">
                         {children}
                     </main>
                     <Footer />

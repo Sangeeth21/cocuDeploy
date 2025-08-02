@@ -63,7 +63,7 @@ export default function CorporateAccountPage() {
   const recentBids = mockProducts.slice(0, 3).filter(p => p.b2bEnabled);
 
   return (
-    <div>
+    <div className="container">
       <div className="flex items-center justify-between space-y-2 mb-8">
         <h1 className="text-3xl font-bold tracking-tight font-headline">Account Dashboard</h1>
          <Button asChild>
