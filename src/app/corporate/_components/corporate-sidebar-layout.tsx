@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/context/admin-auth-context";
 import { mockCorporateCampaigns } from "@/lib/mock-data";
+import { Footer } from "@/components/layout/footer";
 
 
 const navLinks = [
@@ -102,9 +103,10 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                  </header>
                  <div className="flex-1 flex flex-col">
                     <CorporateCampaignBanner />
-                    <main className="flex-1 bg-background overflow-x-hidden">
+                    <main className="flex-1 bg-background overflow-x-hidden p-4 sm:p-6 md:p-8">
                         {children}
                     </main>
+                    <Footer />
                  </div>
             </div>
         </SidebarProvider>
