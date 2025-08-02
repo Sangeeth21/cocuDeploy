@@ -644,9 +644,6 @@ export default function CustomizeProductPage() {
                 }
             });
             setDesignElements(initialElements);
-            if(initialElements.length > 0) {
-                setSelectedElementId(initialElements[0].id)
-            }
         }
     }, [product, setDesignElements, firstCustomizableSide]);
 
@@ -929,7 +926,7 @@ export default function CustomizeProductPage() {
                                         </div>
                                     ) : (
                                         <div className="text-center py-8 text-muted-foreground">
-                                            <p>Select a text layer to edit it, or add new text.</p>
+                                            <p className="text-sm">Select a layer to edit, or add a new one.</p>
                                             <Button variant="secondary" className="mt-4" onClick={addTextElement}>Add Text</Button>
                                         </div>
                                     )}
