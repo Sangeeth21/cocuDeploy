@@ -115,7 +115,6 @@ export function Header() {
 
         <div className="flex items-center justify-end gap-1 sm:gap-2">
           {isLoggedIn && <NotificationPopover notifications={customerNotifications} />}
-          <ComparisonPreview />
           <WishlistPreview />
           <CartPreview />
           {isLoggedIn ? (

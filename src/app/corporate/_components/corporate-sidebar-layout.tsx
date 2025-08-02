@@ -16,6 +16,7 @@ import { useCart } from "@/context/cart-context";
 import { useComparison } from "@/context/comparison-context";
 import { NotificationPopover } from "@/components/notification-popover";
 import { SearchBar } from "@/components/search-bar";
+import { ComparisonPreview } from "@/components/comparison-preview";
 
 
 const navLinks = [
@@ -118,7 +119,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                  <header className="flex h-16 items-center px-4 border-b bg-card">
                     <Link href="/corporate/dashboard" className="flex items-center gap-2 mr-6">
                         <Store className="h-6 w-6 text-primary" />
-                        <span className="font-bold text-lg font-headline hidden sm:inline-block">ShopSphere Corporate</span>
+                        <span className="font-bold text-lg font-headline hidden sm:inline-block">ShopSphere</span>
                     </Link>
                     <div className="flex-1 flex justify-center px-4">
                         <div className="w-full max-w-xl">
@@ -126,6 +127,7 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                         <ComparisonPreview />
                          <NotificationPopover notifications={mockCorporateActivity} />
                     </div>
                  </header>
