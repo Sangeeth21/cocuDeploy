@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import type { CustomizationValue } from "@/lib/types";
+import type { CustomizationValue, CustomizationArea } from "@/lib/types";
 import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
@@ -173,14 +173,10 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
      useEffect(() => {
         if (!containerRef.current) return;
 
-        // For non-path based text, we can use the container height to estimate a good font size.
-        // This is a simplified approach. A more complex one might check width as well.
         if (!getPathData()) {
-           const newSize = (containerRef.current.clientHeight * 0.7); // 70% of the container height
+           const newSize = (containerRef.current.clientHeight * 0.7); 
            setDynamicFontSize(newSize);
         } else {
-             // For path-based text, the font size is more about fitting the path length.
-             // We'll keep the user-defined size or a default for these.
             setDynamicFontSize(element.fontSize || 14);
         }
     }, [element.height, element.width, textShape, element.fontSize]);
@@ -456,7 +452,11 @@ const CustomizationRenderer = ({ product, activeSide, designElements, selectedEl
         <div className="relative w-full h-full" onPointerDown={() => onSelect('')}>
             <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
             {designElements.map((element) => {
-                if(element.type === 'text' && element.originalAreaId) return null; // These are handled by vendor areas
+                const isVendorArea = !!element.originalAreaId;
+                const elementIsOnActiveSide = product.customizationAreas?.[activeSide]?.some((area: CustomizationArea) => area.id === element.originalAreaId);
+
+                if (isVendorArea && !elementIsOnActiveSide) return null; // Don't render vendor areas on wrong side
+                if (isVendorArea) return null; // Vendor areas are rendered separately
 
                 return (
                     <DraggableElement
@@ -619,32 +619,8 @@ export default function CustomizeProductPage() {
 
     useEffect(() => {
         setActiveSide(firstCustomizableSide);
-        if (product?.customizationAreas) {
-            const initialElements: DesignElement[] = [];
-            Object.values(product.customizationAreas).flat().forEach(area => {
-                if (area) {
-                     initialElements.push({
-                        id: `text-${area.id}`,
-                        type: 'text',
-                        originalAreaId: area.id,
-                        x: area.x, y: area.y, width: area.width, height: area.height,
-                        rotation: 0,
-                        text: '',
-                        fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
-                        fontSize: area.fontSize || 14,
-                        fontWeight: 'normal',
-                        textColor: '#000000',
-                        textAlign: 'center',
-                        textShape: 'normal',
-                        shapeIntensity: 50,
-                        outlineColor: '#FFFFFF',
-                        outlineWidth: 0,
-                    });
-                }
-            });
-            setDesignElements(initialElements);
-        }
-    }, [product, setDesignElements, firstCustomizableSide]);
+        setSelectedElementId(null);
+    }, [product, firstCustomizableSide]);
     
      useEffect(() => {
         setSelectedElementId(null);
@@ -653,6 +629,28 @@ export default function CustomizeProductPage() {
     const handleElementChange = useCallback((elementId: string, value: Partial<DesignElement>) => {
         setDesignElements(prev => prev.map(el => el.id === elementId ? { ...el, ...value } : el));
     }, [setDesignElements]);
+    
+    const addVendorTextElement = (area: CustomizationArea) => {
+        const newElement: DesignElement = {
+            id: `text-${area.id}`,
+            type: 'text',
+            originalAreaId: area.id,
+            x: area.x, y: area.y, width: area.width, height: area.height,
+            rotation: 0,
+            text: area.label,
+            fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
+            fontSize: area.fontSize || 14,
+            fontWeight: 'normal',
+            textColor: '#000000',
+            textAlign: 'center',
+            textShape: 'normal',
+            shapeIntensity: 50,
+            outlineColor: '#FFFFFF',
+            outlineWidth: 0,
+        };
+        setDesignElements(prev => [...prev, newElement]);
+        setSelectedElementId(newElement.id);
+    }
     
     const addTextElement = () => {
         const newElement: DesignElement = {
@@ -769,9 +767,7 @@ export default function CustomizeProductPage() {
     }
     
     const currentVendorCustomizationAreas = product.customizationAreas?.[activeSide] || [];
-    const textElementsForCurrentSide = designElements.filter(el => 
-        el.type === 'text' && el.originalAreaId && currentVendorCustomizationAreas.some(area => `text-${area.id}` === el.id)
-    );
+    const addedVendorAreaIds = designElements.filter(el => el.originalAreaId).map(el => el.originalAreaId);
 
     return (
         <div className="h-screen flex flex-col bg-muted/40">
@@ -891,7 +887,7 @@ export default function CustomizeProductPage() {
                                                 <Label>Rotation</Label>
                                                 <div className="flex items-center gap-2">
                                                     <Slider min={-180} max={180} step={1} value={[selectedElement.rotation || 0]} onValueChange={([v]) => handleElementChange(selectedElementId!, { rotation: v })} />
-                                                    <Input type="number" value={selectedElement.rotation || ''} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
+                                                    <Input type="number" value={selectedElement.rotation ?? ''} onChange={e => handleElementChange(selectedElementId!, { rotation: parseInt(e.target.value) || 0})} className="w-20 h-9" />
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
@@ -928,9 +924,28 @@ export default function CustomizeProductPage() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className="text-center py-8 text-muted-foreground">
-                                            <p className="text-sm">Select a layer to edit, or add a new one.</p>
-                                            <Button variant="secondary" className="mt-4" onClick={addTextElement}>Add Text</Button>
+                                        <div className="text-center py-4 text-muted-foreground space-y-4">
+                                            {currentVendorCustomizationAreas.length > 0 && (
+                                                <Card className="text-left">
+                                                    <CardHeader className="p-2"><CardTitle className="text-sm font-semibold">Vendor Areas</CardTitle></CardHeader>
+                                                    <CardContent className="p-2 space-y-2">
+                                                        {currentVendorCustomizationAreas.map(area => (
+                                                            <Button 
+                                                                key={area.id}
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className="w-full justify-start"
+                                                                onClick={() => addVendorTextElement(area)}
+                                                                disabled={addedVendorAreaIds.includes(area.id)}
+                                                            >
+                                                                Add text to "{area.label}"
+                                                            </Button>
+                                                        ))}
+                                                    </CardContent>
+                                                </Card>
+                                            )}
+                                            <p className="text-sm pt-4">Select a layer to edit, or add a new one.</p>
+                                            <Button variant="secondary" className="w-full" onClick={addTextElement}>Add Freeform Text</Button>
                                         </div>
                                     )}
                                     </TabsContent>
