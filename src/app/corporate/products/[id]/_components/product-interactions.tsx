@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import type { DisplayProduct, Conversation, Message } from "@/lib/types";
-import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, BellRing, Wand2, ShoppingCart } from "lucide-react";
+import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, BellRing, Wand2, ShoppingCart, Package } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -101,6 +101,13 @@ export function CorporateProductInteractions({ product, isCustomizable }: { prod
     // For corporate, we can skip the warning flow for now
     router.push(`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}&type=corporate`);
   }
+  
+  const handleRequestSample = () => {
+    toast({
+        title: "Sample Requested (Simulated)",
+        description: `Your request for a sample of "${product.name}" has been sent to the vendor.`,
+    });
+  }
 
   const handleSendMessage = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -193,10 +200,16 @@ export function CorporateProductInteractions({ product, isCustomizable }: { prod
   
   return (
     <>
-      <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendorClick}>
+      <div className="flex flex-col sm:flex-row gap-2">
+        <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendorClick}>
             <MessageSquare className="mr-2 h-5 w-5" />
             Message Vendor
-      </Button>
+        </Button>
+         <Button size="lg" variant="secondary" className="w-full" onClick={handleRequestSample}>
+            <Package className="mr-2 h-5 w-5" />
+            Request Sample
+        </Button>
+      </div>
       
        <Dialog open={isPreChatOpen} onOpenChange={setIsPreChatOpen}>
             <DialogContent>

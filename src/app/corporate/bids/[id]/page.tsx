@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { mockCorporateBids } from '@/lib/mock-data';
 import type { CorporateBid, VendorBid } from '@/lib/types';
-import { ArrowLeft, Clock, CheckCircle, Hourglass, XCircle, Gavel, Users, Info, Award, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Clock, CheckCircle, Hourglass, XCircle, Gavel, Users, Info, Award, MessageSquare, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 
 
 function CountdownTimer({ expiryDate }: { expiryDate: string }) {
@@ -63,6 +66,75 @@ function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     return <>{timerComponents.join(' ')}</>;
 }
 
+function RequestSamplesDialog({ bid }: { bid: CorporateBid }) {
+    const { toast } = useToast();
+    const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+    
+    const handleToggleProduct = (productId: string) => {
+        setSelectedProducts(prev => {
+            if (prev.includes(productId)) {
+                return prev.filter(id => id !== productId);
+            }
+            if (prev.length < 3) {
+                return [...prev, productId];
+            }
+            toast({
+                variant: 'destructive',
+                title: "Selection Limit Reached",
+                description: "You can select a maximum of 3 products for samples."
+            });
+            return prev;
+        })
+    };
+    
+    const handleRequest = () => {
+         toast({
+            title: "Sample Request Sent!",
+            description: `Vendors have been notified about your sample request for ${selectedProducts.length} product(s).`,
+        });
+    }
+
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <Button variant="outline"><Package className="mr-2 h-4 w-4"/> Request Samples</Button>
+            </DialogTrigger>
+             <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Request Samples from Bid</DialogTitle>
+                    <DialogDescription>
+                        Select up to 3 products from this bid to request paid samples. Vendors will contact you with details.
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                    {bid.products.map(p => (
+                        <div key={p.id} className="flex items-center gap-4">
+                            <Checkbox 
+                                id={`sample-${p.id}`}
+                                onCheckedChange={() => handleToggleProduct(p.id)}
+                                checked={selectedProducts.includes(p.id)}
+                            />
+                            <Label htmlFor={`sample-${p.id}`} className="flex items-center gap-2 cursor-pointer">
+                                <div className="relative h-10 w-10 flex-shrink-0">
+                                    <Image src={p.imageUrl} alt={p.name} fill className="object-cover rounded-md" />
+                                </div>
+                                <span className="text-xs font-medium">{p.name}</span>
+                            </Label>
+                        </div>
+                    ))}
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                         <Button onClick={handleRequest} disabled={selectedProducts.length === 0}>
+                            Request {selectedProducts.length} Sample(s)
+                        </Button>
+                    </DialogClose>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export default function BidDetailsPage() {
     const params = useParams();
     const router = useRouter();
@@ -95,6 +167,7 @@ export default function BidDetailsPage() {
     }
 
     const { icon: StatusIcon, color: statusColor, label: statusLabel } = getStatusInfo(bid.status);
+    const awardedVendor = bid.status === 'Awarded' ? bid.responses[0] : null; // Mock: assume first response is the awarded one
 
     return (
         <div>
@@ -110,10 +183,13 @@ export default function BidDetailsPage() {
                                     <h1 className="text-2xl font-bold font-headline font-mono">{bid.id}</h1>
                                     <p className="text-muted-foreground">Created on {new Date(bid.createdAt).toLocaleDateString()}</p>
                                 </div>
-                                <Badge variant={bid.status === 'Awarded' ? 'default' : 'secondary'} className="text-base">
-                                    <StatusIcon className={`mr-2 h-4 w-4 ${statusColor}`} />
-                                    {statusLabel}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                     <RequestSamplesDialog bid={bid} />
+                                    <Badge variant={bid.status === 'Awarded' ? 'default' : 'secondary'} className="text-base">
+                                        <StatusIcon className={`mr-2 h-4 w-4 ${statusColor}`} />
+                                        {statusLabel}
+                                    </Badge>
+                                </div>
                             </div>
                         </CardHeader>
                         <CardContent>
@@ -149,11 +225,14 @@ export default function BidDetailsPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {bid.responses.map(res => (
-                                        <TableRow key={res.vendorId}>
-                                            <TableCell className="font-medium">{res.alias}</TableCell>
+                                        <TableRow key={res.vendorId} className={awardedVendor?.vendorId === res.vendorId ? "bg-green-100/50 dark:bg-green-900/20" : ""}>
+                                            <TableCell className="font-medium">{res.alias} {awardedVendor?.vendorId === res.vendorId && <span className="text-green-600 font-bold">(Awarded)</span>}</TableCell>
                                             <TableCell>${res.pricePerUnit.toFixed(2)}</TableCell>
                                             <TableCell>{res.estimatedDelivery}</TableCell>
-                                            <TableCell className="text-right">
+                                            <TableCell className="text-right flex justify-end gap-2">
+                                                {bid.status === 'Awarded' && awardedVendor?.vendorId === res.vendorId && (
+                                                    <Button size="sm" variant="secondary"><MessageSquare className="mr-2 h-4 w-4" /> Chat</Button>
+                                                )}
                                                 <AlertDialog>
                                                     <AlertDialogTrigger asChild>
                                                          <Button size="sm" disabled={bid.status !== 'Active'}>

@@ -9,13 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { DisplayProduct, User } from '@/lib/types';
-import { ArrowLeft, X, CheckCircle, PlusCircle, Truck, Building, Loader2, Calendar, Clock, FileUp, Users } from "lucide-react";
+import { ArrowLeft, X, CheckCircle, PlusCircle, Truck, Building, Loader2, Calendar, Clock, FileUp, Users, ShieldCheck } from "lucide-react";
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { useBidRequest } from '@/context/bid-request-context';
 import Link from 'next/link';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
 
+const MOCK_OTP = "123456";
 
 export default function NewBidPage() {
     const router = useRouter();
@@ -29,18 +32,48 @@ export default function NewBidPage() {
     const [biddingDuration, setBiddingDuration] = useState<"24" | "48">("24");
     const [notes, setNotes] = useState("");
     const [brief, setBrief] = useState<File | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isOtpOpen, setIsOtpOpen] = useState(false);
+    const [otp, setOtp] = useState("");
 
-    const handleCreateBid = () => {
-        toast({
-            title: "Bid Submitted!",
-            description: "Vendors have been notified and will respond within your selected timeframe.",
-        });
-        clearBid();
-        router.push("/corporate/bids");
+
+    const handleFinalizeBid = () => {
+        setIsSubmitting(true);
+        // Simulate API call
+        setTimeout(() => {
+            setIsSubmitting(false);
+            setIsOtpOpen(false);
+            toast({
+                title: "Bid Submitted!",
+                description: "Vendors have been notified and will respond within your selected timeframe.",
+            });
+            clearBid();
+            router.push("/corporate/bids");
+        }, 1500);
     };
 
+    const handleInitialSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        // Here you would typically trigger the OTP send
+        toast({ title: "Verification Required", description: "An OTP has been sent to your registered phone number." });
+        setIsOtpOpen(true);
+    };
+
+    const handleOtpChange = (value: string) => {
+        setOtp(value);
+        if (value.length === 6) {
+            if (value === MOCK_OTP) {
+                handleFinalizeBid();
+            } else {
+                toast({ variant: 'destructive', title: 'Invalid OTP', description: 'Please try again.'});
+                setOtp("");
+            }
+        }
+    };
+
+
     return (
-        <div>
+        <form onSubmit={handleInitialSubmit}>
             <div className="mb-8">
                 <h1 className="text-3xl font-bold font-headline">Create New Bid Request</h1>
                 <p className="text-muted-foreground">Specify your requirements for the selected products to receive competitive bids from vendors.</p>
@@ -142,13 +175,41 @@ export default function NewBidPage() {
                              <CardDescription>Your request will be sent to all relevant vendors.</CardDescription>
                          </CardHeader>
                          <CardContent>
-                            <Button className="w-full" onClick={handleCreateBid} disabled={bidItems.length === 0}>
-                                <CheckCircle className="mr-2 h-4 w-4" /> Submit Bid Request
-                            </Button>
+                            <Dialog open={isOtpOpen} onOpenChange={setIsOtpOpen}>
+                                <DialogTrigger asChild>
+                                    <Button type="submit" className="w-full" disabled={bidItems.length === 0}>
+                                        <CheckCircle className="mr-2 h-4 w-4" /> Submit Bid Request
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle className="flex items-center gap-2">
+                                            <ShieldCheck/> Two-Factor Verification
+                                        </DialogTitle>
+                                        <DialogDescription>
+                                            To ensure the security of your request, please enter the 6-digit code sent to your registered phone number.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="flex flex-col items-center justify-center space-y-4 py-4">
+                                        <InputOTP maxLength={6} value={otp} onChange={handleOtpChange}>
+                                            <InputOTPGroup>
+                                                <InputOTPSlot index={0} />
+                                                <InputOTPSlot index={1} />
+                                                <InputOTPSlot index={2} />
+                                                <InputOTPSlot index={3} />
+                                                <InputOTPSlot index={4} />
+                                                <InputOTPSlot index={5} />
+                                            </InputOTPGroup>
+                                        </InputOTP>
+                                        <Button variant="link" size="sm" className="text-xs">Resend Code</Button>
+                                        {isSubmitting && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
                          </CardContent>
                      </Card>
                 </div>
             </div>
-        </div>
+        </form>
     );
 }
