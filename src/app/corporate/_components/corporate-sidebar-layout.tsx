@@ -48,19 +48,13 @@ function CorporateCampaignBanner() {
     )
 }
 
-export function CorporateSidebarLayout({ children }: { children: React.ReactNode }) {
+function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
     const { adminLogout } = useAdminAuth();
     const { totalItems: cartItemsCount } = useCart();
     const { totalItems: comparisonItemsCount } = useComparison();
     const { totalItems: bidItemsCount } = useBidRequest();
-
-    const handleLogout = () => {
-        adminLogout();
-        router.push('/corporate');
-    }
-    
     const { setOpen } = useSidebar();
     
     const handleMouseEnter = () => {
@@ -71,9 +65,13 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
        setOpen(false)
     }
 
+    const handleLogout = () => {
+        adminLogout();
+        router.push('/corporate');
+    }
+
     return (
-        <div className="flex min-h-screen bg-background">
-        <SidebarProvider defaultOpen={false}>
+        <>
             <Sidebar 
                 collapsible="icon" 
                 className="border-r hidden md:flex"
@@ -161,7 +159,18 @@ export function CorporateSidebarLayout({ children }: { children: React.ReactNode
                     <Footer />
                  </div>
             </div>
-        </SidebarProvider>
+        </>
+    )
+}
+
+export function CorporateSidebarLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="flex min-h-screen bg-background">
+            <SidebarProvider defaultOpen={false}>
+                <CorporateSidebarLayoutContent>
+                    {children}
+                </CorporateSidebarLayoutContent>
+            </SidebarProvider>
         </div>
     );
 }
