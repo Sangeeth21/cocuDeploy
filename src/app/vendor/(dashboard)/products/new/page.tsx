@@ -21,7 +21,7 @@ import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
 import { useVerification } from "@/context/vendor-verification-context"
-import type { CustomizationArea, CustomizationOption } from "@/lib/types";
+import type { CustomizationArea, CustomizationOption, DisplayProduct } from "@/lib/types";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -245,7 +245,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
             { cursor: 'ew-resize', position: 'top-1/2 -translate-y-1/2 left-0', handle: 'w' },
             { cursor: 'ew-resize', position: 'top-1/2 -translate-y-1/2 right-0', handle: 'e' },
             { cursor: 'nesw-resize', position: 'bottom-0 left-0', handle: 'sw' },
-            { cursor: 'ns-resize', position: 'bottom-0 left-1/2 -translate-x-1/2', handle: 's' },
+            { cursor: 'ns-resize', position: 'bottom-0 left-1/2 -translate-y-1/2', handle: 's' },
             { cursor: 'nwse-resize', position: 'bottom-0 right-0', handle: 'se' },
         ];
         
@@ -609,7 +609,7 @@ export default function NewProductPage() {
     const { isVerified, addDraftProduct } = useVerification();
     
     const [images, setImages] = useState<ProductImages>({});
-    const [isDraft, setIsDraft] = useState(!isVerified); // Default to draft if not verified
+    const [status, setStatus] = useState<DisplayProduct['status']>(isVerified ? 'Live' : 'Draft');
     const [requiresConfirmation, setRequiresConfirmation] = useState(false);
     const [show3DPreview, setShow3DPreview] = useState(false);
     const [is3DEnabled, setIs3DEnabled] = useState(true);
@@ -728,12 +728,15 @@ export default function NewProductPage() {
     
     const handleSaveDraft = () => {
         addDraftProduct({ id: Date.now().toString(), name: productName || "Unnamed Product", imageUrl: images.front?.src });
+        toast({ title: "Product Saved as Draft" });
         if (!isVerified) {
             setIsDraftInfoOpen(true);
-        } else {
-            toast({ title: "Product Saved as Draft" });
         }
     };
+    
+    const handlePublish = () => {
+        toast({ title: "Product Published!", description: "Your product is now live on the marketplace." });
+    }
     
     const handleSaveCustomArea = (areas: CustomizationArea[]) => {
         if (editingSide) {
@@ -836,6 +839,10 @@ export default function NewProductPage() {
             checked ? [...prev, id] : prev.filter(item => item !== id)
         );
     };
+    
+    useEffect(() => {
+        setStatus(isVerified ? 'Live' : 'Draft');
+    }, [isVerified]);
 
   return (
     <>
@@ -1088,8 +1095,13 @@ export default function NewProductPage() {
                     <div className="space-y-2">
                         <Label>Product Status</Label>
                         <div className="flex items-center gap-4 p-2 border rounded-md">
-                            <Switch id="status" checked={isDraft} onCheckedChange={setIsDraft} disabled={!isVerified} />
-                            <Label htmlFor="status" className="font-normal">{ isDraft ? "Draft" : "Active"}</Label>
+                            <Switch 
+                                id="status" 
+                                checked={status === 'Live'} 
+                                onCheckedChange={(checked) => setStatus(checked ? 'Live' : 'Draft')}
+                                disabled={!isVerified} 
+                            />
+                            <Label htmlFor="status" className="font-normal">{status}</Label>
                         </div>
                          {!isVerified && <p className="text-xs text-muted-foreground">Complete verification to publish products.</p>}
                     </div>
@@ -1118,7 +1130,7 @@ export default function NewProductPage() {
         <Button onClick={handleSaveDraft}>
             Save as Draft
         </Button>
-         <Button className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || isDraft}>
+         <Button onClick={handlePublish} className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || status === 'Draft'}>
             <CheckCircle className="mr-2 h-4 w-4"/>
             Publish Product
         </Button>
