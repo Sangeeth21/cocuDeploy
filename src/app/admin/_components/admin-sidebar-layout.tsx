@@ -95,6 +95,14 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
+                         <SidebarMenuItem>
+                             <SidebarMenuButton asChild tooltip={{children: 'New Corporate Campaign'}}>
+                                <Link href="/admin/corporate-marketing/new">
+                                    <Building/>
+                                    <span>New Corporate Campaign</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
                         {navLinks.map(link => (
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton
