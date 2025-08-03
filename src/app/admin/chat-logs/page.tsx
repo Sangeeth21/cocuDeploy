@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
@@ -14,11 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import type { Message, Conversation as AdminConversation } from "@/lib/types";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 type Conversation = Omit<AdminConversation, 'awaitingVendorDecision' | 'userMessageCount'> & {
   customerAvatar: string;
   vendorAvatar: string;
+  type?: 'customer' | 'corporate';
 }
 
 const initialConversations: Conversation[] = [
@@ -35,6 +36,7 @@ const initialConversations: Conversation[] = [
       { id: 'msg3', sender: "customer", text: "That would be great, thank you!", timestamp: new Date() },
     ],
     avatar: '', // not used in this view
+    type: 'customer',
   },
   {
     id: "2",
@@ -45,7 +47,22 @@ const initialConversations: Conversation[] = [
     status: 'flagged',
     messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada? My email is test@example.com", timestamp: new Date() }],
      avatar: '',
+     type: 'customer',
   },
+  {
+    id: "CORP_CONV_1",
+    customerId: "Corporate Client Inc.",
+    vendorId: "VDR001",
+    customerAvatar: "https://placehold.co/40x40.png",
+    vendorAvatar: "https://placehold.co/40x40.png",
+    status: 'active',
+    messages: [
+        { id: 'ccm1', sender: 'customer', text: 'Hello, we are interested in a bulk order of the Classic Leather Watch for a corporate event. Can you provide a quote for 500 units?' },
+        { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?' },
+    ],
+    avatar: '',
+    type: 'corporate',
+  }
 ];
 
 export default function AdminChatLogsPage() {
@@ -98,45 +115,60 @@ export default function AdminChatLogsPage() {
       }
   }
 
+  const renderConversationList = (type: 'customer' | 'corporate') => {
+      const filteredConversations = conversations.filter(c => c.type === type);
+      return (
+          <ScrollArea>
+              {filteredConversations.map(convo => (
+              <div
+                  key={convo.id}
+                  className={cn(
+                  "flex flex-col p-4 cursor-pointer hover:bg-muted/50 border-b",
+                  selectedConversationId === convo.id && "bg-muted"
+                  )}
+                  onClick={() => handleSelectConversation(convo.id as string)}
+              >
+                  <div className="flex justify-between items-center text-sm font-semibold">
+                      <span className="truncate">{convo.customerId}</span>
+                      <span>&harr;</span>
+                      <span className="truncate">{convo.vendorId}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                      <p className="text-xs text-muted-foreground truncate mt-1">
+                          {convo.messages.filter(m => m.sender !== 'system').pop()?.text}
+                      </p>
+                      {convo.status !== 'active' && <Badge variant={convo.status === 'flagged' ? 'destructive' : 'secondary'} className="capitalize">{convo.status}</Badge>}
+                  </div>
+              </div>
+              ))}
+          </ScrollArea>
+      )
+  }
+
   return (
       <div>
         <div className="mb-8">
             <h1 className="text-3xl font-bold font-headline">Chat Logs</h1>
             <p className="text-muted-foreground">Monitor conversations between vendors and customers.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-[calc(100vh-14rem)] border rounded-lg bg-card">
+        <Tabs defaultValue="customer" className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-[calc(100vh-14rem)] border rounded-lg bg-card">
             <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full">
             <div className="p-4 border-b">
-                <h2 className="text-xl font-bold">Conversations</h2>
-                <div className="relative mt-2">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="customer">Customer</TabsTrigger>
+                    <TabsTrigger value="corporate">Corporate</TabsTrigger>
+                </TabsList>
+                <div className="relative mt-4">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Search conversations..." className="pl-8" />
                 </div>
             </div>
-            <ScrollArea>
-                {conversations.map(convo => (
-                <div
-                    key={convo.id}
-                    className={cn(
-                    "flex flex-col p-4 cursor-pointer hover:bg-muted/50 border-b",
-                    selectedConversationId === convo.id && "bg-muted"
-                    )}
-                    onClick={() => handleSelectConversation(convo.id as string)}
-                >
-                    <div className="flex justify-between items-center text-sm font-semibold">
-                        <span className="truncate">{convo.customerId}</span>
-                        <span>&harr;</span>
-                        <span className="truncate">{convo.vendorId}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                        <p className="text-xs text-muted-foreground truncate mt-1">
-                            {convo.messages.filter(m => m.sender !== 'system').pop()?.text}
-                        </p>
-                        {convo.status !== 'active' && <Badge variant={convo.status === 'flagged' ? 'destructive' : 'secondary'} className="capitalize">{convo.status}</Badge>}
-                    </div>
-                </div>
-                ))}
-            </ScrollArea>
+            <TabsContent value="customer" className="flex-1 overflow-hidden mt-0">
+                {renderConversationList('customer')}
+            </TabsContent>
+            <TabsContent value="corporate" className="flex-1 overflow-hidden mt-0">
+                 {renderConversationList('corporate')}
+            </TabsContent>
             </div>
             <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full border-l">
             {selectedConversation ? (
@@ -158,7 +190,7 @@ export default function AdminChatLogsPage() {
                             </>
                         )}
                         <Button variant="outline" size="sm" onClick={() => handleModerationAction('warn_customer')}>
-                            <AlertTriangle className="mr-2 h-4 w-4"/> Warn Customer
+                            <AlertTriangle className="mr-2 h-4 w-4"/> Warn {selectedConversation.type === 'corporate' ? 'Client' : 'Customer'}
                         </Button>
                         <Button variant="destructive" size="sm" onClick={() => handleModerationAction('warn_vendor')}>
                            <AlertTriangle className="mr-2 h-4 w-4"/> Warn Vendor
@@ -191,7 +223,7 @@ export default function AdminChatLogsPage() {
                 </div>
             )}
             </div>
-        </div>
+        </Tabs>
       </div>
   );
 }

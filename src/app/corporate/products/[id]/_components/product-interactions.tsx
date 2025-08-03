@@ -24,7 +24,7 @@ type Attachment = {
     url: string;
 }
 
-const initialConversation: Omit<Conversation, 'id'> = {
+const initialConversation: Omit<Conversation, 'id' | 'customerId'> = {
     vendorId: "VDR001",
     avatar: "https://placehold.co/40x40.png",
     messages: [],
@@ -56,7 +56,7 @@ export function CorporateProductInteractions({ product, isCustomizable }: { prod
   const { isLoggedIn } = useUser();
   const { openDialog } = useAuthDialog();
 
-  const [conversation, setConversation] = useState<Omit<Conversation, 'id'>>({
+  const [conversation, setConversation] = useState<Omit<Conversation, 'id' | 'customerId'>>({
       ...initialConversation, 
       vendorId: product.vendorId
   });
@@ -98,39 +98,8 @@ export function CorporateProductInteractions({ product, isCustomizable }: { prod
         return;
     }
     
-    // Check localStorage for warning status
-    const viewedWarnings: string[] = JSON.parse(localStorage.getItem(VIEWED_WARNINGS_KEY) || '[]' );
-    const warningCount: number = parseInt(localStorage.getItem(WARNING_COUNT_KEY) || '0');
-    
-    const hasSeenForThisProduct = viewedWarnings.includes(product.id);
-    const hasReachedMaxWarnings = warningCount >= MAX_WARNING_COUNT;
-
-    if (hasSeenForThisProduct || hasReachedMaxWarnings) {
-        // Skip pre-chat dialog and open chat directly
-        setIsChatOpen(true);
-    } else {
-        setIsPreChatOpen(true);
-    }
-  }
-
-  const handleProceedToChat = () => {
-    setIsPreChatOpen(false);
-    setIsChatOpen(true);
-
-    // Update localStorage
-    try {
-        const viewedWarnings: string[] = JSON.parse(localStorage.getItem(VIEWED_WARNINGS_KEY) || '[]' );
-        if (!viewedWarnings.includes(product.id)) {
-            viewedWarnings.push(product.id);
-            localStorage.setItem(VIEWED_WARNINGS_KEY, JSON.stringify(viewedWarnings));
-        }
-        
-        const warningCount: number = parseInt(localStorage.getItem(WARNING_COUNT_KEY) || '0');
-        localStorage.setItem(WARNING_COUNT_KEY, (warningCount + 1).toString());
-
-    } catch (error) {
-        console.error("Failed to update localStorage:", error);
-    }
+    // For corporate, we can skip the warning flow for now
+    router.push(`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}&type=corporate`);
   }
 
   const handleSendMessage = useCallback((e: React.FormEvent) => {
@@ -244,93 +213,8 @@ export function CorporateProductInteractions({ product, isCustomizable }: { prod
                      <p>All conversations are monitored for safety purposes.</p>
                 </div>
                 <DialogFooter>
-                    <Button onClick={handleProceedToChat}>I Understand, Continue to Chat</Button>
+                    <Button onClick={() => setIsChatOpen(true)}>I Understand, Continue to Chat</Button>
                 </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-         <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
-            <DialogContent className="sm:max-w-lg h-[80vh] flex flex-col p-0">
-                 <DialogHeader className="p-4 border-b">
-                     <DialogTitle className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                            <AvatarImage src={conversation.avatar} alt={conversation.vendorId} data-ai-hint="company logo" />
-                            <AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        Chat with {conversation.vendorId}
-                    </DialogTitle>
-                     <DialogDescription className="ml-12 -mt-2 text-xs">
-                        {isLocked ? 'Message limit reached' : `${remaining} messages left`}
-                     </DialogDescription>
-                </DialogHeader>
-                 <div className="flex-1 overflow-hidden min-h-0">
-                    <ScrollArea className="h-full bg-muted/20">
-                        <div className="p-4 space-y-4" ref={messagesContainerRef}>
-                        {conversation.messages.map((msg, index) => (
-                             msg.sender === 'system' ? (
-                                <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
-                            ) : (
-                            <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
-                            {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={conversation.avatar} alt={conversation.vendorId} /><AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
-                            <div className={cn("max-w-xs rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
-                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                                {msg.attachments && (
-                                    <div className="grid gap-2 grid-cols-2">
-                                        {msg.attachments.map((att, i) => (
-                                            att.type === 'image' ? (
-                                                <div key={i} className="relative aspect-video rounded-md overflow-hidden">
-                                                    <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
-                                                </div>
-                                            ) : (
-                                                <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                                    <FileIcon className="h-6 w-6 text-muted-foreground"/>
-                                                    <span className="text-xs truncate">{att.name}</span>
-                                                    <Download className="h-4 w-4 ml-auto" />
-                                                </a>
-                                            )
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                            {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="You" data-ai-hint="person face" /><AvatarFallback>Y</AvatarFallback></Avatar>}
-                            </div>
-                             )
-                        ))}
-                        </div>
-                    </ScrollArea>
-                 </div>
-                 <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
-                    {attachments.length > 0 && !isLocked && (
-                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                            {attachments.map((file, index) => (
-                                <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2 bg-muted/50">
-                                    {file.type.startsWith('image/') ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileIcon className="h-5 w-5 text-muted-foreground" />}
-                                    <p className="text-xs text-muted-foreground truncate">{file.name}</p>
-                                    <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}><X className="h-3 w-3" /></Button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                    <div className="flex items-center gap-2">
-                        <div className="relative flex-1">
-                            <Textarea
-                                ref={textareaRef}
-                                placeholder={isLocked ? "Message limit reached." : "Type your message..."}
-                                className="pr-12 resize-none max-h-48"
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                maxLength={MAX_MESSAGE_LENGTH}
-                                rows={1}
-                                disabled={isLocked}
-                            />
-                        </div>
-                        <Button type="button" variant="ghost" size="icon" asChild disabled={isLocked}>
-                            <label htmlFor="modal-file-upload"><Paperclip className="h-5 w-5" /></label>
-                        </Button>
-                        <input id="modal-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} disabled={isLocked} />
-                        <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
-                    </div>
-                </form>
             </DialogContent>
         </Dialog>
 

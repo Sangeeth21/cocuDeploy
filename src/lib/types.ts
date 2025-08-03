@@ -136,7 +136,7 @@ export type User = {
 export type Conversation = {
   id: string | number;
   vendorId: string;
-  customerId?: string; // For vendor/admin view
+  customerId: string; // For vendor/admin view
   avatar: string;
   messages: Message[];
   unread?: boolean;
