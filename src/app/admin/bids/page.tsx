@@ -106,7 +106,10 @@ function BidDetailsDialog({ bid }: { bid: CorporateBid }) {
                                             <TableCell>
                                                 <div className="flex items-center gap-2">
                                                     <Avatar className="h-8 w-8"><AvatarImage src={res.vendorAvatar} /><AvatarFallback>{res.vendorName.charAt(0)}</AvatarFallback></Avatar>
-                                                    <span className="font-medium">{res.vendorName}</span>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-medium">{res.vendorName}</span>
+                                                        <span className="text-xs text-muted-foreground">Alias: {res.alias}</span>
+                                                    </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>${res.pricePerUnit.toFixed(2)}</TableCell>

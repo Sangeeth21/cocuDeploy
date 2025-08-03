@@ -199,7 +199,7 @@ export type MarketingCampaign = {
     endDate: string;
     startTime?: string;
     endTime?: string;
-    placement?: 'hero' | 'banner' | 'popup' | 'inline-banner' | 'product-page-banner';
+    placement?: 'hero' | 'banner' | 'popup' | 'inline-banner' | 'product-page-banner' | 'corporate-banner';
     creatives?: Creative[];
     showCountdown?: boolean;
     countdownPlacement?: 'on-creative' | 'independent';
@@ -284,6 +284,7 @@ export interface SupportTicket {
 
 // Bidding
 export type VendorBid = {
+  alias: string;
   vendorId: string;
   vendorName: string;
   vendorAvatar: string;

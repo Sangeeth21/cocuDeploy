@@ -86,7 +86,7 @@ export default function BidDetailsPage() {
         setBid(prev => prev ? { ...prev, status: 'Awarded' } : undefined);
         toast({
             title: 'Bid Awarded!',
-            description: `You have awarded the bid to ${vendor.vendorName}. They have been notified to proceed.`,
+            description: `You have awarded the bid to ${vendor.alias}. They have been notified to proceed.`,
         });
     }
 
@@ -150,7 +150,7 @@ export default function BidDetailsPage() {
                                 <TableBody>
                                     {bid.responses.map(res => (
                                         <TableRow key={res.vendorId}>
-                                            <TableCell className="font-medium">{res.vendorName}</TableCell>
+                                            <TableCell className="font-medium">{res.alias}</TableCell>
                                             <TableCell>${res.pricePerUnit.toFixed(2)}</TableCell>
                                             <TableCell>{res.estimatedDelivery}</TableCell>
                                             <TableCell className="text-right">
@@ -162,7 +162,7 @@ export default function BidDetailsPage() {
                                                     </AlertDialogTrigger>
                                                     <AlertDialogContent>
                                                         <AlertDialogHeader>
-                                                            <AlertDialogTitle>Award Bid to {res.vendorName}?</AlertDialogTitle>
+                                                            <AlertDialogTitle>Award Bid to {res.alias}?</AlertDialogTitle>
                                                             <AlertDialogDescription>
                                                                 This will notify the vendor to proceed with the order at the quoted price of ${res.pricePerUnit.toFixed(2)} per unit. This action cannot be undone.
                                                             </AlertDialogDescription>
@@ -209,4 +209,3 @@ export default function BidDetailsPage() {
         </div>
     );
 }
-

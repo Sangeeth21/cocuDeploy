@@ -35,7 +35,9 @@ function BidDetailsDialog({ bid }: { bid: CorporateBid }) {
                      <div className="space-y-2">
                         {bid.products.map(p => (
                             <div key={p.id} className="flex items-center gap-2 p-2 border rounded-md">
-                                <Image src={p.imageUrl} alt={p.name} width={40} height={40} className="rounded-md" />
+                                <div className="relative h-10 w-10 flex-shrink-0">
+                                    <Image src={p.imageUrl} alt={p.name} fill className="object-cover rounded-md" />
+                                </div>
                                 <p className="text-xs font-medium">{p.name}</p>
                             </div>
                         ))}
@@ -55,12 +57,9 @@ function BidDetailsDialog({ bid }: { bid: CorporateBid }) {
                                 {bid.responses.map(res => (
                                      <TableRow key={res.vendorId}>
                                         <TableCell className="p-2">
-                                            <div className="flex items-center gap-2">
-                                                <Avatar className="h-6 w-6"><AvatarImage src={res.vendorAvatar} /><AvatarFallback>{res.vendorName.charAt(0)}</AvatarFallback></Avatar>
-                                                <span className="text-xs">{res.vendorName}</span>
-                                            </div>
+                                            <span className="text-sm">{res.alias}</span>
                                         </TableCell>
-                                        <TableCell className="p-2 text-xs">${res.pricePerUnit.toFixed(2)}</TableCell>
+                                        <TableCell className="p-2 text-sm">${res.pricePerUnit.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>

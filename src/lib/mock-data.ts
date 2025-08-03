@@ -706,8 +706,8 @@ export const mockCorporateBids: CorporateBid[] = [
         createdAt: '2024-07-22',
         expiresAt: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(), // Expires in 2 days
         responses: [
-            { vendorId: 'VDR001', vendorName: 'Timeless Co.', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 165.00, estimatedDelivery: '10 business days' },
-            { vendorId: 'VDR004', vendorName: 'Crafty Creations', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 170.50, estimatedDelivery: '8 business days', notes: 'We can offer a faster turnaround if needed.' },
+            { alias: 'Vendor A', vendorId: 'VDR001', vendorName: 'Timeless Co.', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 165.00, estimatedDelivery: '10 business days' },
+            { alias: 'Vendor B', vendorId: 'VDR004', vendorName: 'Crafty Creations', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 170.50, estimatedDelivery: '8 business days', notes: 'We can offer a faster turnaround if needed.' },
         ]
     },
     {
@@ -718,7 +718,7 @@ export const mockCorporateBids: CorporateBid[] = [
         createdAt: '2024-07-20',
         expiresAt: '2024-07-22T12:00:00Z',
         responses: [
-            { vendorId: 'VDR002', vendorName: 'Gadget Guru', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 120.00, estimatedDelivery: '5 business days' },
+            { alias: 'Vendor C', vendorId: 'VDR002', vendorName: 'Gadget Guru', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 120.00, estimatedDelivery: '5 business days' },
         ]
     },
      {
@@ -729,7 +729,7 @@ export const mockCorporateBids: CorporateBid[] = [
         createdAt: '2024-07-18',
         expiresAt: '2024-07-20T10:00:00Z',
         responses: [
-             { vendorId: 'VDR004', vendorName: 'Crafty Creations', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 18.50, estimatedDelivery: '12 business days' },
+             { alias: 'Vendor D', vendorId: 'VDR004', vendorName: 'Crafty Creations', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 18.50, estimatedDelivery: '12 business days' },
         ]
     }
 ]
