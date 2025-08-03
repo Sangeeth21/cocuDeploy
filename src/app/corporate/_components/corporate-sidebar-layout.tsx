@@ -132,6 +132,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                 </SidebarFooter>
             </Sidebar>
             <div className="flex flex-col flex-1 w-0">
+                <CorporateCampaignBanner />
                  <header className="flex h-16 items-center px-4 border-b bg-card">
                     <Link href="/corporate/dashboard" className="flex items-center gap-2 mr-6">
                         <Store className="h-6 w-6 text-primary" />
@@ -152,7 +153,6 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                     </div>
                  </header>
                  <div className="flex-1 flex flex-col overflow-hidden">
-                    <CorporateCampaignBanner />
                     <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 md:p-8">
                         {children}
                     </main>
