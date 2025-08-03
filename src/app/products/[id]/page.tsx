@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
-import { mockProducts, mockReviews, categoryCustomizationMap } from "@/lib/mock-data";
+import { mockProducts, mockReviews, mockCampaigns } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Star, Heart } from "lucide-react";
@@ -42,6 +42,27 @@ const FrequentlyBoughtTogether = dynamic(() => import('./_components/frequently-
 const CustomerReviews = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
     loading: () => <Skeleton className="h-[300px] w-full rounded-xl" />
 });
+
+function ProductPageCampaignBanner() {
+    const bannerCampaign = mockCampaigns.find(c => c.status === 'Active' && c.placement === 'product-page-banner');
+    if (!bannerCampaign || !bannerCampaign.creatives || bannerCampaign.creatives.length === 0) {
+        return null;
+    }
+    const creative = bannerCampaign.creatives[0];
+
+    return (
+        <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4 my-8">
+            <div className="relative w-full md:w-24 h-32 md:h-24 rounded-md overflow-hidden flex-shrink-0">
+                {creative.imageUrl && <Image src={creative.imageUrl} alt={creative.title} fill className="object-cover" />}
+            </div>
+            <div className="flex-1 text-center md:text-left">
+                <h3 className="font-bold">{creative.title}</h3>
+                <p className="text-sm text-muted-foreground">{creative.description}</p>
+            </div>
+            <Button asChild><Link href={`/products?campaign=${bannerCampaign.id}`}>{creative.cta}</Link></Button>
+        </div>
+    );
+}
 
 export default function ProductDetailPage() {
   const { toast } = useToast();
@@ -111,6 +132,8 @@ export default function ProductDetailPage() {
           <ProductInteractions product={product} isCustomizable={isCustomizable} />
         </div>
       </div>
+      
+      <ProductPageCampaignBanner />
 
       <Separator className="my-12" />
 
