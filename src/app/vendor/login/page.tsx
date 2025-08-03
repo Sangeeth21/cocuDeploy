@@ -20,31 +20,53 @@ export default function VendorLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
-  const { setAsVerified, setAsUnverified } = useVerification();
+  const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (email === "vendor@example.com" && password === "vendorpass") {
-      setAsVerified();
-      toast({
-        title: "Login Successful",
-        description: "Redirecting to your vendor dashboard.",
-      });
-      router.push("/vendor/dashboard");
-    } else if (email === "unverified@example.com" && password === "vendorpass") {
-        setAsUnverified();
-         toast({
+
+    const loginSuccess = (type: 'both' | 'personalized' | 'corporate', isVerified: boolean) => {
+        if (isVerified) {
+            setAsVerified();
+        } else {
+            setAsUnverified();
+        }
+        setVendorType(type);
+        toast({
             title: "Login Successful",
-            description: "Please complete your verification.",
+            description: "Redirecting to your vendor dashboard.",
         });
         router.push("/vendor/dashboard");
-    }
-    else {
-        toast({
+    };
+
+    const loginFail = () => {
+         toast({
             variant: "destructive",
             title: "Login Failed",
             description: "Invalid email or password. Please try again.",
         });
+    }
+
+    if (password !== "vendorpass") {
+        loginFail();
+        return;
+    }
+
+    switch(email) {
+        case 'vendor@example.com':
+            loginSuccess('both', true);
+            break;
+        case 'unverified@example.com':
+            loginSuccess('both', false);
+            break;
+        case 'personalized@example.com':
+            loginSuccess('personalized', true);
+            break;
+        case 'corporate@example.com':
+            loginSuccess('corporate', true);
+            break;
+        default:
+            loginFail();
     }
   };
 

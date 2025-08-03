@@ -4,26 +4,26 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight, Gift, ShieldAlert, LifeBuoy } from "lucide-react";
+import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight, Gift, ShieldAlert, LifeBuoy, Gavel } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockVendorActivity } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useVerification } from "@/context/vendor-verification-context";
 
-
-const navLinks = [
-  { href: "/vendor/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/vendor/products", label: "Products", icon: Package },
-  { href: "/vendor/inventory", label: "Inventory", icon: Warehouse },
-  { href: "/vendor/orders", label: "Orders", icon: ListChecks },
-  { href: "/vendor/analytics", label: "Analytics", icon: LineChart },
-  { href: "/vendor/messages", label: "Messages", icon: MessageSquare, badge: "5" },
-  { href: "/vendor/referrals", label: "Referrals", icon: Gift },
-  { href: "/vendor/support", label: "Support", icon: LifeBuoy },
-  { href: "/vendor/settings", label: "Settings", icon: Settings },
+const allNavLinks = [
+  { href: "/vendor/dashboard", label: "Dashboard", icon: LayoutDashboard, types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/products", label: "Products", icon: Package, types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/inventory", label: "Inventory", icon: Warehouse, types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/orders", label: "Orders", icon: ListChecks, types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/bids", label: "Bidding", icon: Gavel, types: ['corporate', 'both'] },
+  { href: "/vendor/analytics", label: "Analytics", icon: LineChart, types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/messages", label: "Messages", icon: MessageSquare, badge: "5", types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/referrals", label: "Referrals", icon: Gift, types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/support", label: "Support", icon: LifeBuoy, types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/settings", label: "Settings", icon: Settings, types: ['personalized', 'corporate', 'both'] },
 ];
 
 function CustomSidebarTrigger() {
@@ -48,7 +48,12 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
     const [greeting, setGreeting] = useState("Hi");
     const vendorName = "Timeless Co.";
-    const { isVerified } = useVerification();
+    const { isVerified, vendorType } = useVerification();
+
+    const navLinks = useMemo(() => {
+        if (!vendorType) return [];
+        return allNavLinks.filter(link => link.types.includes(vendorType));
+    }, [vendorType]);
 
 
     useEffect(() => {

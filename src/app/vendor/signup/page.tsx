@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Info, Check } from "lucide-react";
+import { Loader2, Eye, EyeOff, Info, Check, User, Building, Combine } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ const MOCK_EMAIL_OTP = "123456";
 const MOCK_PHONE_OTP = "654321";
 
 export default function VendorSignupPage() {
-  const [step, setStep] = useState<"details" | "verify">("details");
+  const [step, setStep] = useState<"details" | "type" | "verify">("details");
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
@@ -30,6 +30,7 @@ export default function VendorSignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: '', color: '' });
   const [agreedToTerms, setAgreedToTerms] = useState(true);
+  const [vendorType, setVendorType] = useState<"personalized" | "corporate" | "both">();
   
   const [emailOtp, setEmailOtp] = useState("");
   const [phoneOtp, setPhoneOtp] = useState("");
@@ -72,7 +73,7 @@ export default function VendorSignupPage() {
     checkPasswordStrength(password);
   }, [password]);
 
-  const handleSignupSubmit = (e: React.FormEvent) => {
+  const handleDetailsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (email === 'test-vendor@example.com') {
@@ -108,7 +109,18 @@ export default function VendorSignupPage() {
         });
         return;
     }
+    setStep("type");
+  };
 
+  const handleTypeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+     if (!vendorType) {
+        toast({
+            variant: "destructive",
+            title: "Please select a vendor type.",
+        });
+        return;
+    }
     setIsLoading(true);
     setTimeout(() => {
       toast({
@@ -154,7 +166,7 @@ export default function VendorSignupPage() {
     <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
       <Card className="w-full max-w-md">
         {step === 'details' ? (
-          <form onSubmit={handleSignupSubmit}>
+          <form onSubmit={handleDetailsSubmit}>
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-headline">Become a Vendor</CardTitle>
               <CardDescription>Create your vendor account to start selling</CardDescription>
@@ -251,9 +263,8 @@ export default function VendorSignupPage() {
 
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Create Vendor Account
+              <Button type="submit" className="w-full">
+                Continue
               </Button>
               <p className="text-sm text-center text-muted-foreground">
                   Already have a vendor account?{" "}
@@ -263,6 +274,54 @@ export default function VendorSignupPage() {
               </p>
             </CardFooter>
           </form>
+        ) : step === 'type' ? (
+             <form onSubmit={handleTypeSubmit}>
+                <CardHeader className="text-center">
+                    <CardTitle className="text-3xl font-headline">Select Vendor Type</CardTitle>
+                    <CardDescription>Choose the type of business you operate.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <RadioGroup value={vendorType} onValueChange={(v) => setVendorType(v as any)} className="space-y-4">
+                        <Label htmlFor="type-personalized" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                            <div className="flex items-center gap-4">
+                                <RadioGroupItem value="personalized" id="type-personalized" />
+                                <div className="flex items-center gap-2">
+                                    <User className="h-5 w-5" />
+                                    <span className="font-semibold">Personalized Retail</span>
+                                </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2 ml-8">Sell individual items directly to customers. Perfect for artisans and small-scale sellers.</p>
+                        </Label>
+                        <Label htmlFor="type-corporate" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                             <div className="flex items-center gap-4">
+                                <RadioGroupItem value="corporate" id="type-corporate" />
+                                <div className="flex items-center gap-2">
+                                    <Building className="h-5 w-5" />
+                                    <span className="font-semibold">Corporate & Bulk Sales</span>
+                                </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2 ml-8">Fulfill bulk orders and participate in corporate bid requests. Ideal for wholesale suppliers.</p>
+                        </Label>
+                         <Label htmlFor="type-both" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                            <div className="flex items-center gap-4">
+                                <RadioGroupItem value="both" id="type-both" />
+                                 <div className="flex items-center gap-2">
+                                    <Combine className="h-5 w-5" />
+                                    <span className="font-semibold">Both</span>
+                                </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2 ml-8">Engage in both personalized retail and corporate bulk sales.</p>
+                        </Label>
+                    </RadioGroup>
+                </CardContent>
+                <CardFooter className="flex justify-between">
+                    <Button variant="ghost" onClick={() => setStep('details')}>Back</Button>
+                    <Button type="submit" disabled={isLoading}>
+                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Next
+                    </Button>
+                </CardFooter>
+            </form>
         ) : (
           <form onSubmit={handleVerificationSubmit}>
             <CardHeader className="text-center">
@@ -284,7 +343,7 @@ export default function VendorSignupPage() {
                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                  Verify and Continue
               </Button>
-              <Button variant="link" size="sm" onClick={() => setStep('details')} className="text-muted-foreground">
+              <Button variant="link" size="sm" onClick={() => setStep('type')} className="text-muted-foreground">
                 Back to previous step
               </Button>
             </CardFooter>

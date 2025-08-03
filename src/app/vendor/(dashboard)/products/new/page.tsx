@@ -606,7 +606,7 @@ const getYoutubeEmbedUrl = (url: string) => {
 
 export default function NewProductPage() {
     const { toast } = useToast();
-    const { isVerified, addDraftProduct } = useVerification();
+    const { isVerified, addDraftProduct, vendorType } = useVerification();
     
     const [images, setImages] = useState<ProductImages>({});
     const [status, setStatus] = useState<DisplayProduct['status']>(isVerified ? 'Live' : 'Draft');
@@ -627,6 +627,10 @@ export default function NewProductPage() {
     const [customOptions, setCustomOptions] = useState<CustomizationOption[]>([]);
     const [newOptionLabel, setNewOptionLabel] = useState("");
     const [editingOption, setEditingOption] = useState<CustomizationOption | null>(null);
+
+    const [b2bEnabled, setB2bEnabled] = useState(vendorType === 'corporate' || vendorType === 'both');
+    const [moq, setMoq] = useState(50);
+    const [tierPrices, setTierPrices] = useState<{quantity: number, price: number}[]>([]);
 
 
     const [galleryImages, setGalleryImages] = useState<{file: File, src: string}[]>([]);
@@ -843,6 +847,10 @@ export default function NewProductPage() {
     useEffect(() => {
         setStatus(isVerified ? 'Live' : 'Draft');
     }, [isVerified]);
+    
+    useEffect(() => {
+        setB2bEnabled(vendorType === 'corporate' || vendorType === 'both');
+    }, [vendorType]);
 
   return (
     <>
@@ -1107,6 +1115,42 @@ export default function NewProductPage() {
                     </div>
                 </CardContent>
             </Card>
+            {(vendorType === 'corporate' || vendorType === 'both') && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>B2B Settings</CardTitle>
+                    </CardHeader>
+                     <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <Label htmlFor="b2b-enabled" className="font-medium">Enable for Corporate</Label>
+                            <Switch id="b2b-enabled" checked={b2bEnabled} onCheckedChange={setB2bEnabled} />
+                        </div>
+                        {b2bEnabled && (
+                            <div className="space-y-4 pt-4 border-t">
+                                 <div className="space-y-2">
+                                    <Label htmlFor="moq">Minimum Order Quantity (MOQ)</Label>
+                                    <Input id="moq" type="number" value={moq} onChange={(e) => setMoq(Number(e.target.value))} />
+                                </div>
+                                 <div className="space-y-2">
+                                    <Label>Tiered Pricing</Label>
+                                    <div className="space-y-2">
+                                        {tierPrices.map((tier, index) => (
+                                             <div key={index} className="flex items-center gap-2">
+                                                <Input type="number" placeholder="Quantity" value={tier.quantity} onChange={(e) => setTierPrices(current => current.map((t, i) => i === index ? {...t, quantity: Number(e.target.value)} : t))} />
+                                                <Input type="number" placeholder="Price" value={tier.price} onChange={(e) => setTierPrices(current => current.map((t, i) => i === index ? {...t, price: Number(e.target.value)} : t))} />
+                                                <Button variant="ghost" size="icon" onClick={() => setTierPrices(current => current.filter((_, i) => i !== index))}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                             </div>
+                                        ))}
+                                        <Button variant="outline" size="sm" className="w-full" onClick={() => setTierPrices(current => [...current, {quantity: 0, price: 0}])}>
+                                            <PlusCircle className="mr-2 h-4 w-4"/> Add Tier
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Confirmation</CardTitle>

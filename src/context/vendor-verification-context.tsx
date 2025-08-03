@@ -6,12 +6,15 @@ import type { DraftProduct } from '@/lib/types';
 
 const VENDOR_VERIFICATION_STORAGE_KEY = 'shopsphere_vendor_verification_progress';
 
+type VendorType = 'personalized' | 'corporate' | 'both';
+
 type VerificationProgress = {
     isVerified: boolean;
     currentStep: number;
     completedSteps: string[];
     draftProducts: DraftProduct[];
     promptState: 'initial' | 'prompting' | 'dismissed' | 'permanently_dismissed' | 'show_draft_publish';
+    vendorType?: VendorType;
 }
 
 // Define the actions that can be performed
@@ -23,6 +26,7 @@ interface VerificationContextType extends VerificationProgress {
     setPromptState: (state: VerificationProgress['promptState']) => void;
     setCurrentStep: (step: number) => void;
     setCompletedSteps: (steps: string[]) => void;
+    setVendorType: (type: VendorType) => void;
 }
 
 // Create the context
@@ -102,6 +106,10 @@ export const VerificationProvider = ({ children }: { children: ReactNode }) => {
         setState(prev => ({ ...prev, completedSteps: steps }));
     }, []);
 
+    const setVendorType = useCallback((type: VendorType) => {
+        setState(prev => ({ ...prev, vendorType: type }));
+    }, []);
+
     const contextValue = {
         ...state,
         setAsVerified,
@@ -111,6 +119,7 @@ export const VerificationProvider = ({ children }: { children: ReactNode }) => {
         setPromptState,
         setCurrentStep,
         setCompletedSteps,
+        setVendorType,
     };
 
     return (
