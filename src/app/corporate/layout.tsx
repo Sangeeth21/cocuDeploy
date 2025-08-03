@@ -86,7 +86,6 @@ function ProtectedCorporateLayout({ children }: { children: React.ReactNode }) {
   return (
     <CorporateSidebarLayout>
       {children}
-      <CorporateCampaignPopup />
     </CorporateSidebarLayout>
   );
 }
@@ -98,6 +97,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           <ProtectedCorporateLayout>
             {children}
           </ProtectedCorporateLayout>
+          <CorporateCampaignPopup />
         </BidRequestProvider>
     </AdminAuthProvider>
   );
