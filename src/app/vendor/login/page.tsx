@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -34,9 +35,9 @@ export default function VendorLoginPage() {
         setVendorType(type);
         toast({
             title: "Login Successful",
-            description: "Redirecting to your vendor dashboard.",
+            description: `Redirecting to your ${type} vendor dashboard.`,
         });
-        router.push("/vendor/dashboard");
+        router.push(`/vendor/${type}/dashboard`);
     };
 
     const loginFail = () => {

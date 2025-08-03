@@ -5,13 +5,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User, Megaphone } from "lucide-react";
+import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User, Megaphone, Building } from "lucide-react";
 import Link from "next/link";
-import { mockRecentSales, mockActivity, mockCampaigns } from "@/lib/mock-data";
+import { mockRecentSales, mockActivity, mockCampaigns, mockCorporateCampaigns } from "@/lib/mock-data";
 
 
 const heroCampaigns = mockCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active');
 const bannerCampaign = mockCampaigns.find(c => c.placement === 'banner' && c.status === 'Active');
+const corporateHeroCampaigns = mockCorporateCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active');
 
 
 export default function AdminDashboardPage() {
@@ -129,12 +130,25 @@ export default function AdminDashboardPage() {
                 <CardContent className="grid gap-4">
                      <div className="flex items-center">
                         <div>
-                            <p className="font-medium text-sm">Hero Carousel</p>
+                            <p className="font-medium text-sm">Main Hero Carousel</p>
                             <p className="text-xs text-muted-foreground">{heroCampaigns.length} active campaigns</p>
                         </div>
                         {heroCampaigns.length === 0 ? (
                             <Button variant="ghost" size="sm" asChild className="ml-auto">
                                 <Link href="/admin/marketing/new?placement=hero"><Megaphone className="h-3 w-3 mr-1.5"/>Create</Link>
+                            </Button>
+                        ) : (
+                             <Badge variant="secondary" className="ml-auto">Active</Badge>
+                        )}
+                    </div>
+                     <div className="flex items-center">
+                        <div>
+                            <p className="font-medium text-sm">Corporate Hero Carousel</p>
+                            <p className="text-xs text-muted-foreground">{corporateHeroCampaigns.length} active campaigns</p>
+                        </div>
+                        {corporateHeroCampaigns.length === 0 ? (
+                            <Button variant="ghost" size="sm" asChild className="ml-auto">
+                                <Link href="/admin/corporate-marketing/new?placement=hero"><Building className="h-3 w-3 mr-1.5"/>Create</Link>
                             </Button>
                         ) : (
                              <Badge variant="secondary" className="ml-auto">Active</Badge>
