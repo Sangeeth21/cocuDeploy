@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { mockProducts, mockCorporateBids } from "@/lib/mock-data";
-import { Gavel, DollarSign, ListChecks, ArrowUpRight, Search, Plus, CheckCircle, Hourglass, XCircle } from "lucide-react";
+import { Gavel, DollarSign, ListChecks, ArrowUpRight, Search, Plus, CheckCircle, Hourglass, XCircle, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -15,49 +15,69 @@ import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { CorporateBid, VendorBid } from "@/lib/types";
+import { Separator } from "@/components/ui/separator";
+import NewBidPage from "../bids/new/page";
 
 
-function PlaceBidDialog({ product }: { product: typeof mockProducts[0] }) {
-    const [quantity, setQuantity] = useState(100);
-    const [price, setPrice] = useState(product.price * 0.8); // Default bid 20% off
-    const { toast } = useToast();
-
-    const handlePlaceBid = () => {
-        toast({
-            title: "Bid Placed!",
-            description: `Your bid for ${quantity} units of ${product.name} at $${price.toFixed(2)} each has been submitted.`
-        });
-    }
-
+function BidDetailsDialog({ bid }: { bid: CorporateBid }) {
     return (
-        <Dialog>
-            <DialogTrigger asChild>
-                <Button size="sm">Place Bid</Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Place Bid for: {product.name}</DialogTitle>
-                    <DialogDescription>
-                        Enter the quantity and your bid price per unit. Your bid will be sent to the platform for review.
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid grid-cols-2 gap-4 py-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="quantity">Quantity</Label>
-                        <Input id="quantity" type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} min="50" />
-                         <p className="text-xs text-muted-foreground">Minimum bid quantity: 50 units</p>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="price">Bid Price (per unit)</Label>
-                        <Input id="price" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
-                        <p className="text-xs text-muted-foreground">Current retail price: ${product.price.toFixed(2)}</p>
+        <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Bid Summary: {bid.id}</DialogTitle>
+                <DialogDescription>
+                    A quick overview of your bid request and vendor responses.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid md:grid-cols-2 gap-6 py-4 max-h-[60vh] overflow-y-auto">
+                <div>
+                     <h4 className="font-semibold mb-2">Products in Bid</h4>
+                     <div className="space-y-2">
+                        {bid.products.map(p => (
+                            <div key={p.id} className="flex items-center gap-2 p-2 border rounded-md">
+                                <Image src={p.imageUrl} alt={p.name} width={40} height={40} className="rounded-md" />
+                                <p className="text-xs font-medium">{p.name}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
-                 <DialogFooter>
-                    <Button onClick={handlePlaceBid}>Submit Bid</Button>
-                 </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                <div>
+                    <h4 className="font-semibold mb-2">Vendor Responses ({bid.responses.length})</h4>
+                    {bid.responses.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Vendor</TableHead>
+                                    <TableHead>Price/Unit</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {bid.responses.map(res => (
+                                     <TableRow key={res.vendorId}>
+                                        <TableCell className="p-2">
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-6 w-6"><AvatarImage src={res.vendorAvatar} /><AvatarFallback>{res.vendorName.charAt(0)}</AvatarFallback></Avatar>
+                                                <span className="text-xs">{res.vendorName}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="p-2 text-xs">${res.pricePerUnit.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <p className="text-xs text-muted-foreground text-center py-4">No responses from vendors yet.</p>
+                    )}
+                </div>
+            </div>
+             <div className="flex justify-end">
+                <Button asChild>
+                    <Link href={`/corporate/bids/${bid.id}`}>
+                        View Full Details <ExternalLink className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            </div>
+        </DialogContent>
     )
 }
 
@@ -134,11 +154,16 @@ export default function CorporateAccountPage() {
                 Review your recent bid requests and their status.
                 </CardDescription>
             </div>
-             <Button asChild size="sm" className="ml-auto gap-1">
-                <Link href="/corporate/bids/new">
-                    <Plus className="h-4 w-4" /> Create New Bid
-                </Link>
-            </Button>
+             <Dialog>
+                <DialogTrigger asChild>
+                    <Button size="sm" className="ml-auto gap-1">
+                        <Plus className="h-4 w-4" /> Create New Bid
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-6xl h-[90vh]">
+                    <NewBidPage />
+                </DialogContent>
+            </Dialog>
         </CardHeader>
         <CardContent>
             <Table>
@@ -181,9 +206,12 @@ export default function CorporateAccountPage() {
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-right">
-                               <Button variant="outline" size="sm" asChild>
-                                    <Link href={`/corporate/bids/${bid.id}`}>View Bid</Link>
-                                </Button>
+                               <Dialog>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline" size="sm">View Bid</Button>
+                                    </DialogTrigger>
+                                    <BidDetailsDialog bid={bid} />
+                               </Dialog>
                             </TableCell>
                         </TableRow>
                     )
