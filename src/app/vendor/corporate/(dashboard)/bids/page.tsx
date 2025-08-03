@@ -63,9 +63,10 @@ function PlaceBidDialog({ bid, onBidPlaced, existingBid }: { bid: CorporateBid; 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
 
-    const lowestBid = useMemo(() => {
-        if (bid.responses.length === 0) return null;
-        return bid.responses.reduce((min, b) => b.pricePerUnit < min ? b.pricePerUnit : min, bid.responses[0].pricePerUnit);
+    const competitorBids = useMemo(() => {
+        return bid.responses
+            .filter(r => r.alias !== 'You') // Exclude the current vendor's bid
+            .sort((a, b) => a.pricePerUnit - b.pricePerUnit);
     }, [bid.responses]);
 
     const handleSubmit = () => {
@@ -123,15 +124,37 @@ function PlaceBidDialog({ bid, onBidPlaced, existingBid }: { bid: CorporateBid; 
                             <span className="font-semibold">Required Quantity:</span> {bid.quantity.toLocaleString()} units per product
                         </div>
                         <Card>
-                            <CardHeader className="p-3">
+                             <CardHeader className="p-3">
                                 <CardTitle className="text-sm">Competitor Bids</CardTitle>
                             </CardHeader>
                             <CardContent className="p-3 pt-0">
-                                {lowestBid ? (
-                                     <p className="text-xs text-muted-foreground">Current lowest bid is <span className="font-bold text-foreground">${lowestBid.toFixed(2)}/unit</span>.</p>
+                                {competitorBids.length > 0 ? (
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="h-8">Price/Unit</TableHead>
+                                                <TableHead className="h-8">Est. Delivery</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {competitorBids.map((b, i) => (
+                                                <TableRow key={i}>
+                                                    <TableCell className="py-1">${b.pricePerUnit.toFixed(2)}</TableCell>
+                                                    <TableCell className="py-1">{b.estimatedDelivery}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
                                 ) : (
                                     <p className="text-xs text-muted-foreground">Be the first to bid!</p>
                                 )}
+                            </CardContent>
+                        </Card>
+                         <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
+                            <CardContent className="p-3">
+                                <p className="text-xs text-blue-800 dark:text-blue-300">
+                                    <span className="font-bold">Tip:</span> The lowest bid doesn't always win. Corporate clients value reliability, quality, and clear communication. Put your best foot forward!
+                                </p>
                             </CardContent>
                         </Card>
                     </div>
