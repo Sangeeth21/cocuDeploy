@@ -8,12 +8,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { mockCorporateBids } from "@/lib/mock-data";
-import type { CorporateBid } from "@/lib/types";
+import type { CorporateBid, VendorBid } from "@/lib/types";
 import Image from "next/image";
-import { Clock, Eye, Gavel, Plus, Users, CheckCircle, Hourglass, XCircle } from "lucide-react";
+import { Clock, Eye, Gavel, Plus, Users, CheckCircle, Hourglass, XCircle, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Link from 'next/link';
 import NewBidPage from './new/page';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     const calculateTimeLeft = () => {
@@ -54,6 +56,67 @@ function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     }
 
     return <>{timerComponents.join(' ')}</>;
+}
+
+function BidDetailsDialog({ bid }: { bid: CorporateBid }) {
+    return (
+        <DialogContent className="sm:max-w-2xl">
+            <DialogHeader>
+                <DialogTitle>Bid Summary: {bid.id}</DialogTitle>
+                <DialogDescription>
+                    A quick overview of your bid request and vendor responses.
+                </DialogDescription>
+            </DialogHeader>
+            <div className="grid md:grid-cols-2 gap-6 py-4 max-h-[60vh] overflow-y-auto">
+                <div>
+                     <h4 className="font-semibold mb-2">Products in Bid</h4>
+                     <div className="space-y-2">
+                        {bid.products.map(p => (
+                            <div key={p.id} className="flex items-center gap-2 p-2 border rounded-md">
+                                <Image src={p.imageUrl} alt={p.name} width={40} height={40} className="rounded-md" />
+                                <p className="text-xs font-medium">{p.name}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <h4 className="font-semibold mb-2">Vendor Responses ({bid.responses.length})</h4>
+                    {bid.responses.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Vendor</TableHead>
+                                    <TableHead>Price/Unit</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {bid.responses.map(res => (
+                                     <TableRow key={res.vendorId}>
+                                        <TableCell className="p-2">
+                                            <div className="flex items-center gap-2">
+                                                <Avatar className="h-6 w-6"><AvatarImage src={res.vendorAvatar} /><AvatarFallback>{res.vendorName.charAt(0)}</AvatarFallback></Avatar>
+                                                <span className="text-xs">{res.vendorName}</span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="p-2 text-xs">${res.pricePerUnit.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <p className="text-xs text-muted-foreground text-center py-4">No responses from vendors yet.</p>
+                    )}
+                </div>
+            </div>
+             <div className="flex justify-end">
+                <Button asChild>
+                    <Link href={`/corporate/bids/${bid.id}`}>
+                        View Full Details <ExternalLink className="ml-2 h-4 w-4" />
+                    </Link>
+                </Button>
+            </div>
+        </DialogContent>
+    )
 }
 
 function BidCard({ bid }: { bid: CorporateBid }) {
@@ -110,12 +173,15 @@ function BidCard({ bid }: { bid: CorporateBid }) {
                 </div>
             </CardContent>
              <CardContent>
-                <Button className="w-full" asChild>
-                    <Link href={`/corporate/bids/${bid.id}`}>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Bids
-                    </Link>
-                </Button>
+                 <Dialog>
+                    <DialogTrigger asChild>
+                         <Button className="w-full">
+                            <Eye className="mr-2 h-4 w-4" />
+                            View Bid
+                        </Button>
+                    </DialogTrigger>
+                    <BidDetailsDialog bid={bid} />
+                </Dialog>
             </CardContent>
         </Card>
     )
