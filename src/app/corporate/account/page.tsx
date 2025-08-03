@@ -4,8 +4,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { mockProducts } from "@/lib/mock-data";
-import { Gavel, DollarSign, ListChecks, ArrowUpRight, Search } from "lucide-react";
+import { mockProducts, mockCorporateBids } from "@/lib/mock-data";
+import { Gavel, DollarSign, ListChecks, ArrowUpRight, Search, Plus, CheckCircle, Hourglass, XCircle } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
@@ -13,6 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 
 function PlaceBidDialog({ product }: { product: typeof mockProducts[0] }) {
@@ -60,7 +62,17 @@ function PlaceBidDialog({ product }: { product: typeof mockProducts[0] }) {
 }
 
 export default function CorporateAccountPage() {
-  const recentBids = mockProducts.slice(0, 3).filter(p => p.b2bEnabled);
+    const recentBids = mockCorporateBids.slice(0, 3);
+    
+    const getStatusInfo = (status: CorporateBid['status']) => {
+        switch(status) {
+            case 'Active': return { icon: Hourglass, variant: 'secondary' as const, label: 'Active' };
+            case 'Awarded': return { icon: CheckCircle, variant: 'default' as const, label: 'Awarded' };
+            case 'Expired': return { icon: XCircle, variant: 'outline' as const, label: 'Expired' };
+            default: return { icon: Gavel, variant: 'secondary' as const, label: 'Unknown' };
+        }
+    };
+
 
   return (
     <>
@@ -117,15 +129,14 @@ export default function CorporateAccountPage() {
        <Card>
         <CardHeader className="flex flex-row items-center">
             <div className="grid gap-2">
-                <CardTitle>Recent Bids & Quick Actions</CardTitle>
+                <CardTitle>Recent Bid Requests</CardTitle>
                 <CardDescription>
-                Quickly place new bids on previously quoted items.
+                Review your recent bid requests and their status.
                 </CardDescription>
             </div>
-            <Button asChild size="sm" className="ml-auto gap-1">
-                <Link href="/corporate/bids">
-                View All Bids
-                <ArrowUpRight className="h-4 w-4" />
+             <Button asChild size="sm" className="ml-auto gap-1">
+                <Link href="/corporate/bids/new">
+                    <Plus className="h-4 w-4" /> Create New Bid
                 </Link>
             </Button>
         </CardHeader>
@@ -133,38 +144,50 @@ export default function CorporateAccountPage() {
             <Table>
             <TableHeader>
                 <TableRow>
-                    <TableHead>Product</TableHead>
-                    <TableHead className="text-right">Last Quoted Price</TableHead>
+                    <TableHead>Bid ID</TableHead>
+                    <TableHead>Products</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
             </TableHeader>
             <TableBody>
-                {recentBids.map(product => (
-                    <TableRow key={product.id}>
-                        <TableCell>
-                             <div className="flex items-center gap-4">
-                                <div className="relative h-12 w-12 rounded-md overflow-hidden">
-                                     <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+                {recentBids.map(bid => {
+                    const { icon: StatusIcon, variant, label } = getStatusInfo(bid.status);
+                    return (
+                        <TableRow key={bid.id}>
+                            <TableCell>
+                                <div className="font-mono">{bid.id}</div>
+                                <div className="text-xs text-muted-foreground">{new Date(bid.createdAt).toLocaleDateString()}</div>
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center -space-x-2">
+                                    {bid.products.slice(0, 3).map(p => (
+                                        <Avatar key={p.id} className="border-2 border-background">
+                                            <AvatarImage src={p.imageUrl} alt={p.name} />
+                                            <AvatarFallback>{p.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                    ))}
+                                    {bid.products.length > 3 && (
+                                        <Avatar className="border-2 border-background">
+                                            <AvatarFallback>+{bid.products.length - 3}</AvatarFallback>
+                                        </Avatar>
+                                    )}
                                 </div>
-                                <div>
-                                    <div className="font-medium">{product.name}</div>
-                                    <div className="text-sm text-muted-foreground">
-                                        Vendor: {product.vendorId}
-                                    </div>
-                                </div>
-                            </div>
-                        </TableCell>
-                        <TableCell className="text-right">${(product.price * 0.9).toFixed(2)}</TableCell>
-                        <TableCell className="text-right">
-                           <div className="flex gap-2 justify-end">
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link href={`/corporate/quote/${product.id}`}>Request New Quote</Link>
+                            </TableCell>
+                            <TableCell>
+                                <Badge variant={variant}>
+                                    <StatusIcon className="mr-2 h-4 w-4" />
+                                    {label}
+                                </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                               <Button variant="outline" size="sm" asChild>
+                                    <Link href={`/corporate/bids/${bid.id}`}>View Bid</Link>
                                 </Button>
-                                <PlaceBidDialog product={product} />
-                           </div>
-                        </TableCell>
-                    </TableRow>
-                ))}
+                            </TableCell>
+                        </TableRow>
+                    )
+                })}
             </TableBody>
             </Table>
         </CardContent>
