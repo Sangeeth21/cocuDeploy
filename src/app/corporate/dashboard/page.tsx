@@ -45,8 +45,8 @@ const DefaultHeroSlide = () => (
 
 
 export default function CorporateMarketplacePage() {
-    const heroCampaigns = (mockCorporateCampaigns || []).filter(c => c.placement === 'hero' && c.status === 'Active' && c.creatives);
-    const inlineCampaign = (mockCorporateCampaigns || []).find(c => c.placement === 'inline-banner' && c.status === 'Active');
+    const heroCampaigns = (mockCorporateCampaigns || []).filter(c => c.placement === 'hero' && c.status === 'Active' && c.creatives && c.creatives.length > 0);
+    const inlineCampaign = (mockCorporateCampaigns || []).find(c => c.placement === 'inline-banner' && c.status === 'Active' && c.creatives && c.creatives.length > 0);
 
   return (
     <div className="space-y-12">
@@ -59,7 +59,7 @@ export default function CorporateMarketplacePage() {
             >
             <CarouselContent>
                 {heroCampaigns.length > 0 ? heroCampaigns.map((campaign, index) => (
-                <CarouselItem key={index}>
+                <CarouselItem key={campaign.id}>
                     <div className="relative h-[50vh] md:h-[60vh]">
                         <Image
                             src={campaign.creatives![0].imageUrl || 'https://placehold.co/1920x1080.png'}
@@ -109,15 +109,15 @@ export default function CorporateMarketplacePage() {
       </section>
       
       <section>
-            {inlineCampaign ? (
+            {inlineCampaign && inlineCampaign.creatives ? (
                 <div className="relative aspect-video md:aspect-[3/1] w-full rounded-lg overflow-hidden">
-                    <Image src={inlineCampaign.creatives![0].imageUrl || 'https://placehold.co/1200x400.png'} alt={inlineCampaign.creatives![0].title} fill className="object-cover" />
+                    <Image src={inlineCampaign.creatives[0].imageUrl || 'https://placehold.co/1200x400.png'} alt={inlineCampaign.creatives[0].title} fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-white p-4 text-center">
                         <div>
-                            <h2 className="text-xl md:text-3xl font-bold font-headline">{inlineCampaign.creatives![0].title}</h2>
-                            <p className="text-sm md:text-base mt-1 mb-2">{inlineCampaign.creatives![0].description}</p>
+                            <h2 className="text-xl md:text-3xl font-bold font-headline">{inlineCampaign.creatives[0].title}</h2>
+                            <p className="text-sm md:text-base mt-1 mb-2">{inlineCampaign.creatives[0].description}</p>
                             <Button size="sm" asChild>
-                            <Link href={`/corporate/products?campaign=${inlineCampaign.id}`}>{inlineCampaign.creatives![0].cta}</Link>
+                            <Link href={`/corporate/products?campaign=${inlineCampaign.id}`}>{inlineCampaign.creatives[0].cta}</Link>
                             </Button>
                         </div>
                     </div>

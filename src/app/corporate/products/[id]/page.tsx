@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import { notFound, useParams, useRouter } from "next/navigation";
-import { mockProducts } from "@/lib/mock-data";
+import { mockProducts, mockCorporateCampaigns } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel } from "lucide-react";
@@ -20,6 +20,27 @@ import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
 import { CorporateProductInteractions } from "./_components/product-interactions";
 import { useBidRequest } from "@/context/bid-request-context";
+
+function ProductPageCampaignBanner() {
+    const bannerCampaign = (mockCorporateCampaigns || []).find(c => c.placement === 'product-page-banner' && c.status === 'Active' && c.creatives && c.creatives.length > 0);
+    if (!bannerCampaign) {
+        return null;
+    }
+    const creative = bannerCampaign.creatives[0];
+
+    return (
+        <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4 my-8">
+            <div className="relative w-full md:w-24 h-32 md:h-24 rounded-md overflow-hidden flex-shrink-0">
+                {creative.imageUrl && <Image src={creative.imageUrl} alt={creative.title} fill className="object-cover" />}
+            </div>
+            <div className="flex-1 text-center md:text-left">
+                <h3 className="font-bold">{creative.title}</h3>
+                <p className="text-sm text-muted-foreground">{creative.description}</p>
+            </div>
+            <Button asChild><Link href={`/corporate/products?campaign=${bannerCampaign.id}`}>{creative.cta}</Link></Button>
+        </div>
+    );
+}
 
 export default function B2BProductDetailPage() {
   const params = useParams();
@@ -216,6 +237,8 @@ export default function B2BProductDetailPage() {
           </div>
         </div>
       </div>
+
+       <ProductPageCampaignBanner />
 
       <Separator className="my-12" />
 

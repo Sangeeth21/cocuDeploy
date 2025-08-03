@@ -1,11 +1,62 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { CorporateSidebarLayout } from "./_components/corporate-sidebar-layout";
 import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
 import { BidRequestProvider } from "@/context/bid-request-context";
+import { mockCorporateCampaigns } from "@/lib/mock-data";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import Image from "next/image";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+
+function CorporateCampaignPopup() {
+    const [isOpen, setIsOpen] = useState(false);
+    const popupCampaign = (mockCorporateCampaigns || []).find(c => c.placement === 'popup' && c.status === 'Active' && c.creatives && c.creatives.length > 0);
+
+    useEffect(() => {
+        if (popupCampaign) {
+            const hasSeenPopup = sessionStorage.getItem(`seen_corporate_popup_${popupCampaign.id}`);
+            if (!hasSeenPopup) {
+                const timer = setTimeout(() => {
+                    setIsOpen(true);
+                    sessionStorage.setItem(`seen_corporate_popup_${popupCampaign.id}`, 'true');
+                }, 3000); // Show popup after 3 seconds
+                return () => clearTimeout(timer);
+            }
+        }
+    }, [popupCampaign]);
+    
+    if (!popupCampaign || !popupCampaign.creatives) {
+        return null;
+    }
+
+    const creative = popupCampaign.creatives[0];
+    
+    return (
+         <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogContent className="p-0 overflow-hidden">
+                <div className="flex flex-col items-center text-center">
+                    {creative.imageUrl && (
+                        <div className="relative w-full aspect-video">
+                            <Image src={creative.imageUrl} alt={creative.title} fill className="object-cover" />
+                        </div>
+                    )}
+                    <div className="p-6">
+                        <DialogTitle className="text-xl font-headline mb-2">{creative.title}</DialogTitle>
+                        <DialogDescription>{creative.description}</DialogDescription>
+                        <Button asChild className="mt-4">
+                            <Link href={`/corporate/products?campaign=${popupCampaign.id}`}>{creative.cta}</Link>
+                        </Button>
+                    </div>
+                </div>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 function ProtectedCorporateLayout({ children }: { children: React.ReactNode }) {
   const { isAdminLoggedIn } = useAdminAuth();
@@ -35,6 +86,7 @@ function ProtectedCorporateLayout({ children }: { children: React.ReactNode }) {
   return (
     <CorporateSidebarLayout>
       {children}
+      <CorporateCampaignPopup />
     </CorporateSidebarLayout>
   );
 }

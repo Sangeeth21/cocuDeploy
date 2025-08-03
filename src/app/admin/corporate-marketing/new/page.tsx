@@ -245,7 +245,7 @@ export default function NewCorporateCampaignPage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="hero">Corporate Homepage Hero</SelectItem>
-                                        <SelectItem value="banner">Corporate Announcement Banner</SelectItem>
+                                        <SelectItem value="corporate-banner">Corporate Announcement Banner</SelectItem>
                                         <SelectItem value="inline-banner">Inline Homepage Banner</SelectItem>
                                         <SelectItem value="popup">Popup Modal</SelectItem>
                                         <SelectItem value="product-page-banner">Product Page Banner</SelectItem>
@@ -403,7 +403,7 @@ export default function NewCorporateCampaignPage() {
                                         </div>
                                     </div>
                                 )}
-                                 {placement === 'banner' && (
+                                 {placement === 'corporate-banner' && (
                                      <div className="w-full h-full flex flex-col">
                                         <div className="bg-primary text-primary-foreground p-2 text-sm flex items-center justify-center whitespace-nowrap overflow-x-hidden">
                                             <p>{previewingCreative.title} - {previewingCreative.description}</p>
@@ -432,6 +432,21 @@ export default function NewCorporateCampaignPage() {
                                                 </div>
                                             </div>
                                         </div>
+                                    </div>
+                                )}
+                                {placement === 'popup' && (
+                                    <div className="w-full h-full flex items-center justify-center bg-black/50">
+                                        <Card className="bg-background rounded-lg shadow-xl p-0 w-full max-w-sm text-center relative overflow-hidden">
+                                            <button className="absolute top-2 right-2 z-10 bg-background/50 rounded-full p-1"><X className="h-4 w-4"/></button>
+                                            <div className="flex flex-col items-center">
+                                                <Image src={previewingCreative.image!.src} alt="Popup Image" width={400} height={200} className="w-full h-auto object-cover" />
+                                                <div className="p-6">
+                                                    <h2 className="text-lg font-bold font-headline mb-2">{previewingCreative.title}</h2>
+                                                    <p className="text-sm text-muted-foreground mb-4">{previewingCreative.description}</p>
+                                                    <Button>{previewingCreative.cta}</Button>
+                                                </div>
+                                            </div>
+                                        </Card>
                                     </div>
                                 )}
                             </div>

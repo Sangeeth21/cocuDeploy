@@ -497,7 +497,23 @@ export const mockCampaigns: MarketingCampaign[] = [
             cta: "Shop Home",
             imageUrl: "https://placehold.co/1200x500.png"
         }]
-    }
+    },
+    {
+        id: "CAMP008",
+        name: "Product Page Promo",
+        type: "Promotion",
+        status: "Active",
+        startDate: "2024-08-01",
+        endDate: "2024-08-31",
+        placement: "product-page-banner",
+        creatives: [{
+            id: 1,
+            title: "Bundle & Save!",
+            description: "Buy this item with a leather strap and get 20% off!",
+            cta: "View Bundle",
+            imageUrl: "https://placehold.co/400x400.png",
+        }]
+    },
 ]
 
 export const mockCorporateCampaigns: MarketingCampaign[] = [
@@ -533,6 +549,54 @@ export const mockCorporateCampaigns: MarketingCampaign[] = [
             imageUrl: "https://placehold.co/1200x400.png",
         }]
     },
+    {
+        id: "CORP_CAMP003",
+        name: "Tech Refresh Program",
+        type: "Sale",
+        status: "Active",
+        startDate: "2024-07-15",
+        endDate: "2024-08-15",
+        placement: "product-page-banner",
+        creatives: [{
+            id: 1,
+            title: "Corporate Tech Refresh",
+            description: "Special pricing available when you order 50+ units.",
+            cta: "Request Quote",
+            imageUrl: "https://placehold.co/600x400.png"
+        }]
+    },
+    {
+        id: "CORP_CAMP004",
+        name: "End of Year Gifting",
+        type: "Promotion",
+        status: "Active",
+        startDate: "2024-07-01",
+        endDate: "2024-08-31",
+        placement: "popup",
+        creatives: [{
+            id: 1,
+            title: "Plan Your End-of-Year Gifting Early!",
+            description: "Contact our corporate specialists to plan your holiday gifts.",
+            cta: "Contact Us",
+            imageUrl: "https://placehold.co/600x400.png"
+        }]
+    },
+    {
+        id: "CORP_CAMP005",
+        name: "Corporate Announcement",
+        type: "Promotion",
+        status: "Active",
+        startDate: "2024-07-01",
+        endDate: "2024-08-31",
+        placement: "corporate-banner",
+        creatives: [{
+            id: 1,
+            title: "New Tiered Pricing Available!",
+            description: "Save more when you buy in bulk.",
+            cta: "Learn More",
+            imageUrl: null,
+        }]
+    }
 ]
 
 export const mockFlashDeals: FlashDeal[] = [

@@ -35,14 +35,14 @@ const navLinks = [
 ];
 
 function CorporateCampaignBanner() {
-    const bannerCampaign = (mockCorporateCampaigns || []).find(c => c.status === 'Active' && c.placement === 'banner');
+    const bannerCampaign = (mockCorporateCampaigns || []).find(c => c.status === 'Active' && c.placement === 'corporate-banner' && c.creatives && c.creatives.length > 0);
     
     if (!bannerCampaign) return null;
     
     return (
         <div className="bg-primary text-primary-foreground p-2 text-sm text-center">
             <Link href={`/corporate/products?campaign=${bannerCampaign.id}`} className="hover:underline">
-                {bannerCampaign.creatives?.[0].title} - {bannerCampaign.creatives?.[0].description}
+                {bannerCampaign.creatives![0].title} - {bannerCampaign.creatives![0].description}
             </Link>
         </div>
     )
