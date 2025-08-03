@@ -10,12 +10,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { mockCorporateBids } from "@/lib/mock-data";
-import { MoreHorizontal, Search, Gavel, Users, Clock, Trash2, ShieldAlert, Plus, CheckCircle, Hourglass, XCircle, AlertTriangle, FileText, Send, Loader2 } from 'lucide-react';
+import { CheckCircle, Clock, Gavel, Loader2, Send } from 'lucide-react';
 import type { CorporateBid, VendorBid } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     const calculateTimeLeft = () => {
@@ -36,30 +38,35 @@ function CountdownTimer({ expiryDate }: { expiryDate: string }) {
 
     useEffect(() => {
         if (new Date(expiryDate) < new Date()) return;
-        const timer = setTimeout(() => setTimeLeft(calculateTimeLeft()), 1000);
+        const timer = setTimeout(() => setTimeLeft(calculateTimeLeft()), 1000 * 60); // Update every minute
         return () => clearTimeout(timer);
     });
 
-    const timerComponents = Object.keys(timeLeft)
-        .filter(interval => timeLeft[interval] > 0)
-        .map(interval => (
-            <span key={interval} className="font-semibold">{timeLeft[interval]}{interval.charAt(0)}</span>
+    const timerComponents = Object.entries(timeLeft)
+        .filter(([key, value]) => value > 0)
+        .map(([key, value]) => (
+            <span key={key} className="font-semibold">{value}{key.charAt(0)}</span>
         ));
     
     if (!timerComponents.length) {
         return <span className="text-destructive font-semibold">Expired</span>;
     }
 
-    return <>{timerComponents.join(' ')}</>;
+    return <div className="flex gap-1">{timerComponents}</div>;
 }
 
-function PlaceBidDialog({ bid, onBidPlaced }: { bid: CorporateBid; onBidPlaced: (bidId: string, response: VendorBid) => void }) {
+function PlaceBidDialog({ bid, onBidPlaced, existingBid }: { bid: CorporateBid; onBidPlaced: (bidId: string, response: VendorBid) => void; existingBid?: VendorBid }) {
     const [open, setOpen] = useState(false);
-    const [pricePerUnit, setPricePerUnit] = useState("");
-    const [estimatedDelivery, setEstimatedDelivery] = useState("");
-    const [notes, setNotes] = useState("");
+    const [pricePerUnit, setPricePerUnit] = useState(existingBid?.pricePerUnit.toString() || "");
+    const [estimatedDelivery, setEstimatedDelivery] = useState(existingBid?.estimatedDelivery || "");
+    const [notes, setNotes] = useState(existingBid?.notes || "");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { toast } = useToast();
+
+    const lowestBid = useMemo(() => {
+        if (bid.responses.length === 0) return null;
+        return bid.responses.reduce((min, b) => b.pricePerUnit < min ? b.pricePerUnit : min, bid.responses[0].pricePerUnit);
+    }, [bid.responses]);
 
     const handleSubmit = () => {
         if (!pricePerUnit || !estimatedDelivery) {
@@ -90,53 +97,130 @@ function PlaceBidDialog({ bid, onBidPlaced }: { bid: CorporateBid; onBidPlaced: 
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
                 <Button size="sm" disabled={bid.status !== 'Active'}>
-                    <Gavel className="mr-2 h-4 w-4" /> Place Bid
+                    <Gavel className="mr-2 h-4 w-4" /> {existingBid ? 'Update Bid' : 'Place Bid'}
                 </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-xl">
+            <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                     <DialogTitle>Place Your Bid for: {bid.id}</DialogTitle>
                     <DialogDescription>
-                        Review the products and submit your best offer.
+                        Review the products and submit your best offer. All other bids are anonymous.
                     </DialogDescription>
                 </DialogHeader>
-                 <div className="grid md:grid-cols-2 gap-6 py-4">
+                <div className="grid md:grid-cols-2 gap-6 py-4 max-h-[60vh] overflow-y-auto">
+                    {/* Left Column: Product Info & Competitor Bids */}
                     <div className="space-y-4">
                         <h4 className="font-semibold text-sm">Products in this Bid</h4>
-                        {bid.products.map(p => (
-                            <div key={p.id} className="flex items-center gap-2 text-xs p-2 border rounded-md">
-                                <div className="relative h-10 w-10 shrink-0"><Image src={p.imageUrl} alt={p.name} fill className="object-cover rounded-md" /></div>
-                                <p className="font-medium">{p.name}</p>
-                            </div>
-                        ))}
-                        <div className="p-2 bg-muted/50 rounded-md text-xs">
-                            <span className="font-semibold">Required Quantity:</span> {bid.quantity} units per product
+                        <div className="space-y-2">
+                            {bid.products.map(p => (
+                                <div key={p.id} className="flex items-center gap-2 text-xs p-2 border rounded-md">
+                                    <div className="relative h-10 w-10 shrink-0"><Image src={p.imageUrl} alt={p.name} fill className="object-cover rounded-md" /></div>
+                                    <p className="font-medium">{p.name}</p>
+                                </div>
+                            ))}
                         </div>
+                        <div className="p-3 bg-muted/50 rounded-md text-sm">
+                            <span className="font-semibold">Required Quantity:</span> {bid.quantity.toLocaleString()} units per product
+                        </div>
+                        <Card>
+                            <CardHeader className="p-3">
+                                <CardTitle className="text-sm">Competitor Bids</CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-3 pt-0">
+                                {lowestBid ? (
+                                     <p className="text-xs text-muted-foreground">Current lowest bid is <span className="font-bold text-foreground">${lowestBid.toFixed(2)}/unit</span>.</p>
+                                ) : (
+                                    <p className="text-xs text-muted-foreground">Be the first to bid!</p>
+                                )}
+                            </CardContent>
+                        </Card>
                     </div>
+                    {/* Right Column: Your Bid */}
                     <div className="space-y-4">
-                         <div className="space-y-2">
-                            <Label htmlFor="price">Your Price per Unit ($)</Label>
-                            <Input id="price" type="number" value={pricePerUnit} onChange={e => setPricePerUnit(e.target.value)} placeholder="e.g., 150.00" />
+                        <h4 className="font-semibold text-sm">Your Offer</h4>
+                        <div className="space-y-2">
+                            <Label htmlFor="price">Your Price per Unit ($) <span className="text-destructive">*</span></Label>
+                            <Input id="price" type="number" value={pricePerUnit} onChange={e => setPricePerUnit(e.target.value)} placeholder="e.g., 150.00" required/>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="delivery">Estimated Delivery</Label>
-                            <Input id="delivery" value={estimatedDelivery} onChange={e => setEstimatedDelivery(e.target.value)} placeholder="e.g., 10-12 business days" />
+                            <Label htmlFor="delivery">Estimated Delivery <span className="text-destructive">*</span></Label>
+                            <Input id="delivery" value={estimatedDelivery} onChange={e => setEstimatedDelivery(e.target.value)} placeholder="e.g., 10-12 business days" required/>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="notes">Notes (Optional)</Label>
-                            <Input id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g., Bulk discounts available" />
+                            <Label htmlFor="notes">Notes to Customer (Optional)</Label>
+                            <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g., Bulk discounts available for future orders." />
                         </div>
                     </div>
-                 </div>
+                </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
                     <Button onClick={handleSubmit} disabled={isSubmitting}>
                         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Submit Bid
+                        {existingBid ? 'Update Bid' : 'Submit Bid'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+    );
+}
+
+
+function BidList({ bids, onBidPlaced }: { bids: CorporateBid[]; onBidPlaced: (bidId: string, response: VendorBid) => void }) {
+    
+    if (bids.length === 0) {
+        return <p className="text-center text-muted-foreground py-8">No bids in this category.</p>
+    }
+    
+    return (
+        <Table>
+            <TableHeader>
+                <TableRow>
+                    <TableHead>Bid ID</TableHead>
+                    <TableHead>Products</TableHead>
+                    <TableHead>Time Left</TableHead>
+                    <TableHead>Competitors</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+            </TableHeader>
+            <TableBody>
+                {bids.map(bid => {
+                    const vendorBid = bid.responses.find(r => r.alias === 'You');
+                    const competitorCount = bid.responses.filter(r => r.alias !== 'You').length;
+                    const isWinning = vendorBid && bid.responses.length > 0 && Math.min(...bid.responses.map(r => r.pricePerUnit)) === vendorBid.pricePerUnit;
+                    
+                    return (
+                        <TableRow key={bid.id}>
+                            <TableCell>
+                                <div className="font-mono text-sm">{bid.id}</div>
+                                {vendorBid && (
+                                     <Badge variant={isWinning ? "default" : "secondary"}>{isWinning ? "Winning" : "Submitted"}</Badge>
+                                )}
+                            </TableCell>
+                            <TableCell>
+                                <div className="flex items-center -space-x-2">
+                                    {bid.products.slice(0, 3).map(p => (
+                                        <Avatar key={p.id} className="border-2 border-background">
+                                            <AvatarImage src={p.imageUrl} alt={p.name} />
+                                            <AvatarFallback>{p.name.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                    ))}
+                                    {bid.products.length > 3 && (
+                                        <Avatar className="border-2 border-background">
+                                            <AvatarFallback>+{bid.products.length - 3}</AvatarFallback>
+                                        </Avatar>
+                                    )}
+                                </div>
+                            </TableCell>
+                            <TableCell><CountdownTimer expiryDate={bid.expiresAt} /></TableCell>
+                            <TableCell>{competitorCount}</TableCell>
+                            <TableCell className="text-right">
+                                <PlaceBidDialog bid={bid} onBidPlaced={onBidPlaced} existingBid={vendorBid} />
+                            </TableCell>
+                        </TableRow>
+                    )
+                })}
+            </TableBody>
+        </Table>
     );
 }
 
@@ -146,32 +230,25 @@ export default function CorporateVendorBidsPage() {
     const handleBidPlaced = (bidId: string, response: VendorBid) => {
         setBids(prev => prev.map(bid => {
             if (bid.id === bidId) {
-                // Check if this vendor has already bid to avoid duplicates
-                if (bid.responses.some(r => r.alias === "You")) {
-                    return bid; // Already bid, do nothing
+                // Check if this vendor has already bid to update it, otherwise add it.
+                const existingBidIndex = bid.responses.findIndex(r => r.alias === "You");
+                const newResponses = [...bid.responses];
+
+                if (existingBidIndex > -1) {
+                    newResponses[existingBidIndex] = response;
+                } else {
+                    newResponses.push(response);
                 }
-                return {
-                    ...bid,
-                    responses: [...bid.responses, response],
-                };
+                
+                return { ...bid, responses: newResponses };
             }
             return bid;
         }));
     };
     
-     const getStatusInfo = (status: CorporateBid['status']) => {
-        switch(status) {
-            case 'Active': return { icon: Hourglass, variant: 'secondary' as const, label: 'Active' };
-            case 'Awarded': return { icon: CheckCircle, variant: 'default' as const, label: 'Awarded' };
-            case 'Expired': return { icon: XCircle, variant: 'outline' as const, label: 'Expired' };
-            default: return { icon: Gavel, variant: 'secondary' as const, label: 'Unknown' };
-        }
-    };
-    
-    const hasVendorBid = (bid: CorporateBid) => {
-        // In a real app, you'd check against the logged-in vendor's ID.
-        return bid.responses.some(r => r.alias === "You");
-    }
+    const activeBids = useMemo(() => bids.filter(b => b.status === 'Active'), [bids]);
+    const awardedBids = useMemo(() => bids.filter(b => b.status === 'Awarded' && b.responses.some(r => r.alias === 'You')), [bids]);
+    const pastBids = useMemo(() => bids.filter(b => b.status === 'Expired' || (b.status === 'Awarded' && !b.responses.some(r => r.alias === 'You'))), [bids]);
 
     return (
         <div>
@@ -181,66 +258,26 @@ export default function CorporateVendorBidsPage() {
                     <p className="text-muted-foreground">Review and bid on active corporate requests.</p>
                 </div>
             </div>
-            <Card>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Bid ID</TableHead>
-                                <TableHead>Products</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Time Left</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {bids.map(bid => {
-                                const { icon: StatusIcon, variant: statusVariant, label: statusLabel } = getStatusInfo(bid.status);
-                                const alreadyBid = hasVendorBid(bid);
-
-                                return (
-                                <TableRow key={bid.id}>
-                                    <TableCell className="font-mono">{bid.id}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center -space-x-2">
-                                            {bid.products.slice(0, 3).map(p => (
-                                                <Avatar key={p.id} className="border-2 border-background">
-                                                    <AvatarImage src={p.imageUrl} alt={p.name} />
-                                                    <AvatarFallback>{p.name.charAt(0)}</AvatarFallback>
-                                                </Avatar>
-                                            ))}
-                                            {bid.products.length > 3 && (
-                                                <Avatar className="border-2 border-background">
-                                                    <AvatarFallback>+{bid.products.length - 3}</AvatarFallback>
-                                                </Avatar>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                        <TableCell>
-                                            <Badge variant={statusVariant}>
-                                            <StatusIcon className="mr-2 h-4 w-4" />
-                                            {statusLabel}
-                                        </Badge>
-                                        </TableCell>
-                                    <TableCell className="text-right"><CountdownTimer expiryDate={bid.expiresAt} /></TableCell>
-                                    <TableCell className="text-right">
-                                        {alreadyBid ? (
-                                            <Button size="sm" variant="outline" disabled>
-                                                <CheckCircle className="mr-2 h-4 w-4" /> Bid Submitted
-                                            </Button>
-                                        ) : (
-                                            <PlaceBidDialog bid={bid} onBidPlaced={handleBidPlaced} />
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                                )
-                            })}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+             <Tabs defaultValue="active">
+                <TabsList>
+                    <TabsTrigger value="active">Active Bids</TabsTrigger>
+                    <TabsTrigger value="awarded">Awarded</TabsTrigger>
+                    <TabsTrigger value="past">Past Bids</TabsTrigger>
+                </TabsList>
+                <Card className="mt-4">
+                    <CardContent className="p-0">
+                         <TabsContent value="active">
+                            <BidList bids={activeBids} onBidPlaced={handleBidPlaced} />
+                        </TabsContent>
+                         <TabsContent value="awarded">
+                             <BidList bids={awardedBids} onBidPlaced={handleBidPlaced} />
+                        </TabsContent>
+                         <TabsContent value="past">
+                            <BidList bids={pastBids} onBidPlaced={handleBidPlaced} />
+                        </TabsContent>
+                    </CardContent>
+                </Card>
+            </Tabs>
         </div>
     );
 }
-
-    
