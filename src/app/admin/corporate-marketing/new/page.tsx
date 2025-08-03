@@ -247,6 +247,8 @@ export default function NewCorporateCampaignPage() {
                                         <SelectItem value="hero">Corporate Homepage Hero</SelectItem>
                                         <SelectItem value="banner">Corporate Announcement Banner</SelectItem>
                                         <SelectItem value="inline-banner">Inline Homepage Banner</SelectItem>
+                                        <SelectItem value="popup">Popup Modal</SelectItem>
+                                        <SelectItem value="product-page-banner">Product Page Banner</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
