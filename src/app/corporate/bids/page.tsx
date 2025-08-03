@@ -6,16 +6,19 @@ import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { mockCorporateBids } from "@/lib/mock-data";
 import type { CorporateBid } from "@/lib/types";
 import Image from "next/image";
 import { Clock, Eye, Gavel, Plus, Users, CheckCircle, Hourglass, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import Link from 'next/link';
+import NewBidPage from './new/page';
 
 function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     const calculateTimeLeft = () => {
         const difference = +new Date(expiryDate) - +new Date();
-        let timeLeft = {};
+        let timeLeft: { [key: string]: number } = {};
 
         if (difference > 0) {
             timeLeft = {
@@ -38,19 +41,13 @@ function CountdownTimer({ expiryDate }: { expiryDate: string }) {
         return () => clearTimeout(timer);
     });
 
-    const timerComponents: any[] = [];
-
-    Object.keys(timeLeft).forEach((interval) => {
-        if (!timeLeft[interval as keyof typeof timeLeft]) {
-            return;
-        }
-
-        timerComponents.push(
+    const timerComponents = Object.keys(timeLeft)
+        .filter(interval => timeLeft[interval] > 0)
+        .map(interval => (
             <span key={interval}>
-                {timeLeft[interval as keyof typeof timeLeft]}{interval.charAt(0)}
+                {timeLeft[interval]}{interval.charAt(0)}
             </span>
-        );
-    });
+        ));
     
     if(!timerComponents.length) {
         return <span className="text-destructive">Expired</span>;
@@ -97,7 +94,7 @@ function BidCard({ bid }: { bid: CorporateBid }) {
                 </div>
                 <div>
                      {bid.products.map((product, index) => (
-                        <p key={index} className="text-sm font-medium truncate">{product.name}{index < bid.products.length -1 ? <Plus className="h-4 w-4 inline mx-1 text-muted-foreground" /> : ''}</p>
+                        <p key={index} className="text-sm font-medium truncate inline">{product.name}{index < bid.products.length -1 ? <Plus className="h-4 w-4 inline mx-1 text-muted-foreground" /> : ''}</p>
                     ))}
                     <p className="text-xs text-muted-foreground">Quantity: {bid.quantity} units</p>
                 </div>
@@ -113,9 +110,11 @@ function BidCard({ bid }: { bid: CorporateBid }) {
                 </div>
             </CardContent>
              <CardContent>
-                <Button className="w-full" onClick={() => router.push(`/corporate/bids/${bid.id}`)}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    View Bids
+                <Button className="w-full" asChild>
+                    <Link href={`/corporate/bids/${bid.id}`}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        View Bids
+                    </Link>
                 </Button>
             </CardContent>
         </Card>
@@ -132,17 +131,29 @@ export default function BidsPage() {
 
     return (
         <div>
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold font-headline">My Bid Requests</h1>
-                <p className="text-muted-foreground">
-                    Track the status of your active and past bid requests.
-                </p>
+            <div className="flex items-center justify-between mb-8">
+                 <div>
+                    <h1 className="text-3xl font-bold font-headline">My Bid Requests</h1>
+                    <p className="text-muted-foreground">
+                        Track the status of your active and past bid requests.
+                    </p>
+                </div>
+                <Dialog>
+                    <DialogTrigger asChild>
+                         <Button>
+                            <Plus className="mr-2 h-4 w-4" /> Create New Bid
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-6xl h-[90vh]">
+                        <NewBidPage />
+                    </DialogContent>
+                </Dialog>
             </div>
             <Tabs defaultValue="active">
                 <TabsList>
                     <TabsTrigger value="active">Active</TabsTrigger>
-                    <TabsTrigger value="expired">Expired</TabsTrigger>
                     <TabsTrigger value="awarded">Awarded</TabsTrigger>
+                    <TabsTrigger value="expired">Expired</TabsTrigger>
                     <TabsTrigger value="all">All</TabsTrigger>
                 </TabsList>
                 <TabsContent value="active">
