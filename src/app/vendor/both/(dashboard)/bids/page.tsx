@@ -150,13 +150,6 @@ function PlaceBidDialog({ bid, onBidPlaced, existingBid }: { bid: CorporateBid; 
                                 )}
                             </CardContent>
                         </Card>
-                         <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
-                            <CardContent className="p-3">
-                                <p className="text-xs text-blue-800 dark:text-blue-300">
-                                    <span className="font-bold">Tip:</span> The lowest bid doesn't always win. Corporate clients value reliability, quality, and clear communication. Put your best foot forward!
-                                </p>
-                            </CardContent>
-                        </Card>
                     </div>
                     {/* Right Column: Your Bid */}
                     <div className="space-y-4">
@@ -173,6 +166,13 @@ function PlaceBidDialog({ bid, onBidPlaced, existingBid }: { bid: CorporateBid; 
                             <Label htmlFor="notes">Notes to Customer (Optional)</Label>
                             <Textarea id="notes" value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g., Bulk discounts available for future orders." />
                         </div>
+                        <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950/20 dark:border-blue-800">
+                            <CardContent className="p-3">
+                                <p className="text-xs text-blue-800 dark:text-blue-300">
+                                    <span className="font-bold">Tip:</span> The lowest bid doesn't always win. Corporate clients value reliability, quality, and clear communication. Put your best foot forward!
+                                </p>
+                            </CardContent>
+                        </Card>
                     </div>
                 </div>
                 <DialogFooter>
