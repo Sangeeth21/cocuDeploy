@@ -108,7 +108,7 @@ function BidDetailsDialog({ bid }: { bid: CorporateBid }) {
                                                     <Avatar className="h-8 w-8"><AvatarImage src={res.vendorAvatar} /><AvatarFallback>{res.vendorName.charAt(0)}</AvatarFallback></Avatar>
                                                     <div className="flex flex-col">
                                                         <span className="font-medium">{res.vendorName}</span>
-                                                        <span className="text-xs text-muted-foreground">Alias: {res.alias}</span>
+                                                        <span className="text-xs text-muted-foreground">{res.vendorId}</span>
                                                     </div>
                                                 </div>
                                             </TableCell>
@@ -140,7 +140,8 @@ export default function AdminBidsPage() {
         if (searchTerm) {
             const lowercasedFilter = searchTerm.toLowerCase();
             filtered = filtered.filter(b => 
-                b.id.toLowerCase().includes(lowercasedFilter)
+                b.id.toLowerCase().includes(lowercasedFilter) ||
+                b.responses.some(r => r.vendorName.toLowerCase().includes(lowercasedFilter))
             );
         }
         return filtered;
@@ -176,7 +177,7 @@ export default function AdminBidsPage() {
                         <div className="relative">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search by Bid ID..."
+                                placeholder="Search by Bid ID or Vendor..."
                                 className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[320px]"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -256,3 +257,5 @@ export default function AdminBidsPage() {
         </div>
     );
 }
+
+    
