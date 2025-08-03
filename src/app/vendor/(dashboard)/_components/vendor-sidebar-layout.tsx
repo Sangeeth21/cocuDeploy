@@ -128,7 +128,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                         </SidebarMenuItem>
                          <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
-                                <Link href="/login">
+                                <Link href="/vendor/login">
                                     <LogOut />
                                     <span>Log Out</span>
                                 </Link>
