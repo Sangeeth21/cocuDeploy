@@ -58,8 +58,7 @@ const initialTickets: SupportTicket[] = [
     },
 ];
 
-
-export default function AdminSupportPage() {
+export default function VendorSupportPage() {
     const { toast } = useToast();
     const router = useRouter();
     const [tickets, setTickets] = useState(initialTickets);
@@ -78,65 +77,25 @@ export default function AdminSupportPage() {
         scrollToBottom();
     }, [selectedTicket?.messages.length]);
 
-    const handleStartConversation = (ticketId: string) => {
-        setTickets(prev => prev.map(t => {
-            if (t.id === ticketId) {
-                const initialMessage: Message = { id: `${ticketId}-init`, sender: 'vendor', text: t.message, timestamp: new Date(t.date) };
-                const updatedTicket = { ...t, status: "In-Progress", messages: [initialMessage] };
-                setSelectedTicket(updatedTicket); // Update the selected ticket state as well
-                return updatedTicket;
-            }
-            return t;
-        }));
-    };
-    
-    const handleResolveTicket = (ticketId: string) => {
-        if (!selectedTicket) return;
-        
-        const finalMessage: Message = { id: `sys-${Date.now()}`, sender: 'system', text: 'Admin marked this conversation as resolved.'};
-        
-        const updatedTicket = { ...selectedTicket, status: "Resolved", messages: [...selectedTicket.messages, finalMessage] } as SupportTicket;
-        
-        setTickets(prev => prev.map(t => t.id === ticketId ? updatedTicket : t));
-        setSelectedTicket(updatedTicket);
-
-        toast({ title: 'Ticket Resolved', description: `Ticket ${ticketId} has been closed.` });
-    };
-
     const handleSendMessage = useCallback((e: React.FormEvent) => {
         e.preventDefault();
         if (!newMessage.trim() || !selectedTicket) return;
 
-        const adminMessageId = `admin-${Date.now()}`;
-        const newAdminMessage: Message = { 
-            id: adminMessageId,
-            sender: "admin", 
+        const vendorMessageId = `vendor-${Date.now()}`;
+        const newVendorMessage: Message = { 
+            id: vendorMessageId,
+            sender: "vendor", 
             text: newMessage,
             timestamp: new Date(),
-            status: 'sending'
+            status: 'sent'
         };
 
         const currentTicketId = selectedTicket.id;
         
-        // Optimistically update the UI with the "sending" message
-        setTickets(prev => prev.map(t => t.id === currentTicketId ? { ...t, messages: [...t.messages, newAdminMessage] } : t));
-        setSelectedTicket(prev => prev ? { ...prev, messages: [...prev.messages, newAdminMessage] } : null);
+        setTickets(prev => prev.map(t => t.id === currentTicketId ? { ...t, messages: [...t.messages, newVendorMessage], status: 'In-Progress' } : t));
+        setSelectedTicket(prev => prev ? { ...prev, messages: [...prev.messages, newVendorMessage], status: 'In-Progress' } : null);
         
         setNewMessage("");
-
-        // Simulate sending the message
-        setTimeout(() => {
-            const updateToSent = (tickets: SupportTicket[]) => tickets.map(t => {
-                if (t.id === currentTicketId) {
-                    const updatedMessages = t.messages.map(m => m.id === adminMessageId ? { ...m, status: 'sent' } : m);
-                    return { ...t, messages: updatedMessages };
-                }
-                return t;
-            });
-            setTickets(updateToSent);
-            setSelectedTicket(prev => prev ? { ...prev, messages: updateToSent(prev ? [prev] : [])[0].messages} : null);
-
-        }, 1000);
 
       }, [newMessage, selectedTicket]);
   
@@ -152,31 +111,14 @@ export default function AdminSupportPage() {
               return null;
       }
     }
-    
-    // Simulate the vendor reading the messages
-    const handleMarkAsRead = (ticketId: string) => {
-        setTickets(prev => prev.map(t => {
-            if (t.id === ticketId) {
-                const updatedMessages = t.messages.map(m => m.sender === 'admin' ? { ...m, status: 'read' as const } : m);
-                const updatedTicket = { ...t, messages: updatedMessages };
-                if(selectedTicket?.id === ticketId) {
-                    setSelectedTicket(updatedTicket);
-                }
-                return updatedTicket;
-            }
-            return t;
-        }));
-        toast({ title: "Marked as Read", description: "Admin messages have been marked as read by the vendor." });
-    }
-
 
     return (
         <div className="grid md:grid-cols-3 gap-8 items-start h-[calc(100vh-12rem)]">
             <div className="md:col-span-1 h-full">
                  <Card className="h-full flex flex-col">
                     <CardHeader>
-                        <CardTitle>Support Tickets</CardTitle>
-                        <CardDescription>Review and respond to vendor inquiries.</CardDescription>
+                        <CardTitle>Support Center</CardTitle>
+                        <CardDescription>Get help and manage your support tickets.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-y-auto space-y-2 p-4">
                         {tickets.map(ticket => (
@@ -189,7 +131,7 @@ export default function AdminSupportPage() {
                                     <p className="font-semibold text-sm truncate">{ticket.subject}</p>
                                     <Badge variant={ticket.status === 'Pending' ? 'destructive' : ticket.status === 'Resolved' ? 'default' : 'secondary'}>{ticket.status}</Badge>
                                 </div>
-                                <p className="text-xs text-muted-foreground">{ticket.vendor.name} - {ticket.date}</p>
+                                <p className="text-xs text-muted-foreground">{ticket.id} - {ticket.date}</p>
                             </div>
                         ))}
                     </CardContent>
@@ -203,12 +145,12 @@ export default function AdminSupportPage() {
                                 <div>
                                     <CardTitle className="text-xl">{selectedTicket.subject}</CardTitle>
                                     <CardDescription className="mt-1">
-                                        Ticket from {selectedTicket.vendor.name} on {selectedTicket.date}
+                                        Ticket ID: {selectedTicket.id}
                                     </CardDescription>
                                 </div>
-                                 <Avatar>
-                                    <AvatarImage src={selectedTicket.vendor.avatar} alt={selectedTicket.vendor.name} />
-                                    <AvatarFallback>{selectedTicket.vendor.name.charAt(0)}</AvatarFallback>
+                                <Avatar>
+                                    <AvatarImage src={"https://placehold.co/40x40.png"} alt={"Admin"} />
+                                    <AvatarFallback>A</AvatarFallback>
                                 </Avatar>
                             </div>
                         </CardHeader>
@@ -217,9 +159,7 @@ export default function AdminSupportPage() {
                              <div className="flex-1 flex flex-col justify-center items-center text-center p-6 bg-muted/20">
                                 <p className="font-semibold">Initial Message:</p>
                                 <blockquote className="mt-2 border-l-2 pl-4 italic text-muted-foreground max-w-md">"{selectedTicket.message}"</blockquote>
-                                <Button className="mt-6" onClick={() => handleStartConversation(selectedTicket.id)}>
-                                     <Check className="mr-2 h-4 w-4" /> Start Conversation & Approve
-                                </Button>
+                                <p className="text-xs text-muted-foreground mt-4">An admin will respond to your ticket shortly.</p>
                             </div>
                         ) : (
                              <div className="flex-1 flex flex-col min-h-0 bg-card">
@@ -229,18 +169,18 @@ export default function AdminSupportPage() {
                                             msg.sender === 'system' ? (
                                                 <div key={msg.id} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
                                             ) : (
-                                            <div key={msg.id} className={cn("flex items-end gap-2", msg.sender === 'admin' ? 'justify-end' : 'justify-start')}>
-                                                {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedTicket.vendor.avatar} alt={selectedTicket.vendor.name} /><AvatarFallback>{selectedTicket.vendor.name.charAt(0)}</AvatarFallback></Avatar>}
-                                                <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'admin' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                            <div key={msg.id} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
+                                                {msg.sender === 'admin' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Admin" /><AvatarFallback>A</AvatarFallback></Avatar>}
+                                                <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
                                                     {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                                                    {msg.sender === 'admin' && msg.status && (
+                                                    {msg.sender === 'vendor' && msg.status && (
                                                         <div className="flex justify-end items-center gap-1 h-4 mt-1">
                                                             <span className="text-xs text-primary-foreground/70">{msg.status}</span>
                                                             {getStatusIcon(msg.status)}
                                                         </div>
                                                     )}
                                                 </div>
-                                                {msg.sender === 'admin' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Admin" /><AvatarFallback>A</AvatarFallback></Avatar>}
+                                                {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedTicket.vendor.avatar} alt={selectedTicket.vendor.name} /><AvatarFallback>{selectedTicket.vendor.name.charAt(0)}</AvatarFallback></Avatar>}
                                             </div>
                                             )
                                         ))}
@@ -267,16 +207,6 @@ export default function AdminSupportPage() {
                                             <Button type="submit" size="icon" disabled={!newMessage.trim()}><Send className="h-4 w-4" /></Button>
                                         </div>
                                      )}
-                                     <div className="flex items-center justify-between gap-2">
-                                         <Button variant="outline" size="sm" onClick={() => handleMarkAsRead(selectedTicket.id)}>
-                                             <Eye className="mr-2 h-4 w-4"/> Simulate Vendor Read
-                                         </Button>
-                                         {selectedTicket.status === 'In-Progress' && (
-                                            <Button variant="secondary" onClick={() => handleResolveTicket(selectedTicket.id)}>
-                                                <ShieldCheck className="mr-2 h-4 w-4" /> Mark as Resolved
-                                            </Button>
-                                        )}
-                                     </div>
                                 </form>
                             </div>
                         )}
@@ -290,5 +220,3 @@ export default function AdminSupportPage() {
         </div>
     );
 }
-
-    

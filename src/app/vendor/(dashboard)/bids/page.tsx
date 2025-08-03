@@ -32,7 +32,7 @@ function CountdownTimer({ expiryDate }: { expiryDate: string }) {
         return timeLeft;
     };
 
-    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
 
     useEffect(() => {
         if (new Date(expiryDate) < new Date()) return;
@@ -147,7 +147,7 @@ export default function VendorBidsPage() {
         setBids(prev => prev.map(bid => {
             if (bid.id === bidId) {
                 // Check if this vendor has already bid to avoid duplicates
-                if (bid.responses.some(r => r.vendorId === response.vendorId)) {
+                if (bid.responses.some(r => r.alias === "You")) {
                     return bid; // Already bid, do nothing
                 }
                 return {

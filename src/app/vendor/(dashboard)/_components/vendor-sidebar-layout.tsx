@@ -15,12 +15,16 @@ import { useVerification } from "@/context/vendor-verification-context";
 
 const allNavLinks = [
   { href: "/vendor/dashboard", label: "Dashboard", icon: LayoutDashboard, types: ['personalized', 'corporate', 'both'] },
-  { href: "/vendor/products", label: "Products", icon: Package, types: ['personalized', 'corporate', 'both'] },
-  { href: "/vendor/inventory", label: "Inventory", icon: Warehouse, types: ['personalized', 'corporate', 'both'] },
-  { href: "/vendor/orders", label: "Orders", icon: ListChecks, types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/products", label: "Products", icon: Package, types: ['personalized', 'both'] },
+  { href: "/vendor/products", label: "Corporate Products", icon: Package, types: ['corporate', 'both'] },
+  { href: "/vendor/inventory", label: "Inventory", icon: Warehouse, types: ['personalized', 'both'] },
+  { href: "/vendor/inventory", label: "Corp. Inventory", icon: Warehouse, types: ['corporate', 'both'] },
+  { href: "/vendor/orders", label: "Orders", icon: ListChecks, types: ['personalized', 'both'] },
+  { href: "/vendor/orders", label: "Corp. Orders", icon: ListChecks, types: ['corporate', 'both'] },
   { href: "/vendor/bids", label: "Bidding", icon: Gavel, types: ['corporate', 'both'] },
   { href: "/vendor/analytics", label: "Analytics", icon: LineChart, types: ['personalized', 'corporate', 'both'] },
-  { href: "/vendor/messages", label: "Messages", icon: MessageSquare, badge: "5", types: ['personalized', 'corporate', 'both'] },
+  { href: "/vendor/messages", label: "Messages", icon: MessageSquare, badge: "5", types: ['personalized', 'both'] },
+  { href: "/vendor/messages", label: "Corp. Messages", icon: MessageSquare, badge: "2", types: ['corporate', 'both'] },
   { href: "/vendor/referrals", label: "Referrals", icon: Gift, types: ['personalized', 'corporate', 'both'] },
   { href: "/vendor/support", label: "Support", icon: LifeBuoy, types: ['personalized', 'corporate', 'both'] },
   { href: "/vendor/settings", label: "Settings", icon: Settings, types: ['personalized', 'corporate', 'both'] },
@@ -99,8 +103,8 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         )}
-                        {navLinks.map(link => (
-                            <SidebarMenuItem key={link.href}>
+                        {navLinks.map((link, index) => (
+                            <SidebarMenuItem key={`${link.href}-${link.label}-${index}`}>
                                 <SidebarMenuButton 
                                     asChild
                                     isActive={pathname === link.href}
