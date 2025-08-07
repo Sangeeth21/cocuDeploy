@@ -93,7 +93,7 @@ function CorporateLoginForm() {
         title: "Corporate Login Successful",
         description: "Redirecting to the corporate dashboard.",
       });
-      router.push("/corporate/dashboard");
+      router.replace("/corporate/dashboard");
     } else {
         toast({
             variant: "destructive",
