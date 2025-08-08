@@ -2,30 +2,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff, Building, User as UserIcon } from "lucide-react";
+import { Loader2, Eye, EyeOff, Building, User as UserIcon } from "lucide-react";
 import { useVerification } from "@/context/vendor-verification-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
+function LoginForm({ type, onLoginSuccess }: { type: 'personalized' | 'corporate'; onLoginSuccess: (type: 'personalized' | 'corporate' | 'both') => void }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const router = useRouter();
     const { toast } = useToast();
-    const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
     
     const defaultEmail = type === 'personalized' ? 'personalized@example.com' : 'corporate@example.com';
-    const loginDescription = type === 'personalized' 
-        ? 'Sign in to your retail dashboard.' 
-        : 'Sign in to your corporate dashboard.';
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,18 +28,17 @@ function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
         let isVerified = true;
         let resolvedVendorType: 'personalized' | 'corporate' | 'both' = type;
 
-        // This mock logic handles various test users.
         if (password === "vendorpass") {
-            if (type === 'personalized' && email === 'personalized@example.com') {
+             if (email === 'personalized@example.com') {
                 isValid = true;
                 resolvedVendorType = 'personalized';
-            } else if (type === 'corporate' && email === 'corporate@example.com') {
+            } else if (email === 'corporate@example.com') {
                 isValid = true;
                 resolvedVendorType = 'corporate';
-            } else if (email === 'vendor@example.com') { // A user that can be either type
+            } else if (email === 'vendor@example.com') {
                 isValid = true;
                 resolvedVendorType = 'both';
-            } else if (email === 'unverified@example.com') { // An unverified user
+            } else if (email === 'unverified@example.com') {
                 isValid = true;
                 isVerified = false;
                 resolvedVendorType = 'both';
@@ -53,17 +46,7 @@ function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
         }
 
         if (isValid) {
-            setVendorType(resolvedVendorType);
-            if (isVerified) {
-                setAsVerified();
-            } else {
-                setAsUnverified();
-            }
-            toast({
-                title: "Login Successful",
-                description: `Redirecting to your ${resolvedVendorType} vendor dashboard.`,
-            });
-            // The router push will be handled by the layout based on the new context
+            onLoginSuccess(resolvedVendorType);
         } else {
             toast({
                 variant: "destructive",
@@ -74,9 +57,7 @@ function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
     };
 
     return (
-        <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4 pt-4">
-            <p className="text-sm text-muted-foreground">{loginDescription}</p>
+        <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor={`email-${type}`}>Email</Label>
               <Input id={`email-${type}`} type="email" placeholder={defaultEmail} required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -95,31 +76,40 @@ function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
                 </Button>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-                <Checkbox id={`remember-me-${type}`} />
-                <Label htmlFor={`remember-me-${type}`} className="font-normal">
-                Remember me
-                </Label>
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full">Sign In</Button>
-            <p className="text-sm text-center text-muted-foreground">
-                Don't have a vendor account?{" "}
-                <Link href="/vendor/signup" className="font-semibold text-primary hover:underline">
-                    Sign Up
-                </Link>
-            </p>
-          </CardFooter>
+            <Button type="submit" className="w-full">Sign In</Button>
         </form>
     )
 }
 
 export default function VendorLoginPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
+    const { toast } = useToast();
+
+    const type = searchParams.get('type') || 'personalized';
+    
+    const handleLoginSuccess = (vendorType: 'personalized' | 'corporate' | 'both') => {
+        setVendorType(vendorType);
+        // This is a simplified logic, a real app would check verification status from an API
+        if (vendorType === 'both' && email === 'unverified@example.com') {
+            setAsUnverified();
+        } else {
+            setAsVerified();
+        }
+        
+        toast({
+            title: "Login Successful",
+            description: `Redirecting to your ${vendorType} vendor dashboard.`,
+        });
+        
+        // Let the layout handle the redirect based on context change.
+    }
+
   return (
     <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
       <Card className="w-full max-w-md">
-         <Tabs defaultValue="personalized" className="w-full">
+         <Tabs defaultValue={type} onValueChange={(value) => router.push(`/vendor/login?type=${value}`)} className="w-full">
             <CardHeader className="text-center">
                 <CardTitle className="text-3xl font-headline">Vendor Portal</CardTitle>
                 <CardDescription>Select your business type to sign in.</CardDescription>
@@ -128,12 +118,22 @@ export default function VendorLoginPage() {
                     <TabsTrigger value="corporate"><Building className="mr-2 h-4 w-4" /> Corporate & Bulk</TabsTrigger>
                 </TabsList>
             </CardHeader>
-            <TabsContent value="personalized">
-                <LoginForm type="personalized" />
-            </TabsContent>
-            <TabsContent value="corporate">
-                <LoginForm type="corporate" />
-            </TabsContent>
+            <CardContent>
+                <TabsContent value="personalized">
+                    <LoginForm type="personalized" onLoginSuccess={handleLoginSuccess} />
+                </TabsContent>
+                <TabsContent value="corporate">
+                    <LoginForm type="corporate" onLoginSuccess={handleLoginSuccess} />
+                </TabsContent>
+            </CardContent>
+            <CardFooter>
+                 <p className="text-sm text-center text-muted-foreground w-full">
+                    Don't have a vendor account?{" "}
+                    <Link href="/vendor/signup" className="font-semibold text-primary hover:underline">
+                        Sign Up
+                    </Link>
+                </p>
+            </CardFooter>
         </Tabs>
       </Card>
     </div>

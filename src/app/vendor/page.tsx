@@ -86,9 +86,14 @@ export default function VendorPage() {
         <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
           Manage your products, track sales, and connect with your customers all in one place.
         </p>
-        <Button className="mt-6" asChild>
-          <Link href="/vendor/login">Access Your Dashboard</Link>
-        </Button>
+        <div className="mt-6 flex justify-center gap-4">
+            <Button asChild>
+              <Link href="/vendor/login">Access Your Dashboard</Link>
+            </Button>
+             <Button variant="outline" asChild>
+              <Link href="/vendor/signup">Become a Vendor</Link>
+            </Button>
+        </div>
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mt-16">

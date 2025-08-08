@@ -397,30 +397,37 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
 export function CustomerAuthDialog() {
     const { authDialogState, closeDialog } = useAuthDialog();
 
-    return (
-        <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
-            <DialogContent className="sm:max-w-md">
-                 <DialogHeader className="text-center">
-                    <DialogTitle>Welcome to Co & Cu</DialogTitle>
-                    <DialogDescription>Log in or create an account to continue.</DialogDescription>
-                </DialogHeader>
-                <Tabs defaultValue={authDialogState.initialTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="login">Login</TabsTrigger>
-                        <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="login">
-                        <div className="pt-4">
-                           <LoginForm onLoginSuccess={closeDialog} />
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="signup">
-                        <div className="pt-4">
-                          <SignupForm onSignupSuccess={closeDialog} />
-                        </div>
-                    </TabsContent>
-                </Tabs>
-            </DialogContent>
-        </Dialog>
-    );
+    if (authDialogState.initialTab === 'login') {
+        return (
+            <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
+                <DialogContent className="sm:max-w-md">
+                     <DialogHeader className="text-center">
+                        <DialogTitle>Welcome Back</DialogTitle>
+                        <DialogDescription>Log in to your account to continue.</DialogDescription>
+                    </DialogHeader>
+                    <div className="pt-4">
+                       <LoginForm onLoginSuccess={closeDialog} />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
+    
+    if (authDialogState.initialTab === 'signup') {
+         return (
+            <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
+                <DialogContent className="sm:max-w-md">
+                     <DialogHeader className="text-center">
+                        <DialogTitle>Create Your Account</DialogTitle>
+                        <DialogDescription>Join the Co & Cu community today.</DialogDescription>
+                    </DialogHeader>
+                    <div className="pt-4">
+                      <SignupForm onSignupSuccess={closeDialog} />
+                    </div>
+                </DialogContent>
+            </Dialog>
+        );
+    }
+
+    return null;
 }

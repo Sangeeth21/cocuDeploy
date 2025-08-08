@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown, ShoppingCart, Heart, Gift } from "lucide-react";
+import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown, ShoppingCart, Heart, Gift, Building } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchBar } from "@/components/search-bar";
@@ -15,6 +15,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { CartPreview } from "@/components/cart-preview";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,7 +30,6 @@ import { ComparisonPreview } from "../comparison-preview";
 const navLinks = [
   { href: "/products", label: "All Products" },
   { href: "/#categories", label: "Categories" },
-  { href: "/vendor", label: "For Vendors" },
 ];
 
 const customerNotifications = [
@@ -79,6 +79,7 @@ export function Header() {
                         {link.label}
                     </Link>
                     ))}
+                     <Link href="/vendor" className="text-lg font-medium hover:text-primary transition-colors">For Vendors</Link>
                 </nav>
                 </SheetContent>
             </Sheet>
@@ -102,6 +103,19 @@ export function Header() {
                 {link.label}
                 </Link>
             ))}
+             <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="link" className="text-sm font-medium text-muted-foreground p-0 h-auto">
+                        For Vendors <ChevronDown className="ml-1 h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem asChild><Link href="/vendor/login?type=personalized"><User className="mr-2 h-4 w-4"/>Personalized Retail</Link></DropdownMenuItem>
+                    <DropdownMenuItem asChild><Link href="/vendor/login?type=corporate"><Building className="mr-2 h-4 w-4"/>Corporate & Bulk</Link></DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild><Link href="/vendor/signup">Become a Vendor</Link></DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
             </nav>
         </div>
 

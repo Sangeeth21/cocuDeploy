@@ -28,7 +28,7 @@ export const AuthDialogProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const closeDialog = () => {
-        setAuthDialogState({ isOpen: false, initialTab: 'login' });
+        setAuthDialogState({ ...authDialogState, isOpen: false });
     };
 
     return (
