@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -13,7 +12,6 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Building, User as UserIcon } from "lucide-react";
 import { useVerification } from "@/context/vendor-verification-context";
-import { useUser } from "@/context/user-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
@@ -25,33 +23,37 @@ function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
     const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
     
     const defaultEmail = type === 'personalized' ? 'personalized@example.com' : 'corporate@example.com';
+    const loginDescription = type === 'personalized' 
+        ? 'Sign in to your retail dashboard.' 
+        : 'Sign in to your corporate dashboard.';
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         
         let isValid = false;
         let isVerified = true;
-        let vendorType: 'personalized' | 'corporate' | 'both' = type;
+        let resolvedVendorType: 'personalized' | 'corporate' | 'both' = type;
 
+        // This mock logic handles various test users.
         if (password === "vendorpass") {
             if (type === 'personalized' && email === 'personalized@example.com') {
                 isValid = true;
-                vendorType = 'personalized';
+                resolvedVendorType = 'personalized';
             } else if (type === 'corporate' && email === 'corporate@example.com') {
                 isValid = true;
-                vendorType = 'corporate';
-            } else if (email === 'vendor@example.com') {
+                resolvedVendorType = 'corporate';
+            } else if (email === 'vendor@example.com') { // A user that can be either type
                 isValid = true;
-                vendorType = 'both';
-            } else if (email === 'unverified@example.com') {
+                resolvedVendorType = 'both';
+            } else if (email === 'unverified@example.com') { // An unverified user
                 isValid = true;
                 isVerified = false;
-                vendorType = 'both';
+                resolvedVendorType = 'both';
             }
         }
 
         if (isValid) {
-            setVendorType(vendorType);
+            setVendorType(resolvedVendorType);
             if (isVerified) {
                 setAsVerified();
             } else {
@@ -59,9 +61,9 @@ function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
             }
             toast({
                 title: "Login Successful",
-                description: `Redirecting to your ${vendorType} vendor dashboard.`,
+                description: `Redirecting to your ${resolvedVendorType} vendor dashboard.`,
             });
-            router.push(`/vendor/${vendorType}/dashboard`);
+            // The router push will be handled by the layout based on the new context
         } else {
             toast({
                 variant: "destructive",
@@ -73,28 +75,29 @@ function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
 
     return (
         <form onSubmit={handleLogin}>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-4">
+            <p className="text-sm text-muted-foreground">{loginDescription}</p>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder={defaultEmail} required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor={`email-${type}`}>Email</Label>
+              <Input id={`email-${type}`} type="email" placeholder={defaultEmail} required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor={`password-${type}`}>Password</Label>
                   <Link href="#" className="text-sm text-primary hover:underline">
                       Forgot your password?
                   </Link>
               </div>
               <div className="relative">
-                <Input id="password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                <Input id={`password-${type}`} type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
                 <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
                     {showPassword ? <EyeOff /> : <Eye />}
                 </Button>
               </div>
             </div>
             <div className="flex items-center space-x-2">
-                <Checkbox id="remember-me" />
-                <Label htmlFor="remember-me" className="font-normal">
+                <Checkbox id={`remember-me-${type}`} />
+                <Label htmlFor={`remember-me-${type}`} className="font-normal">
                 Remember me
                 </Label>
             </div>
