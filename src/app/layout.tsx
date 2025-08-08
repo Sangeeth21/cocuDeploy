@@ -138,7 +138,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <title>ShopSphere</title>
+        <title>Co & Cu</title>
         <meta name="description" content="Your one-stop online marketplace." />
       </head>
       <body className={cn(

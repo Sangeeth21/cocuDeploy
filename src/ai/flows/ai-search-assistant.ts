@@ -32,7 +32,7 @@ const prompt = ai.definePrompt({
   name: 'aiSearchAssistantPrompt',
   input: {schema: AiSearchAssistantInputSchema},
   output: {schema: AiSearchAssistantOutputSchema},
-  prompt: `You are an AI assistant for an e-commerce site called ShopSphere. You are designed to provide search suggestions.
+  prompt: `You are an AI assistant for an e-commerce site called Co & Cu. You are designed to provide search suggestions.
 Given a user's search query, provide a list of up to 5 suggestions.
 These suggestions should include auto-completions of the current query and recommendations for related searches.
 Do not suggest categories, only specific product searches.

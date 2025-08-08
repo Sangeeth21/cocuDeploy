@@ -66,7 +66,7 @@ export function Header() {
                 <SheetContent side="left" className="pr-0">
                 <Link href="/" className="mr-6 flex items-center gap-2">
                     <Store className="h-6 w-6 text-primary" />
-                    <span className="font-bold text-lg font-headline">ShopSphere</span>
+                    <span className="font-bold text-lg font-headline">Co & Cu</span>
                 </Link>
                 <nav className="flex flex-col gap-4 mt-8">
                     {navLinks.map((link) => (
@@ -88,7 +88,7 @@ export function Header() {
 
             <Link href="/" className="mr-6 hidden md:flex items-center gap-2">
             <Store className="h-6 w-6 text-primary" />
-            <span className="font-bold text-lg font-headline">ShopSphere</span>
+            <span className="font-bold text-lg font-headline">Co & Cu</span>
             </Link>
             
             <nav className="hidden md:flex gap-4 items-center">

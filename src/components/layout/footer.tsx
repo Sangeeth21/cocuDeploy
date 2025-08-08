@@ -10,7 +10,7 @@ export function Footer() {
           <div className="flex flex-col gap-4">
             <Link href="/" className="flex items-center gap-2">
               <Store className="h-6 w-6 text-primary" />
-              <span className="font-bold text-lg font-headline">ShopSphere</span>
+              <span className="font-bold text-lg font-headline">Co & Cu</span>
             </Link>
             <p className="text-sm text-muted-foreground">Your one-stop online marketplace for everything you need.</p>
             <div className="flex gap-4 mt-2">
@@ -45,7 +45,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} ShopSphere. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} Co & Cu. All rights reserved.</p>
         </div>
       </div>
     </footer>

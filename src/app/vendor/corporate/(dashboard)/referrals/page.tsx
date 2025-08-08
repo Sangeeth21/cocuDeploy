@@ -12,20 +12,22 @@ import { Copy, Gift, Percent, Users, CheckCircle, Clock, Share2, MessageCircle, 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
+
+// This data would come from a backend API call for the logged-in vendor
 const MOCK_VENDOR_DATA = {
     referralCode: "VENDOR-A1B2",
-    isReferredVendor: true,
+    isReferredVendor: true, // This vendor was referred by someone else
     referrals: 3,
     referralsNeededForBonus: 5,
     ordersWithDiscount: 0, 
     onboardingDiscount: {
         isActive: true,
-        discount: 2,
+        discount: 2, // 2%
         expires: "3 months"
     },
     referralDiscount: {
         isActive: false,
-        discount: 0.75,
+        discount: 0.75, // 0.75% because they were referred, will become 1% total
     }
 };
 
@@ -36,13 +38,14 @@ const cappedTotalDiscount = Math.min(totalCommissionDiscount, 3);
 function ShareDialog() {
     const { toast } = useToast();
     const referralCode = MOCK_VENDOR_DATA.referralCode;
-    const shareUrl = "https://shopsphere.example.com/signup?ref=vendor";
+    const shareUrl = "https://coandcu.example.com/signup?ref=vendor"; // A more specific URL
 
-    const genericText = `Join our community of vendors on ShopSphere! Use my code to get special onboarding benefits: ${referralCode}`;
+    // Platform-specific messages for vendors
+    const genericText = `Join our community of vendors on Co & Cu! Use my code to get special onboarding benefits: ${referralCode}`;
     const fullMessage = `${genericText}\n\nSign up here: ${shareUrl}`;
-    const twitterText = `Looking to sell your products online? Join me on @ShopSphere. Use my referral code ${referralCode} to get a great start. #sellonline #ecommerce`;
-    const linkedinTitle = "Opportunity for Vendors: Join ShopSphere Marketplace";
-    const linkedinSummary = `I've had a positive experience selling my products on ShopSphere and wanted to extend an invitation. It's a great platform to reach new customers. They have a referral program that gives new vendors a commission discount to start. Use my code if you decide to sign up: ${referralCode}`;
+    const twitterText = `Looking to sell your products online? Join me on @CoAndCu. Use my referral code ${referralCode} to get a great start. #sellonline #ecommerce`;
+    const linkedinTitle = "Opportunity for Vendors: Join Co & Cu Marketplace";
+    const linkedinSummary = `I've had a positive experience selling my products on Co & Cu and wanted to extend an invitation. It's a great platform to reach new customers. They have a referral program that gives new vendors a commission discount to start. Use my code if you decide to sign up: ${referralCode}`;
 
     const copyShareMessage = () => {
         navigator.clipboard.writeText(fullMessage);
@@ -68,7 +71,7 @@ function ShareDialog() {
                 <DialogHeader>
                     <DialogTitle>Share Your Referral Code</DialogTitle>
                     <DialogDescription>
-                        Invite other vendors to join ShopSphere and earn rewards when they sign up.
+                        Invite other vendors to join Co & Cu and earn rewards when they sign up.
                     </DialogDescription>
                 </DialogHeader>
                  <div className="flex flex-col space-y-2">

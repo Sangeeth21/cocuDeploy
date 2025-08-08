@@ -256,7 +256,7 @@ export default function VendorSignupPage() {
                     <div className="flex items-start space-x-2">
                         <Checkbox id="terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
                         <Label htmlFor="terms" className="font-normal text-xs text-muted-foreground leading-snug">
-                            I agree to the ShopSphere <Link href="#" className="font-medium text-primary hover:underline">Vendor Terms and Conditions</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
+                            I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Vendor Terms and Conditions</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
                         </Label>
                     </div>
                 </div>
@@ -343,7 +343,7 @@ export default function VendorSignupPage() {
                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                  Verify and Continue
               </Button>
-              <Button variant="link" size="sm" onClick={() => setStep('type')} className="text-muted-foreground">
+              <Button variant="link" size="sm" onClick={() => setStep('type')} className="w-full text-muted-foreground">
                 Back to previous step
               </Button>
             </CardFooter>

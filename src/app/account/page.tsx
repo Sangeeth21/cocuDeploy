@@ -255,13 +255,13 @@ function WishlistTabContent() {
 function ShareDialog() {
     const { toast } = useToast();
     const referralCode = MOCK_USER_DATA.referralCode;
-    const shareUrl = "https://shopsphere.example.com/signup"; 
+    const shareUrl = "https://coandcu.example.com/signup"; 
 
     // Platform-specific messages
-    const genericText = `I love shopping on ShopSphere! Sign up with my referral code to get a special discount on your first order: ${referralCode}`;
+    const genericText = `I love shopping on Co & Cu! Sign up with my referral code to get a special discount on your first order: ${referralCode}`;
     const fullMessage = `${genericText}\n\nSign up here: ${shareUrl}`;
-    const twitterText = `Shopping on @ShopSphere is great! Use my code ${referralCode} for a discount on your first order. #shopsphere #referral`;
-    const linkedinTitle = "Get a Discount on Your First ShopSphere Order";
+    const twitterText = `Shopping on @CoAndCu is great! Use my code ${referralCode} for a discount on your first order. #coandcu #referral`;
+    const linkedinTitle = "Get a Discount on Your First Co & Cu Order";
     const linkedinSummary = `A great place to discover unique products. Use my referral code ${referralCode} for a discount on your first purchase!`;
 
     const copyShareMessage = () => {
@@ -288,7 +288,7 @@ function ShareDialog() {
                 <DialogHeader>
                     <DialogTitle>Share Your Referral Code</DialogTitle>
                     <DialogDescription>
-                        Invite friends to ShopSphere and you'll both get rewards!
+                        Invite friends to Co & Cu and you'll both get rewards!
                     </DialogDescription>
                 </DialogHeader>
                  <div className="flex flex-col space-y-2">

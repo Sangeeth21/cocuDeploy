@@ -21,7 +21,7 @@ export function ContactDialog() {
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="font-headline">Contact ShopSphere</DialogTitle>
+          <DialogTitle className="font-headline">Contact Co & Cu</DialogTitle>
           <DialogDescription>
             We're here to help! Reach out to us through any of the channels below.
           </DialogDescription>
@@ -31,7 +31,7 @@ export function ContactDialog() {
                 <Mail className="h-5 w-5 text-muted-foreground" />
                 <div>
                     <h4 className="font-semibold">Email Support</h4>
-                    <a href="mailto:support@shopsphere.com" className="text-sm text-primary hover:underline">support@shopsphere.com</a>
+                    <a href="mailto:support@coandcu.com" className="text-sm text-primary hover:underline">support@coandcu.com</a>
                 </div>
             </div>
              <div className="flex items-center gap-4">

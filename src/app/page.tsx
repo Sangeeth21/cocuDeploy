@@ -33,7 +33,7 @@ const DefaultHeroSlide = () => (
     <div className="relative h-[60vh] md:h-[70vh]">
         <Image
             src={'https://placehold.co/1920x1080.png'}
-            alt="Welcome to ShopSphere"
+            alt="Welcome to Co & Cu"
             fill
             className="object-cover"
             priority
@@ -45,7 +45,7 @@ const DefaultHeroSlide = () => (
                 <div className="flex justify-center items-center gap-4 mb-4">
                     <Store className="h-12 w-12" />
                     <h1 className="text-4xl md:text-6xl font-bold font-headline drop-shadow-lg">
-                        ShopSphere
+                        Co & Cu
                     </h1>
                 </div>
                 <p className="text-lg md:text-xl max-w-2xl mx-auto mb-8 drop-shadow-md">

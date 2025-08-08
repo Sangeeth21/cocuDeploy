@@ -234,7 +234,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         // Mock OTP check
         setTimeout(() => {
            login();
-           toast({ title: "Account Created!", description: "Welcome to ShopSphere!" });
+           toast({ title: "Account Created!", description: "Welcome to Co & Cu!" });
            onSignupSuccess();
            router.refresh();
         }, 1500);
@@ -251,7 +251,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         login();
         toast({
             title: `Signed up with ${provider}!`,
-            description: "Welcome to ShopSphere!",
+            description: "Welcome to Co & Cu!",
         });
         onSignupSuccess();
         router.refresh();
@@ -381,7 +381,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                 <div className="flex items-center space-x-2 pt-2">
                     <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
                     <Label htmlFor="customer-terms" className="font-normal text-xs text-muted-foreground leading-snug">
-                        I agree to the ShopSphere <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
+                        I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
                     </Label>
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
@@ -401,7 +401,7 @@ export function CustomerAuthDialog() {
         <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
             <DialogContent className="sm:max-w-md">
                  <DialogHeader className="text-center">
-                    <DialogTitle>Welcome to ShopSphere</DialogTitle>
+                    <DialogTitle>Welcome to Co & Cu</DialogTitle>
                     <DialogDescription>Log in or create an account to continue.</DialogDescription>
                 </DialogHeader>
                 <Tabs defaultValue={authDialogState.initialTab} className="w-full">

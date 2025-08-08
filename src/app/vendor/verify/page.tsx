@@ -115,7 +115,7 @@ export default function VendorVerificationPage() {
                         </Tooltip>
                     </TooltipProvider>
                     <h1 className="text-3xl font-bold font-headline">Vendor Verification</h1>
-                    <p className="text-muted-foreground">Complete the following steps to start selling on ShopSphere.</p>
+                    <p className="text-muted-foreground">Complete the following steps to start selling on Co & Cu.</p>
                 </div>
                 <div className="grid lg:grid-cols-4 gap-8 items-start">
                     <div className="lg:col-span-1">
