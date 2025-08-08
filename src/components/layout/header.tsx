@@ -114,63 +114,65 @@ export function Header() {
         </div>
 
         <div className="flex items-center justify-end gap-1 sm:gap-2">
-          {isLoggedIn && <NotificationPopover notifications={customerNotifications} />}
-          <WishlistPreview />
-          <CartPreview />
           {isLoggedIn ? (
-            <div className="flex items-center rounded-md hover:bg-accent focus-within:bg-accent">
-               <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-transparent rounded-full" asChild>
-                  <Link href="/account">
-                     <Avatar className="h-8 w-8">
-                      <AvatarImage src={avatar} alt="User Avatar" data-ai-hint="person face" />
-                      <AvatarFallback>JD</AvatarFallback>
-                    </Avatar>
-                    <span className="sr-only">User Account</span>
-                  </Link>
-              </Button>
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-10 w-6 hover:bg-transparent">
-                    <ChevronDown className="h-4 w-4" />
-                     <span className="sr-only">Open user menu</span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem asChild>
-                    <Link href="/account?tab=profile"><UserCircle className="mr-2 h-4 w-4"/> Profile</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/account?tab=messages"><MessageSquare className="mr-2 h-4 w-4"/> Messages</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/account?tab=orders"><ListChecks className="mr-2 h-4 w-4"/> Order History</Link>
-                  </DropdownMenuItem>
-                   <DropdownMenuItem asChild>
-                    <Link href="/account?tab=wishlist"><Heart className="mr-2 h-4 w-4"/> Wishlist</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/account?tab=billing"><CreditCard className="mr-2 h-4 w-4"/> Billing</Link>
-                  </DropdownMenuItem>
-                   <DropdownMenuItem asChild>
-                    <Link href="/account?tab=profile"><Gift className="mr-2 h-4 w-4"/> Referrals</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/account?tab=settings"><Settings className="mr-2 h-4 w-4"/> Settings</Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4"/> Log Out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-            ) : (
-                <Button variant="ghost" onClick={() => openDialog('login')}>
-                    Login
+            <>
+              <NotificationPopover notifications={customerNotifications} />
+              <WishlistPreview />
+              <CartPreview />
+              <div className="flex items-center rounded-md hover:bg-accent focus-within:bg-accent">
+                <Button variant="ghost" size="icon" className="h-10 w-10 hover:bg-transparent rounded-full" asChild>
+                    <Link href="/account">
+                        <Avatar className="h-8 w-8">
+                        <AvatarImage src={avatar} alt="User Avatar" data-ai-hint="person face" />
+                        <AvatarFallback>JD</AvatarFallback>
+                        </Avatar>
+                        <span className="sr-only">User Account</span>
+                    </Link>
                 </Button>
-            )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-10 w-6 hover:bg-transparent">
+                      <ChevronDown className="h-4 w-4" />
+                      <span className="sr-only">Open user menu</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild>
+                      <Link href="/account?tab=profile"><UserCircle className="mr-2 h-4 w-4"/> Profile</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/account?tab=messages"><MessageSquare className="mr-2 h-4 w-4"/> Messages</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/account?tab=orders"><ListChecks className="mr-2 h-4 w-4"/> Order History</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/account?tab=wishlist"><Heart className="mr-2 h-4 w-4"/> Wishlist</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/account?tab=billing"><CreditCard className="mr-2 h-4 w-4"/> Billing</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/account?tab=profile"><Gift className="mr-2 h-4 w-4"/> Referrals</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/account?tab=settings"><Settings className="mr-2 h-4 w-4"/> Settings</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                      <LogOut className="mr-2 h-4 w-4"/> Log Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </>
+          ) : (
+            <Button variant="ghost" onClick={() => openDialog('login')}>
+                Login
+            </Button>
+          )}
         </div>
       </div>
     </header>
