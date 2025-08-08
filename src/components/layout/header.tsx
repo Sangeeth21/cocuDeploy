@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -31,7 +30,6 @@ const navLinks = [
   { href: "/products", label: "All Products" },
   { href: "/#categories", label: "Categories" },
   { href: "/vendor", label: "For Vendors" },
-  { href: "/corporate", label: "Corporate" },
 ];
 
 const customerNotifications = [
@@ -169,9 +167,14 @@ export function Header() {
               </div>
             </>
           ) : (
-            <Button variant="ghost" onClick={() => openDialog('login')}>
-                Login
-            </Button>
+             <div className="flex items-center gap-2">
+                <Button variant="ghost" onClick={() => openDialog('login')}>
+                    Login
+                </Button>
+                <Button onClick={() => openDialog('signup')}>
+                    Sign Up
+                </Button>
+            </div>
           )}
         </div>
       </div>

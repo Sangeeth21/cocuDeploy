@@ -11,78 +11,72 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Building, User as UserIcon } from "lucide-react";
 import { useVerification } from "@/context/vendor-verification-context";
 import { useUser } from "@/context/user-context";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function VendorLoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const router = useRouter();
-  const { toast } = useToast();
-  const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
+function LoginForm({ type }: { type: 'personalized' | 'corporate' }) {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
+    const { toast } = useToast();
+    const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
+    
+    const defaultEmail = type === 'personalized' ? 'personalized@example.com' : 'corporate@example.com';
 
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
+    const handleLogin = (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        let isValid = false;
+        let isVerified = true;
+        let vendorType: 'personalized' | 'corporate' | 'both' = type;
 
-    const loginSuccess = (type: 'both' | 'personalized' | 'corporate', isVerified: boolean) => {
-        if (isVerified) {
-            setAsVerified();
-        } else {
-            setAsUnverified();
+        if (password === "vendorpass") {
+            if (type === 'personalized' && email === 'personalized@example.com') {
+                isValid = true;
+                vendorType = 'personalized';
+            } else if (type === 'corporate' && email === 'corporate@example.com') {
+                isValid = true;
+                vendorType = 'corporate';
+            } else if (email === 'vendor@example.com') {
+                isValid = true;
+                vendorType = 'both';
+            } else if (email === 'unverified@example.com') {
+                isValid = true;
+                isVerified = false;
+                vendorType = 'both';
+            }
         }
-        setVendorType(type);
-        toast({
-            title: "Login Successful",
-            description: `Redirecting to your ${type} vendor dashboard.`,
-        });
-        router.push(`/vendor/${type}/dashboard`);
+
+        if (isValid) {
+            setVendorType(vendorType);
+            if (isVerified) {
+                setAsVerified();
+            } else {
+                setAsUnverified();
+            }
+            toast({
+                title: "Login Successful",
+                description: `Redirecting to your ${vendorType} vendor dashboard.`,
+            });
+            router.push(`/vendor/${vendorType}/dashboard`);
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Login Failed",
+                description: "Invalid email or password. Please try again.",
+            });
+        }
     };
 
-    const loginFail = () => {
-         toast({
-            variant: "destructive",
-            title: "Login Failed",
-            description: "Invalid email or password. Please try again.",
-        });
-    }
-
-    if (password !== "vendorpass") {
-        loginFail();
-        return;
-    }
-
-    switch(email) {
-        case 'vendor@example.com':
-            loginSuccess('both', true);
-            break;
-        case 'unverified@example.com':
-            loginSuccess('both', false);
-            break;
-        case 'personalized@example.com':
-            loginSuccess('personalized', true);
-            break;
-        case 'corporate@example.com':
-            loginSuccess('corporate', true);
-            break;
-        default:
-            loginFail();
-    }
-  };
-
-  return (
-    <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
-      <Card className="w-full max-w-md">
+    return (
         <form onSubmit={handleLogin}>
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-headline">Vendor Portal</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard. Use `unverified@example.com` to see the verification flow.</CardDescription>
-          </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input id="email" type="email" placeholder={defaultEmail} required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -115,6 +109,29 @@ export default function VendorLoginPage() {
             </p>
           </CardFooter>
         </form>
+    )
+}
+
+export default function VendorLoginPage() {
+  return (
+    <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
+      <Card className="w-full max-w-md">
+         <Tabs defaultValue="personalized" className="w-full">
+            <CardHeader className="text-center">
+                <CardTitle className="text-3xl font-headline">Vendor Portal</CardTitle>
+                <CardDescription>Select your business type to sign in.</CardDescription>
+                <TabsList className="grid w-full grid-cols-2 mt-4">
+                    <TabsTrigger value="personalized"><UserIcon className="mr-2 h-4 w-4" /> Personalized Retail</TabsTrigger>
+                    <TabsTrigger value="corporate"><Building className="mr-2 h-4 w-4" /> Corporate & Bulk</TabsTrigger>
+                </TabsList>
+            </CardHeader>
+            <TabsContent value="personalized">
+                <LoginForm type="personalized" />
+            </TabsContent>
+            <TabsContent value="corporate">
+                <LoginForm type="corporate" />
+            </TabsContent>
+        </Tabs>
       </Card>
     </div>
   );
