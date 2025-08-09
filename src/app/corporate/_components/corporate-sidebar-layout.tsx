@@ -137,8 +137,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                     <Link href="/corporate/dashboard" className="flex items-center gap-2 mr-6">
                         <Store className="h-6 w-6 text-primary" />
                         <div className="flex items-baseline gap-2">
-                          <span className="font-bold text-lg font-headline">Co & Cu</span>
-                          <span className="font-bold text-lg font-headline">Corporate</span>
+                          <span className="font-bold text-lg font-headline">Co & Cu Corporate</span>
                         </div>
                     </Link>
                     <div className="flex-1 flex justify-center px-4">
