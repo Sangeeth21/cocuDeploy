@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Info, Check } from "lucide-react";
+import { Loader2, Eye, EyeOff, Info, Check, User as UserIcon, Building } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ import { useAuthDialog } from "@/context/auth-dialog-context";
 import { Separator } from "@/components/ui/separator";
 import { useVerification } from "@/context/vendor-verification-context";
 import { useUser } from "@/context/user-context";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 
 const GoogleIcon = () => (
@@ -179,6 +180,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         number: false,
         specialChar: false,
     });
+    const [accountType, setAccountType] = useState<'personal' | 'corporate'>('personal');
     const router = useRouter();
     const { toast } = useToast();
     const { login } = useUser();
@@ -326,6 +328,35 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                 </div>
             </div>
             <form onSubmit={handleDetailsSubmit} className="space-y-4">
+                 <div className="space-y-2">
+                    <Label>Account Type</Label>
+                    <RadioGroup
+                        value={accountType}
+                        onValueChange={(value) => setAccountType(value as 'personal' | 'corporate')}
+                        className="grid grid-cols-2 gap-4"
+                    >
+                        <div>
+                            <RadioGroupItem value="personal" id="personal" className="peer sr-only" />
+                            <Label
+                                htmlFor="personal"
+                                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                            >
+                                <UserIcon className="mb-2 h-6 w-6" />
+                                Personal
+                            </Label>
+                        </div>
+                        <div>
+                             <RadioGroupItem value="corporate" id="corporate" className="peer sr-only" />
+                              <Label
+                                htmlFor="corporate"
+                                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
+                            >
+                                <Building className="mb-2 h-6 w-6" />
+                                Corporate
+                            </Label>
+                        </div>
+                    </RadioGroup>
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="customer-name">Full Name</Label>
                     <Input id="customer-name" required />
