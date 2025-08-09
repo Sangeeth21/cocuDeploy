@@ -52,7 +52,7 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="w-full border-b bg-background">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center">
             <div className="mr-4 md:hidden">
@@ -81,7 +81,7 @@ export function Header() {
                         {link.label}
                     </Link>
                     ))}
-                     <Link href="/vendor" className="text-lg font-medium hover:text-primary transition-colors">For Vendors</Link>
+                     <Link href="/vendor/login" className="text-lg font-medium hover:text-primary transition-colors">Become a Vendor</Link>
                 </nav>
                 </SheetContent>
             </Sheet>
