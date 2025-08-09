@@ -136,7 +136,7 @@ export default function RootLayout({
   const isVendorRoute = pathname.startsWith('/vendor');
   const isCorporateRoute = pathname.startsWith('/corporate');
   
-  const showHeaderAndFooter = !isAdminRoute && !isVendorRoute;
+  const showHeaderAndFooter = !isAdminRoute && !isVendorRoute && !isCorporateRoute;
 
   return (
     <html lang="en" suppressHydrationWarning>
