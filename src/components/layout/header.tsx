@@ -103,19 +103,12 @@ export function Header() {
                 {link.label}
                 </Link>
             ))}
-             <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="link" className="text-sm font-medium text-muted-foreground p-0 h-auto">
-                        For Vendors <ChevronDown className="ml-1 h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                    <DropdownMenuItem asChild><Link href="/vendor/login?type=personalized"><User className="mr-2 h-4 w-4"/>Personalized Retail</Link></DropdownMenuItem>
-                    <DropdownMenuItem asChild><Link href="/vendor/login?type=corporate"><Building className="mr-2 h-4 w-4"/>Corporate & Bulk</Link></DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild><Link href="/vendor/signup">Become a Vendor</Link></DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
+             <Link href="/vendor/signup" className={cn(
+                    "text-sm font-medium transition-colors hover:text-primary",
+                    pathname === "/vendor/signup" ? "text-primary" : "text-muted-foreground"
+                )}>
+                Become a Vendor
+            </Link>
             </nav>
         </div>
 
