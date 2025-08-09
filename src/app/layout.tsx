@@ -29,6 +29,9 @@ import { app } from '@/lib/firebase';
 import { PageLoader } from '@/components/page-loader';
 import { BrandedLoader } from '@/components/branded-loader';
 import { ComparisonProvider } from '@/context/comparison-context';
+import { CorporateAuthDialog } from '@/components/corporate-auth-dialog';
+import { AdminAuthProvider } from '@/context/admin-auth-context';
+import { CorporateAuthDialogProvider } from '@/context/corporate-auth-dialog-context';
 
 // Existing Fonts
 const ptSans = PT_Sans({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-pt-sans' });
@@ -133,7 +136,7 @@ export default function RootLayout({
   const isVendorRoute = pathname.startsWith('/vendor');
   const isCorporateRoute = pathname.startsWith('/corporate');
   
-  const showHeaderAndFooter = !isAdminRoute && !isVendorRoute && !isCorporateRoute;
+  const showHeaderAndFooter = !isAdminRoute && !isVendorRoute;
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -154,29 +157,34 @@ export default function RootLayout({
         <BrandedLoader />
         <PageLoader />
         <UserProvider>
-          <AuthDialogProvider>
-            <CartProvider>
-              <WishlistProvider>
-                <ComparisonProvider>
-                  {showHeaderAndFooter && (
-                    <>
-                      <CampaignBanner />
-                      <Header />
-                    </>
-                  )}
-                  <main className="flex-1">{children}</main>
-                  {showHeaderAndFooter && (
-                    <>
-                      <Footer />
-                      <CampaignPopup />
-                    </>
-                  )}
-                  <CustomerAuthDialog />
-                  <Toaster />
-                  </ComparisonProvider>
-              </WishlistProvider>
-            </CartProvider>
-          </AuthDialogProvider>
+          <AdminAuthProvider>
+            <AuthDialogProvider>
+                <CorporateAuthDialogProvider>
+                    <CartProvider>
+                    <WishlistProvider>
+                        <ComparisonProvider>
+                        {showHeaderAndFooter && (
+                            <>
+                            <CampaignBanner />
+                            <Header />
+                            </>
+                        )}
+                        <main className="flex-1">{children}</main>
+                        {showHeaderAndFooter && (
+                            <>
+                            <Footer />
+                            <CampaignPopup />
+                            </>
+                        )}
+                        <CustomerAuthDialog />
+                        <CorporateAuthDialog />
+                        <Toaster />
+                        </ComparisonProvider>
+                    </WishlistProvider>
+                    </CartProvider>
+                </CorporateAuthDialogProvider>
+            </AuthDialogProvider>
+          </AdminAuthProvider>
         </UserProvider>
       </body>
     </html>

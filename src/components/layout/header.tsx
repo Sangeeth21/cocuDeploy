@@ -25,6 +25,7 @@ import { NotificationPopover } from "@/components/notification-popover";
 import { mockActivity } from "@/lib/mock-data";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { ComparisonPreview } from "../comparison-preview";
+import { useCorporateAuthDialog } from "@/context/corporate-auth-dialog-context";
 
 
 const navLinks = [
@@ -42,7 +43,8 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { avatar, isLoggedIn, logout } = useUser();
-  const { openDialog } = useAuthDialog();
+  const { openDialog: openCustomerDialog } = useAuthDialog();
+  const { openDialog: openCorporateDialog } = useCorporateAuthDialog();
 
   const handleLogout = () => {
     logout();
@@ -182,19 +184,17 @@ export function Header() {
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openDialog('login')}>
+                        <DropdownMenuItem onClick={() => openCustomerDialog('login')}>
                             <UserCircle className="mr-2 h-4 w-4" />
                             <span>Personal Account</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link href="/corporate">
-                                <Building className="mr-2 h-4 w-4" />
-                                <span>Corporate Account</span>
-                            </Link>
+                        <DropdownMenuItem onClick={() => openCorporateDialog()}>
+                            <Building className="mr-2 h-4 w-4" />
+                            <span>Corporate Account</span>
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
-                <Button onClick={() => openDialog('signup')}>
+                <Button onClick={() => openCustomerDialog('signup')}>
                     Sign Up
                 </Button>
             </div>
