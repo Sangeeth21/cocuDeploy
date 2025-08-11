@@ -212,89 +212,87 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     }
     
     return (
-        <ScrollArea className="max-h-[70vh] pr-6">
-            <div className="space-y-4">
-                <form onSubmit={handleDetailsSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label>Account Type</Label>
-                        <RadioGroup value={accountType} onValueChange={(value) => setAccountType(value as any)} className="grid grid-cols-3 gap-2">
-                             <div>
-                                <RadioGroupItem value="personalized" id="personalized" className="peer sr-only" />
-                                <Label htmlFor="personalized" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                    <UserIcon className="mb-1 h-5 w-5" />
-                                    <span className="text-xs">Personal</span>
-                                </Label>
-                            </div>
-                            <div>
-                                <RadioGroupItem value="corporate" id="corporate" className="peer sr-only" />
-                                <Label htmlFor="corporate" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                    <Building className="mb-1 h-5 w-5" />
-                                    <span className="text-xs">Corporate</span>
-                                </Label>
-                            </div>
-                            <div>
-                                <RadioGroupItem value="both" id="both" className="peer sr-only" />
-                                <Label htmlFor="both" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                    <Combine className="mb-1 h-5 w-5" />
-                                    <span className="text-xs">Both</span>
-                                </Label>
-                            </div>
-                        </RadioGroup>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="customer-name">Name</Label>
-                        <Input id="customer-name" placeholder="Company Name / Your Name" required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="customer-signup-email">Email</Label>
-                        <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="customer-signup-phone">Phone Number</Label>
-                        <Input 
-                            id="customer-signup-phone" 
-                            type="tel" 
-                            value={phone} 
-                            onChange={(e) => {
-                                const numericValue = e.target.value.replace(/\D/g, '');
-                                if (numericValue.length <= 10) {
-                                    setPhone(numericValue);
-                                }
-                            }} 
-                            maxLength={10}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="customer-signup-password">Password</Label>
-                        <div className="relative">
-                            <Input id="customer-signup-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
-                            <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                                {showPassword ? <EyeOff /> : <Eye />}
-                            </Button>
+        <div className="space-y-4">
+            <form onSubmit={handleDetailsSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <Label>Account Type</Label>
+                    <RadioGroup value={accountType} onValueChange={(value) => setAccountType(value as any)} className="grid grid-cols-3 gap-2">
+                         <div>
+                            <RadioGroupItem value="personalized" id="personalized" className="peer sr-only" />
+                            <Label htmlFor="personalized" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                <UserIcon className="mb-1 h-5 w-5" />
+                                <span className="text-xs">Personal</span>
+                            </Label>
                         </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="customer-confirm-password">Confirm Password</Label>
-                         <div className="relative">
-                            <Input id="customer-confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                            <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                                {showConfirmPassword ? <EyeOff /> : <Eye />}
-                            </Button>
+                        <div>
+                            <RadioGroupItem value="corporate" id="corporate" className="peer sr-only" />
+                            <Label htmlFor="corporate" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                <Building className="mb-1 h-5 w-5" />
+                                <span className="text-xs">Corporate</span>
+                            </Label>
                         </div>
+                        <div>
+                            <RadioGroupItem value="both" id="both" className="peer sr-only" />
+                            <Label htmlFor="both" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                <Combine className="mb-1 h-5 w-5" />
+                                <span className="text-xs">Both</span>
+                            </Label>
+                        </div>
+                    </RadioGroup>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="customer-name">Name</Label>
+                    <Input id="customer-name" placeholder="Company Name / Your Name" required />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="customer-signup-email">Email</Label>
+                    <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="customer-signup-phone">Phone Number</Label>
+                    <Input 
+                        id="customer-signup-phone" 
+                        type="tel" 
+                        value={phone} 
+                        onChange={(e) => {
+                            const numericValue = e.target.value.replace(/\D/g, '');
+                            if (numericValue.length <= 10) {
+                                setPhone(numericValue);
+                            }
+                        }} 
+                        maxLength={10}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="customer-signup-password">Password</Label>
+                    <div className="relative">
+                        <Input id="customer-signup-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                            {showPassword ? <EyeOff /> : <Eye />}
+                        </Button>
                     </div>
-                    <div className="flex items-center space-x-2 pt-2">
-                        <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
-                        <Label htmlFor="customer-terms" className="font-normal text-xs text-muted-foreground leading-snug">
-                            I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
-                        </Label>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="customer-confirm-password">Confirm Password</Label>
+                     <div className="relative">
+                        <Input id="customer-confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                            {showConfirmPassword ? <EyeOff /> : <Eye />}
+                        </Button>
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create Account
-                    </Button>
-                </form>
-            </div>
-        </ScrollArea>
+                </div>
+                <div className="flex items-center space-x-2 pt-2">
+                    <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
+                    <Label htmlFor="customer-terms" className="font-normal text-xs text-muted-foreground leading-snug">
+                        I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
+                    </Label>
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create Account
+                </Button>
+            </form>
+        </div>
     );
 }
 
@@ -304,15 +302,15 @@ export function CustomerAuthDialog() {
 
     return (
         <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
-            <DialogContent className="sm:max-w-lg">
-                <Tabs defaultValue={authDialogState.initialTab} className="w-full">
+            <DialogContent className="sm:max-w-lg grid-rows-[auto_minmax(0,1fr)] max-h-[90vh]">
+                <Tabs defaultValue={authDialogState.initialTab} className="w-full flex flex-col min-h-0">
                     <DialogHeader>
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="login">Login</TabsTrigger>
                             <TabsTrigger value="signup">Sign Up</TabsTrigger>
                         </TabsList>
                     </DialogHeader>
-                    <div className="pt-4">
+                    <div className="pt-4 flex-1 min-h-0">
                         <TabsContent value="login">
                              <Tabs defaultValue="personal" className="w-full">
                                 <TabsList className="grid w-full grid-cols-2">
@@ -331,8 +329,12 @@ export function CustomerAuthDialog() {
                                 </div>
                             </Tabs>
                         </TabsContent>
-                        <TabsContent value="signup">
-                            <SignupForm onSignupSuccess={closeDialog} />
+                        <TabsContent value="signup" className="h-full">
+                            <ScrollArea className="h-full">
+                                <div className="pr-6">
+                                    <SignupForm onSignupSuccess={closeDialog} />
+                                </div>
+                            </ScrollArea>
                         </TabsContent>
                     </div>
                 </Tabs>
