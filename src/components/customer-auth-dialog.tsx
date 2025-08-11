@@ -20,7 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { useVerification } from "@/context/vendor-verification-context";
 import { useUser } from "@/context/user-context";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useAdminAuth } from "@/context/admin-auth-context";
+import { useAdminAuth, AdminAuthProvider } from "@/context/admin-auth-context";
 
 
 const GoogleIcon = () => (
