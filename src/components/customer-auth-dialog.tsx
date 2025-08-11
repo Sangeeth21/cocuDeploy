@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -21,7 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { useVerification } from "@/context/vendor-verification-context";
 import { useUser } from "@/context/user-context";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { useAdminAuth, AdminAuthProvider } from "@/context/admin-auth-context";
+import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 
@@ -143,6 +142,11 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const { toast } = useToast();
     const { login } = useUser();
 
+    const namePlaceholder = useMemo(() => {
+        if (accountType === 'corporate') return 'Company Name';
+        return 'Your Name';
+    }, [accountType]);
+
     const handleDetailsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -183,11 +187,6 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
            router.refresh();
         }, 1500);
     };
-
-    const namePlaceholder = useMemo(() => {
-        if (accountType === 'corporate') return 'Company Name';
-        return 'Your Name';
-    }, [accountType]);
 
     if (step === 'verify') {
         return (
@@ -314,9 +313,9 @@ export function CustomerAuthDialog() {
 
     return (
         <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
-            <DialogContent className="sm:max-w-lg grid-rows-[auto_minmax(0,1fr)] max-h-[90vh] flex flex-col">
+            <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
                 <Tabs defaultValue={authDialogState.initialTab} className="w-full flex flex-col min-h-0">
-                    <DialogHeader>
+                    <DialogHeader className="flex-shrink-0">
                         <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="login">Login</TabsTrigger>
                             <TabsTrigger value="signup">Sign Up</TabsTrigger>
