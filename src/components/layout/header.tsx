@@ -44,7 +44,6 @@ export function Header() {
   const router = useRouter();
   const { avatar, isLoggedIn, logout } = useUser();
   const { openDialog: openCustomerDialog } = useAuthDialog();
-  const { openDialog: openCorporateDialog } = useCorporateAuthDialog();
 
   const handleLogout = () => {
     logout();
@@ -177,23 +176,9 @@ export function Header() {
             </>
           ) : (
              <div className="flex items-center gap-2">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost">
-                            Login <ChevronDown className="ml-1 h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => openCustomerDialog('login')}>
-                            <UserCircle className="mr-2 h-4 w-4" />
-                            <span>Personal Account</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => openCorporateDialog()}>
-                            <Building className="mr-2 h-4 w-4" />
-                            <span>Corporate Account</span>
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                <Button variant="ghost" onClick={() => openCustomerDialog('login')}>
+                    Login
+                </Button>
                 <Button onClick={() => openCustomerDialog('signup')}>
                     Sign Up
                 </Button>

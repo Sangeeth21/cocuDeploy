@@ -20,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { useVerification } from "@/context/vendor-verification-context";
 import { useUser } from "@/context/user-context";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useAdminAuth } from "@/context/admin-auth-context";
 
 
 const GoogleIcon = () => (
@@ -68,7 +69,7 @@ const LinkedinIcon = () => (
 
 
 // LoginForm Component
-function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -79,7 +80,6 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
         
-        // Customer account
         if (email === "customer@example.com" && password === "customerpass") {
             login();
             toast({ title: "Login Successful", description: "Welcome back!" });
@@ -127,7 +127,7 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                 </div>
                 <Button type="submit" className="w-full">Sign In</Button>
             </form>
-            <div className="relative">
+             <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
                 </div>
@@ -158,6 +158,53 @@ function LoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                 </Button>
             </div>
         </div>
+    );
+}
+
+function CorporateLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
+    const { toast } = useToast();
+    const { adminLogin } = useAdminAuth();
+
+    const handleLogin = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (email === "corporate@example.com" && password === "corporatepass") {
+            adminLogin();
+            toast({
+                title: "Corporate Login Successful",
+                description: "Redirecting to the corporate dashboard.",
+            });
+            onLoginSuccess();
+            router.push("/corporate/dashboard");
+        } else {
+            toast({
+                variant: "destructive",
+                title: "Login Failed",
+                description: "Invalid corporate credentials.",
+            });
+        }
+    };
+
+    return (
+        <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="corporate-email-dialog">Corporate Email</Label>
+                <Input id="corporate-email-dialog" type="email" placeholder="corporate@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="corporate-password-dialog">Password</Label>
+                <div className="relative">
+                    <Input id="corporate-password-dialog" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                        {showPassword ? <EyeOff /> : <Eye />}
+                    </Button>
+                </div>
+            </div>
+            <Button type="submit" className="w-full">Sign In to Corporate Dashboard</Button>
+        </form>
     );
 }
 
@@ -428,37 +475,41 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
 export function CustomerAuthDialog() {
     const { authDialogState, closeDialog } = useAuthDialog();
 
-    if (authDialogState.initialTab === 'login') {
-        return (
-            <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
-                <DialogContent className="sm:max-w-md">
-                     <DialogHeader className="text-center">
-                        <DialogTitle>Welcome Back</DialogTitle>
-                        <DialogDescription>Log in to your account to continue.</DialogDescription>
+    return (
+        <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
+            <DialogContent className="sm:max-w-md">
+                <Tabs defaultValue={authDialogState.initialTab} className="w-full">
+                    <DialogHeader>
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="login">Login</TabsTrigger>
+                            <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                        </TabsList>
                     </DialogHeader>
                     <div className="pt-4">
-                       <LoginForm onLoginSuccess={closeDialog} />
+                        <TabsContent value="login">
+                             <Tabs defaultValue="personal" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="personal"><UserIcon className="mr-2 h-4 w-4"/> Personal</TabsTrigger>
+                                    <TabsTrigger value="corporate"><Building className="mr-2 h-4 w-4"/> Corporate</TabsTrigger>
+                                </TabsList>
+                                <div className="pt-4">
+                                <TabsContent value="personal">
+                                    <PersonalLoginForm onLoginSuccess={closeDialog} />
+                                </TabsContent>
+                                <TabsContent value="corporate">
+                                    <AdminAuthProvider>
+                                         <CorporateLoginForm onLoginSuccess={closeDialog} />
+                                    </AdminAuthProvider>
+                                </TabsContent>
+                                </div>
+                            </Tabs>
+                        </TabsContent>
+                        <TabsContent value="signup">
+                            <SignupForm onSignupSuccess={closeDialog} />
+                        </TabsContent>
                     </div>
-                </DialogContent>
-            </Dialog>
-        );
-    }
-    
-    if (authDialogState.initialTab === 'signup') {
-         return (
-            <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
-                <DialogContent className="sm:max-w-md">
-                     <DialogHeader className="text-center">
-                        <DialogTitle>Create Your Account</DialogTitle>
-                        <DialogDescription>Join the Co & Cu community today.</DialogDescription>
-                    </DialogHeader>
-                    <div className="pt-4">
-                      <SignupForm onSignupSuccess={closeDialog} />
-                    </div>
-                </DialogContent>
-            </Dialog>
-        );
-    }
-
-    return null;
+                </Tabs>
+            </DialogContent>
+        </Dialog>
+    );
 }
