@@ -2,7 +2,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -314,7 +314,7 @@ export function CustomerAuthDialog() {
 
     return (
         <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
-            <DialogContent className="sm:max-w-lg grid-rows-[auto_minmax(0,1fr)] max-h-[90vh]">
+            <DialogContent className="sm:max-w-lg grid-rows-[auto_minmax(0,1fr)] max-h-[90vh] flex flex-col">
                 <Tabs defaultValue={authDialogState.initialTab} className="w-full flex flex-col min-h-0">
                     <DialogHeader>
                         <TabsList className="grid w-full grid-cols-2">
@@ -342,10 +342,8 @@ export function CustomerAuthDialog() {
                             </Tabs>
                         </TabsContent>
                         <TabsContent value="signup" className="h-full">
-                            <ScrollArea className="h-full">
-                                <div className="pr-6">
-                                    <SignupForm onSignupSuccess={closeDialog} />
-                                </div>
+                            <ScrollArea className="h-full pr-6">
+                                <SignupForm onSignupSuccess={closeDialog} />
                             </ScrollArea>
                         </TabsContent>
                     </div>
