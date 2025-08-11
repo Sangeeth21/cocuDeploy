@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Info, Check, User as UserIcon, Building } from "lucide-react";
+import { Loader2, Eye, EyeOff, Info, Check, User as UserIcon, Building, Combine } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -21,6 +21,7 @@ import { useVerification } from "@/context/vendor-verification-context";
 import { useUser } from "@/context/user-context";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAdminAuth, AdminAuthProvider } from "@/context/admin-auth-context";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 
 const GoogleIcon = () => (
@@ -215,60 +216,38 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: '', color: '' });
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(true);
+    const [accountType, setAccountType] = useState<'personalized' | 'corporate' | 'both'>('personalized');
     const [emailOtp, setEmailOtp] = useState("");
     const [phoneOtp, setPhoneOtp] = useState("");
-    const [isPasswordFocused, setIsPasswordFocused] = useState(false);
-    const [passwordCriteria, setPasswordCriteria] = useState({
-        length: false,
-        uppercase: false,
-        number: false,
-        specialChar: false,
-    });
-    const [accountType, setAccountType] = useState<'personal' | 'corporate'>('personal');
     const router = useRouter();
     const { toast } = useToast();
     const { login } = useUser();
 
-    useEffect(() => {
-        const checkPasswordStrength = (pass: string) => {
-            let score = 0;
-            const newCriteria = {
-                length: pass.length >= 8,
-                uppercase: /[A-Z]/.test(pass),
-                number: /[0-9]/.test(pass),
-                specialChar: /[^A-Za-z0-9]/.test(pass),
-            };
-            setPasswordCriteria(newCriteria);
-            
-            if (newCriteria.length) score++;
-            if (newCriteria.uppercase) score++;
-            if (newCriteria.number) score++;
-            if (newCriteria.specialChar) score++;
-            
-            if (score < 2) {
-                setPasswordStrength({ score, label: 'Weak', color: 'bg-destructive' });
-            } else if (score < 4) {
-                 setPasswordStrength({ score, label: 'Medium', color: 'bg-yellow-500' });
-            } else {
-                 setPasswordStrength({ score, label: 'Strong', color: 'bg-green-500' });
-            }
-        }
-        checkPasswordStrength(password);
-    }, [password]);
-
     const handleDetailsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (passwordStrength.score < 4) {
-            toast({ variant: "destructive", title: "Password is too weak" });
+
+        if (password !== confirmPassword) {
+            toast({
+                variant: "destructive",
+                title: "Passwords do not match",
+                description: "Please ensure your passwords match.",
+            });
             return;
         }
+
         if (!agreedToTerms) {
-            toast({ variant: "destructive", title: "You must agree to the terms" });
+            toast({
+                variant: "destructive",
+                title: "Terms and Conditions",
+                description: "You must agree to the terms to sign up.",
+            });
             return;
         }
+
         setIsLoading(true);
         setTimeout(() => {
           toast({ title: "Verification Required", description: "Codes sent to your email & phone." });
@@ -288,15 +267,8 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
            router.refresh();
         }, 1500);
     };
-
-    const renderCriteriaCheck = (label: string, isMet: boolean) => (
-        <div className={cn("flex items-center text-xs gap-2", isMet ? "text-green-600" : "text-muted-foreground")}>
-            <Check className="h-3 w-3" />
-            <span>{label}</span>
-        </div>
-    );
     
-     const handleSocialLogin = (provider: string) => {
+    const handleSocialLogin = (provider: string) => {
         login();
         toast({
             title: `Signed up with ${provider}!`,
@@ -335,139 +307,110 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     }
     
     return (
-        <div className="space-y-4">
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                </div>
-            </div>
-             <div className="flex justify-center gap-2">
-                 <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Google")}>
-                    <GoogleIcon />
-                    <span className="sr-only">Continue with Google</span>
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Facebook")}>
-                    <FacebookIcon />
-                    <span className="sr-only">Continue with Facebook</span>
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => handleSocialLogin("X")}>
-                    <TwitterIcon />
-                     <span className="sr-only">Continue with X</span>
-                </Button>
-                 <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Instagram")}>
-                    <InstagramIcon />
-                     <span className="sr-only">Continue with Instagram</span>
-                </Button>
-                 <Button variant="outline" size="icon" onClick={() => handleSocialLogin("LinkedIn")}>
-                    <LinkedinIcon />
-                     <span className="sr-only">Continue with LinkedIn</span>
-                </Button>
-            </div>
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-background px-2 text-muted-foreground">Or sign up with email</span>
-                </div>
-            </div>
-            <form onSubmit={handleDetailsSubmit} className="space-y-4">
-                 <div className="space-y-2">
-                    <Label>Account Type</Label>
-                    <RadioGroup
-                        value={accountType}
-                        onValueChange={(value) => setAccountType(value as 'personal' | 'corporate')}
-                        className="grid grid-cols-2 gap-4"
-                    >
-                        <div>
-                            <RadioGroupItem value="personal" id="personal" className="peer sr-only" />
-                            <Label
-                                htmlFor="personal"
-                                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                            >
-                                <UserIcon className="mb-2 h-6 w-6" />
-                                Personal
-                            </Label>
-                        </div>
-                        <div>
-                             <RadioGroupItem value="corporate" id="corporate" className="peer sr-only" />
-                              <Label
-                                htmlFor="corporate"
-                                className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary"
-                            >
-                                <Building className="mb-2 h-6 w-6" />
-                                Corporate
-                            </Label>
-                        </div>
-                    </RadioGroup>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="customer-name">Full Name</Label>
-                    <Input id="customer-name" required />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="customer-signup-email">Email</Label>
-                    <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="customer-signup-phone">Phone Number (Optional)</Label>
-                    <Input id="customer-signup-phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                </div>
-                 <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                        <Label htmlFor="customer-signup-password">Password</Label>
-                        <TooltipProvider delayDuration={0}>
-                            <Tooltip>
-                                <TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
-                                <TooltipContent>
-                                    <ul className="list-disc pl-4 text-xs space-y-1">
-                                        <li>At least 8 characters long</li>
-                                        <li>Contains an uppercase letter</li>
-                                        <li>Contains a number</li>
-                                        <li>Contains a special character</li>
-                                    </ul>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
+        <ScrollArea className="max-h-[70vh] pr-6">
+            <div className="space-y-4">
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
                     </div>
-                    <div className="relative">
-                        <Input id="customer-signup-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} onFocus={() => setIsPasswordFocused(true)} onBlur={() => setIsPasswordFocused(false)} />
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                            {showPassword ? <EyeOff /> : <Eye />}
-                        </Button>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
                     </div>
-                    {isPasswordFocused && (
-                        <div className="space-y-2 pt-1">
-                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 p-2 rounded-md bg-muted/50">
-                                {renderCriteriaCheck("8+ characters", passwordCriteria.length)}
-                                {renderCriteriaCheck("1 uppercase", passwordCriteria.uppercase)}
-                                {renderCriteriaCheck("1 number", passwordCriteria.number)}
-                                {renderCriteriaCheck("1 special char", passwordCriteria.specialChar)}
+                </div>
+                <div className="flex justify-center gap-2">
+                    <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Google")}><GoogleIcon /><span className="sr-only">Google</span></Button>
+                    <Button variant="outline" size="icon" onClick={() => handleSocialLogin("Facebook")}><FacebookIcon /><span className="sr-only">Facebook</span></Button>
+                    <Button variant="outline" size="icon" onClick={() => handleSocialLogin("X")}><TwitterIcon /><span className="sr-only">X</span></Button>
+                </div>
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">Or sign up with email</span>
+                    </div>
+                </div>
+                <form onSubmit={handleDetailsSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label>Account Type</Label>
+                        <RadioGroup value={accountType} onValueChange={(value) => setAccountType(value as any)} className="grid grid-cols-3 gap-2">
+                             <div>
+                                <RadioGroupItem value="personalized" id="personalized" className="peer sr-only" />
+                                <Label htmlFor="personalized" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                    <UserIcon className="mb-1 h-5 w-5" />
+                                    <span className="text-xs">Personal</span>
+                                </Label>
                             </div>
-                             {password.length > 0 && (
-                                <div className="flex items-center gap-2">
-                                    <Progress value={passwordStrength.score * 25} className={cn("h-1 w-full", passwordStrength.color)} />
-                                    <span className="text-xs text-muted-foreground flex-shrink-0">{passwordStrength.label}</span>
-                                </div>
-                            )}
+                            <div>
+                                <RadioGroupItem value="corporate" id="corporate" className="peer sr-only" />
+                                <Label htmlFor="corporate" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                    <Building className="mb-1 h-5 w-5" />
+                                    <span className="text-xs">Corporate</span>
+                                </Label>
+                            </div>
+                            <div>
+                                <RadioGroupItem value="both" id="both" className="peer sr-only" />
+                                <Label htmlFor="both" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
+                                    <Combine className="mb-1 h-5 w-5" />
+                                    <span className="text-xs">Both</span>
+                                </Label>
+                            </div>
+                        </RadioGroup>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="customer-name">Name</Label>
+                        <Input id="customer-name" placeholder="Company Name / Your Name" required />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="customer-signup-email">Email</Label>
+                        <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="customer-signup-phone">Phone Number</Label>
+                        <Input 
+                            id="customer-signup-phone" 
+                            type="tel" 
+                            value={phone} 
+                            onChange={(e) => {
+                                const numericValue = e.target.value.replace(/\D/g, '');
+                                if (numericValue.length <= 10) {
+                                    setPhone(numericValue);
+                                }
+                            }} 
+                            maxLength={10}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="customer-signup-password">Password</Label>
+                        <div className="relative">
+                            <Input id="customer-signup-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                            <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                                {showPassword ? <EyeOff /> : <Eye />}
+                            </Button>
                         </div>
-                     )}
-                </div>
-                <div className="flex items-center space-x-2 pt-2">
-                    <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
-                    <Label htmlFor="customer-terms" className="font-normal text-xs text-muted-foreground leading-snug">
-                        I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
-                    </Label>
-                </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Account
-                </Button>
-            </form>
-        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="customer-confirm-password">Confirm Password</Label>
+                         <div className="relative">
+                            <Input id="customer-confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                            <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                                {showConfirmPassword ? <EyeOff /> : <Eye />}
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="flex items-center space-x-2 pt-2">
+                        <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
+                        <Label htmlFor="customer-terms" className="font-normal text-xs text-muted-foreground leading-snug">
+                            I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
+                        </Label>
+                    </div>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Create Account
+                    </Button>
+                </form>
+            </div>
+        </ScrollArea>
     );
 }
 
