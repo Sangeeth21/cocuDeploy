@@ -144,6 +144,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
 
     const namePlaceholder = useMemo(() => {
         if (accountType === 'corporate') return 'Company Name';
+        if (accountType === 'both') return 'Your Name';
         return 'Your Name';
     }, [accountType]);
 
@@ -246,7 +247,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                     </RadioGroup>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="customer-name">{accountType === 'corporate' ? 'Company Name' : 'Name'}</Label>
+                    <Label htmlFor="customer-name">{namePlaceholder}</Label>
                     <Input id="customer-name" placeholder={namePlaceholder} required />
                 </div>
                  {accountType === 'both' && (
@@ -340,8 +341,8 @@ export function CustomerAuthDialog() {
                                 </div>
                             </Tabs>
                         </TabsContent>
-                        <TabsContent value="signup" className="h-full">
-                            <ScrollArea className="h-full pr-6">
+                        <TabsContent value="signup" className="h-full flex flex-col">
+                            <ScrollArea className="flex-1 -mr-6 pr-6">
                                 <SignupForm onSignupSuccess={closeDialog} />
                             </ScrollArea>
                         </TabsContent>
