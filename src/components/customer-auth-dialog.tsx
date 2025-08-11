@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -183,6 +184,11 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         }, 1500);
     };
 
+    const namePlaceholder = useMemo(() => {
+        if (accountType === 'corporate') return 'Company Name';
+        return 'Your Name';
+    }, [accountType]);
+
     if (step === 'verify') {
         return (
             <form onSubmit={handleVerificationSubmit} className="space-y-4">
@@ -241,9 +247,15 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                     </RadioGroup>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor="customer-name">Name</Label>
-                    <Input id="customer-name" placeholder="Company Name / Your Name" required />
+                    <Label htmlFor="customer-name">{accountType === 'corporate' ? 'Company Name' : 'Name'}</Label>
+                    <Input id="customer-name" placeholder={namePlaceholder} required />
                 </div>
+                 {accountType === 'both' && (
+                    <div className="space-y-2">
+                        <Label htmlFor="customer-company-name">Company Name (Optional)</Label>
+                        <Input id="customer-company-name" placeholder="Your Company LLC" />
+                    </div>
+                )}
                 <div className="space-y-2">
                     <Label htmlFor="customer-signup-email">Email</Label>
                     <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
