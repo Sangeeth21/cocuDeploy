@@ -304,7 +304,7 @@ export function CustomerAuthDialog() {
 
     return (
         <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
-            <DialogContent className="sm:max-w-md">
+            <DialogContent className="sm:max-w-lg">
                 <Tabs defaultValue={authDialogState.initialTab} className="w-full">
                     <DialogHeader>
                         <TabsList className="grid w-full grid-cols-2">
