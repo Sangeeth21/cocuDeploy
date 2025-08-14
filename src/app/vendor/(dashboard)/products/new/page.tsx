@@ -28,7 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
-import { Alert, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -639,7 +639,6 @@ export default function NewProductPage() {
     const [galleryImages, setGalleryImages] = useState<{file: File, src: string}[]>([]);
     const [videoUrl, setVideoUrl] = useState("");
     const [videoEmbedUrl, setVideoEmbedUrl] = useState<string | null>(null);
-    
     const [deliveryType, setDeliveryType] = useState('vendor_pays');
     const [packageWeight, setPackageWeight] = useState('');
     const [packageLength, setPackageLength] = useState('');
@@ -655,6 +654,7 @@ export default function NewProductPage() {
 
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);
+        // Clear selected customizations when category changes to avoid irrelevant options
         setSelectedCustomizations([]);
         setCustomOptions([]);
     };
@@ -1386,3 +1386,4 @@ export default function NewProductPage() {
     </>
   );
 }
+
