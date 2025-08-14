@@ -27,6 +27,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Badge } from "@/components/ui/badge"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -498,7 +499,7 @@ function CustomizationAreaEditor({ image, onSave, onCancel }: { image: ProductIm
                     </DialogHeader>
                     <div className="text-sm text-muted-foreground space-y-4 py-2">
                         <p><strong className="text-foreground">1. Add a Shape:</strong> Use the "Rectangle" or "Ellipse" buttons to add a new area.</p>
-                        <p><strong className="text-foreground">2. Position &amp; Resize:</strong> Click and drag an area on the image to move it. Drag the handles on its edges to resize it.</p>
+                        <p><strong className="text-foreground">2. Position & Resize:</strong> Click and drag an area on the image to move it. Drag the handles on its edges to resize it.</p>
                         <p><strong className="text-foreground">3. Customize:</strong> Select an area (by clicking it on the image or on its tag below) to edit its properties. Use "Curvature" for items like mugs.</p>
                         <p><strong className="text-foreground">4. Undo/Redo:</strong> Use the undo/redo buttons or keyboard shortcuts (Ctrl/Cmd+Z, Ctrl/Cmd+Y) to step through your changes.</p>
                         <p><strong className="text-foreground">5. Save:</strong> When you're finished, click "Save Changes" to apply your work to this image.</p>
@@ -1119,7 +1120,7 @@ export default function NewProductPage() {
             </Card>
             <Card>
                 <CardHeader>
-                    <CardTitle className="font-headline">Delivery &amp; Shipping</CardTitle>
+                    <CardTitle className="font-headline">Delivery & Shipping</CardTitle>
                     <CardDescription>Choose how the shipping cost will be handled for this product.</CardDescription>
                 </CardHeader>
                 <CardContent>
