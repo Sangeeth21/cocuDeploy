@@ -126,7 +126,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                                 <SidebarMenuButton
                                                     isActive={pathname.startsWith(link.href || `/vendor/both/${link.id}`)}
                                                     tooltip={{children: link.label}}
-                                                    className="w-full"
+                                                    className="w-full justify-start"
                                                 >
                                                     <link.icon />
                                                     <span>{link.label}</span>
