@@ -846,7 +846,7 @@ export default function CustomizeProductPage() {
             const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
             
             const result = await generateImageWithStyle({
-                prompt: aiPrompt || 'An enhanced image based on the reference',
+                prompt: aiPrompt,
                 styleBackendPrompt: style?.backendPrompt || 'photorealistic',
                 referenceImageDataUri
             });

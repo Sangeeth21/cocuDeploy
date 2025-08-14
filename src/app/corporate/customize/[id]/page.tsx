@@ -396,16 +396,8 @@ const DraggableElement = ({
                 const newTop = Math.max(0, Math.min(parentRect.height - (element.height/100 * parentRect.height), interactionState.startTop + dy));
                 onUpdate(element.id, { x: (newLeft / parentRect.width) * 100, y: (newTop / parentRect.height) * 100 });
             } else if (interactionState.type === 'resize' && interactionState.startWidth && interactionState.startHeight) {
-                let newWidth = Math.max(20, interactionState.startWidth + dx);
-                let newHeight = Math.max(20, interactionState.startHeight + dy);
-
-                if (element.type === 'qr') {
-                    // Enforce square aspect ratio for QR codes
-                    const size = Math.max(newWidth, newHeight);
-                    newWidth = size;
-                    newHeight = size;
-                }
-
+                const newWidth = Math.max(20, interactionState.startWidth + dx);
+                const newHeight = Math.max(20, interactionState.startHeight + dy);
                 onUpdate(element.id, { width: (newWidth / parentRect.width) * 100, height: (newHeight / parentRect.height) * 100 });
             }
         };
@@ -420,7 +412,7 @@ const DraggableElement = ({
             window.removeEventListener('pointermove', handlePointerMove);
             window.removeEventListener('pointerup', handlePointerUp);
         };
-    }, [interactionState, element.id, element.type, element.width, element.height, onUpdate]);
+    }, [interactionState, element.id, element.width, element.height, onUpdate]);
 
     return (
         <div
@@ -851,7 +843,7 @@ export default function CorporateCustomizePage() {
             const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
             
             const result = await generateImageWithStyle({
-                prompt: aiPrompt || 'An enhanced image based on the reference',
+                prompt: aiPrompt,
                 styleBackendPrompt: style?.backendPrompt || 'photorealistic',
                 referenceImageDataUri
             });
