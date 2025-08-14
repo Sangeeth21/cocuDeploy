@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, ImageIcon, Download, Check, EyeOff, Eye, AlertTriangle, CheckCheck } from "lucide-react";
+import { Search, Send, MessageSquare, AlertTriangle, Check, EyeOff, Eye, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -71,15 +71,14 @@ export default function CorporateMessagesPage() {
   const handleSelectConversation = (id: number) => {
     setSelectedConversationId(id);
   }
-  
+
   const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
-
+      const { userMessageCount, awaitingVendorDecision } = selectedConversation;
       const INITIAL_LIMIT = 15;
       const EXTENDED_LIMIT = 15 + 8; // When vendor extends
 
-      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
+      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT;
       let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
       let remaining = limit - userMessageCount;
       
@@ -145,7 +144,7 @@ export default function CorporateMessagesPage() {
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} messages left` : 'Message limit reached') : 'Chat disabled'}
+                        {remaining > 0 ? `${remaining} messages left` : 'Message limit reached'}
                     </div>
                 </div>
               </div>
@@ -174,9 +173,10 @@ export default function CorporateMessagesPage() {
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}
                               rows={1}
+                              disabled={isLocked}
                           />
                       </div>
-                      <Button type="submit" size="icon"><Send className="h-4 w-4" /></Button>
+                      <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
                   </div>
                 </form>
               </>
