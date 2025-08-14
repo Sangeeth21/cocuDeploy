@@ -197,23 +197,27 @@ export default function AdminChatLogsPage() {
                         </Button>
                     </div>
                 </div>
-                <ScrollArea className="flex-1 bg-muted/20">
-                    <div ref={messagesContainerRef} className="p-4 space-y-4">
-                    {selectedConversation.messages.map((msg, index) => (
-                         msg.sender === 'system' ? (
-                            <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
-                        ) : (
-                        <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
-                        {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.customerAvatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
-                        <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
-                            {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                        </div>
-                        {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.vendorAvatar} alt={selectedConversation.vendorId} /><AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
-                        </div>
-                        )
-                    ))}
+                <div className="flex-1 flex flex-col min-h-0 bg-muted/20">
+                    <div className="flex-1 min-h-0">
+                        <ScrollArea className="h-full">
+                            <div ref={messagesContainerRef} className="p-4 space-y-4">
+                            {selectedConversation.messages.map((msg, index) => (
+                                msg.sender === 'system' ? (
+                                    <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                                ) : (
+                                <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
+                                {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.customerAvatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
+                                <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                    {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                                </div>
+                                {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.vendorAvatar} alt={selectedConversation.vendorId} /><AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
+                                </div>
+                                )
+                            ))}
+                            </div>
+                        </ScrollArea>
                     </div>
-                </ScrollArea>
+                </div>
                 </>
             ) : (
                 <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center">

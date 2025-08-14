@@ -395,66 +395,66 @@ export default function BothVendorMessagesPage() {
                       </p>
                   </div>
               ) : (
-                <>
-                <CardContent className="flex-1 p-0">
-                    <ScrollArea className="h-full bg-muted/20" ref={scrollAreaRef}>
-                        <div className="p-4 space-y-4">
-                        {selectedConversation.messages.map((msg, index) => (
-                            msg.sender === 'system' ? (
-                                <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
-                            ) : (
-                            <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
-                            {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
-                            <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
-                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                                {msg.attachments && (
-                                    <div className="grid gap-2 grid-cols-2">
-                                        {msg.attachments.map((att, i) => (
-                                            att.type === 'image' ? (
-                                                <div key={i} className="relative aspect-video rounded-md overflow-hidden">
-                                                    <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
-                                                </div>
-                                            ) : (
-                                                <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                                    <span className="text-xs truncate">{att.name}</span>
-                                                </a>
-                                            )
-                                        ))}
-                                    </div>
-                                )}
-                                {msg.sender === 'vendor' && (
-                                    <div className="flex justify-end items-center gap-1 h-4 mt-1">
-                                        {getStatusIcon(msg.status)}
-                                    </div>
-                                )}
+                <div className="flex-1 flex flex-col min-h-0">
+                    <div className="flex-1 min-h-0">
+                        <ScrollArea className="h-full bg-muted/20" ref={scrollAreaRef}>
+                            <div className="p-4 space-y-4">
+                            {selectedConversation.messages.map((msg, index) => (
+                                msg.sender === 'system' ? (
+                                    <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                                ) : (
+                                <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
+                                {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
+                                <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                    {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                                    {msg.attachments && (
+                                        <div className="grid gap-2 grid-cols-2">
+                                            {msg.attachments.map((att, i) => (
+                                                att.type === 'image' ? (
+                                                    <div key={i} className="relative aspect-video rounded-md overflow-hidden">
+                                                        <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
+                                                    </div>
+                                                ) : (
+                                                    <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
+                                                        <span className="text-xs truncate">{att.name}</span>
+                                                    </a>
+                                                )
+                                            ))}
+                                        </div>
+                                    )}
+                                    {msg.sender === 'vendor' && (
+                                        <div className="flex justify-end items-center gap-1 h-4 mt-1">
+                                            {getStatusIcon(msg.status)}
+                                        </div>
+                                    )}
+                                </div>
+                                {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
+                                </div>
+                                )
+                            ))}
                             </div>
-                            {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
+                        </ScrollArea>
+                    </div>
+                    <form onSubmit={handleSendMessage} className="p-4 border-t space-y-2 flex-shrink-0">
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex-1">
+                                <Textarea
+                                    ref={textareaRef}
+                                    placeholder={isLocked ? "Message limit reached. Awaiting your decision..." : "Type your message..."}
+                                    className="pr-20 resize-none max-h-48"
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    maxLength={MAX_MESSAGE_LENGTH}
+                                    rows={1}
+                                    disabled={isLocked}
+                                />
+                                {!isLocked && selectedConversation.type === 'customer' && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
                             </div>
-                            )
-                        ))}
+                            <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
                         </div>
-                    </ScrollArea>
-                </CardContent>
-                <form onSubmit={handleSendMessage} className="p-4 border-t space-y-2">
-                  <div className="flex items-center gap-2">
-                      <div className="relative flex-1">
-                          <Textarea
-                              ref={textareaRef}
-                              placeholder={isLocked ? "Message limit reached. Awaiting your decision..." : "Type your message..."}
-                              className="pr-20 resize-none max-h-48"
-                              value={newMessage}
-                              onChange={(e) => setNewMessage(e.target.value)}
-                              maxLength={MAX_MESSAGE_LENGTH}
-                              rows={1}
-                              disabled={isLocked}
-                          />
-                           {!isLocked && selectedConversation.type === 'customer' && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
-                      </div>
-                      <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
-                  </div>
-                </form>
-              </>
-            )}
+                    </form>
+                </div>
+              )}
             </Card>
           ) : (
              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center bg-card">

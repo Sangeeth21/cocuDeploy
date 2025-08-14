@@ -792,7 +792,7 @@ export default function AccountPage() {
                                 </Avatar>
                                 <div className="flex-1 overflow-hidden">
                                   <div className="flex justify-between items-center">
-                                    <p className="font-semibold">{convo.vendorId}</p>
+                                    <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
                                     <div className="flex items-center gap-2">
                                         {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
                                         {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
@@ -823,7 +823,7 @@ export default function AccountPage() {
                               <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.vendorId} data-ai-hint="company logo" />
                               <AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <h2 className="text-lg font-semibold">{selectedConversation.vendorId}</h2>
+                            <h2 className="text-lg font-semibold">{`Chat #${selectedConversation.id.toString().padStart(6, '0')}`}</h2>
                         </div>
                          <div className="flex items-center gap-4">
                              <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => handleReportConversation(selectedConversation.id)}>
@@ -845,42 +845,44 @@ export default function AccountPage() {
                               </p>
                           </div>
                       ) : (
-                          <>
-                            <ScrollArea className="flex-1 bg-muted/20">
-                                <div className="p-4 space-y-4" ref={messagesContainerRef}>
-                                {selectedConversation.messages.map((msg, index) => (
-                                    msg.sender === 'system' ? (
-                                        <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
-                                    ) : (
-                                    <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
-                                    {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.vendorId} /><AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
-                                    <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
-                                        {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                                        {msg.attachments && (
-                                            <div className="grid gap-2 grid-cols-2">
-                                                {msg.attachments.map((att, i) => (
-                                                    att.type === 'image' ? (
-                                                        <div key={i} className="relative aspect-video rounded-md overflow-hidden">
-                                                            <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
-                                                        </div>
-                                                    ) : (
-                                                        <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                                            <FileIcon className="h-6 w-6 text-muted-foreground"/>
-                                                            <span className="text-xs truncate">{att.name}</span>
-                                                            <Download className="h-4 w-4 ml-auto" />
-                                                        </a>
-                                                    )
-                                                ))}
-                                            </div>
-                                        )}
+                          <div className="flex-1 flex flex-col min-h-0">
+                            <div className="flex-1 min-h-0">
+                                <ScrollArea className="h-full bg-muted/20">
+                                    <div className="p-4 space-y-4" ref={messagesContainerRef}>
+                                    {selectedConversation.messages.map((msg, index) => (
+                                        msg.sender === 'system' ? (
+                                            <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                                        ) : (
+                                        <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
+                                        {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.vendorId} /><AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
+                                        <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                            {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                                            {msg.attachments && (
+                                                <div className="grid gap-2 grid-cols-2">
+                                                    {msg.attachments.map((att, i) => (
+                                                        att.type === 'image' ? (
+                                                            <div key={i} className="relative aspect-video rounded-md overflow-hidden">
+                                                                <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
+                                                            </div>
+                                                        ) : (
+                                                            <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
+                                                                <FileIcon className="h-6 w-6 text-muted-foreground"/>
+                                                                <span className="text-xs truncate">{att.name}</span>
+                                                                <Download className="h-4 w-4 ml-auto" />
+                                                            </a>
+                                                        )
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                        {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={avatar} alt="You" /><AvatarFallback>Y</AvatarFallback></Avatar>}
+                                        </div>
+                                        )
+                                    ))}
                                     </div>
-                                    {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={avatar} alt="You" /><AvatarFallback>Y</AvatarFallback></Avatar>}
-                                    </div>
-                                    )
-                                ))}
-                                </div>
-                            </ScrollArea>
-                            <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2">
+                                </ScrollArea>
+                            </div>
+                            <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2 flex-shrink-0">
                                 {attachments.length > 0 && !isLocked && (
                                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                                         {attachments.map((file, index) => (
@@ -913,7 +915,7 @@ export default function AccountPage() {
                                     <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
                                 </div>
                             </form>
-                          </>
+                          </div>
                       )}
                     </>
                   ) : (
