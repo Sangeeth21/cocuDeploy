@@ -37,6 +37,7 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
       { id: 'msg3', sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}] },
     ],
     unread: true,
+    unreadCount: 1,
     userMessageCount: 3,
     awaitingVendorDecision: false,
     status: 'active',
@@ -49,6 +50,7 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     avatar: "https://placehold.co/40x40.png",
     messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}] }],
     unread: true,
+    unreadCount: 1,
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
@@ -73,6 +75,7 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     avatar: "https://placehold.co/40x40.png",
     messages: [{ id: 'msg6', sender: "customer", text: "What is the return policy?" }],
     unread: true,
+    unreadCount: 9,
     userMessageCount: 9,
     awaitingVendorDecision: true,
     status: 'active',
@@ -88,6 +91,7 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
       { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?', status: 'sent'},
     ],
     unread: true,
+    unreadCount: 1,
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
@@ -221,7 +225,7 @@ export default function BothVendorMessagesPage() {
     setSelectedConversationId(id);
     setConversations(prev =>
         prev.map(convo => 
-            convo.id === id ? { ...convo, unread: false } : convo
+            convo.id === id ? { ...convo, unread: false, unreadCount: 0 } : convo
         )
     );
   }
@@ -315,8 +319,9 @@ export default function BothVendorMessagesPage() {
                         <div className="flex justify-between items-center">
                             <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
                             <div className="flex items-center gap-2">
-                            {convo.status === 'flagged' && <AlertTriangle className="w-4 w-4 text-destructive" />}
+                            {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
                             {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
+                             {convo.unread && convo.unreadCount && convo.unreadCount > 0 && <Badge variant="secondary" className="px-1.5">{convo.unreadCount}</Badge>}
                             </div>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>

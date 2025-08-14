@@ -140,6 +140,7 @@ export type Conversation = {
   avatar: string;
   messages: Message[];
   unread?: boolean;
+  unreadCount?: number;
   userMessageCount: number;
   awaitingVendorDecision: boolean;
   status: 'active' | 'flagged' | 'locked' | 'resolved';
