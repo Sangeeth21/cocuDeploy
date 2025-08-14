@@ -1,29 +1,22 @@
 
 "use client";
 
-import { useVerification } from "@/context/vendor-verification-context";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import { BrandedLoader } from "@/components/branded-loader";
-import { VendorSidebarLayout } from "./_components/vendor-sidebar-layout";
+import { VendorSidebar } from "./_components/vendor-sidebar";
+import { VerificationFlowHandler } from "../_components/verification-flow-handler";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-    const { vendorType } = useVerification();
-    const router = useRouter();
-
-    useEffect(() => {
-        if (!vendorType) {
-            router.replace('/vendor/login');
-        }
-    }, [vendorType, router]);
-
-    if (!vendorType) {
-        return <BrandedLoader />;
-    }
-
     return (
-        <VendorSidebarLayout>
-            {children}
-        </VendorSidebarLayout>
+        <SidebarProvider>
+            <div className="flex min-h-screen">
+                <VendorSidebar />
+                <div className="flex flex-col flex-1">
+                     <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-y-auto">
+                        <VerificationFlowHandler />
+                        {children}
+                    </main>
+                </div>
+            </div>
+        </SidebarProvider>
     );
 }
