@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck, AlertTriangle } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -28,6 +28,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertTitle } from "@/components/ui/alert"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -638,7 +639,12 @@ export default function NewProductPage() {
     const [galleryImages, setGalleryImages] = useState<{file: File, src: string}[]>([]);
     const [videoUrl, setVideoUrl] = useState("");
     const [videoEmbedUrl, setVideoEmbedUrl] = useState<string | null>(null);
+    
     const [deliveryType, setDeliveryType] = useState('vendor_pays');
+    const [packageWeight, setPackageWeight] = useState('');
+    const [packageLength, setPackageLength] = useState('');
+    const [packageWidth, setPackageWidth] = useState('');
+    const [packageHeight, setPackageHeight] = useState('');
 
     const availableCustomizations = useMemo(() => {
         if (!selectedCategory) return [];
@@ -649,7 +655,6 @@ export default function NewProductPage() {
 
     const handleCategoryChange = (category: string) => {
         setSelectedCategory(category);
-        // Clear selected customizations when category changes to avoid irrelevant options
         setSelectedCustomizations([]);
         setCustomOptions([]);
     };
@@ -1118,6 +1123,37 @@ export default function NewProductPage() {
                     </div>
                 </CardContent>
             </Card>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Package & Shipping</CardTitle>
+                    <CardDescription>
+                        Enter the final packaged weight and dimensions. These are crucial for accurate shipping cost calculation.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="weight">Package Weight (kg)</Label>
+                        <Input id="weight" type="number" placeholder="e.g., 0.5" value={packageWeight} onChange={e => setPackageWeight(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Package Dimensions (cm)</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                            <Input type="number" placeholder="L" value={packageLength} onChange={e => setPackageLength(e.target.value)} />
+                            <Input type="number" placeholder="W" value={packageWidth} onChange={e => setPackageWidth(e.target.value)} />
+                            <Input type="number" placeholder="H" value={packageHeight} onChange={e => setPackageHeight(e.target.value)} />
+                        </div>
+                    </div>
+                    <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertTitle>Important</AlertTitle>
+                        <AlertDescription className="text-xs">
+                            Please be accurate. Any discrepancies in shipping costs due to incorrect weight or dimensions will be deducted from your payout.
+                        </AlertDescription>
+                    </Alert>
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Delivery & Shipping</CardTitle>
