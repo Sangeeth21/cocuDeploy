@@ -67,8 +67,8 @@ const initialConversations: Conversation[] = [
     avatar: "https://placehold.co/40x40.png",
     messages: [{ id: 'msg6', sender: "customer", text: "What is the return policy?" }],
     unread: true,
-    userMessageCount: 1,
-    awaitingVendorDecision: false,
+    userMessageCount: 9,
+    awaitingVendorDecision: true,
     status: 'active',
   },
 ];
@@ -146,7 +146,7 @@ export default function VendorMessagesPage() {
             return {
                 ...c,
                 awaitingVendorDecision: false,
-                userMessageCount: 23, // 15 + 8, to lock it
+                userMessageCount: 17, // 9 + 8, to lock it
                 messages: [...c.messages, {id: 'system-end', sender: 'system' as const, text: 'Vendor has ended the chat.'}]
             };
         }
@@ -228,12 +228,12 @@ export default function VendorMessagesPage() {
     
   const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision } = selectedConversation;
+      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
 
       const INITIAL_LIMIT = 9;
-      const EXTENDED_LIMIT = 15; // Placeholder for when vendor extends
+      const EXTENDED_LIMIT = 17; // 9 initial + 8 extended
 
-      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || selectedConversation.status !== 'active';
+      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
       let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
       let remaining = limit - userMessageCount;
       

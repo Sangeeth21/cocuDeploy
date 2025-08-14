@@ -112,7 +112,7 @@ export default function CorporateMessagesPage() {
             return {
                 ...c,
                 awaitingVendorDecision: false,
-                userMessageCount: 23, // 15 + 8, to lock it
+                userMessageCount: 17, // 9 + 8, to lock it
                 messages: [...c.messages, {id: 'system-end', sender: 'system' as const, text: 'Vendor has ended the chat.'}]
             };
         }
@@ -146,11 +146,6 @@ export default function CorporateMessagesPage() {
 
         if (newCount === 15) {
             updatedConvo.awaitingVendorDecision = true;
-            updatedConvo.messages.push({
-                id: 'system-wait',
-                sender: 'system' as const,
-                text: 'You have reached the initial message limit. Please wait for the customer to respond or decide to continue the chat.'
-            });
         }
         
         return updatedConvo;
@@ -194,12 +189,12 @@ export default function CorporateMessagesPage() {
     
   const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision } = selectedConversation;
+      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
 
-      const INITIAL_LIMIT = 15;
-      const EXTENDED_LIMIT = 15 + 8;
+      const INITIAL_LIMIT = Infinity; // No limit for corporate
+      const EXTENDED_LIMIT = Infinity;
 
-      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || selectedConversation.status !== 'active';
+      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
       let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
       let remaining = limit - userMessageCount;
       
@@ -286,7 +281,7 @@ export default function CorporateMessagesPage() {
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} messages left` : 'Message limit reached') : 'Chat disabled'}
+                        {selectedConversation.status === 'active' ? 'Open Conversation' : 'Chat disabled'}
                     </div>
                 </div>
               </div>
@@ -345,7 +340,7 @@ export default function CorporateMessagesPage() {
                       <div className="relative flex-1">
                           <Textarea
                               ref={textareaRef}
-                              placeholder={isLocked ? "Message limit reached. Awaiting your decision..." : "Type your message..."}
+                              placeholder={"Type your message..."}
                               className="pr-20 resize-none max-h-48"
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}

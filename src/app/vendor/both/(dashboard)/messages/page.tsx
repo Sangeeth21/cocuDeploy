@@ -73,8 +73,8 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     avatar: "https://placehold.co/40x40.png",
     messages: [{ id: 'msg6', sender: "customer", text: "What is the return policy?" }],
     unread: true,
-    userMessageCount: 1,
-    awaitingVendorDecision: false,
+    userMessageCount: 9,
+    awaitingVendorDecision: true,
     status: 'active',
     type: 'customer',
   },
@@ -170,7 +170,7 @@ export default function BothVendorMessagesPage() {
             return {
                 ...c,
                 awaitingVendorDecision: false,
-                userMessageCount: 23, // 15 + 8, to lock it
+                userMessageCount: 17, // 9 + 8, to lock it
                 messages: [...c.messages, {id: 'system-end', sender: 'system' as const, text: 'Vendor has ended the chat.'}]
             };
         }
@@ -255,7 +255,7 @@ export default function BothVendorMessagesPage() {
       const { userMessageCount, awaitingVendorDecision, type, status } = selectedConversation;
 
       const limits = {
-          customer: { initial: 9, extended: 15 },
+          customer: { initial: 9, extended: 17 }, // 9 + 8 = 17
           corporate: { initial: Infinity, extended: Infinity } // No limit for corporate
       }
       
