@@ -302,3 +302,14 @@ export type CorporateBid = {
   expiresAt: string;
   responses: VendorBid[];
 }
+
+// AI Image Generation
+export type AiImageStyleTarget = 'personalized' | 'corporate' | 'both';
+
+export type AiImageStyle = {
+    id: string;
+    name: string;
+    backendPrompt: string;
+    target: AiImageStyleTarget;
+    order: number;
+}

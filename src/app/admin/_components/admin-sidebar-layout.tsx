@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, SidebarHeader, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles, ChevronsLeft, ChevronsRight, Combine, Gift, LifeBuoy, Building, Gavel } from "lucide-react";
+import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOut, ShieldCheck, Home, MessageSquare, Store, DollarSign, Megaphone, PlusCircle, Sparkles, ChevronsLeft, ChevronsRight, Combine, Gift, LifeBuoy, Building, Gavel, ImageIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { NotificationPopover } from "@/components/notification-popover";
@@ -26,6 +27,7 @@ const navLinks = [
   { href: "/admin/product-combos", label: "Product Combos", icon: Combine },
   { href: "/admin/marketing", label: "Marketing", icon: Megaphone },
   { href: "/admin/corporate-marketing", label: "Corporate Marketing", icon: Building },
+  { href: "/admin/ai-styles", label: "AI Image Styles", icon: ImageIcon },
   { href: "/admin/referrals", label: "Referrals", icon: Gift },
   { href: "/admin/support", label: "Support", icon: LifeBuoy, badge: "2" },
   { href: "/admin/moderation", label: "Moderation", icon: ShieldCheck, badge: "3" },

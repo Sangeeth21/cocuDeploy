@@ -1,6 +1,6 @@
 
 
-import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign, CustomizationOption, CorporateBid } from './types';
+import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign, CustomizationOption, CorporateBid, AiImageStyle } from './types';
 
 export const mockProducts: DisplayProduct[] = [
   {
@@ -733,3 +733,12 @@ export const mockCorporateBids: CorporateBid[] = [
         ]
     }
 ]
+
+export const mockAiImageStyles: AiImageStyle[] = [
+    { id: 'style-1', name: 'Vintage', backendPrompt: ', vintage photo, 1950s, grainy film', target: 'personalized', order: 1 },
+    { id: 'style-2', name: 'Futuristic', backendPrompt: ', futuristic, cyberpunk, neon lights, 8k, hyper-detailed', target: 'both', order: 2 },
+    { id: 'style-3', name: 'Ghibli Style', backendPrompt: ', ghibli style anime, painted, whimsical, detailed background', target: 'personalized', order: 3 },
+    { id: 'style-4', name: 'Minimalist', backendPrompt: ', minimalist, clean background, simple, elegant, studio lighting', target: 'corporate', order: 1 },
+    { id: 'style-5', name: 'Product Shot', backendPrompt: ', professional product photography, studio lighting, on a pedestal, 8k resolution', target: 'corporate', order: 2 },
+    { id: 'style-6', name: 'Watercolor', backendPrompt: ', watercolor painting, soft colors, blended, artistic', target: 'personalized', order: 4 },
+];
