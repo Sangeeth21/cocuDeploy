@@ -630,6 +630,7 @@ export default function CorporateCustomizePage() {
     // AI Image Generation State
     const [aiPrompt, setAiPrompt] = useState("");
     const [aiStyle, setAiStyle] = useState("");
+    const [aspectRatio, setAspectRatio] = useState("1:1");
     const [aiReferenceImage, setAiReferenceImage] = useState<{ file: File, src: string } | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     
@@ -853,6 +854,7 @@ export default function CorporateCustomizePage() {
             const result = await generateImageWithStyle({
                 prompt: aiPrompt,
                 styleBackendPrompt: stylePrompt,
+                aspectRatio,
                 referenceImageDataUri
             });
 
@@ -1083,6 +1085,19 @@ export default function CorporateCustomizePage() {
                                                         <SelectTrigger><SelectValue placeholder="Select a style..." /></SelectTrigger>
                                                         <SelectContent>
                                                             {availableStyles.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                 <div className="space-y-2">
+                                                    <Label>Aspect Ratio</Label>
+                                                    <Select value={aspectRatio} onValueChange={setAspectRatio}>
+                                                        <SelectTrigger><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="1:1">1:1 (Square - Social Media, Mugs)</SelectItem>
+                                                            <SelectItem value="16:9">16:9 (Landscape - Banners)</SelectItem>
+                                                            <SelectItem value="9:16">9:16 (Portrait - Stories)</SelectItem>
+                                                            <SelectItem value="4:5">4:5 (Portrait - Posters, Apparel)</SelectItem>
+                                                            <SelectItem value="3:2">3:2 (Landscape - Photos)</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>

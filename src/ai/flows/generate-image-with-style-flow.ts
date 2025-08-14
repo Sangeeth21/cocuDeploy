@@ -15,6 +15,7 @@ import { z } from 'genkit';
 const GenerateImageWithStyleInputSchema = z.object({
   prompt: z.string().describe('The user\'s description of the image they want.'),
   styleBackendPrompt: z.string().describe('A pre-defined string of keywords and phrases that define the artistic style.'),
+  aspectRatio: z.string().optional().describe('The desired aspect ratio for the generated image, e.g., "1:1", "16:9", "4:5".'),
   referenceImageDataUri: z
     .string()
     .optional()
@@ -43,22 +44,31 @@ const generateImageWithStyleFlow = ai.defineFlow(
   async (input) => {
     const promptParts = [];
     
+    // The core prompt instruction to the AI.
+    let instruction = "";
+    
     if (input.referenceImageDataUri) {
-        promptParts.push({ media: { url: input.referenceImageDataUri } });
-        if (!input.prompt.trim()) {
-            promptParts.push({ text: `Transform this image using the following style: 8k resolution, highly detailed${input.styleBackendPrompt}` });
-        } else {
-             promptParts.push({ text: `${input.prompt}, 8k resolution, highly detailed${input.styleBackendPrompt}` });
-        }
+      promptParts.push({ media: { url: input.referenceImageDataUri } });
+      if (input.prompt.trim()) {
+        // When both image and text are provided, use the text to guide the transformation.
+        instruction = `Using the provided image as a reference, generate a new image that incorporates the following description: "${input.prompt}". Apply the style: 8k resolution, photorealistic, highly detailed${input.styleBackendPrompt}`;
+      } else {
+        // When only an image and style are provided, focus on transforming the image.
+        instruction = `Transform the provided reference image using the following artistic style: 8k resolution, photorealistic, highly detailed${input.styleBackendPrompt}`;
+      }
     } else {
-         promptParts.push({ text: `${input.prompt}, 8k resolution, highly detailed${input.styleBackendPrompt}` });
+       // When only text is provided.
+       instruction = `${input.prompt}, 8k resolution, photorealistic, highly detailed${input.styleBackendPrompt}`;
     }
+    promptParts.push({ text: instruction });
+
 
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
       prompt: promptParts,
       config: {
           responseModalities: ['TEXT', 'IMAGE'],
+          ...(input.aspectRatio && { aspectRatio: input.aspectRatio }),
       },
     });
 
