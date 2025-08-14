@@ -255,27 +255,32 @@ export default function BothVendorMessagesPage() {
     }
     
   const getChatLimit = () => {
-      if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision, type, status } = selectedConversation;
+    if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
+    const { userMessageCount, awaitingVendorDecision, type, status } = selectedConversation;
 
-      const limits = {
-          customer: { initial: 9, extended: 17 }, // 9 + 8 = 17
-          corporate: { initial: Infinity, extended: Infinity } // No limit for corporate
-      }
-      
-      const isCorporate = type === 'corporate';
-      const currentLimits = isCorporate ? limits.corporate : limits.customer;
+    if (type === 'corporate') {
+        const isLocked = awaitingVendorDecision || status !== 'active';
+        let remaining = isLocked ? 0 : 5 - userMessageCount;
+        if (awaitingVendorDecision && userMessageCount >= 5) {
+            remaining = 8;
+        }
+        if (userMessageCount >= 13) {
+            return {limit: 13, remaining: 0, isLocked: true};
+        }
 
-      const isLocked = awaitingVendorDecision || userMessageCount >= currentLimits.extended || status !== 'active';
-      let limit = userMessageCount < currentLimits.initial ? currentLimits.initial : currentLimits.extended;
-      let remaining = isCorporate ? Infinity : limit - userMessageCount;
-      
-      if(awaitingVendorDecision) {
-        remaining = 0;
-      }
-      
-      return { limit, remaining: Math.max(0, remaining), isLocked };
-  }
+        return {
+            limit: awaitingVendorDecision ? 13 : 5,
+            remaining: isLocked ? 0 : remaining,
+            isLocked,
+        };
+    }
+
+    // Personalized chat logic
+    const limit = 4;
+    const remaining = limit - userMessageCount;
+    const isLocked = userMessageCount >= limit || status !== 'active';
+    return { limit, remaining: Math.max(0, remaining), isLocked };
+  };
   
   const { remaining, isLocked } = getChatLimit();
 
