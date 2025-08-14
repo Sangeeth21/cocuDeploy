@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -26,6 +26,7 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/comp
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -636,6 +637,7 @@ export default function NewProductPage() {
     const [galleryImages, setGalleryImages] = useState<{file: File, src: string}[]>([]);
     const [videoUrl, setVideoUrl] = useState("");
     const [videoEmbedUrl, setVideoEmbedUrl] = useState<string | null>(null);
+    const [deliveryType, setDeliveryType] = useState('vendor_pays');
 
     const availableCustomizations = useMemo(() => {
         if (!selectedCategory) return [];
@@ -1059,6 +1061,68 @@ export default function NewProductPage() {
                             <Label htmlFor="add-more" className="font-normal text-sm">Add More...</Label>
                         </div>
                     )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Delivery & Shipping</CardTitle>
+                    <CardDescription>Choose how the shipping cost will be handled for this product.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <RadioGroup value={deliveryType} onValueChange={setDeliveryType} className="space-y-4">
+                         <Label htmlFor="vendor-pays" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <RadioGroupItem value="vendor_pays" id="vendor-pays" />
+                                    <span className="font-semibold">Completely by Vendor</span>
+                                </div>
+                                <Badge>Recommended</Badge>
+                            </div>
+                            <div className="ml-8 mt-2 space-y-1">
+                                <p className="text-xs text-muted-foreground">You absorb the full shipping cost. The customer sees "FREE Delivery", which can significantly increase conversion rates.</p>
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild><button type="button" className="flex items-center gap-1 text-xs text-primary hover:underline"><Info className="h-3 w-3"/>How it works</button></TooltipTrigger>
+                                        <TooltipContent><p className="max-w-xs">The full logistics cost (e.g., from Shiprocket) will be deducted from your final payout for each order.</p></TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </Label>
+                         <Label htmlFor="shared" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                             <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <RadioGroupItem value="shared" id="shared" />
+                                    <span className="font-semibold">Vendor + Customer Shared Cost</span>
+                                </div>
+                                 <Badge variant="secondary">Balanced</Badge>
+                            </div>
+                             <div className="ml-8 mt-2 space-y-1">
+                                <p className="text-xs text-muted-foreground">Offer a low, fixed shipping fee to the customer (e.g., ₹69). You cover the remaining logistics cost.</p>
+                                <TooltipProvider>
+                                     <Tooltip>
+                                        <TooltipTrigger asChild><button type="button" className="flex items-center gap-1 text-xs text-primary hover:underline"><Info className="h-3 w-3"/>How it works</button></TooltipTrigger>
+                                        <TooltipContent><p className="max-w-xs">If total shipping is ₹110, the customer pays ₹69 and ₹41 is deducted from your payout. The fixed rate is admin-configurable.</p></TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </Label>
+                         <Label htmlFor="customer-pays" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                             <div className="flex items-center gap-3">
+                                <RadioGroupItem value="customer_pays" id="customer-pays" />
+                                <span className="font-semibold">Completely by Customer</span>
+                            </div>
+                             <div className="ml-8 mt-2 space-y-1">
+                                <p className="text-xs text-muted-foreground">The customer bears the full delivery cost calculated at checkout. You receive your full product price.</p>
+                                <TooltipProvider>
+                                     <Tooltip>
+                                        <TooltipTrigger asChild><button type="button" className="flex items-center gap-1 text-xs text-primary hover:underline"><Info className="h-3 w-3"/>How it works</button></TooltipTrigger>
+                                        <TooltipContent><p className="max-w-xs">No logistics fees will be deducted from your payout. This may reduce conversion for some products.</p></TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            </div>
+                        </Label>
+                    </RadioGroup>
                 </CardContent>
             </Card>
         </div>
