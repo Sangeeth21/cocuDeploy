@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, Check, EyeOff, Eye, CheckCheck } from "lucide-react";
+import { ShieldCheck, Check, Info, MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, Clock, CheckCheck, Eye, EyeOff } from "lucide-react";
 import type { User, SupportTicket as BaseSupportTicket, Message as BaseMessage, Attachment } from "@/lib/types";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -168,8 +168,8 @@ export default function CorporateMessagesPage() {
         });
 
         setConversations(newConversations);
-        setSelectedConversation(newConversations.find(t => t.id === currentTicketId) || null);
-        
+        const updatedSelected = newConversations.find(t => t.id === currentTicketId) || null;
+        setSelectedConversation(updatedSelected);
         setNewMessage("");
 
       }, [newMessage, selectedConversation, conversations]);

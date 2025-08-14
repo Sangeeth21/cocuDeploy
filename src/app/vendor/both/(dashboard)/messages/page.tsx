@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -133,7 +133,7 @@ export default function BothVendorMessagesPage() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'corporate' ? 'corporate' : 'customer';
 
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+  const selectedConversation = useMemo(() => conversations.find(c => c.id === selectedConversationId), [conversations, selectedConversationId]);
 
   useEffect(() => {
     if (selectedConversation?.awaitingVendorDecision) {
@@ -165,7 +165,6 @@ export default function BothVendorMessagesPage() {
     });
 
     setConversations(updatedConversations);
-    setSelectedConversation(updatedConversations.find(c => c.id === selectedConversationId) || null);
     setIsConversionDialogOpen(false);
     toast({ title: 'Chat Extended', description: 'You can now send 8 more messages.' });
   }
@@ -184,7 +183,6 @@ export default function BothVendorMessagesPage() {
         return c;
       });
       setConversations(updatedConversations);
-      setSelectedConversation(updatedConversations.find(c => c.id === selectedConversationId) || null);
       setIsConversionDialogOpen(false);
       toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
   }
@@ -220,7 +218,6 @@ export default function BothVendorMessagesPage() {
     });
     
     setConversations(newConversations);
-    setSelectedConversation(newConversations.find(c => c.id === selectedConversationId) || null);
     setNewMessage("");
   };
   
@@ -442,12 +439,17 @@ export default function BothVendorMessagesPage() {
                                 <Textarea
                                     ref={textareaRef}
                                     placeholder={isLocked ? "Message limit reached. Awaiting your decision..." : "Type your message..."}
-                                    className="pr-20 resize-none max-h-48"
+                                    className="pr-12 resize-none max-h-48"
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
-                                    maxLength={MAX_MESSAGE_LENGTH}
                                     rows={1}
                                     disabled={isLocked}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && !e.shiftKey) {
+                                            e.preventDefault();
+                                            handleSendMessage(e);
+                                        }
+                                    }}
                                 />
                                 {!isLocked && selectedConversation.type === 'customer' && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
                             </div>

@@ -346,7 +346,7 @@ export default function AccountPage() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1500;
 
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+  const selectedConversation = useMemo(() => conversations.find(c => c.id === selectedConversationId), [conversations, selectedConversationId]);
 
   // Handle navigation from product page
   useEffect(() => {
@@ -483,19 +483,33 @@ export default function AccountPage() {
     }
 
     const newMessageObj = { 
+        id: `cust-${Date.now()}`,
         sender: "customer", 
         text: newMessage,
         timestamp: serverTimestamp(), // Use server-side timestamp
         // attachments will need to be uploaded to storage first, this is a placeholder
     };
 
-    // Add message to the subcollection in Firestore
-    const messagesCol = collection(db, 'conversations', selectedConversationId, 'messages');
-    await addDoc(messagesCol, newMessageObj);
-    
+    const updatedConversations = conversations.map(c => {
+        if (c.id === selectedConversationId) {
+            const newCount = c.userMessageCount + 1;
+            const updatedConvo = {
+                ...c,
+                messages: [...c.messages, newMessageObj],
+                userMessageCount: newCount,
+            };
+             if (newCount >= 4) {
+                updatedConvo.status = 'locked';
+            }
+            return updatedConvo;
+        }
+        return c;
+    });
+
+    setConversations(updatedConversations);
     setNewMessage("");
     setAttachments([]);
-  }, [attachments, newMessage, selectedConversationId, toast]);
+  }, [attachments, newMessage, selectedConversationId, toast, conversations]);
 
   const handleSelectConversation = useCallback((id: string) => {
     setSelectedConversationId(id);
@@ -822,7 +836,7 @@ export default function AccountPage() {
                                  <span className="sr-only">Report Conversation</span>
                              </Button>
                              <div className="text-sm text-muted-foreground">
-                                {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} Messages Left` : 'Message limit reached') : 'Chat disabled'}
+                                {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} messages left` : 'Message limit reached') : 'Chat disabled'}
                             </div>
                          </div>
                       </div>
@@ -1217,4 +1231,3 @@ export default function AccountPage() {
   );
 }
 
-    

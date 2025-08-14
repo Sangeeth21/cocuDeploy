@@ -36,7 +36,6 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
       { id: 'msg3', sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}] },
     ],
     unread: true,
-    unreadCount: 1,
     userMessageCount: 3,
     awaitingVendorDecision: false,
     status: 'active',
@@ -49,7 +48,6 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     avatar: "https://placehold.co/40x40.png",
     messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}] }],
     unread: true,
-    unreadCount: 1,
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
@@ -74,7 +72,6 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     avatar: "https://placehold.co/40x40.png",
     messages: [{ id: 'msg6', sender: "customer", text: "What is the return policy?" }],
     unread: true,
-    unreadCount: 9,
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
@@ -90,7 +87,6 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
       { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?', status: 'sent'},
     ],
     unread: true,
-    unreadCount: 1,
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
@@ -133,7 +129,7 @@ export default function VendorMessagesPage() {
   const { vendorType } = useVerification();
   const defaultTab = vendorType === 'corporate' ? 'corporate' : 'customer';
 
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
+  const selectedConversation = useMemo(() => conversations.find(c => c.id === selectedConversationId), [conversations, selectedConversationId]);
 
   useEffect(() => {
     if (selectedConversation?.awaitingVendorDecision) {
@@ -153,7 +149,7 @@ export default function VendorMessagesPage() {
 
   const handleContinueChat = () => {
     if (!selectedConversationId) return;
-    setConversations(prev => prev.map(c => {
+    const updatedConversations = conversations.map(c => {
         if (c.id === selectedConversationId) {
             return {
                 ...c,
@@ -162,24 +158,27 @@ export default function VendorMessagesPage() {
             };
         }
         return c;
-    }));
+    });
+    
+    setConversations(updatedConversations);
     setIsConversionDialogOpen(false);
     toast({ title: 'Chat Extended', description: 'You can now send 8 more messages.' });
   }
 
   const handleEndChat = () => {
       if (!selectedConversationId) return;
-      setConversations(prev => prev.map(c => {
+      const updatedConversations = conversations.map(c => {
         if (c.id === selectedConversationId) {
             return {
                 ...c,
                 awaitingVendorDecision: false,
-                userMessageCount: 17, // 9 + 8, to lock it
+                status: 'locked' as const,
                 messages: [...c.messages, {id: 'system-end', sender: 'system' as const, text: 'Vendor has ended the chat.'}]
             };
         }
         return c;
-    }));
+    });
+    setConversations(updatedConversations);
     setIsConversionDialogOpen(false);
     toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
   }
@@ -221,19 +220,12 @@ export default function VendorMessagesPage() {
         ...(newAttachments.length > 0 && {attachments: newAttachments})
     };
 
-    setConversations(prev =>
-      prev.map(convo => {
-         if (convo.id !== selectedConversationId) return convo;
-        
-        const updatedConvo = { ...convo, messages: [...convo.messages, newMessageObj] };
+    const updatedConversations = conversations.map(convo => {
+      if (convo.id !== selectedConversationId) return convo;
+      return { ...convo, messages: [...convo.messages, newMessageObj] };
+    });
 
-        if (updatedConvo.userMessageCount === 15) {
-            updatedConvo.awaitingVendorDecision = true;
-        }
-        
-        return updatedConvo;
-      })
-    );
+    setConversations(updatedConversations);
     setNewMessage("");
     setAttachments([]);
   };
@@ -272,12 +264,12 @@ export default function VendorMessagesPage() {
     }
     
   const getChatLimit = () => {
-    if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-    const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
-    const limit = 4;
-    const remaining = limit - userMessageCount;
-    const isLocked = userMessageCount >= limit || status !== 'active';
-    return { limit, remaining: Math.max(0, remaining), isLocked };
+      if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
+      const { userMessageCount, status } = selectedConversation;
+      const MAX_MESSAGES = 4;
+      const isLocked = userMessageCount >= MAX_MESSAGES || status !== 'active';
+      const remaining = Math.max(0, MAX_MESSAGES - userMessageCount);
+      return { limit: MAX_MESSAGES, remaining, isLocked };
   }
   
   const { remaining, isLocked } = getChatLimit();
