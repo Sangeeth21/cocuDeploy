@@ -1,51 +1,62 @@
+
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Building, User as UserIcon } from "lucide-react";
+import { Eye, EyeOff, Store } from "lucide-react";
 import { useVerification } from "@/context/vendor-verification-context";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-function LoginForm({ type, onLoginSuccess }: { type: 'personalized' | 'corporate' | 'both'; onLoginSuccess: (type: 'personalized' | 'corporate' | 'both') => void }) {
+export default function VendorLoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
+    const router = useRouter();
     const { toast } = useToast();
-    
-    const defaultEmail = type === 'personalized' ? 'personalized@example.com' : 'corporate@example.com';
+    const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         let isValid = false;
         let isVerified = true;
-        let resolvedVendorType: 'personalized' | 'corporate' | 'both' = type;
+        let resolvedVendorType: 'personalized' | 'corporate' | 'both' = 'personalized'; // Default
 
         if (password === "vendorpass") {
-             if (email === 'personalized@example.com') {
+            if (email === 'personalized@example.com') {
                 isValid = true;
                 resolvedVendorType = 'personalized';
             } else if (email === 'corporate@example.com') {
                 isValid = true;
                 resolvedVendorType = 'corporate';
-            } else if (email === 'vendor@example.com') {
+            } else if (email === 'vendor@example.com' || email === 'both@example.com') {
                 isValid = true;
                 resolvedVendorType = 'both';
             } else if (email === 'unverified@example.com') {
                 isValid = true;
                 isVerified = false;
-                resolvedVendorType = 'both';
+                resolvedVendorType = 'both'; // Unverified vendors get the full dashboard view to encourage setup
             }
         }
 
         if (isValid) {
-            onLoginSuccess(resolvedVendorType);
+            if (isVerified) {
+                setAsVerified();
+            } else {
+                setAsUnverified();
+            }
+            setVendorType(resolvedVendorType);
+            toast({
+                title: "Login Successful",
+                description: "Redirecting to your vendor dashboard.",
+            });
+            // The redirection is now handled by the layout based on vendorType
+            // No need to push router here, let the context and layout do the work.
         } else {
             toast({
                 variant: "destructive",
@@ -56,82 +67,47 @@ function LoginForm({ type, onLoginSuccess }: { type: 'personalized' | 'corporate
     };
 
     return (
-        <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor={`email-${type}`}>Email</Label>
-              <Input id={`email-${type}`} type="email" placeholder={defaultEmail} required value={email} onChange={(e) => setEmail(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                  <Label htmlFor={`password-${type}`}>Password</Label>
-                  <Link href="#" className="text-sm text-primary hover:underline">
-                      Forgot your password?
-                  </Link>
-              </div>
-              <div className="relative">
-                <Input id={`password-${type}`} type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
-                <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                    {showPassword ? <EyeOff /> : <Eye />}
-                </Button>
-              </div>
-            </div>
-            <Button type="submit" className="w-full">Sign In</Button>
-        </form>
-    )
-}
-
-export default function VendorLoginPage() {
-    const searchParams = useSearchParams();
-    const router = useRouter();
-    const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
-    const { toast } = useToast();
-
-    const type = searchParams.get('type') || 'personalized';
-    
-    const handleLoginSuccess = (vendorType: 'personalized' | 'corporate' | 'both') => {
-        setVendorType(vendorType);
-        // This is a simplified logic, a real app would check verification status from an API
-        // A mock for unverified user is added to the form handler
-        setAsVerified(); // Assume verified for simplicity here
-        
-        toast({
-            title: "Login Successful",
-            description: `Redirecting to your vendor dashboard.`,
-        });
-        
-        router.push(`/vendor/${vendorType}/dashboard`);
-    }
-
-  return (
-    <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
-      <Card className="w-full max-w-md">
-         <Tabs defaultValue={type} onValueChange={(value) => router.push(`/vendor/login?type=${value}`)} className="w-full">
-            <CardHeader className="text-center">
-                <CardTitle className="text-3xl font-headline">Vendor Portal</CardTitle>
-                <CardDescription>Select your business type to sign in.</CardDescription>
-                <TabsList className="grid w-full grid-cols-2 mt-4">
-                    <TabsTrigger value="personalized"><UserIcon className="mr-2 h-4 w-4" /> Personalized Retail</TabsTrigger>
-                    <TabsTrigger value="corporate"><Building className="mr-2 h-4 w-4" /> Corporate & Bulk</TabsTrigger>
-                </TabsList>
-            </CardHeader>
-            <CardContent>
-                <TabsContent value="personalized">
-                    <LoginForm type="personalized" onLoginSuccess={handleLoginSuccess} />
-                </TabsContent>
-                <TabsContent value="corporate">
-                    <LoginForm type="corporate" onLoginSuccess={handleLoginSuccess} />
-                </TabsContent>
-            </CardContent>
-            <CardFooter>
-                 <p className="text-sm text-center text-muted-foreground w-full">
-                    Don't have a vendor account?{" "}
-                    <Link href="/vendor/signup" className="font-semibold text-primary hover:underline">
-                        Sign Up
-                    </Link>
-                </p>
-            </CardFooter>
-        </Tabs>
-      </Card>
-    </div>
-  );
+        <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
+            <Card className="w-full max-w-md">
+                <form onSubmit={handleLogin}>
+                    <CardHeader className="text-center">
+                         <div className="mx-auto bg-primary text-primary-foreground rounded-full h-16 w-16 flex items-center justify-center mb-4">
+                            <Store className="h-8 w-8" />
+                        </div>
+                        <CardTitle className="text-3xl font-headline">Vendor Portal</CardTitle>
+                        <CardDescription>Sign in to manage your store.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="vendor-email">Email</Label>
+                            <Input id="vendor-email" type="email" placeholder="vendor@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                                <Label htmlFor="vendor-password">Password</Label>
+                                <Link href="#" className="text-sm text-primary hover:underline">
+                                    Forgot your password?
+                                </Link>
+                            </div>
+                            <div className="relative">
+                                <Input id="vendor-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                                <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                                    {showPassword ? <EyeOff /> : <Eye />}
+                                </Button>
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-4">
+                        <Button type="submit" className="w-full">Sign In</Button>
+                        <p className="text-sm text-center text-muted-foreground">
+                            New vendor?{" "}
+                            <Link href="/vendor/signup" className="font-semibold text-primary hover:underline">
+                                Sign Up
+                            </Link>
+                        </p>
+                    </CardFooter>
+                </form>
+            </Card>
+        </div>
+    );
 }
