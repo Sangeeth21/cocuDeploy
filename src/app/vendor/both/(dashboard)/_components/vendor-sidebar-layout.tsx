@@ -45,16 +45,7 @@ const navLinks = [
   { href: "/vendor/both/bids", label: "Bidding", icon: Gavel },
   { href: "/vendor/templates", label: "Templates", icon: Wand2 },
   { href: "/vendor/both/analytics", label: "Analytics", icon: LineChart },
-  { 
-    id: "messages", 
-    label: "Messages", 
-    icon: MessageSquare,
-    badge: "7",
-    subLinks: [
-        { href: "/vendor/both/messages", label: "Personalized", icon: User, badge: "5" },
-        { href: "/vendor/both/corporate-messages", label: "Corporate", icon: Building, badge: "2" },
-    ]
-  },
+  { href: "/vendor/both/messages", label: "Messages", icon: MessageSquare, badge: "7" },
   { href: "/vendor/both/referrals", label: "Referrals", icon: Gift },
   { href: "/vendor/both/support", label: "Support", icon: LifeBuoy },
   { href: "/vendor/both/settings", label: "Settings", icon: Settings },
@@ -101,7 +92,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
-                    <Accordion type="multiple" className="w-full" defaultValue={['products', 'inventory', 'orders', 'messages']}>
+                    <Accordion type="multiple" className="w-full" defaultValue={['products', 'inventory', 'orders']}>
                          <SidebarMenu>
                             {!isVerified && (
                                 <SidebarMenuItem>
@@ -112,7 +103,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                         className="bg-accent text-accent-foreground hover:bg-accent/90"
                                     >
                                         <Link href="/vendor/verify">
-                                            <ShieldAlert className="h-5 w-5" />
+                                            <ShieldAlert className="h-5 w-5 stroke-[1.5]" />
                                             <span>Verify Account</span>
                                         </Link>
                                     </SidebarMenuButton>
@@ -129,7 +120,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                                     className="w-full justify-start [&_svg:last-child]:hidden"
                                                 >
                                                     <div className="flex items-center gap-2">
-                                                        <link.icon className="h-5 w-5" />
+                                                        <link.icon className="h-5 w-5 stroke-[1.5]" />
                                                         <span>{link.label}</span>
                                                         {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                                     </div>
@@ -146,7 +137,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                                                 tooltip={{children: subLink.label}}
                                                             >
                                                                 <Link href={subLink.href}>
-                                                                    <subLink.icon className="h-5 w-5" />
+                                                                    <subLink.icon className="h-5 w-5 stroke-[1.5]" />
                                                                     <span>{subLink.label}</span>
                                                                     {subLink.badge && <SidebarMenuBadge>{subLink.badge}</SidebarMenuBadge>}
                                                                 </Link>
@@ -163,8 +154,9 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                             tooltip={{children: link.label}}
                                         >
                                             <Link href={link.href}>
-                                                <link.icon className="h-5 w-5" />
+                                                <link.icon className="h-5 w-5 stroke-[1.5]" />
                                                 <span>{link.label}</span>
+                                                 {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                             </Link>
                                         </SidebarMenuButton>
                                     )}
@@ -178,7 +170,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                          <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
                                 <Link href="/">
-                                    <Store className="h-5 w-5" />
+                                    <Store className="h-5 w-5 stroke-[1.5]" />
                                     <span>Back to Store</span>
                                 </Link>
                             </SidebarMenuButton>
@@ -186,7 +178,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                          <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
                                 <Link href="/vendor/login">
-                                    <LogOut className="h-5 w-5" />
+                                    <LogOut className="h-5 w-5 stroke-[1.5]" />
                                     <span>Log Out</span>
                                 </Link>
                             </SidebarMenuButton>

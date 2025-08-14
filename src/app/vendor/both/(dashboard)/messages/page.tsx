@@ -316,15 +316,15 @@ export default function BothVendorMessagesPage() {
         <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full border-r bg-card">
           <div className="p-4 border-b">
             <h1 className="text-2xl font-bold font-headline">Inbox</h1>
+            <div className="relative mt-2">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input placeholder="Search conversations..." className="pl-8" />
+            </div>
             <Tabs defaultValue={defaultTab} className="w-full mt-2">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="customer">Customer</TabsTrigger>
                     <TabsTrigger value="corporate">Corporate</TabsTrigger>
                 </TabsList>
-                <div className="relative mt-2">
-                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search conversations..." className="pl-8" />
-                </div>
                 <TabsContent value="customer">
                     {renderConversationList('customer')}
                 </TabsContent>
@@ -415,14 +415,14 @@ export default function BothVendorMessagesPage() {
                           <Textarea
                               ref={textareaRef}
                               placeholder={isLocked ? "Message limit reached. Awaiting your decision..." : "Type your message..."}
-                              className="pr-12 resize-none max-h-48"
+                              className="pr-20 resize-none max-h-48"
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}
                               maxLength={MAX_MESSAGE_LENGTH}
                               rows={1}
                               disabled={isLocked}
                           />
-                           {!isLocked && <p className="absolute bottom-1 right-2 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
+                           {!isLocked && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
                       </div>
                       <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
                   </div>
