@@ -12,18 +12,18 @@ import { mockProducts } from "@/lib/mock-data";
 import Image from "next/image";
 import { useMemo } from "react";
 import type { DisplayProduct } from "@/lib/types";
+import { useVerification } from "@/context/vendor-verification-context";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 
 export default function VendorProductsPage() {
-    
-    const liveProducts = useMemo(() => mockProducts.filter(p => p.status === 'Live' || p.status === 'Needs Review'), []);
-    const draftProducts = useMemo(() => mockProducts.filter(p => p.status === 'Draft' || p.status === 'Archived'), []);
+    const { vendorType } = useVerification();
 
-    const renderProductTable = (products: DisplayProduct[], title: string) => (
+    const personalProducts = useMemo(() => mockProducts.filter(p => !p.b2bEnabled), []);
+    const corporateProducts = useMemo(() => mockProducts.filter(p => p.b2bEnabled), []);
+
+    const renderProductTable = (products: DisplayProduct[], isCorporate: boolean) => (
         <Card>
-            <CardHeader>
-                <CardTitle>{title}</CardTitle>
-            </CardHeader>
             <CardContent className="p-0">
                 <Table>
                     <TableHeader>
@@ -33,8 +33,8 @@ export default function VendorProductsPage() {
                             </TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="hidden md:table-cell">Price</TableHead>
-                            <TableHead className="hidden md:table-cell">Inventory</TableHead>
+                            <TableHead className="hidden md:table-cell">{isCorporate ? "MOQ" : "Price"}</TableHead>
+                            <TableHead className="hidden md:table-cell">{isCorporate ? "Base Price" : "Inventory"}</TableHead>
                             <TableHead>
                                 <span className="sr-only">Actions</span>
                             </TableHead>
@@ -58,8 +58,8 @@ export default function VendorProductsPage() {
                             <TableCell>
                                 <Badge variant={product.status === 'Needs Review' ? 'destructive' : product.status === 'Live' ? 'default' : 'secondary'}>{product.status}</Badge>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell">${product.price.toFixed(2)}</TableCell>
-                            <TableCell className="hidden md:table-cell">{product.stock} in stock</TableCell>
+                            <TableCell className="hidden md:table-cell">{isCorporate ? product.moq : `$${product.price.toFixed(2)}`}</TableCell>
+                            <TableCell className="hidden md:table-cell">{isCorporate ? `$${product.price.toFixed(2)}` : `${product.stock} in stock`}</TableCell>
                             <TableCell className="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -98,10 +98,22 @@ export default function VendorProductsPage() {
             </Button>
         </div>
         
-        <div className="space-y-8">
-            {renderProductTable(liveProducts, "Live & Needs Review Products")}
-            {renderProductTable(draftProducts, "Drafts & Archived Products")}
-        </div>
+        {vendorType === 'both' ? (
+             <Tabs defaultValue="personal">
+                <TabsList>
+                    <TabsTrigger value="personal">Personalized Retail</TabsTrigger>
+                    <TabsTrigger value="corporate">Corporate &amp; Bulk</TabsTrigger>
+                </TabsList>
+                <TabsContent value="personal" className="mt-4">
+                    {renderProductTable(personalProducts, false)}
+                </TabsContent>
+                <TabsContent value="corporate" className="mt-4">
+                    {renderProductTable(corporateProducts, true)}
+                </TabsContent>
+            </Tabs>
+        ) : (
+             renderProductTable(vendorType === 'corporate' ? corporateProducts : personalProducts, vendorType === 'corporate')
+        )}
       </div>
     );
 }

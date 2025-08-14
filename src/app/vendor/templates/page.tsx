@@ -82,7 +82,7 @@ function TemplatePreview({ templateName }: { templateName: string }) {
 export default function VendorTemplatesPage() {
 
     return (
-        <div className="container py-12">
+        <div>
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-4xl font-bold font-headline">Landing Page Templates</h1>
@@ -134,14 +134,6 @@ export default function VendorTemplatesPage() {
                         </CardContent>
                     </Card>
                 ))}
-            </div>
-
-             <div className="mt-12 text-center">
-                 <Button variant="outline" asChild>
-                    <Link href="/vendor/dashboard">
-                        Back to Dashboard
-                    </Link>
-                </Button>
             </div>
         </div>
     );
