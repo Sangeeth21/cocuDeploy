@@ -11,10 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { mockProducts } from "@/lib/mock-data";
+import { mockProducts, mockAiImageStyles } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import type { CustomizationValue, CustomizationArea } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine } from "lucide-react";
+import type { CustomizationValue, CustomizationArea, AiImageStyle } from "@/lib/types";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Bot } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -27,6 +27,9 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import tinycolor from 'tinycolor2';
+import { generateImageWithStyle } from '@/ai/flows/generate-image-with-style-flow';
+import { Loader2 } from 'lucide-react';
+
 
 type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
 
@@ -613,6 +616,14 @@ export default function CustomizeProductPage() {
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
     const [isTextShapeOpen, setIsTextShapeOpen] = useState(false);
 
+    // AI Image Generation State
+    const [aiPrompt, setAiPrompt] = useState("");
+    const [aiStyle, setAiStyle] = useState("");
+    const [aiReferenceImage, setAiReferenceImage] = useState<{ file: File, src: string } | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
+    
+    const availableStyles = useMemo(() => mockAiImageStyles.filter(s => s.target === 'personalized' || s.target === 'both'), []);
+
     const firstCustomizableSide = useMemo(() => {
         if (!product?.customizationAreas) return "front";
         return imageSides.find(side => product.customizationAreas![side]?.length) || "front";
@@ -789,6 +800,50 @@ export default function CustomizeProductPage() {
         }
     };
     
+    const fileToDataUri = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    const handleGenerateAiImage = async () => {
+        if (!aiPrompt.trim()) {
+            toast({ variant: 'destructive', title: 'A prompt is required.' });
+            return;
+        }
+        setIsGenerating(true);
+        try {
+            const stylePrompt = availableStyles.find(s => s.id === aiStyle)?.backendPrompt || '';
+            const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
+            
+            const result = await generateImageWithStyle({
+                prompt: aiPrompt,
+                styleBackendPrompt: stylePrompt,
+                referenceImageDataUri
+            });
+
+            if (result.error) throw new Error(result.error);
+            if (!result.imageUrl) throw new Error("AI did not return an image.");
+
+            const newElement: DesignElement = {
+                id: `image-${Date.now()}`,
+                type: 'image',
+                x: 25, y: 25, width: 50, height: 50, rotation: 0,
+                imageUrl: result.imageUrl,
+            };
+            setDesignElements(prev => [...prev, newElement]);
+            setSelectedElementId(newElement.id);
+
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'AI Generation Failed', description: error.message });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
     if (!product) {
         notFound();
     }
@@ -864,8 +919,9 @@ export default function CustomizeProductPage() {
                  <div className="lg:col-span-1 bg-background rounded-lg shadow-md h-full flex flex-col min-h-0">
                     <Tabs defaultValue="text" className="flex flex-col h-full">
                          <div className="flex-shrink-0">
-                            <TabsList className="grid w-full grid-cols-5 p-1 h-auto">
+                            <TabsList className="grid w-full grid-cols-6 p-1 h-auto">
                                 <TabsTrigger value="text" className="flex-col h-14"><Type className="h-5 w-5 mb-1"/>Text</TabsTrigger>
+                                <TabsTrigger value="ai-image" className="flex-col h-14"><Bot className="h-5 w-5 mb-1"/>AI Image</TabsTrigger>
                                 <TabsTrigger value="upload" className="flex-col h-14"><Upload className="h-5 w-5 mb-1"/>Upload</TabsTrigger>
                                 <TabsTrigger value="art" className="flex-col h-14"><Wand2 className="h-5 w-5 mb-1"/>Art</TabsTrigger>
                                 <TabsTrigger value="colors" className="flex-col h-14"><Paintbrush className="h-5 w-5 mb-1"/>Colors</TabsTrigger>
@@ -977,6 +1033,47 @@ export default function CustomizeProductPage() {
                                              </div>
                                         </div>
                                     )}
+                                    </TabsContent>
+                                     <TabsContent value="ai-image" className="mt-0 space-y-4">
+                                        <Card>
+                                            <CardHeader>
+                                                <CardTitle className="text-base">AI Image Generator</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="ai-prompt">Description Prompt</Label>
+                                                    <Textarea id="ai-prompt" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} placeholder="e.g., A majestic dragon flying over a forest" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Style</Label>
+                                                    <Select value={aiStyle} onValueChange={setAiStyle}>
+                                                        <SelectTrigger><SelectValue placeholder="Select a style..." /></SelectTrigger>
+                                                        <SelectContent>
+                                                            {availableStyles.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+                                                        </SelectContent>
+                                                    </Select>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label>Reference Image (Optional)</Label>
+                                                    {aiReferenceImage ? (
+                                                        <div className="relative group aspect-video rounded-md border">
+                                                            <Image src={aiReferenceImage.src} alt="AI reference" fill className="object-contain rounded-md" />
+                                                            <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 z-10" onClick={() => setAiReferenceImage(null)}><X className="h-4 w-4"/></Button>
+                                                        </div>
+                                                    ) : (
+                                                        <label htmlFor="ai-ref-upload" className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50">
+                                                            <Upload className="h-6 w-6 text-muted-foreground"/>
+                                                            <span className="text-xs text-muted-foreground mt-1">Upload Reference</span>
+                                                        </label>
+                                                    )}
+                                                    <input id="ai-ref-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => e.target.files && setAiReferenceImage({ file: e.target.files[0], src: URL.createObjectURL(e.target.files[0])})} />
+                                                </div>
+                                                <Button className="w-full" disabled={isGenerating} onClick={handleGenerateAiImage}>
+                                                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
+                                                    Generate Image
+                                                </Button>
+                                            </CardContent>
+                                        </Card>
                                     </TabsContent>
                                     <TabsContent value="upload" className="mt-0">
                                         <Card>
