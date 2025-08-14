@@ -51,10 +51,10 @@ const generateImageWithStyleFlow = ai.defineFlow(
       promptParts.push({ media: { url: input.referenceImageDataUri } });
       if (input.prompt.trim()) {
         // When both image and text are provided, use the text to guide the transformation.
-        instruction = `Using the provided image as a reference, generate a new image that incorporates the following description: "${input.prompt}". Apply the style: 8k resolution, photorealistic, highly detailed${input.styleBackendPrompt}`;
+        instruction = `Using the provided image as the primary subject and compositional guide, generate a new image that incorporates the following description: "${input.prompt}". Apply the style: 8k resolution, photorealistic, highly detailed${input.styleBackendPrompt}`;
       } else {
         // When only an image and style are provided, focus on transforming the image.
-        instruction = `Transform the provided reference image using the following artistic style: 8k resolution, photorealistic, highly detailed${input.styleBackendPrompt}`;
+        instruction = `Transform the provided reference image using the following artistic style: 8k resolution, photorealistic, highly detailed${input.styleBackendPrompt}. The composition of the generated image should be based on the reference image.`;
       }
     } else {
        // When only text is provided.
