@@ -4,7 +4,7 @@
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar } from "@/components/ui/sidebar";
+import { Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar } from "@/components/ui/sidebar";
 import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight, Gift, ShieldAlert, LifeBuoy, Gavel, Building, User, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -147,28 +147,28 @@ export function VendorSidebar() {
                     </div>
                 </SidebarHeader>
                  <SidebarContent className="p-2">
-                     <Accordion type="multiple" className="w-full">
-                         <SidebarMenu>
-                            {!isVerified && (
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton 
-                                        asChild
-                                        isActive={pathname === '/vendor/verify'}
-                                        tooltip={{children: 'Complete Verification'}}
-                                        className="bg-accent text-accent-foreground hover:bg-accent/90"
-                                    >
-                                        <Link href="/vendor/verify">
-                                            <ShieldAlert />
-                                            <span>Verify Account</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            )}
+                    <SidebarMenu>
+                        {!isVerified && (
+                            <SidebarMenuItem>
+                                <SidebarMenuButton 
+                                    asChild
+                                    isActive={pathname === '/vendor/verify'}
+                                    tooltip={{children: 'Complete Verification'}}
+                                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                                >
+                                    <Link href="/vendor/verify">
+                                        <ShieldAlert />
+                                        <span>Verify Account</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        )}
+                        <Accordion type="multiple" className="w-full">
                             {navLinks.map((link: any) => (
                                 <SidebarMenuItem key={link.id || link.href}>
                                     {link.subLinks ? (
                                         <AccordionItem value={link.id!} className="border-b-0">
-                                            <AccordionTrigger className="p-0 hover:no-underline [&[data-state=open]>button>svg:last-child]:-rotate-90">
+                                            <AccordionTrigger asChild>
                                                 <SidebarMenuButton
                                                     isActive={pathname.includes(`/${link.id}`)}
                                                     tooltip={{children: link.label}}
@@ -177,7 +177,6 @@ export function VendorSidebar() {
                                                     <link.icon />
                                                     <span>{link.label}</span>
                                                     {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
-                                                     <ChevronsRight className="h-4 w-4 ml-auto transition-transform duration-200 shrink-0" />
                                                 </SidebarMenuButton>
                                             </AccordionTrigger>
                                             <AccordionContent className="pb-0 pl-4">
@@ -216,8 +215,8 @@ export function VendorSidebar() {
                                     )}
                                 </SidebarMenuItem>
                             ))}
-                        </SidebarMenu>
-                    </Accordion>
+                        </Accordion>
+                    </SidebarMenu>
                 </SidebarContent>
                 <SidebarFooter>
                     <SidebarMenu>
