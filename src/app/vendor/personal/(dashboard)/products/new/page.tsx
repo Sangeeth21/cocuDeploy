@@ -853,8 +853,7 @@ export default function NewProductPage() {
     }, [vendorType]);
 
   return (
-    <>
-    <div className="container py-12">
+    <div className="py-12">
       <div className="flex justify-between items-center mb-8">
         <div>
             <h1 className="text-4xl font-bold font-headline">Add New Product</h1>
