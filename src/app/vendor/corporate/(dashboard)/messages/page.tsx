@@ -137,13 +137,20 @@ export default function CorporateMessagesPage() {
       prev.map(convo => {
          if (convo.id !== selectedConversationId) return convo;
         
+        const newCount = convo.userMessageCount + 1;
         const updatedConvo = {
             ...convo,
             messages: [...convo.messages, newMessageObj],
+            userMessageCount: newCount,
         };
 
-        if (updatedConvo.userMessageCount === 15) {
+        if (newCount === 15) {
             updatedConvo.awaitingVendorDecision = true;
+            updatedConvo.messages.push({
+                id: 'system-wait',
+                sender: 'system' as const,
+                text: 'You have reached the initial message limit. Please wait for the customer to respond or decide to continue the chat.'
+            });
         }
         
         return updatedConvo;
@@ -187,13 +194,13 @@ export default function CorporateMessagesPage() {
     
   const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
+      const { userMessageCount, awaitingVendorDecision } = selectedConversation;
 
-      const INITIAL_LIMIT = 9;
-      const EXTENDED_LIMIT = 15; // Placeholder for when vendor extends
+      const INITIAL_LIMIT = 15;
+      const EXTENDED_LIMIT = 15 + 8;
 
-      const isLocked = awaitingVendorDecision || userMessageCount >= INITIAL_LIMIT;
-      let limit = INITIAL_LIMIT;
+      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || selectedConversation.status !== 'active';
+      let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
       let remaining = limit - userMessageCount;
       
       if(awaitingVendorDecision) {
@@ -314,7 +321,6 @@ export default function CorporateMessagesPage() {
                                                 </div>
                                             ) : (
                                                 <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                                    {/* Removed FileIcon and Download */}
                                                     <span className="text-xs truncate">{att.name}</span>
                                                 </a>
                                             )

@@ -195,13 +195,20 @@ export default function BothVendorMessagesPage() {
       prev.map(convo => {
          if (convo.id !== selectedConversationId) return convo;
         
+        const newCount = convo.userMessageCount + 1;
         const updatedConvo = {
             ...convo,
             messages: [...convo.messages, newMessageObj],
+            userMessageCount: newCount,
         };
 
-        if (updatedConvo.userMessageCount === 15) {
+        if (updatedConvo.type === 'customer' && newCount === 9) {
             updatedConvo.awaitingVendorDecision = true;
+            updatedConvo.messages.push({
+                id: 'system-wait',
+                sender: 'system' as const,
+                text: 'You have reached the initial message limit. Please wait for the customer to respond or decide to continue the chat.'
+            });
         }
         
         return updatedConvo;
@@ -245,14 +252,19 @@ export default function BothVendorMessagesPage() {
     
   const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
+      const { userMessageCount, awaitingVendorDecision, type, status } = selectedConversation;
 
-      const INITIAL_LIMIT = 9;
-      const EXTENDED_LIMIT = 15; // Placeholder for when vendor extends
+      const limits = {
+          customer: { initial: 9, extended: 15 },
+          corporate: { initial: Infinity, extended: Infinity } // No limit for corporate
+      }
+      
+      const isCorporate = type === 'corporate';
+      const currentLimits = isCorporate ? limits.corporate : limits.customer;
 
-      const isLocked = awaitingVendorDecision || userMessageCount >= INITIAL_LIMIT;
-      let limit = INITIAL_LIMIT;
-      let remaining = limit - userMessageCount;
+      const isLocked = awaitingVendorDecision || userMessageCount >= currentLimits.extended || status !== 'active';
+      let limit = userMessageCount < currentLimits.initial ? currentLimits.initial : currentLimits.extended;
+      let remaining = isCorporate ? Infinity : limit - userMessageCount;
       
       if(awaitingVendorDecision) {
         remaining = 0;
@@ -303,7 +315,7 @@ export default function BothVendorMessagesPage() {
                         <div className="flex justify-between items-center">
                             <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
                             <div className="flex items-center gap-2">
-                            {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
+                            {convo.status === 'flagged' && <AlertTriangle className="w-4 w-4 text-destructive" />}
                             {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
                             </div>
                         </div>
@@ -364,7 +376,7 @@ export default function BothVendorMessagesPage() {
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} messages left` : 'Message limit reached') : 'Chat disabled'}
+                        {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : (selectedConversation.type === 'customer' ? `${remaining} messages left` : 'Open Conversation')) : 'Chat disabled'}
                     </div>
                 </div>
               </div>
@@ -399,7 +411,6 @@ export default function BothVendorMessagesPage() {
                                                 </div>
                                             ) : (
                                                 <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                                    {/* Removed FileIcon and Download */}
                                                     <span className="text-xs truncate">{att.name}</span>
                                                 </a>
                                             )
@@ -432,7 +443,7 @@ export default function BothVendorMessagesPage() {
                               rows={1}
                               disabled={isLocked}
                           />
-                           {!isLocked && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
+                           {!isLocked && selectedConversation.type === 'customer' && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
                       </div>
                       <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
                   </div>
