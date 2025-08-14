@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { MoreHorizontal, PlusCircle } from "lucide-react";
@@ -93,7 +92,7 @@ export default function VendorProductsPage() {
                 <p className="text-muted-foreground">Manage your product listings.</p>
             </div>
             <Button asChild>
-                <Link href="/vendor/products/new">
+                <Link href="/vendor/personal/products/new">
                     <PlusCircle className="mr-2"/> Add Product
                 </Link>
             </Button>

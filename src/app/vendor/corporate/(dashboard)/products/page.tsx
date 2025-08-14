@@ -26,7 +26,7 @@ export default function CorporateVendorProductsPage() {
                 <p className="text-muted-foreground">Manage your product listings for bulk and B2B sales.</p>
             </div>
             <Button asChild>
-                <Link href="/vendor/products/new">
+                <Link href="/vendor/corporate/products/new">
                     <PlusCircle className="mr-2"/> Add Product
                 </Link>
             </Button>

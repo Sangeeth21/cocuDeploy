@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -14,15 +13,15 @@ import { NotificationPopover } from "@/components/notification-popover";
 import { mockVendorActivity } from "@/lib/mock-data";
 
 const navLinks = [
-  { href: "/vendor/personalized/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/vendor/personalized/products", label: "Products", icon: Package },
-  { href: "/vendor/personalized/inventory", label: "Inventory", icon: Warehouse },
-  { href: "/vendor/personalized/orders", label: "Orders", icon: ListChecks },
-  { href: "/vendor/personalized/analytics", label: "Analytics", icon: LineChart },
-  { href: "/vendor/personalized/messages", label: "Messages", icon: MessageSquare, badge: "5" },
-  { href: "/vendor/personalized/referrals", label: "Referrals", icon: Gift },
-  { href: "/vendor/personalized/support", label: "Support", icon: LifeBuoy },
-  { href: "/vendor/personalized/settings", label: "Settings", icon: Settings },
+  { href: "/vendor/personal/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/vendor/personal/products", label: "Products", icon: Package },
+  { href: "/vendor/personal/inventory", label: "Inventory", icon: Warehouse },
+  { href: "/vendor/personal/orders", label: "Orders", icon: ListChecks },
+  { href: "/vendor/personal/analytics", label: "Analytics", icon: LineChart },
+  { href: "/vendor/personal/messages", label: "Messages", icon: MessageSquare, badge: "5" },
+  { href: "/vendor/personal/referrals", label: "Referrals", icon: Gift },
+  { href: "/vendor/personal/support", label: "Support", icon: LifeBuoy },
+  { href: "/vendor/personal/settings", label: "Settings", icon: Settings },
 ];
 
 function CustomSidebarTrigger() {
@@ -86,7 +85,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton 
                                     asChild
-                                    isActive={pathname === link.href}
+                                    isActive={pathname.startsWith(link.href)}
                                     tooltip={{children: link.label}}
                                 >
                                     <Link href={link.href}>
@@ -138,5 +137,4 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
         </div>
     );
 }
-
 
