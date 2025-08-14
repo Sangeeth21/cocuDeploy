@@ -128,7 +128,7 @@ export default function BothVendorMessagesPage() {
   const MAX_MESSAGE_LENGTH = 1500;
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'corporate' ? 'corporate' : 'customer';
@@ -287,11 +287,8 @@ export default function BothVendorMessagesPage() {
     }, [newMessage]);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-             if(scrollableView){
-                 scrollableView.scrollTop = scrollableView.scrollHeight;
-             }
+        if (messagesContainerRef.current) {
+             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
     }, [selectedConversation?.messages, selectedConversationId]);
 
