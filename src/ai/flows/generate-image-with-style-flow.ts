@@ -34,7 +34,6 @@ export async function generateImageWithStyle(input: GenerateImageWithStyleInput)
   return generateImageWithStyleFlow(input);
 }
 
-
 const generateImageWithStyleFlow = ai.defineFlow(
   {
     name: 'generateImageWithStyleFlow',
@@ -43,24 +42,25 @@ const generateImageWithStyleFlow = ai.defineFlow(
   },
   async (input) => {
     
-    const promptText = input.referenceImageDataUri
-      ? `A photo of "${input.prompt}" in the style of ${input.styleBackendPrompt}`
-      : `${input.prompt}, ${input.styleBackendPrompt}`;
-
     const promptParts: any[] = [];
-    if (input.referenceImageDataUri) {
-      promptParts.push({ media: { url: input.referenceImageDataUri } });
-    }
-    promptParts.push({ text: promptText });
     
-
+    if (input.referenceImageDataUri) {
+        promptParts.push({ media: { url: input.referenceImageDataUri } });
+        // When an image is provided, the text prompt should guide the transformation.
+        const imageGuidance = input.prompt ? ` Additional guidance for the transformation: "${input.prompt}".` : '';
+        promptParts.push({ text: `Transform the provided image using the following style: ${input.styleBackendPrompt}.${imageGuidance}` });
+    } else {
+        // When no image is provided, the prompt is a direct text-to-image request.
+        promptParts.push({ text: `${input.prompt}, ${input.styleBackendPrompt}` });
+    }
+    
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',
       prompt: promptParts,
       config: {
           responseModalities: ['TEXT', 'IMAGE'],
+          aspectRatio: input.aspectRatio,
       },
-      aspectRatio: input.aspectRatio,
     });
 
     if (!media?.url) {

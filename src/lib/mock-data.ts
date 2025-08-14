@@ -735,10 +735,21 @@ export const mockCorporateBids: CorporateBid[] = [
 ]
 
 export const mockAiImageStyles: AiImageStyle[] = [
-    { id: 'style-1', name: 'Vintage', backendPrompt: ', vintage photo, 1950s, grainy film', target: 'personalized', order: 1 },
-    { id: 'style-2', name: 'Futuristic', backendPrompt: ', futuristic, cyberpunk, neon lights, 8k, hyper-detailed', target: 'both', order: 2 },
-    { id: 'style-3', name: 'Ghibli Style', backendPrompt: ', ghibli style anime, painted, whimsical, detailed background', target: 'personalized', order: 3 },
-    { id: 'style-4', name: 'Minimalist', backendPrompt: ', minimalist, clean background, simple, elegant, studio lighting', target: 'corporate', order: 1 },
-    { id: 'style-5', name: 'Product Shot', backendPrompt: ', professional product photography, studio lighting, on a pedestal, 8k resolution', target: 'corporate', order: 2 },
-    { id: 'style-6', name: 'Watercolor', backendPrompt: ', watercolor painting, soft colors, blended, artistic', target: 'personalized', order: 4 },
+  // Both
+  { id: 'style-1', name: 'Watercolor', backendPrompt: ', watercolor painting, soft edges, paper texture, vibrant, artistic', target: 'both', order: 1 },
+  { id: 'style-2', name: 'Vintage Photo', backendPrompt: ', vintage photo, 1950s, grainy film, sepia tone, nostalgic', target: 'both', order: 2 },
+  { id: 'style-3', name: 'Futuristic', backendPrompt: ', futuristic, cyberpunk, neon lights, 8k, hyper-detailed, sci-fi', target: 'both', order: 3 },
+
+  // Personalized
+  { id: 'style-4', name: 'Ghibli Style', backendPrompt: ', ghibli style anime, painted, whimsical, detailed background, atmospheric lighting', target: 'personalized', order: 4 },
+  { id: 'style-5', name: '3D Claymation', backendPrompt: ', 3d claymation style, miniature, stop motion, handcrafted, soft lighting', target: 'personalized', order: 5 },
+  { id: 'style-6', name: 'Vintage Comic', backendPrompt: ', vintage comic book style, pop art, halftone dots, bold lines, 1960s', target: 'personalized', order: 6 },
+  { id: 'style-7', name: 'Abstract Oil Painting', backendPrompt: ', abstract oil painting, thick impasto, expressive brushstrokes, vibrant colors, artistic', target: 'personalized', order: 7 },
+  { id: 'style-8', name: 'Pixel Art', backendPrompt: ', 16-bit pixel art, detailed, retro video game style, vibrant palette', target: 'personalized', order: 8 },
+
+  // Corporate
+  { id: 'style-9', name: 'Minimalist Product Shot', backendPrompt: ', minimalist product photography, clean background, simple, elegant, studio lighting, soft shadows', target: 'corporate', order: 4 },
+  { id: 'style-10', name: 'Architectural Sketch', backendPrompt: ', architectural sketch, detailed line work, pencil drawing, professional, blueprint style', target: 'corporate', order: 5 },
+  { id: 'style-11', name: 'Infographic Style', backendPrompt: ', modern infographic style, clean vector art, flat design, isometric perspective, corporate branding', target: 'corporate', order: 6 },
+  { id: 'style-12', name: 'Double Exposure', backendPrompt: ', double exposure effect, silhouette combined with a landscape, artistic, thoughtful, professional', target: 'corporate', order: 7 },
 ];
