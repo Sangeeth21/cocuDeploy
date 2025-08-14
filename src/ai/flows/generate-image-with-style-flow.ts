@@ -41,14 +41,18 @@ const generateImageWithStyleFlow = ai.defineFlow(
     outputSchema: GenerateImageWithStyleOutputSchema,
   },
   async (input) => {
-    // Construct the final prompt
-    const fullPrompt = `${input.prompt}, 8k resolution, highly detailed${input.styleBackendPrompt}`;
-
     const promptParts = [];
+    
     if (input.referenceImageDataUri) {
         promptParts.push({ media: { url: input.referenceImageDataUri } });
+        if (!input.prompt.trim()) {
+            promptParts.push({ text: `Transform this image using the following style: 8k resolution, highly detailed${input.styleBackendPrompt}` });
+        } else {
+             promptParts.push({ text: `${input.prompt}, 8k resolution, highly detailed${input.styleBackendPrompt}` });
+        }
+    } else {
+         promptParts.push({ text: `${input.prompt}, 8k resolution, highly detailed${input.styleBackendPrompt}` });
     }
-    promptParts.push({ text: fullPrompt });
 
     const { media } = await ai.generate({
       model: 'googleai/gemini-2.0-flash-preview-image-generation',

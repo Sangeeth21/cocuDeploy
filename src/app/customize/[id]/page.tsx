@@ -846,7 +846,7 @@ export default function CustomizeProductPage() {
             const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
             
             const result = await generateImageWithStyle({
-                prompt: aiPrompt || 'enhance this image',
+                prompt: aiPrompt,
                 styleBackendPrompt: stylePrompt,
                 referenceImageDataUri
             });
@@ -1096,7 +1096,7 @@ export default function CustomizeProductPage() {
                                                 </div>
                                                 <Button className="w-full" disabled={isGenerating || (!aiPrompt.trim() && !aiReferenceImage)} onClick={handleGenerateAiImage}>
                                                     {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
-                                                    Generate Image
+                                                    {isGenerating ? 'Generating...' : 'Generate Image'}
                                                 </Button>
                                             </CardContent>
                                         </Card>
