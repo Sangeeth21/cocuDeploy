@@ -111,7 +111,7 @@ function CorporateLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) 
                 <Input id="corporate-email-dialog" type="email" placeholder="corporate@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                 <div className="flex items-center justify-between">
                     <Label htmlFor="corporate-password-dialog">Password</Label>
                     <Link href="#" className="text-sm text-primary hover:underline">
                         Forgot your password?
@@ -140,18 +140,11 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(true);
-    const [accountType, setAccountType] = useState<'personalized' | 'corporate' | 'both'>('personalized');
     const [emailOtp, setEmailOtp] = useState("");
     const [phoneOtp, setPhoneOtp] = useState("");
     const router = useRouter();
     const { toast } = useToast();
     const { login } = useUser();
-
-    const namePlaceholder = useMemo(() => {
-        if (accountType === 'corporate') return 'Company Name';
-        if (accountType === 'both') return 'Your Name';
-        return 'Your Name';
-    }, [accountType]);
 
     const handleDetailsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -226,41 +219,9 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         <div className="space-y-4">
             <form onSubmit={handleDetailsSubmit} className="space-y-4">
                 <div className="space-y-2">
-                    <Label>Account Type</Label>
-                    <RadioGroup value={accountType} onValueChange={(value) => setAccountType(value as any)} className="grid grid-cols-3 gap-2">
-                         <div>
-                            <RadioGroupItem value="personalized" id="personalized" className="peer sr-only" />
-                            <Label htmlFor="personalized" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                <UserIcon className="mb-1 h-5 w-5" />
-                                <span className="text-xs">Personal</span>
-                            </Label>
-                        </div>
-                        <div>
-                            <RadioGroupItem value="corporate" id="corporate" className="peer sr-only" />
-                            <Label htmlFor="corporate" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                <Building className="mb-1 h-5 w-5" />
-                                <span className="text-xs">Corporate</span>
-                            </Label>
-                        </div>
-                        <div>
-                            <RadioGroupItem value="both" id="both" className="peer sr-only" />
-                            <Label htmlFor="both" className="flex flex-col items-center justify-center rounded-md border-2 border-muted bg-popover p-3 hover:bg-accent hover:text-accent-foreground peer-data-[state=checked]:border-primary [&:has([data-state=checked])]:border-primary">
-                                <Combine className="mb-1 h-5 w-5" />
-                                <span className="text-xs">Both</span>
-                            </Label>
-                        </div>
-                    </RadioGroup>
+                    <Label htmlFor="customer-name">Full Name</Label>
+                    <Input id="customer-name" placeholder="Your Name" required />
                 </div>
-                <div className="space-y-2">
-                    <Label htmlFor="customer-name">{namePlaceholder}</Label>
-                    <Input id="customer-name" placeholder={namePlaceholder} required />
-                </div>
-                 {accountType === 'both' && (
-                    <div className="space-y-2">
-                        <Label htmlFor="customer-company-name">Company Name (Optional)</Label>
-                        <Input id="customer-company-name" placeholder="Your Company LLC" />
-                    </div>
-                )}
                 <div className="space-y-2">
                     <Label htmlFor="customer-signup-email">Email</Label>
                     <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -347,7 +308,11 @@ export function CustomerAuthDialog() {
                             </Tabs>
                         </TabsContent>
                         <TabsContent value="signup" className="h-full flex flex-col">
-                            <ScrollArea className="flex-1 -mr-6 pr-6">
+                             <DialogHeader>
+                                <DialogTitle>Create a Personal Account</DialogTitle>
+                                <DialogDescription>Join our community to shop, save favorites, and track orders.</DialogDescription>
+                            </DialogHeader>
+                            <ScrollArea className="flex-1 -mr-6 pr-6 pt-4">
                                 <SignupForm onSignupSuccess={closeDialog} />
                             </ScrollArea>
                         </TabsContent>
