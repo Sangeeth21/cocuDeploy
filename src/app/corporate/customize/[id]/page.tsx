@@ -1093,11 +1093,11 @@ export default function CorporateCustomizePage() {
                                                     <Select value={aspectRatio} onValueChange={setAspectRatio}>
                                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="1:1">1:1 (Mugs, Coasters, Lockets)</SelectItem>
-                                                            <SelectItem value="4:5">4:5 (Posters, T-Shirt Chest)</SelectItem>
+                                                            <SelectItem value="1:1">1:1 (Mugs, Lockets, Coasters)</SelectItem>
+                                                            <SelectItem value="4:5">4:5 (T-Shirt Chest, Posters)</SelectItem>
                                                             <SelectItem value="9:16">9:16 (Phone Cases, Tumblers)</SelectItem>
                                                             <SelectItem value="3:4">3:4 (Small Posters, Apparel)</SelectItem>
-                                                            <SelectItem value="1.91:1">1.91:1 (Landscape Banners)</SelectItem>
+                                                            <SelectItem value="1.91:1">1.91:1 (Wide Banners)</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>

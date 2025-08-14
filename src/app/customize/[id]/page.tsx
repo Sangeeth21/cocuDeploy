@@ -1086,7 +1086,7 @@ export default function CustomizeProductPage() {
                                                     <Select value={aspectRatio} onValueChange={setAspectRatio}>
                                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                                         <SelectContent>
-                                                             <SelectItem value="1:1">1:1 (Mugs, Coasters, Lockets)</SelectItem>
+                                                            <SelectItem value="1:1">1:1 (Mugs, Coasters, Lockets)</SelectItem>
                                                             <SelectItem value="4:5">4:5 (Posters, T-Shirt Chest)</SelectItem>
                                                             <SelectItem value="9:16">9:16 (Phone Cases, Tumblers)</SelectItem>
                                                             <SelectItem value="3:4">3:4 (Small Posters, Apparel)</SelectItem>
