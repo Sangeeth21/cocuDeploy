@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,15 @@ export default function VendorLoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
-    const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
+    const { setAsVerified, setAsUnverified, setVendorType, vendorType } = useVerification();
+
+    useEffect(() => {
+        // This effect will run when vendorType changes after a successful login.
+        // It handles the redirection logic.
+        if (vendorType) {
+            router.push(`/vendor/${vendorType}/dashboard`);
+        }
+    }, [vendorType, router]);
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,13 +58,12 @@ export default function VendorLoginPage() {
             } else {
                 setAsUnverified();
             }
-            setVendorType(resolvedVendorType);
             toast({
                 title: "Login Successful",
                 description: "Redirecting to your vendor dashboard.",
             });
-            // The redirection is now handled by the layout based on vendorType
-            // No need to push router here, let the context and layout do the work.
+            // This will trigger the useEffect to redirect
+            setVendorType(resolvedVendorType);
         } else {
             toast({
                 variant: "destructive",
