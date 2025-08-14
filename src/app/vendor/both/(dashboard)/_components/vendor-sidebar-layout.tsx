@@ -101,7 +101,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
-                    <Accordion type="multiple" className="w-full">
+                    <Accordion type="multiple" className="w-full" defaultValue={['products', 'inventory', 'orders', 'messages']}>
                          <SidebarMenu>
                             {!isVerified && (
                                 <SidebarMenuItem>
@@ -126,11 +126,13 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                                 <SidebarMenuButton
                                                     isActive={pathname.startsWith(link.href || `/vendor/both/${link.id}`)}
                                                     tooltip={{children: link.label}}
-                                                    className="w-full justify-start"
+                                                    className="w-full justify-start [&_svg:last-child]:hidden"
                                                 >
-                                                    <link.icon />
-                                                    <span>{link.label}</span>
-                                                    {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
+                                                    <div className="flex items-center gap-2">
+                                                        <link.icon />
+                                                        <span>{link.label}</span>
+                                                        {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
+                                                    </div>
                                                 </SidebarMenuButton>
                                             </AccordionTrigger>
                                             <AccordionContent className="pb-0 pl-4">

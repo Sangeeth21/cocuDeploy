@@ -12,15 +12,18 @@ import { mockProducts } from "@/lib/mock-data";
 import Image from "next/image";
 import { useMemo } from "react";
 import type { DisplayProduct } from "@/lib/types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function BothProductsPage() {
+
+export default function VendorProductsPage() {
     
-    const personalProducts = useMemo(() => mockProducts.filter(p => !p.b2bEnabled), []);
-    const corporateProducts = useMemo(() => mockProducts.filter(p => p.b2bEnabled), []);
+    const liveProducts = useMemo(() => mockProducts.filter(p => p.status === 'Live' || p.status === 'Needs Review'), []);
+    const draftProducts = useMemo(() => mockProducts.filter(p => p.status === 'Draft' || p.status === 'Archived'), []);
 
-    const renderProductTable = (products: DisplayProduct[], isCorporate: boolean) => (
+    const renderProductTable = (products: DisplayProduct[], title: string) => (
         <Card>
+            <CardHeader>
+                <CardTitle>{title}</CardTitle>
+            </CardHeader>
             <CardContent className="p-0">
                 <Table>
                     <TableHeader>
@@ -30,8 +33,8 @@ export default function BothProductsPage() {
                             </TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="hidden md:table-cell">{isCorporate ? "MOQ" : "Price"}</TableHead>
-                            <TableHead className="hidden md:table-cell">{isCorporate ? "Tiers" : "Inventory"}</TableHead>
+                            <TableHead className="hidden md:table-cell">Price</TableHead>
+                            <TableHead className="hidden md:table-cell">Inventory</TableHead>
                             <TableHead>
                                 <span className="sr-only">Actions</span>
                             </TableHead>
@@ -55,8 +58,8 @@ export default function BothProductsPage() {
                             <TableCell>
                                 <Badge variant={product.status === 'Needs Review' ? 'destructive' : product.status === 'Live' ? 'default' : 'secondary'}>{product.status}</Badge>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell">{isCorporate ? product.moq : `$${product.price.toFixed(2)}`}</TableCell>
-                            <TableCell className="hidden md:table-cell">{isCorporate ? product.tierPrices?.length || 0 : `${product.stock} in stock`}</TableCell>
+                            <TableCell className="hidden md:table-cell">${product.price.toFixed(2)}</TableCell>
+                            <TableCell className="hidden md:table-cell">{product.stock} in stock</TableCell>
                             <TableCell className="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -85,8 +88,8 @@ export default function BothProductsPage() {
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-                <h1 className="text-3xl font-bold font-headline">Products</h1>
-                <p className="text-muted-foreground">Manage all your product listings.</p>
+                <h1 className="text-3xl font-bold font-headline">Personalized Retail Products</h1>
+                <p className="text-muted-foreground">Manage your direct-to-customer product listings.</p>
             </div>
             <Button asChild>
                 <Link href="/vendor/both/products/new">
@@ -95,18 +98,10 @@ export default function BothProductsPage() {
             </Button>
         </div>
         
-        <Tabs defaultValue="personal">
-            <TabsList>
-                <TabsTrigger value="personal">Personalized Retail</TabsTrigger>
-                <TabsTrigger value="corporate">Corporate & Bulk</TabsTrigger>
-            </TabsList>
-            <TabsContent value="personal" className="mt-4">
-                {renderProductTable(personalProducts, false)}
-            </TabsContent>
-            <TabsContent value="corporate" className="mt-4">
-                {renderProductTable(corporateProducts, true)}
-            </TabsContent>
-        </Tabs>
+        <div className="space-y-8">
+            {renderProductTable(liveProducts, "Live & Needs Review Products")}
+            {renderProductTable(draftProducts, "Drafts & Archived Products")}
+        </div>
       </div>
     );
 }

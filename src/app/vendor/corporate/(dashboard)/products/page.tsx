@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { MoreHorizontal, PlusCircle } from "lucide-react";
@@ -97,3 +98,4 @@ export default function VendorProductsPage() {
       </div>
     );
 }
+

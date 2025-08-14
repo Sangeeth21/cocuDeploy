@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -9,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck, Box } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck, Box, AlertTriangle } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -27,6 +28,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Alert, AlertTitle, AlertDescription as AlertDesc } from "@/components/ui/alert";
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -843,7 +845,7 @@ export default function NewProductPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                     {isCustomizable && (
+                     {isCustomizable ? (
                         <>
                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                             {imageSides.map(side => (
@@ -931,6 +933,11 @@ export default function NewProductPage() {
                          {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, &amp; Right images to enable the 3D preview.</p>}
                          <Separator className="my-6" />
                         </>
+                     ) : (
+                        <Alert variant="default" className="bg-muted/50">
+                            <AlertTriangle className="h-4 w-4"/>
+                            <AlertDesc>Customization tools are disabled. Enable the "Is this product customizable?" switch to define customization areas.</AlertDesc>
+                        </Alert>
                      )}
                      
                      <div className="space-y-4">
@@ -1028,9 +1035,9 @@ export default function NewProductPage() {
                     <Alert variant="destructive">
                         <Box className="h-4 w-4" />
                         <AlertTitle>Important</AlertTitle>
-                        <AlertDescription>
+                        <AlertDesc>
                             Please provide accurate details. Any price difference in shipping due to incorrect information will be deducted from your payout.
-                        </AlertDescription>
+                        </AlertDesc>
                     </Alert>
                 </CardContent>
             </Card>
@@ -1041,7 +1048,7 @@ export default function NewProductPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
-                        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                             <SelectTrigger id="category">
                                 <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
@@ -1195,3 +1202,4 @@ export default function NewProductPage() {
     </>
   );
 }
+

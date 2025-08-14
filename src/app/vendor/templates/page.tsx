@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { mockProducts } from "@/lib/mock-data";
+import { useVerification } from "@/context/vendor-verification-context";
 
 
 const templates = [
@@ -80,6 +81,7 @@ function TemplatePreview({ templateName }: { templateName: string }) {
 
 
 export default function VendorTemplatesPage() {
+    const { vendorType } = useVerification();
 
     return (
         <div>
@@ -89,7 +91,7 @@ export default function VendorTemplatesPage() {
                     <p className="text-muted-foreground mt-2">Create, manage, and customize templates for your product pages.</p>
                 </div>
                  <Button asChild>
-                    <Link href="/vendor/templates/new">
+                    <Link href={`/vendor/${vendorType}/templates/new`}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Create New Template
                     </Link>
@@ -128,12 +130,20 @@ export default function VendorTemplatesPage() {
                                     </DialogContent>
                                </Dialog>
                                 <Button variant="secondary" size="sm" asChild>
-                                  <Link href="/vendor/templates/new">Edit</Link>
+                                  <Link href={`/vendor/${vendorType}/templates/new`}>Edit</Link>
                                 </Button>
                             </div>
                         </CardContent>
                     </Card>
                 ))}
+            </div>
+
+             <div className="mt-12 text-center">
+                 <Button variant="outline" asChild>
+                    <Link href={`/vendor/${vendorType}/dashboard`}>
+                        Back to Dashboard
+                    </Link>
+                </Button>
             </div>
         </div>
     );
