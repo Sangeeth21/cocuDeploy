@@ -7,12 +7,11 @@ import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, S
 import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight, Gift, ShieldAlert, LifeBuoy, Gavel, Building, User, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
-import { NotificationPopover } from "@/components/notification-popover";
-import { mockVendorActivity } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import { useVerification } from "@/context/vendor-verification-context";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { NotificationPopover } from "@/components/notification-popover";
+import { mockVendorActivity } from "@/lib/mock-data";
 
 const navLinks = [
   { href: "/vendor/both/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -123,7 +122,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                 <SidebarMenuItem key={link.id || link.href}>
                                     {link.subLinks ? (
                                         <AccordionItem value={link.id!} className="border-b-0">
-                                            <AccordionTrigger className="p-0 hover:no-underline">
+                                            <AccordionTrigger asChild>
                                                 <SidebarMenuButton
                                                     isActive={pathname.startsWith(link.href || `/vendor/both/${link.id}`)}
                                                     tooltip={{children: link.label}}

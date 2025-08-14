@@ -1126,7 +1126,7 @@ export default function NewProductPage() {
       </div>
       <div className="mt-8 flex justify-end gap-4">
         <Button variant="outline" asChild>
-            <Link href="/vendor/personal/dashboard">Cancel</Link>
+            <Link href="/vendor/both/dashboard">Cancel</Link>
         </Button>
         <Button onClick={handleSaveDraft} disabled={!canSave}>
             Save as Draft

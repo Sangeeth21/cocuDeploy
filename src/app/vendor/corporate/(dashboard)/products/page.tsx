@@ -16,13 +16,25 @@ import type { DisplayProduct } from "@/lib/types";
 
 export default function VendorProductsPage() {
     
-    const liveProducts = useMemo(() => mockProducts.filter(p => p.status === 'Live' || p.status === 'Needs Review'), []);
-    const draftProducts = useMemo(() => mockProducts.filter(p => p.status === 'Draft' || p.status === 'Archived'), []);
+    const corporateProducts = useMemo(() => mockProducts.filter(p => p.b2bEnabled), []);
 
-    const renderProductTable = (products: DisplayProduct[], title: string) => (
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <h1 className="text-3xl font-bold font-headline">Corporate Products</h1>
+                <p className="text-muted-foreground">Manage your product listings for bulk and corporate sales.</p>
+            </div>
+            <Button asChild>
+                <Link href="/vendor/corporate/products/new">
+                    <PlusCircle className="mr-2"/> Add Corporate Product
+                </Link>
+            </Button>
+        </div>
+        
         <Card>
             <CardHeader>
-                <CardTitle>{title}</CardTitle>
+                <CardTitle>B2B-Enabled Products</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
                 <Table>
@@ -33,15 +45,15 @@ export default function VendorProductsPage() {
                             </TableHead>
                             <TableHead>Name</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="hidden md:table-cell">Price</TableHead>
-                            <TableHead className="hidden md:table-cell">Inventory</TableHead>
+                            <TableHead className="hidden md:table-cell">MOQ</TableHead>
+                            <TableHead className="hidden md:table-cell">Tiers</TableHead>
                             <TableHead>
                                 <span className="sr-only">Actions</span>
                             </TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {products.map(product => (
+                    {corporateProducts.map(product => (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell p-2">
                                 <div className="relative w-16 h-16 rounded-md overflow-hidden">
@@ -58,8 +70,8 @@ export default function VendorProductsPage() {
                             <TableCell>
                                 <Badge variant={product.status === 'Needs Review' ? 'destructive' : product.status === 'Live' ? 'default' : 'secondary'}>{product.status}</Badge>
                             </TableCell>
-                            <TableCell className="hidden md:table-cell">${product.price.toFixed(2)}</TableCell>
-                            <TableCell className="hidden md:table-cell">{product.stock} in stock</TableCell>
+                            <TableCell className="hidden md:table-cell">{product.moq}</TableCell>
+                            <TableCell className="hidden md:table-cell">{product.tierPrices?.length || 0}</TableCell>
                             <TableCell className="text-right">
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -79,29 +91,9 @@ export default function VendorProductsPage() {
                     ))}
                     </TableBody>
                 </Table>
-                {products.length === 0 && <p className="text-center text-muted-foreground p-4">No products in this category.</p>}
+                {corporateProducts.length === 0 && <p className="text-center text-muted-foreground p-4">No B2B products found.</p>}
             </CardContent>
         </Card>
-    );
-    
-    return (
-      <div className="space-y-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-                <h1 className="text-3xl font-bold font-headline">Products</h1>
-                <p className="text-muted-foreground">Manage your product listings.</p>
-            </div>
-            <Button asChild>
-                <Link href="/vendor/personal/products/new">
-                    <PlusCircle className="mr-2"/> Add Product
-                </Link>
-            </Button>
-        </div>
-        
-        <div className="space-y-8">
-            {renderProductTable(liveProducts, "Live & Needs Review Products")}
-            {renderProductTable(draftProducts, "Drafts & Archived Products")}
-        </div>
       </div>
     );
 }

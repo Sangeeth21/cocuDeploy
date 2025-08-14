@@ -15,10 +15,10 @@ import { mockVendorActivity } from "@/lib/mock-data";
 const navLinks = [
   { href: "/vendor/corporate/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/vendor/corporate/products", label: "Corporate Products", icon: Package },
+  { href: "/vendor/templates", label: "Templates", icon: Wand2 },
   { href: "/vendor/corporate/inventory", label: "Inventory", icon: Warehouse },
   { href: "/vendor/corporate/orders", label: "Corporate Orders", icon: ListChecks },
   { href: "/vendor/corporate/bids", label: "Bidding", icon: Gavel },
-  { href: "/vendor/templates", label: "Templates", icon: Wand2 },
   { href: "/vendor/corporate/analytics", label: "Analytics", icon: LineChart },
   { href: "/vendor/corporate/messages", label: "Corporate Messages", icon: MessageSquare, badge: "2" },
   { href: "/vendor/corporate/referrals", label: "Referrals", icon: Gift },
@@ -87,7 +87,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton 
                                     asChild
-                                    isActive={pathname === link.href}
+                                    isActive={pathname.startsWith(link.href)}
                                     tooltip={{children: link.label}}
                                 >
                                     <Link href={link.href}>

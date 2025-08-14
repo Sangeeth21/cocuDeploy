@@ -114,7 +114,7 @@ export default function NewTemplatePage() {
     };
 
     return (
-        <div className="py-12">
+        <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-4xl font-bold font-headline">Create New Template</h1>

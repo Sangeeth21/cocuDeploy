@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -10,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck, Box } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -619,17 +618,12 @@ export default function NewProductPage() {
     const [isConfirmationAlertOpen, setIsConfirmationAlertOpen] = useState(false);
     const [isDraftInfoOpen, setIsDraftInfoOpen] = useState(false);
     const [editingSide, setEditingSide] = useState<ImageSide | null>(null);
+    const [isCustomizable, setIsCustomizable] = useState(true);
     
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<string>("");
-    const [selectedCustomizations, setSelectedCustomizations] = useState<string[]>([]);
     
-    const [isAddMoreOpen, setIsAddMoreOpen] = useState(false);
-    const [customOptions, setCustomOptions] = useState<CustomizationOption[]>([]);
-    const [newOptionLabel, setNewOptionLabel] = useState("");
-    const [editingOption, setEditingOption] = useState<CustomizationOption | null>(null);
-
     const [b2bEnabled, setB2bEnabled] = useState(vendorType === 'corporate' || vendorType === 'both');
     const [moq, setMoq] = useState(50);
     const [tierPrices, setTierPrices] = useState<{quantity: number, price: number}[]>([]);
@@ -639,52 +633,13 @@ export default function NewProductPage() {
     const [videoUrl, setVideoUrl] = useState("");
     const [videoEmbedUrl, setVideoEmbedUrl] = useState<string | null>(null);
     const [deliveryType, setDeliveryType] = useState('vendor_pays');
-
-    const availableCustomizations = useMemo(() => {
-        if (!selectedCategory) return [];
-        return customizationOptions.filter(option =>
-            categoryCustomizationMap[selectedCategory]?.includes(option.id)
-        );
-    }, [selectedCategory]);
-
-    const handleCategoryChange = (category: string) => {
-        setSelectedCategory(category);
-        // Clear selected customizations when category changes to avoid irrelevant options
-        setSelectedCustomizations([]);
-        setCustomOptions([]);
-    };
-
-    const handleAddNewCustomOption = () => {
-        if (!newOptionLabel.trim()) return;
-
-        if (editingOption) {
-            setCustomOptions(customOptions.map(opt => 
-                opt.id === editingOption.id ? { ...opt, label: newOptionLabel } : opt
-            ));
-            setEditingOption(null);
-        } else {
-             setCustomOptions([
-                ...customOptions, 
-                { id: `custom-${Date.now()}`, label: newOptionLabel.trim() }
-            ]);
-        }
-       
-        setNewOptionLabel("");
-    };
-
-    const handleRemoveCustomOption = (id: string) => {
-        setCustomOptions(customOptions.filter(opt => opt.id !== id));
-        if (editingOption?.id === id) {
-            setEditingOption(null);
-            setNewOptionLabel("");
-        }
-    };
     
-    const handleEditCustomOption = (option: CustomizationOption) => {
-        setEditingOption(option);
-        setNewOptionLabel(option.label);
-    };
-
+    const [packageWeight, setPackageWeight] = useState("");
+    const [packageLength, setPackageLength] = useState("");
+    const [packageWidth, setPackageWidth] = useState("");
+    const [packageHeight, setPackageHeight] = useState("");
+    
+    const canSave = productName && packageWeight && packageLength && packageWidth && packageHeight;
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, side: ImageSide) => {
         if (event.target.files && event.target.files[0]) {
@@ -742,7 +697,7 @@ export default function NewProductPage() {
     };
     
     const handlePublish = () => {
-        toast({ title: "Product Published!", description: "Your product is now live on the marketplace." });
+        toast({ title: "Product Submitted!", description: "Your product has been submitted for admin review." });
     }
     
     const handleSaveCustomArea = (areas: CustomizationArea[]) => {
@@ -841,11 +796,6 @@ export default function NewProductPage() {
         setIsConfirmationAlertOpen(false);
     };
 
-    const handleCustomizationChange = (id: string, checked: boolean) => {
-        setSelectedCustomizations(prev => 
-            checked ? [...prev, id] : prev.filter(item => item !== id)
-        );
-    };
     
     useEffect(() => {
         setStatus(isVerified ? 'Live' : 'Draft');
@@ -887,94 +837,101 @@ export default function NewProductPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Media &amp; Customization</CardTitle>
-                    <CardDescription>Upload images and define areas for customer personalization.</CardDescription>
+                     <div className="flex items-center space-x-2 pt-2">
+                        <Switch id="is-customizable" checked={isCustomizable} onCheckedChange={setIsCustomizable}/>
+                        <Label htmlFor="is-customizable">Is this product customizable?</Label>
+                    </div>
                 </CardHeader>
                 <CardContent>
-                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {imageSides.map(side => (
-                           <div key={side.key} className="space-y-1">
-                                <Label className="text-xs font-medium text-muted-foreground">{side.label}</Label>
-                                {images[side.key]?.src ? (
-                                    <div className="relative group aspect-square rounded-md border mt-1">
-                                        <Image src={images[side.key]!.src} alt={`${side.label} product image`} fill className="object-cover rounded-md" />
-                                        {images[side.key]?.customAreas && images[side.key]!.customAreas!.map(area => (
-                                            <div 
-                                                key={area.id}
-                                                className={cn(
-                                                    "absolute border-2 border-dashed border-primary/70 bg-primary/10 pointer-events-none",
-                                                    area.shape === 'ellipse' && 'rounded-full'
-                                                )}
-                                                style={{
-                                                    left: `${area.x}%`,
-                                                    top: `${area.y}%`,
-                                                    width: `${area.width}%`,
-                                                    height: `${area.height}%`,
-                                                }}
-                                            />
-                                        ))}
-                                        <Button
-                                            variant="destructive"
-                                            size="icon"
-                                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                            onClick={() => removeImage(side.key)}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                         {images[side.key]!.isGenerated && (
-                                            <div className="absolute bottom-0 w-full bg-primary/80 text-primary-foreground text-xs text-center py-0.5 rounded-b-md">AI</div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <label htmlFor={`image-upload-${side.key}`} className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                                        <Upload className="h-8 w-8 text-muted-foreground"/>
-                                        <span className="text-xs text-muted-foreground text-center mt-1">Upload</span>
-                                        <input id={`image-upload-${side.key}`} type="file" accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e, side.key)} />
-                                    </label>
-                                )}
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                             <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="w-full text-xs h-7"
-                                                disabled={!images[side.key]}
-                                                onClick={() => setEditingSide(side.key)}
+                     {isCustomizable && (
+                        <>
+                         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                            {imageSides.map(side => (
+                               <div key={side.key} className="space-y-1">
+                                    <Label className="text-xs font-medium text-muted-foreground">{side.label}</Label>
+                                    {images[side.key]?.src ? (
+                                        <div className="relative group aspect-square rounded-md border mt-1">
+                                            <Image src={images[side.key]!.src} alt={`${side.label} product image`} fill className="object-cover rounded-md" />
+                                            {images[side.key]?.customAreas && images[side.key]!.customAreas!.map(area => (
+                                                <div 
+                                                    key={area.id}
+                                                    className={cn(
+                                                        "absolute border-2 border-dashed border-primary/70 bg-primary/10 pointer-events-none",
+                                                        area.shape === 'ellipse' && 'rounded-full'
+                                                    )}
+                                                    style={{
+                                                        left: `${area.x}%`,
+                                                        top: `${area.y}%`,
+                                                        width: `${area.width}%`,
+                                                        height: `${area.height}%`,
+                                                    }}
+                                                />
+                                            ))}
+                                            <Button
+                                                variant="destructive"
+                                                size="icon"
+                                                className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                onClick={() => removeImage(side.key)}
                                             >
-                                                <Square className="mr-1.5 h-3 w-3"/>
-                                                Define Area
+                                                <X className="h-4 w-4" />
                                             </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Define customizable areas on this image.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                           </div>
-                        ))}
-                    </div>
-                    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg bg-muted/40">
-                       <div className="text-center sm:text-left">
-                           <h3 className="text-base font-semibold">AI-Powered Image Generation</h3>
-                           <p className="text-sm text-muted-foreground">Upload a Front image, then click to generate missing views.</p>
-                       </div>
-                        <Button onClick={handleGenerate} disabled={isGenerating || !images.front?.file || !productName.trim()}>
-                            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2" />}
-                            {isGenerating ? 'Generating...' : 'Generate Views'}
-                        </Button>
-                    </div>
-                     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                            <Switch id="3d-toggle" checked={is3DEnabled} onCheckedChange={setIs3DEnabled} />
-                            <Label htmlFor="3d-toggle" className="font-medium">Enable 3D Experience</Label>
+                                             {images[side.key]!.isGenerated && (
+                                                <div className="absolute bottom-0 w-full bg-primary/80 text-primary-foreground text-xs text-center py-0.5 rounded-b-md">AI</div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <label htmlFor={`image-upload-${side.key}`} className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                            <Upload className="h-8 w-8 text-muted-foreground"/>
+                                            <span className="text-xs text-muted-foreground text-center mt-1">Upload</span>
+                                            <input id={`image-upload-${side.key}`} type="file" accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e, side.key)} />
+                                        </label>
+                                    )}
+                                    <TooltipProvider>
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                 <Button 
+                                                    variant="outline" 
+                                                    size="sm" 
+                                                    className="w-full text-xs h-7"
+                                                    disabled={!images[side.key]}
+                                                    onClick={() => setEditingSide(side.key)}
+                                                >
+                                                    <Square className="mr-1.5 h-3 w-3"/>
+                                                    Define Area
+                                                </Button>
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>Define customizable areas on this image.</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    </TooltipProvider>
+                               </div>
+                            ))}
                         </div>
-                        <Button onClick={() => setShow3DPreview(true)} disabled={!canPreview3D} className="w-full sm:w-auto">
-                            <Rotate3d className="mr-2" />
-                            Preview 3D Model
-                        </Button>
-                    </div>
-                     {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, &amp; Right images to enable the 3D preview.</p>}
-                     <Separator className="my-6" />
+                        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg bg-muted/40">
+                           <div className="text-center sm:text-left">
+                               <h3 className="text-base font-semibold">AI-Powered Image Generation</h3>
+                               <p className="text-sm text-muted-foreground">Upload a Front image, then click to generate missing views.</p>
+                           </div>
+                            <Button onClick={handleGenerate} disabled={isGenerating || !images.front?.file || !productName.trim()}>
+                                {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2" />}
+                                {isGenerating ? 'Generating...' : 'Generate Views'}
+                            </Button>
+                        </div>
+                         <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg">
+                            <div className="flex items-center space-x-3">
+                                <Switch id="3d-toggle" checked={is3DEnabled} onCheckedChange={setIs3DEnabled} />
+                                <Label htmlFor="3d-toggle" className="font-medium">Enable 3D Experience</Label>
+                            </div>
+                            <Button onClick={() => setShow3DPreview(true)} disabled={!canPreview3D} className="w-full sm:w-auto">
+                                <Rotate3d className="mr-2" />
+                                Preview 3D Model
+                            </Button>
+                        </div>
+                         {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, &amp; Right images to enable the 3D preview.</p>}
+                         <Separator className="my-6" />
+                        </>
+                     )}
                      
                      <div className="space-y-4">
                         <div>
@@ -1029,39 +986,8 @@ export default function NewProductPage() {
                     <CardTitle className="font-headline">Customization Types</CardTitle>
                     <CardDescription>Select the personalization methods available for this product.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    {availableCustomizations.length > 0 ? (
-                        availableCustomizations.map((option) => (
-                            <div key={option.id} className="flex items-center space-x-2">
-                                <Checkbox 
-                                    id={option.id} 
-                                    checked={selectedCustomizations.includes(option.id)}
-                                    onCheckedChange={(checked) => handleCustomizationChange(option.id, !!checked)}
-                                />
-                                <Label htmlFor={option.id} className="font-normal text-sm">{option.label}</Label>
-                            </div>
-                        ))
-                    ) : (
-                        <p className="col-span-full text-sm text-muted-foreground text-center">
-                            {selectedCategory ? "No specific customization types for this category." : "Please select a category to see available customization types."}
-                        </p>
-                    )}
-                    {(customOptions).map((option) => (
-                         <div key={option.id} className="flex items-center space-x-2">
-                            <Checkbox 
-                                id={option.id} 
-                                checked={true}
-                                disabled
-                            />
-                            <Label htmlFor={option.id} className="font-normal text-sm text-primary">{option.label}</Label>
-                        </div>
-                    ))}
-                    {selectedCategory && (
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="add-more" onCheckedChange={(checked) => checked && setIsAddMoreOpen(true)} />
-                            <Label htmlFor="add-more" className="font-normal text-sm">Add More...</Label>
-                        </div>
-                    )}
+                <CardContent>
+                  <p className="text-sm text-muted-foreground text-center py-4">This section has been deprecated. Please use the "Define Area" buttons under each product image in the Media section to create customizable zones.</p>
                 </CardContent>
             </Card>
         </div>
@@ -1079,6 +1005,33 @@ export default function NewProductPage() {
                             <Input id="price" type="number" placeholder="19.99" className="pl-6"/>
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader>
+                    <CardTitle>Package & Shipping</CardTitle>
+                    <CardDescription>Weight and dimensions for logistics.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="weight">Weight (kg) <span className="text-destructive">*</span></Label>
+                        <Input id="weight" type="number" placeholder="0.5" value={packageWeight} onChange={e => setPackageWeight(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Dimensions (cm) <span className="text-destructive">*</span></Label>
+                        <div className="flex gap-2">
+                            <Input type="number" placeholder="L" value={packageLength} onChange={e => setPackageLength(e.target.value)} />
+                            <Input type="number" placeholder="W" value={packageWidth} onChange={e => setPackageWidth(e.target.value)} />
+                            <Input type="number" placeholder="H" value={packageHeight} onChange={e => setPackageHeight(e.target.value)} />
+                        </div>
+                    </div>
+                    <Alert variant="destructive">
+                        <Box className="h-4 w-4" />
+                        <AlertTitle>Important</AlertTitle>
+                        <AlertDescription>
+                            Please provide accurate details. Any price difference in shipping due to incorrect information will be deducted from your payout.
+                        </AlertDescription>
+                    </Alert>
                 </CardContent>
             </Card>
             <Card>
@@ -1116,67 +1069,6 @@ export default function NewProductPage() {
                         </div>
                          {!isVerified && <p className="text-xs text-muted-foreground">Complete verification to publish products.</p>}
                     </div>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Delivery & Shipping</CardTitle>
-                    <CardDescription>Choose how the shipping cost will be handled for this product.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <RadioGroup value={deliveryType} onValueChange={setDeliveryType} className="space-y-4">
-                         <Label htmlFor="vendor-pays" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <RadioGroupItem value="vendor_pays" id="vendor-pays" />
-                                    <span className="font-semibold">Completely by Vendor</span>
-                                </div>
-                                <Badge>Recommended</Badge>
-                            </div>
-                            <div className="ml-8 mt-2 space-y-1">
-                                <p className="text-xs text-muted-foreground">You absorb the full shipping cost. The customer sees "FREE Delivery", which can significantly increase conversion rates.</p>
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild><button type="button" className="flex items-center gap-1 text-xs text-primary hover:underline"><Info className="h-3 w-3"/>How it works</button></TooltipTrigger>
-                                        <TooltipContent><p className="max-w-xs">The full logistics cost (e.g., from Shiprocket) will be deducted from your final payout for each order.</p></TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                        </Label>
-                         <Label htmlFor="shared" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                             <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <RadioGroupItem value="shared" id="shared" />
-                                    <span className="font-semibold">Vendor + Customer Shared Cost</span>
-                                </div>
-                                 <Badge variant="secondary">Balanced</Badge>
-                            </div>
-                             <div className="ml-8 mt-2 space-y-1">
-                                <p className="text-xs text-muted-foreground">Offer a low, fixed shipping fee to the customer (e.g., ₹69). You cover the remaining logistics cost.</p>
-                                <TooltipProvider>
-                                     <Tooltip>
-                                        <TooltipTrigger asChild><button type="button" className="flex items-center gap-1 text-xs text-primary hover:underline"><Info className="h-3 w-3"/>How it works</button></TooltipTrigger>
-                                        <TooltipContent><p className="max-w-xs">If total shipping is ₹110, the customer pays ₹69 and ₹41 is deducted from your payout. The fixed rate is admin-configurable.</p></TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                        </Label>
-                         <Label htmlFor="customer-pays" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                             <div className="flex items-center gap-3">
-                                <RadioGroupItem value="customer_pays" id="customer-pays" />
-                                <span className="font-semibold">Completely by Customer</span>
-                            </div>
-                             <div className="ml-8 mt-2 space-y-1">
-                                <p className="text-xs text-muted-foreground">The customer bears the full delivery cost calculated at checkout. You receive your full product price.</p>
-                                <TooltipProvider>
-                                     <Tooltip>
-                                        <TooltipTrigger asChild><button type="button" className="flex items-center gap-1 text-xs text-primary hover:underline"><Info className="h-3 w-3"/>How it works</button></TooltipTrigger>
-                                        <TooltipContent><p className="max-w-xs">No logistics fees will be deducted from your payout. This may reduce conversion for some products.</p></TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
-                            </div>
-                        </Label>
-                    </RadioGroup>
                 </CardContent>
             </Card>
 
@@ -1234,64 +1126,17 @@ export default function NewProductPage() {
       </div>
       <div className="mt-8 flex justify-end gap-4">
         <Button variant="outline" asChild>
-            <Link href="/vendor/dashboard">Cancel</Link>
+            <Link href="/vendor/personal/dashboard">Cancel</Link>
         </Button>
-        <Button onClick={handleSaveDraft}>
+        <Button onClick={handleSaveDraft} disabled={!canSave}>
             Save as Draft
         </Button>
-         <Button onClick={handlePublish} className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || status === 'Draft'}>
+         <Button onClick={handlePublish} className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || status === 'Draft' || !canSave}>
             <CheckCircle className="mr-2 h-4 w-4"/>
             Publish Product
         </Button>
       </div>
     </div>
-    
-    <Dialog open={isAddMoreOpen} onOpenChange={setIsAddMoreOpen}>
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Add Custom Customization Types</DialogTitle>
-                <DialogDescription>
-                    Add any customization options that were not in the default list.
-                </DialogDescription>
-            </DialogHeader>
-            <div className="py-4 space-y-4">
-                <div className="flex gap-2">
-                    <Input 
-                        placeholder="e.g. 3D Puff Embroidery" 
-                        value={newOptionLabel}
-                        onChange={(e) => setNewOptionLabel(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleAddNewCustomOption()}
-                    />
-                    <Button onClick={handleAddNewCustomOption}>
-                        {editingOption ? 'Update' : 'Add'}
-                    </Button>
-                </div>
-                 {customOptions.length > 0 && (
-                     <div className="space-y-2 p-2 border rounded-md max-h-48 overflow-y-auto">
-                         {customOptions.map(option => (
-                             <div 
-                                key={option.id} 
-                                className="flex items-center justify-between group p-1.5 rounded-md hover:bg-muted"
-                            >
-                                <span className="text-sm cursor-pointer" onClick={() => handleEditCustomOption(option)}>{option.label}</span>
-                                <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-6 w-6 opacity-0 group-hover:opacity-100"
-                                    onClick={() => handleRemoveCustomOption(option.id)}
-                                >
-                                    <X className="h-4 w-4" />
-                                </Button>
-                            </div>
-                         ))}
-                    </div>
-                 )}
-            </div>
-            <DialogFooter>
-                <Button onClick={() => setIsAddMoreOpen(false)}>Done</Button>
-            </DialogFooter>
-        </DialogContent>
-    </Dialog>
     
     <Dialog open={!!editingSide} onOpenChange={(open) => !open && setEditingSide(null)}>
         <DialogContent className="max-w-7xl h-[90vh] flex flex-col p-0">
