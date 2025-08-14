@@ -620,6 +620,7 @@ export default function NewProductPage() {
     const [isConfirmationAlertOpen, setIsConfirmationAlertOpen] = useState(false);
     const [isDraftInfoOpen, setIsDraftInfoOpen] = useState(false);
     const [editingSide, setEditingSide] = useState<ImageSide | null>(null);
+    const [isCustomizable, setIsCustomizable] = useState(true);
     
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
@@ -895,90 +896,102 @@ export default function NewProductPage() {
                     <CardDescription>Upload images and define areas for customer personalization.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {imageSides.map(side => (
-                           <div key={side.key} className="space-y-1">
-                                <Label className="text-xs font-medium text-muted-foreground">{side.label}</Label>
-                                {images[side.key]?.src ? (
-                                    <div className="relative group aspect-square rounded-md border mt-1">
-                                        <Image src={images[side.key]!.src} alt={`${side.label} product image`} fill className="object-cover rounded-md" />
-                                        {images[side.key]?.customAreas && images[side.key]!.customAreas!.map(area => (
-                                            <div 
-                                                key={area.id}
-                                                className={cn(
-                                                    "absolute border-2 border-dashed border-primary/70 bg-primary/10 pointer-events-none",
-                                                    area.shape === 'ellipse' && 'rounded-full'
-                                                )}
-                                                style={{
-                                                    left: `${area.x}%`,
-                                                    top: `${area.y}%`,
-                                                    width: `${area.width}%`,
-                                                    height: `${area.height}%`,
-                                                }}
-                                            />
-                                        ))}
-                                        <Button
-                                            variant="destructive"
-                                            size="icon"
-                                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                            onClick={() => removeImage(side.key)}
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                         {images[side.key]!.isGenerated && (
-                                            <div className="absolute bottom-0 w-full bg-primary/80 text-primary-foreground text-xs text-center py-0.5 rounded-b-md">AI</div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <label htmlFor={`image-upload-${side.key}`} className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
-                                        <Upload className="h-8 w-8 text-muted-foreground"/>
-                                        <span className="text-xs text-muted-foreground text-center mt-1">Upload</span>
-                                        <input id={`image-upload-${side.key}`} type="file" accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e, side.key)} />
-                                    </label>
-                                )}
-                                <TooltipProvider>
-                                    <Tooltip>
-                                        <TooltipTrigger asChild>
-                                             <Button 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="w-full text-xs h-7"
-                                                disabled={!images[side.key]}
-                                                onClick={() => setEditingSide(side.key)}
-                                            >
-                                                <Square className="mr-1.5 h-3 w-3"/>
-                                                Define Area
-                                            </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                            <p>Define customizable areas on this image.</p>
-                                        </TooltipContent>
-                                    </Tooltip>
-                                </TooltipProvider>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                           <div className="space-y-1">
+                             <Label htmlFor="is-customizable" className="font-medium">Is this product customizable?</Label>
+                             <p className="text-xs text-muted-foreground">Customers will be able to add their own text or images.</p>
                            </div>
-                        ))}
-                    </div>
-                    <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg bg-muted/40">
-                       <div className="text-center sm:text-left">
-                           <h3 className="text-base font-semibold">AI-Powered Image Generation</h3>
-                           <p className="text-sm text-muted-foreground">Upload a Front image, then click to generate missing views.</p>
-                       </div>
-                        <Button onClick={handleGenerate} disabled={isGenerating || !images.front?.file || !productName.trim()}>
-                            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2" />}
-                            {isGenerating ? 'Generating...' : 'Generate Views'}
-                        </Button>
-                    </div>
-                     <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                            <Switch id="3d-toggle" checked={is3DEnabled} onCheckedChange={setIs3DEnabled} />
-                            <Label htmlFor="3d-toggle" className="font-medium">Enable 3D Experience</Label>
+                           <Switch id="is-customizable" checked={isCustomizable} onCheckedChange={setIsCustomizable} />
                         </div>
-                        <Button onClick={() => setShow3DPreview(true)} disabled={!canPreview3D} className="w-full sm:w-auto">
-                            <Rotate3d className="mr-2" />
-                            Preview 3D Model
-                        </Button>
-                    </div>
-                     {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, &amp; Right images to enable the 3D preview.</p>}
+
+                        <div className={cn("space-y-6 transition-opacity duration-300", !isCustomizable && "opacity-50 pointer-events-none")}>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                {imageSides.map(side => (
+                                <div key={side.key} className="space-y-1">
+                                        <Label className="text-xs font-medium text-muted-foreground">{side.label}</Label>
+                                        {images[side.key]?.src ? (
+                                            <div className="relative group aspect-square rounded-md border mt-1">
+                                                <Image src={images[side.key]!.src} alt={`${side.label} product image`} fill className="object-cover rounded-md" />
+                                                {images[side.key]?.customAreas && images[side.key]!.customAreas!.map(area => (
+                                                    <div 
+                                                        key={area.id}
+                                                        className={cn(
+                                                            "absolute border-2 border-dashed border-primary/70 bg-primary/10 pointer-events-none",
+                                                            area.shape === 'ellipse' && 'rounded-full'
+                                                        )}
+                                                        style={{
+                                                            left: `${area.x}%`,
+                                                            top: `${area.y}%`,
+                                                            width: `${area.width}%`,
+                                                            height: `${area.height}%`,
+                                                        }}
+                                                    />
+                                                ))}
+                                                <Button
+                                                    variant="destructive"
+                                                    size="icon"
+                                                    className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                    onClick={() => removeImage(side.key)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                                {images[side.key]!.isGenerated && (
+                                                    <div className="absolute bottom-0 w-full bg-primary/80 text-primary-foreground text-xs text-center py-0.5 rounded-b-md">AI</div>
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <label htmlFor={`image-upload-${side.key}`} className="flex flex-col items-center justify-center aspect-square border-2 border-dashed border-muted rounded-md cursor-pointer hover:border-primary hover:bg-muted/50 transition-colors">
+                                                <Upload className="h-8 w-8 text-muted-foreground"/>
+                                                <span className="text-xs text-muted-foreground text-center mt-1">Upload</span>
+                                                <input id={`image-upload-${side.key}`} type="file" accept="image/*" className="sr-only" onChange={(e) => handleImageUpload(e, side.key)} />
+                                            </label>
+                                        )}
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        className="w-full text-xs h-7"
+                                                        disabled={!images[side.key]}
+                                                        onClick={() => setEditingSide(side.key)}
+                                                    >
+                                                        <Square className="mr-1.5 h-3 w-3"/>
+                                                        Define Area
+                                                    </Button>
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <p>Define customizable areas on this image.</p>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                </div>
+                                ))}
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg bg-muted/40">
+                            <div className="text-center sm:text-left">
+                                <h3 className="text-base font-semibold">AI-Powered Image Generation</h3>
+                                <p className="text-sm text-muted-foreground">Upload a Front image, then click to generate missing views.</p>
+                            </div>
+                                <Button onClick={handleGenerate} disabled={isGenerating || !images.front?.file || !productName.trim()}>
+                                    {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2" />}
+                                    {isGenerating ? 'Generating...' : 'Generate Views'}
+                                </Button>
+                            </div>
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border rounded-lg">
+                                <div className="flex items-center space-x-3">
+                                    <Switch id="3d-toggle" checked={is3DEnabled} onCheckedChange={setIs3DEnabled} />
+                                    <Label htmlFor="3d-toggle" className="font-medium">Enable 3D Experience</Label>
+                                </div>
+                                <Button onClick={() => setShow3DPreview(true)} disabled={!canPreview3D} className="w-full sm:w-auto">
+                                    <Rotate3d className="mr-2" />
+                                    Preview 3D Model
+                                </Button>
+                            </div>
+                            {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, &amp; Right images to enable the 3D preview.</p>}
+                        </div>
+                     </div>
                      <Separator className="my-6" />
                      
                      <div className="space-y-4">
@@ -1134,14 +1147,14 @@ export default function NewProductPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="weight">Package Weight (kg)</Label>
-                        <Input id="weight" type="number" placeholder="e.g., 0.5" value={packageWeight} onChange={e => setPackageWeight(e.target.value)} />
+                        <Input id="weight" type="number" placeholder="e.g., 0.5" value={packageWeight} onChange={e => setPackageWeight(e.target.value)} required />
                     </div>
                     <div className="space-y-2">
                         <Label>Package Dimensions (cm)</Label>
                         <div className="grid grid-cols-3 gap-2">
-                            <Input type="number" placeholder="L" value={packageLength} onChange={e => setPackageLength(e.target.value)} />
-                            <Input type="number" placeholder="W" value={packageWidth} onChange={e => setPackageWidth(e.target.value)} />
-                            <Input type="number" placeholder="H" value={packageHeight} onChange={e => setPackageHeight(e.target.value)} />
+                            <Input type="number" placeholder="L" value={packageLength} onChange={e => setPackageLength(e.target.value)} required />
+                            <Input type="number" placeholder="W" value={packageWidth} onChange={e => setPackageWidth(e.target.value)} required />
+                            <Input type="number" placeholder="H" value={packageHeight} onChange={e => setPackageHeight(e.target.value)} required />
                         </div>
                     </div>
                     <Alert variant="destructive">
@@ -1275,7 +1288,7 @@ export default function NewProductPage() {
         <Button onClick={handleSaveDraft}>
             Save as Draft
         </Button>
-         <Button onClick={handlePublish} className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || status === 'Draft'}>
+         <Button onClick={handlePublish} className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || status === 'Draft' || !packageWeight || !packageLength || !packageWidth || !packageHeight}>
             <CheckCircle className="mr-2 h-4 w-4"/>
             Publish Product
         </Button>
@@ -1386,4 +1399,3 @@ export default function NewProductPage() {
     </>
   );
 }
-
