@@ -172,14 +172,13 @@ export function VendorSidebar() {
                                                 <SidebarMenuButton
                                                     isActive={pathname.includes(`/${link.id}`)}
                                                     tooltip={{children: link.label}}
-                                                    className="w-full"
                                                 >
                                                     <link.icon />
                                                     <span>{link.label}</span>
                                                     {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                                 </SidebarMenuButton>
                                             </AccordionTrigger>
-                                            <AccordionContent className="pb-0 pl-4">
+                                            <AccordionContent className="pb-0 pl-4 group-hover:group-data-[collapsible=icon]:pl-0 group-hover:group-data-[collapsible=icon]:ml-0 group-hover:group-data-[collapsible=icon]:px-2">
                                                 <SidebarMenu>
                                                     {link.subLinks.map((subLink: any) => (
                                                          <SidebarMenuItem key={subLink.href}>
