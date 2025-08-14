@@ -111,7 +111,12 @@ function CorporateLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) 
                 <Input id="corporate-email-dialog" type="email" placeholder="corporate@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="corporate-password-dialog">Password</Label>
+                <div className="flex items-center justify-between">
+                    <Label htmlFor="corporate-password-dialog">Password</Label>
+                    <Link href="#" className="text-sm text-primary hover:underline">
+                        Forgot your password?
+                    </Link>
+                </div>
                 <div className="relative">
                     <Input id="corporate-password-dialog" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>

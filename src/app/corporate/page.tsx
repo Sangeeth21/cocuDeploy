@@ -47,7 +47,12 @@ function CorporateLoginForm() {
             <Input id="corporate-email" type="email" placeholder="corporate@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div className="space-y-2">
-            <Label htmlFor="corporate-password">Password</Label>
+             <div className="flex items-center justify-between">
+                <Label htmlFor="corporate-password">Password</Label>
+                <Link href="#" className="text-sm text-primary hover:underline">
+                    Forgot your password?
+                </Link>
+            </div>
             <div className="relative">
             <Input id="corporate-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
             <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
@@ -74,12 +79,6 @@ function CorporatePageContent() {
             <CardContent>
                 <CorporateLoginForm />
             </CardContent>
-             <CardFooter className="flex-col items-center justify-center text-sm text-muted-foreground">
-                <p>Are you a vendor?</p>
-                <Link href="/vendor/login" className="font-semibold text-primary hover:underline">
-                    Sign in to the Vendor Portal
-                </Link>
-             </CardFooter>
         </Card>
     )
 }
