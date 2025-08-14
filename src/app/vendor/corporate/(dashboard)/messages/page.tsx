@@ -71,6 +71,26 @@ export default function CorporateMessagesPage() {
   const handleSelectConversation = (id: number) => {
     setSelectedConversationId(id);
   }
+  
+  const getChatLimit = () => {
+      if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
+      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
+
+      const INITIAL_LIMIT = 15;
+      const EXTENDED_LIMIT = 15 + 8; // When vendor extends
+
+      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
+      let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+      let remaining = limit - userMessageCount;
+      
+      if(awaitingVendorDecision) {
+        remaining = 0;
+      }
+      
+      return { limit, remaining: Math.max(0, remaining), isLocked };
+  }
+
+  const { remaining, isLocked } = getChatLimit();
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-full">
@@ -98,7 +118,7 @@ export default function CorporateMessagesPage() {
                     </Avatar>
                     <div className="flex-1 overflow-hidden">
                         <div className="flex justify-between items-center">
-                            <p className="font-semibold">{convo.customerId}</p>
+                            <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
                         </div>
                         <p className="text-sm text-muted-foreground truncate">{convo.messages.slice(-1)[0].text}</p>
                     </div>
@@ -116,14 +136,17 @@ export default function CorporateMessagesPage() {
                     <AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback>
                   </Avatar>
                    <div>
-                       <h2 className="text-lg font-semibold">{selectedConversation.customerId}</h2>
+                       <h2 className="text-lg font-semibold">{`Chat #${selectedConversation.id.toString().padStart(6, '0')}`}</h2>
                    </div>
                 </div>
-                <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" className="text-muted-foreground">
                         <AlertTriangle className="h-5 w-5" />
                         <span className="sr-only">Report Conversation</span>
                     </Button>
+                    <div className="text-sm text-muted-foreground">
+                        {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} messages left` : 'Message limit reached') : 'Chat disabled'}
+                    </div>
                 </div>
               </div>
                 <>

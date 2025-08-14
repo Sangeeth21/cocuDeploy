@@ -116,7 +116,7 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
     )
 }
 
-export default function PersonalMessagesPage() {
+export default function VendorMessagesPage() {
   const [conversations, setConversations] = useState(initialConversations.filter(c => c.type === 'customer'));
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(1);
   const [newMessage, setNewMessage] = useState("");
@@ -273,11 +273,11 @@ export default function PersonalMessagesPage() {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
       const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
 
-      const INITIAL_LIMIT = 15;
-      const EXTENDED_LIMIT = 15 + 8;
+      const INITIAL_LIMIT = 9;
+      const EXTENDED_LIMIT = 15; // Placeholder for when vendor extends
 
-      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
-      let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+      const isLocked = awaitingVendorDecision || userMessageCount >= INITIAL_LIMIT;
+      let limit = INITIAL_LIMIT;
       let remaining = limit - userMessageCount;
       
       if(awaitingVendorDecision) {
@@ -331,7 +331,7 @@ export default function PersonalMessagesPage() {
                     </Avatar>
                     <div className="flex-1 overflow-hidden">
                         <div className="flex justify-between items-center">
-                            <p className="font-semibold">{convo.customerId}</p>
+                            <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
                             <div className="flex items-center gap-2">
                             {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
                             {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
@@ -353,7 +353,7 @@ export default function PersonalMessagesPage() {
                     <AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback>
                   </Avatar>
                    <div>
-                       <h2 className="text-lg font-semibold">{selectedConversation.customerId}</h2>
+                       <h2 className="text-lg font-semibold">{`Chat #${selectedConversation.id.toString().padStart(6, '0')}`}</h2>
                        {selectedConversation.status === 'flagged' && <Badge variant="destructive" className="mt-1">Flagged for Review</Badge>}
                    </div>
                 </div>
