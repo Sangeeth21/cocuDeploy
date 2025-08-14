@@ -15,8 +15,6 @@ import type { Message, Conversation } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useVerification } from "@/context/vendor-verification-context";
 
 type Attachment = {
     name: string;
@@ -24,7 +22,7 @@ type Attachment = {
     url: string;
 }
 
-const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] = [
+const initialConversations: Conversation[] = [
   {
     id: 1,
     customerId: "CUST001",
@@ -39,7 +37,6 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     userMessageCount: 3,
     awaitingVendorDecision: false,
     status: 'active',
-    type: 'customer',
   },
   {
     id: 2,
@@ -51,7 +48,6 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
-    type: 'customer',
   },
   {
     id: 3,
@@ -63,7 +59,6 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
-    type: 'customer',
   },
    {
     id: 4,
@@ -75,23 +70,7 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
-    type: 'customer',
   },
-  {
-    id: 5,
-    customerId: "Corporate Client Inc.",
-    vendorId: "VDR001",
-    avatar: "https://placehold.co/40x40.png",
-    messages: [
-      { id: 'ccm1', sender: 'customer', text: 'Hello, we are interested in a bulk order of the Classic Leather Watch for a corporate event. Can you provide a quote for 500 units?' },
-      { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?', status: 'sent'},
-    ],
-    unread: true,
-    userMessageCount: 1,
-    awaitingVendorDecision: false,
-    status: 'active',
-    type: 'corporate',
-  }
 ];
 
 function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open: boolean, onOpenChange: (open: boolean) => void, onContinue: () => void, onEnd: () => void }) {
@@ -125,8 +104,6 @@ export default function VendorMessagesPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
-  const { vendorType } = useVerification();
-  const defaultTab = vendorType === 'corporate' ? 'corporate' : 'customer';
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
@@ -178,7 +155,7 @@ export default function VendorMessagesPage() {
     setIsConversionDialogOpen(false);
     toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
   }
-  
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !selectedConversationId) return;
@@ -277,51 +254,44 @@ export default function VendorMessagesPage() {
              }
         }
     }, [selectedConversation?.messages, selectedConversationId]);
-    
-    const renderConversationList = (type: 'customer' | 'corporate') => {
-        const filteredList = conversations.filter(c => c.type === type);
-        return (
-            <ScrollArea className="flex-1">
-                {filteredList.map(convo => (
-                <div
-                    key={convo.id}
-                    className={cn(
-                    "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
-                    selectedConversationId === convo.id && "bg-muted"
-                    )}
-                    onClick={() => handleSelectConversation(convo.id)}
-                >
-                    <Avatar>
-                    <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
-                    <AvatarFallback>{convo.customerId?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 overflow-hidden">
-                        <div className="flex justify-between items-center">
-                            <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
-                            <div className="flex items-center gap-2">
-                            {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
-                            {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
-                            </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
-                    </div>
-                </div>
-                ))}
-            </ScrollArea>
-        )
-    }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-full">
         <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full border-r bg-card">
           <div className="p-4 border-b">
-            <h1 className="text-2xl font-bold font-headline">Messages</h1>
+            <h1 className="text-2xl font-bold font-headline">Inbox</h1>
             <div className="relative mt-2">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search conversations..." className="pl-8" />
             </div>
           </div>
-          {renderConversationList('customer')}
+          <ScrollArea className="flex-1">
+            {conversations.map(convo => (
+              <div
+                key={convo.id}
+                className={cn(
+                  "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
+                  selectedConversationId === convo.id && "bg-muted"
+                )}
+                onClick={() => handleSelectConversation(convo.id)}
+              >
+                <Avatar>
+                  <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
+                  <AvatarFallback>{convo.customerId?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 overflow-hidden">
+                    <div className="flex justify-between items-center">
+                        <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
+                        <div className="flex items-center gap-2">
+                        {convo.status === 'flagged' && <AlertTriangle className="w-4 w-4 text-destructive" />}
+                        {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
+                        </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
+                </div>
+              </div>
+            ))}
+          </ScrollArea>
         </div>
         <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full">
           {selectedConversation ? (
@@ -404,14 +374,14 @@ export default function VendorMessagesPage() {
                           <Textarea
                               ref={textareaRef}
                               placeholder={isLocked ? "Message limit reached. Awaiting your decision..." : "Type your message..."}
-                              className="pr-12 resize-none max-h-48"
+                              className="pr-20 resize-none max-h-48"
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}
                               maxLength={MAX_MESSAGE_LENGTH}
                               rows={1}
                               disabled={isLocked}
                           />
-                           {!isLocked && <p className="absolute bottom-1 right-2 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
+                           {!isLocked && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
                       </div>
                       <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
                   </div>

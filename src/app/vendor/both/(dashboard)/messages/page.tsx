@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useVerification } from "@/context/vendor-verification-context";
+import { useSearchParams } from "next/navigation";
 
 type Attachment = {
     name: string;
@@ -125,8 +126,8 @@ export default function BothVendorMessagesPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
-  const { vendorType } = useVerification();
-  const defaultTab = vendorType === 'corporate' ? 'corporate' : 'customer';
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') === 'corporate' ? 'corporate' : 'customer';
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
@@ -277,6 +278,9 @@ export default function BothVendorMessagesPage() {
              }
         }
     }, [selectedConversation?.messages, selectedConversationId]);
+
+    const customerUnreadCount = conversations.filter(c => c.type === 'customer' && c.unread).length;
+    const corporateUnreadCount = conversations.filter(c => c.type === 'corporate' && c.unread).length;
     
     const renderConversationList = (type: 'customer' | 'corporate') => {
         const filteredList = conversations.filter(c => c.type === type);
@@ -320,15 +324,21 @@ export default function BothVendorMessagesPage() {
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search conversations..." className="pl-8" />
             </div>
-            <Tabs defaultValue={defaultTab} className="w-full mt-2">
+            <Tabs defaultValue={initialTab} className="w-full mt-2">
                 <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="customer">Customer</TabsTrigger>
-                    <TabsTrigger value="corporate">Corporate</TabsTrigger>
+                    <TabsTrigger value="customer">
+                        Customer
+                        {customerUnreadCount > 0 && <Badge className="ml-2">{customerUnreadCount}</Badge>}
+                    </TabsTrigger>
+                    <TabsTrigger value="corporate">
+                        Corporate
+                        {corporateUnreadCount > 0 && <Badge className="ml-2">{corporateUnreadCount}</Badge>}
+                    </TabsTrigger>
                 </TabsList>
-                <TabsContent value="customer">
+                <TabsContent value="customer" className="h-[calc(100vh-22rem)]">
                     {renderConversationList('customer')}
                 </TabsContent>
-                <TabsContent value="corporate">
+                <TabsContent value="corporate" className="h-[calc(100vh-22rem)]">
                     {renderConversationList('corporate')}
                 </TabsContent>
             </Tabs>
