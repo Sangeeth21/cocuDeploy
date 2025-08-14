@@ -27,6 +27,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Alert, AlertTitle, AlertDescription as AlertDesc } from "@/components/ui/alert";
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -1028,9 +1029,9 @@ export default function NewProductPage() {
                     <Alert variant="destructive">
                         <Box className="h-4 w-4" />
                         <AlertTitle>Important</AlertTitle>
-                        <AlertDescription>
+                        <AlertDesc>
                             Please provide accurate details. Any price difference in shipping due to incorrect information will be deducted from your payout.
-                        </AlertDescription>
+                        </AlertDesc>
                     </Alert>
                 </CardContent>
             </Card>
@@ -1041,7 +1042,7 @@ export default function NewProductPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="category">Category</Label>
-                        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
                             <SelectTrigger id="category">
                                 <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
@@ -1195,3 +1196,5 @@ export default function NewProductPage() {
     </>
   );
 }
+
+    
