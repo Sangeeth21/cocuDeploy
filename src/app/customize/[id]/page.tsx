@@ -847,7 +847,7 @@ export default function CustomizeProductPage() {
             const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
             
             const result = await generateImageWithStyle({
-                prompt: aiPrompt,
+                prompt: aiPrompt || 'A beautiful image',
                 styleBackendPrompt: style?.backendPrompt || '',
                 aspectRatio,
                 referenceImageDataUri
@@ -1083,14 +1083,14 @@ export default function CustomizeProductPage() {
                                                 </div>
                                                  <div className="space-y-2">
                                                     <Label>Aspect Ratio</Label>
-                                                    <Select value={aspectRatio} onValueChange={setAspectRatio}>
+                                                     <Select value={aspectRatio} onValueChange={setAspectRatio}>
                                                         <SelectTrigger><SelectValue /></SelectTrigger>
                                                         <SelectContent>
-                                                            <SelectItem value="1:1">1:1 (For Mugs, Coasters, Lockets)</SelectItem>
-                                                            <SelectItem value="4:5">4:5 (For Posters, T-Shirt Chest)</SelectItem>
-                                                            <SelectItem value="9:16">9:16 (For Phone Cases, Tumblers)</SelectItem>
-                                                            <SelectItem value="3:4">3:4 (For Small Posters, Apparel)</SelectItem>
-                                                            <SelectItem value="1.91:1">1.91:1 (For Landscape Banners)</SelectItem>
+                                                            <SelectItem value="1:1">1:1 (Mugs, Coasters, Lockets)</SelectItem>
+                                                            <SelectItem value="4:5">4:5 (Posters, T-Shirt Chest)</SelectItem>
+                                                            <SelectItem value="9:16">9:16 (Phone Cases, Tumblers)</SelectItem>
+                                                            <SelectItem value="3:4">3:4 (Small Posters, Apparel)</SelectItem>
+                                                            <SelectItem value="1.91:1">1.91:1 (Landscape Banners)</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>

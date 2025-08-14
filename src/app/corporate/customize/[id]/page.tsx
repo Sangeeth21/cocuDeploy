@@ -852,7 +852,7 @@ export default function CorporateCustomizePage() {
             const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
             
             const result = await generateImageWithStyle({
-                prompt: aiPrompt,
+                prompt: aiPrompt || 'A beautiful image',
                 styleBackendPrompt: style?.backendPrompt || '',
                 aspectRatio,
                 referenceImageDataUri
