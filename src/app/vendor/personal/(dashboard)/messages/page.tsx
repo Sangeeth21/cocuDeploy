@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -225,7 +224,7 @@ export default function VendorMessagesPage() {
     setSelectedConversationId(id);
     setConversations(prev =>
         prev.map(convo => 
-            convo.id === id ? { ...convo, unread: false } : convo
+            convo.id === id ? { ...convo, unread: false, unreadCount: 0 } : convo
         )
     );
   }
@@ -290,6 +289,39 @@ export default function VendorMessagesPage() {
         }
     }, [selectedConversation?.messages, selectedConversationId]);
 
+    const renderConversationList = (type: 'customer' | 'corporate') => {
+        const filteredList = conversations.filter(c => c.type === type);
+        return (
+            <ScrollArea className="h-full">
+                {filteredList.map(convo => (
+                <div
+                    key={convo.id}
+                    className={cn(
+                    "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
+                    selectedConversationId === convo.id && "bg-muted"
+                    )}
+                    onClick={() => handleSelectConversation(convo.id)}
+                >
+                    <Avatar>
+                    <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
+                    <AvatarFallback>{convo.customerId?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 overflow-hidden">
+                        <div className="flex justify-between items-center">
+                            <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
+                            <div className="flex items-center gap-2">
+                            {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
+                            {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
+                            </div>
+                        </div>
+                        <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
+                    </div>
+                </div>
+                ))}
+            </ScrollArea>
+        )
+    }
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-full">
         <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full border-r bg-card">
@@ -300,33 +332,9 @@ export default function VendorMessagesPage() {
               <Input placeholder="Search conversations..." className="pl-8" />
             </div>
           </div>
-          <ScrollArea className="flex-1">
-            {conversations.map(convo => (
-              <div
-                key={convo.id}
-                className={cn(
-                  "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
-                  selectedConversationId === convo.id && "bg-muted"
-                )}
-                onClick={() => handleSelectConversation(convo.id)}
-              >
-                <Avatar>
-                  <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
-                  <AvatarFallback>{convo.customerId?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 overflow-hidden">
-                    <div className="flex justify-between items-center">
-                        <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
-                        <div className="flex items-center gap-2">
-                        {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
-                        {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
-                        </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
-                </div>
-              </div>
-            ))}
-          </ScrollArea>
+          <div className="flex-1 overflow-hidden">
+            {renderConversationList('customer')}
+          </div>
         </div>
         <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full">
           {selectedConversation ? (
@@ -348,7 +356,7 @@ export default function VendorMessagesPage() {
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} messages left` : 'Message limit reached') : 'Chat disabled'}
+                        {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : (selectedConversation.type === 'customer' ? `${remaining} messages left` : 'Open Conversation')) : 'Chat disabled'}
                     </div>
                 </div>
               </div>
@@ -363,45 +371,43 @@ export default function VendorMessagesPage() {
                   </div>
               ) : (
                 <div className="flex-1 flex flex-col min-h-0">
-                    <div className="flex-1 min-h-0">
-                        <ScrollArea className="h-full bg-muted/20" ref={scrollAreaRef}>
-                            <div className="p-4 space-y-4">
-                            {selectedConversation.messages.map((msg, index) => (
-                                msg.sender === 'system' ? (
-                                    <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
-                                ) : (
-                                <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
-                                {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
-                                <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
-                                    {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                                    {msg.attachments && (
-                                        <div className="grid gap-2 grid-cols-2">
-                                            {msg.attachments.map((att, i) => (
-                                                att.type === 'image' ? (
-                                                    <div key={i} className="relative aspect-video rounded-md overflow-hidden">
-                                                        <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
-                                                    </div>
-                                                ) : (
-                                                    <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                                        <span className="text-xs truncate">{att.name}</span>
-                                                    </a>
-                                                )
-                                            ))}
-                                        </div>
-                                    )}
-                                    {msg.sender === 'vendor' && (
-                                        <div className="flex justify-end items-center gap-1 h-4 mt-1">
-                                            {getStatusIcon(msg.status)}
-                                        </div>
-                                    )}
-                                </div>
-                                {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
-                                </div>
-                                )
-                            ))}
+                    <ScrollArea className="flex-1 bg-muted/20">
+                        <div className="p-4 space-y-4" ref={messagesContainerRef}>
+                        {selectedConversation.messages.map((msg, index) => (
+                            msg.sender === 'system' ? (
+                                <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                            ) : (
+                            <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
+                            {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
+                            <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                                {msg.attachments && (
+                                    <div className="grid gap-2 grid-cols-2">
+                                        {msg.attachments.map((att, i) => (
+                                            att.type === 'image' ? (
+                                                <div key={i} className="relative aspect-video rounded-md overflow-hidden">
+                                                    <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
+                                                </div>
+                                            ) : (
+                                                <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
+                                                    <span className="text-xs truncate">{att.name}</span>
+                                                </a>
+                                            )
+                                        ))}
+                                    </div>
+                                )}
+                                {msg.sender === 'vendor' && (
+                                    <div className="flex justify-end items-center gap-1 h-4 mt-1">
+                                        {getStatusIcon(msg.status)}
+                                    </div>
+                                )}
                             </div>
-                        </ScrollArea>
-                    </div>
+                            {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
+                            </div>
+                            )
+                        ))}
+                        </div>
+                    </ScrollArea>
                     <form onSubmit={handleSendMessage} className="p-4 border-t space-y-2 flex-shrink-0">
                         <div className="flex items-center gap-2">
                             <div className="relative flex-1">
@@ -415,7 +421,7 @@ export default function VendorMessagesPage() {
                                     rows={1}
                                     disabled={isLocked}
                                 />
-                                {!isLocked && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
+                                {!isLocked && selectedConversation.type === 'customer' && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
                             </div>
                             <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
                         </div>

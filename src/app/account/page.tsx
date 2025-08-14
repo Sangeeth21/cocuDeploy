@@ -846,8 +846,7 @@ export default function AccountPage() {
                           </div>
                       ) : (
                           <div className="flex-1 flex flex-col min-h-0">
-                            <div className="flex-1 min-h-0">
-                                <ScrollArea className="h-full bg-muted/20">
+                                <ScrollArea className="flex-1 bg-muted/20">
                                     <div className="p-4 space-y-4" ref={messagesContainerRef}>
                                     {selectedConversation.messages.map((msg, index) => (
                                         msg.sender === 'system' ? (
@@ -881,7 +880,6 @@ export default function AccountPage() {
                                     ))}
                                     </div>
                                 </ScrollArea>
-                            </div>
                             <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2 flex-shrink-0">
                                 {attachments.length > 0 && !isLocked && (
                                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -1103,8 +1101,7 @@ export default function AccountPage() {
                         </div>
                          <Dialog open={isAddressFormOpen} onOpenChange={setIsAddressFormOpen}>
                             <DialogTrigger asChild>
-                                <Button><PlusCircle className="mr-2"/> Add Address</Button>
-                            </DialogTrigger>
+                                <Button><PlusCircle className="mr-2"/> Add Address</Button></DialogTrigger>
                             <DialogContent className="sm:max-w-[480px]">
                                 <DialogHeader><DialogTitle>Add New Shipping Address</DialogTitle></DialogHeader>
                                 <div className="space-y-4 py-2">
