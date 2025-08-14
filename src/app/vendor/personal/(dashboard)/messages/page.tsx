@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, MessageSquare, AlertTriangle, Check, EyeOff, Eye, CheckCheck } from "lucide-react";
+import { Search, Send, MessageSquare, Paperclip, X, File as FileIcon, ImageIcon, Download, Check, EyeOff, Eye, AlertTriangle, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
@@ -75,8 +75,8 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     messages: [{ id: 'msg6', sender: "customer", text: "What is the return policy?" }],
     unread: true,
     unreadCount: 9,
-    userMessageCount: 9,
-    awaitingVendorDecision: true,
+    userMessageCount: 1,
+    awaitingVendorDecision: false,
     status: 'active',
     type: 'customer',
   },
@@ -124,6 +124,7 @@ export default function VendorMessagesPage() {
   const [conversations, setConversations] = useState(initialConversations.filter(c => c.type === 'customer'));
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(1);
   const [newMessage, setNewMessage] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1500;
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -183,48 +184,65 @@ export default function VendorMessagesPage() {
     toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
   }
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+        const newFiles = Array.from(e.target.files);
+        if (attachments.length + newFiles.length > 5) {
+             toast({
+                variant: "destructive",
+                title: "Attachment Limit Exceeded",
+                description: "You can only attach up to 5 files.",
+            });
+            return;
+        }
+        setAttachments(prev => [...prev, ...newFiles]);
+    }
+  }
+
+  const removeAttachment = (fileToRemove: File) => {
+    setAttachments(prev => prev.filter(file => file !== fileToRemove));
+  }
+  
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConversationId) return;
+    if (!newMessage.trim() && attachments.length === 0 || !selectedConversationId) return;
+
+    const newAttachments: Attachment[] = attachments.map(file => ({
+        name: file.name,
+        type: file.type.startsWith("image/") ? "image" : "file",
+        url: URL.createObjectURL(file), 
+    }));
 
     const newMessageObj: Message = { 
         id: Math.random().toString(),
         sender: "vendor", 
         text: newMessage,
         status: 'sent',
+        ...(newAttachments.length > 0 && {attachments: newAttachments})
     };
 
     setConversations(prev =>
       prev.map(convo => {
          if (convo.id !== selectedConversationId) return convo;
         
-        const newCount = convo.userMessageCount + 1;
-        const updatedConvo = {
-            ...convo,
-            messages: [...convo.messages, newMessageObj],
-            userMessageCount: newCount,
-        };
+        const updatedConvo = { ...convo, messages: [...convo.messages, newMessageObj] };
 
-        if (newCount === 9) {
+        if (updatedConvo.userMessageCount === 15) {
             updatedConvo.awaitingVendorDecision = true;
-            updatedConvo.messages.push({
-                id: 'system-wait',
-                sender: 'system' as const,
-                text: 'You have reached the initial message limit. Please wait for the customer to respond or decide to continue the chat.'
-            });
         }
         
         return updatedConvo;
       })
     );
     setNewMessage("");
+    setAttachments([]);
   };
   
   const handleSelectConversation = (id: number) => {
     setSelectedConversationId(id);
     setConversations(prev =>
         prev.map(convo => 
-            convo.id === id ? { ...convo, unread: false, unreadCount: 0 } : convo
+            convo.id === id ? { ...convo, unread: false } : convo
         )
     );
   }
@@ -254,21 +272,12 @@ export default function VendorMessagesPage() {
     }
     
   const getChatLimit = () => {
-      if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
-
-      const INITIAL_LIMIT = 9;
-      const EXTENDED_LIMIT = 17; // 9 initial + 8 extended
-
-      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
-      let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
-      let remaining = limit - userMessageCount;
-      
-      if(awaitingVendorDecision) {
-        remaining = 0;
-      }
-      
-      return { limit, remaining: Math.max(0, remaining), isLocked };
+    if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
+    const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
+    const limit = 4;
+    const remaining = limit - userMessageCount;
+    const isLocked = userMessageCount >= limit || status !== 'active';
+    return { limit, remaining: Math.max(0, remaining), isLocked };
   }
   
   const { remaining, isLocked } = getChatLimit();
@@ -288,11 +297,11 @@ export default function VendorMessagesPage() {
              }
         }
     }, [selectedConversation?.messages, selectedConversationId]);
-
+    
     const renderConversationList = (type: 'customer' | 'corporate') => {
         const filteredList = conversations.filter(c => c.type === type);
         return (
-            <ScrollArea className="h-full">
+            <ScrollArea className="flex-1">
                 {filteredList.map(convo => (
                 <div
                     key={convo.id}
@@ -308,7 +317,7 @@ export default function VendorMessagesPage() {
                     </Avatar>
                     <div className="flex-1 overflow-hidden">
                         <div className="flex justify-between items-center">
-                            <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
+                            <p className="font-semibold">{convo.customerId}</p>
                             <div className="flex items-center gap-2">
                             {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
                             {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
@@ -327,14 +336,22 @@ export default function VendorMessagesPage() {
         <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full border-r bg-card">
           <div className="p-4 border-b">
             <h1 className="text-2xl font-bold font-headline">Inbox</h1>
+             {(vendorType === 'both') ? (
+                  <Tabs defaultValue={defaultTab} className="w-full mt-2">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="customer">Customer</TabsTrigger>
+                        <TabsTrigger value="corporate">Corporate</TabsTrigger>
+                    </TabsList>
+                 </Tabs>
+             ) : (
+                <h2 className="text-lg font-medium text-muted-foreground capitalize">{vendorType} Messages</h2>
+             )}
             <div className="relative mt-2">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search conversations..." className="pl-8" />
             </div>
           </div>
-          <div className="flex-1 overflow-hidden">
-            {renderConversationList('customer')}
-          </div>
+          {renderConversationList(vendorType === 'corporate' ? 'corporate' : 'customer')}
         </div>
         <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full">
           {selectedConversation ? (
@@ -346,7 +363,7 @@ export default function VendorMessagesPage() {
                     <AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback>
                   </Avatar>
                    <div>
-                       <h2 className="text-lg font-semibold">{`Chat #${selectedConversation.id.toString().padStart(6, '0')}`}</h2>
+                       <h2 className="text-lg font-semibold">{selectedConversation.customerId}</h2>
                        {selectedConversation.status === 'flagged' && <Badge variant="destructive" className="mt-1">Flagged for Review</Badge>}
                    </div>
                 </div>
@@ -356,7 +373,7 @@ export default function VendorMessagesPage() {
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : (selectedConversation.type === 'customer' ? `${remaining} messages left` : 'Open Conversation')) : 'Chat disabled'}
+                        {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : `${remaining} messages left`) : 'Chat disabled'}
                     </div>
                 </div>
               </div>
@@ -370,9 +387,10 @@ export default function VendorMessagesPage() {
                       </p>
                   </div>
               ) : (
-                <div className="flex-1 flex flex-col min-h-0">
-                    <ScrollArea className="flex-1 bg-muted/20">
-                        <div className="p-4 space-y-4" ref={messagesContainerRef}>
+                <>
+                <CardContent className="flex-1 p-0">
+                    <ScrollArea className="h-full bg-muted/20" ref={scrollAreaRef}>
+                        <div className="p-4 space-y-4">
                         {selectedConversation.messages.map((msg, index) => (
                             msg.sender === 'system' ? (
                                 <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
@@ -390,7 +408,9 @@ export default function VendorMessagesPage() {
                                                 </div>
                                             ) : (
                                                 <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
+                                                    <FileIcon className="h-6 w-6 text-muted-foreground"/>
                                                     <span className="text-xs truncate">{att.name}</span>
+                                                    <Download className="h-4 w-4 ml-auto" />
                                                 </a>
                                             )
                                         ))}
@@ -408,26 +428,42 @@ export default function VendorMessagesPage() {
                         ))}
                         </div>
                     </ScrollArea>
-                    <form onSubmit={handleSendMessage} className="p-4 border-t space-y-2 flex-shrink-0">
-                        <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                                <Textarea
-                                    ref={textareaRef}
-                                    placeholder={isLocked ? "Message limit reached. Awaiting your decision..." : "Type your message..."}
-                                    className="pr-20 resize-none max-h-48"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    maxLength={MAX_MESSAGE_LENGTH}
-                                    rows={1}
-                                    disabled={isLocked}
-                                />
-                                {!isLocked && selectedConversation.type === 'customer' && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
-                            </div>
-                            <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
-                        </div>
-                    </form>
-                </div>
-              )}
+                </CardContent>
+                <form onSubmit={handleSendMessage} className="p-4 border-t space-y-2">
+                   {attachments.length > 0 && !isLocked && (
+                      <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                          {attachments.map((file, index) => (
+                              <div key={index} className="relative group border rounded-md p-2 flex items-center gap-2 bg-muted/50">
+                                  {file.type.startsWith('image/') ? <ImageIcon className="h-5 w-5 text-muted-foreground" /> : <FileIcon className="h-5 w-5 text-muted-foreground" />}
+                                  <p className="text-xs text-muted-foreground truncate">{file.name}</p>
+                                  <Button size="icon" variant="ghost" className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100" onClick={() => removeAttachment(file)}><X className="h-3 w-3" /></Button>
+                              </div>
+                          ))}
+                      </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                          <Textarea
+                              ref={textareaRef}
+                              placeholder={isLocked ? "Message limit reached. Awaiting your decision..." : "Type your message..."}
+                              className="pr-20 resize-none max-h-48"
+                              value={newMessage}
+                              onChange={(e) => setNewMessage(e.target.value)}
+                              maxLength={MAX_MESSAGE_LENGTH}
+                              rows={1}
+                              disabled={isLocked}
+                          />
+                           {!isLocked && <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>}
+                      </div>
+                      <Button type="button" variant="ghost" size="icon" asChild disabled={isLocked}>
+                          <label htmlFor="vendor-file-upload"><Paperclip className="h-5 w-5" /></label>
+                      </Button>
+                      <input id="vendor-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} disabled={isLocked} />
+                      <Button type="submit" size="icon" disabled={isLocked || (!newMessage.trim() && attachments.length === 0)}><Send className="h-4 w-4" /></Button>
+                  </div>
+                </form>
+              </>
+            )}
             </Card>
           ) : (
              <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center bg-card">

@@ -33,6 +33,7 @@ const initialConversations: Conversation[] = [
       { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?', status: 'sent'},
     ],
     unread: true,
+    unreadCount: 1,
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
@@ -112,6 +113,26 @@ export default function CorporateMessagesPage() {
       }
     }
 
+    const getChatLimit = () => {
+      if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
+      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
+  
+      const INITIAL_LIMIT = 5;
+      const EXTENDED_LIMIT = 13; // 5 initial + 8 extended
+  
+      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
+      let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+      let remaining = limit - userMessageCount;
+      
+      if(awaitingVendorDecision) {
+        remaining = 0;
+      }
+      
+      return { limit, remaining: Math.max(0, remaining), isLocked };
+  }
+
+    const { remaining, isLocked } = getChatLimit();
+
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
@@ -187,7 +208,7 @@ export default function CorporateMessagesPage() {
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? 'Open Conversation' : 'Chat disabled'}
+                        {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : `${remaining} messages left`) : 'Chat disabled'}
                     </div>
                 </div>
               </div>

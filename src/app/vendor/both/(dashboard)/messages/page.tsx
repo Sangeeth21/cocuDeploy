@@ -383,7 +383,7 @@ export default function BothVendorMessagesPage() {
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : (selectedConversation.type === 'customer' ? `${remaining} messages left` : 'Open Conversation')) : 'Chat disabled'}
+                        {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : `${remaining} messages left`) : 'Chat disabled'}
                     </div>
                 </div>
               </div>
