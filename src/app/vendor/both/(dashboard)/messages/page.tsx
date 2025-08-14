@@ -76,8 +76,8 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     messages: [{ id: 'msg6', sender: "customer", text: "What is the return policy?" }],
     unread: true,
     unreadCount: 9,
-    userMessageCount: 9,
-    awaitingVendorDecision: true,
+    userMessageCount: 1,
+    awaitingVendorDecision: false,
     status: 'active',
     type: 'customer',
   },
@@ -153,35 +153,40 @@ export default function BothVendorMessagesPage() {
 
   const handleContinueChat = () => {
     if (!selectedConversationId) return;
-    setConversations(prev => prev.map(c => {
+    const updatedConversations = conversations.map(c => {
         if (c.id === selectedConversationId) {
             return {
                 ...c,
                 awaitingVendorDecision: false,
-                messages: [...c.messages, {id: 'system-continue', sender: 'system' as const, text: 'Vendor extended the chat. 8 messages remaining.'}]
+                messages: [...c.messages, {id: 'system-continue', sender: 'system' as const, text: 'You extended the chat. 8 messages remaining.'}]
             };
         }
         return c;
-    }));
+    });
+
+    setConversations(updatedConversations);
+    setSelectedConversation(updatedConversations.find(c => c.id === selectedConversationId) || null);
     setIsConversionDialogOpen(false);
     toast({ title: 'Chat Extended', description: 'You can now send 8 more messages.' });
   }
 
   const handleEndChat = () => {
       if (!selectedConversationId) return;
-      setConversations(prev => prev.map(c => {
+      const updatedConversations = conversations.map(c => {
         if (c.id === selectedConversationId) {
             return {
                 ...c,
                 awaitingVendorDecision: false,
-                userMessageCount: 17, // 9 + 8, to lock it
-                messages: [...c.messages, {id: 'system-end', sender: 'system' as const, text: 'Vendor has ended the chat.'}]
+                status: 'locked' as const,
+                messages: [...c.messages, {id: 'system-end', sender: 'system' as const, text: 'You have ended the chat.'}]
             };
         }
         return c;
-    }));
-    setIsConversionDialogOpen(false);
-    toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
+      });
+      setConversations(updatedConversations);
+      setSelectedConversation(updatedConversations.find(c => c.id === selectedConversationId) || null);
+      setIsConversionDialogOpen(false);
+      toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
   }
 
   const handleSendMessage = (e: React.FormEvent) => {
@@ -195,29 +200,27 @@ export default function BothVendorMessagesPage() {
         status: 'sent',
     };
 
-    setConversations(prev =>
-      prev.map(convo => {
-         if (convo.id !== selectedConversationId) return convo;
-        
+    const newConversations = conversations.map(convo => {
+        if (convo.id !== selectedConversationId) return convo;
+    
         const newCount = convo.userMessageCount + 1;
         const updatedConvo = {
             ...convo,
             messages: [...convo.messages, newMessageObj],
-            userMessageCount: newCount,
         };
 
-        if (updatedConvo.type === 'customer' && newCount === 9) {
-            updatedConvo.awaitingVendorDecision = true;
-            updatedConvo.messages.push({
-                id: 'system-wait',
-                sender: 'system' as const,
-                text: 'You have reached the initial message limit. Please wait for the customer to respond or decide to continue the chat.'
-            });
+        if (convo.type === 'corporate') {
+             updatedConvo.userMessageCount = newCount;
+             if (newCount === 5) {
+                updatedConvo.awaitingVendorDecision = true;
+             }
         }
-        
+    
         return updatedConvo;
-      })
-    );
+    });
+    
+    setConversations(newConversations);
+    setSelectedConversation(newConversations.find(c => c.id === selectedConversationId) || null);
     setNewMessage("");
   };
   
@@ -259,20 +262,18 @@ export default function BothVendorMessagesPage() {
     const { userMessageCount, awaitingVendorDecision, type, status } = selectedConversation;
 
     if (type === 'corporate') {
-        const isLocked = awaitingVendorDecision || status !== 'active';
-        let remaining = isLocked ? 0 : 5 - userMessageCount;
-        if (awaitingVendorDecision && userMessageCount >= 5) {
-            remaining = 8;
+        const INITIAL_LIMIT = 5;
+        const EXTENDED_LIMIT = 13; // 5 initial + 8 extended
+    
+        const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
+        let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+        let remaining = limit - userMessageCount;
+        
+        if(awaitingVendorDecision) {
+          remaining = 0;
         }
-        if (userMessageCount >= 13) {
-            return {limit: 13, remaining: 0, isLocked: true};
-        }
-
-        return {
-            limit: awaitingVendorDecision ? 13 : 5,
-            remaining: isLocked ? 0 : remaining,
-            isLocked,
-        };
+        
+        return { limit, remaining: Math.max(0, remaining), isLocked };
     }
 
     // Personalized chat logic
@@ -383,7 +384,7 @@ export default function BothVendorMessagesPage() {
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : `${remaining} messages left`) : 'Chat disabled'}
+                         {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : `${remaining} messages left`) : 'Chat disabled'}
                     </div>
                 </div>
               </div>

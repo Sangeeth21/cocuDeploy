@@ -2,116 +2,186 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, MessageSquare, AlertTriangle, Check, Eye, EyeOff, CheckCheck } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import Image from "next/image";
-import { Textarea } from "@/components/ui/textarea";
-import type { Message, Conversation } from "@/lib/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { MessageSquare, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, Check, EyeOff, Eye, CheckCheck } from "lucide-react";
+import type { User, SupportTicket as BaseSupportTicket, Message as BaseMessage, Attachment } from "@/lib/types";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import Image from "next/image";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
-type Attachment = {
-    name: string;
-    type: 'image' | 'file';
-    url: string;
+type Message = BaseMessage & {
+    status?: 'sending' | 'sent' | 'read';
 }
 
-const initialConversations: Conversation[] = [
+type Conversation = BaseSupportTicket & {
+    messages: Message[];
+    customerId?: string; // Add this to align with other conversation types
+    unreadCount?: number;
+    userMessageCount: number;
+    awaitingVendorDecision: boolean;
+}
+
+const initialConversations: (Omit<Conversation, 'vendor'>)[] = [
   {
-    id: 5,
+    id: 'CORP_MSG_1',
     customerId: "Corporate Client Inc.",
-    vendorId: "VDR001",
-    avatar: "https://placehold.co/40x40.png",
+    subject: "Bulk Order Payout Question",
+    message: "Hi, how are payouts for large corporate orders handled? Are they different from regular orders?",
+    date: "2024-06-21",
+    status: 'active',
     messages: [
-      { id: 'ccm1', sender: 'customer', text: 'Hello, we are interested in a bulk order of the Classic Leather Watch for a corporate event. Can you provide a quote for 500 units?' },
-      { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?', status: 'sent'},
+        { id: 'ccm1', sender: 'customer', text: 'Hello, we are interested in a bulk order of the Classic Leather Watch for a corporate event. Can you provide a quote for 500 units?' },
+        { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?', status: 'sent'},
     ],
     unread: true,
     unreadCount: 1,
     userMessageCount: 1,
     awaitingVendorDecision: false,
-    status: 'active',
   }
 ];
 
+
+function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open: boolean, onOpenChange: (open: boolean) => void, onContinue: () => void, onEnd: () => void }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-primary"/> Potential Conversion</DialogTitle>
+                    <DialogDescription>
+                        You've reached the initial message limit. Do you believe this customer will place an order?
+                    </DialogDescription>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                    Continuing the chat will grant 8 more messages. Ending the chat will lock the conversation.
+                </p>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onEnd}>End Chat</Button>
+                    <Button onClick={onContinue}>Yes, Continue Chat</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
 export default function CorporateMessagesPage() {
-  const [conversations, setConversations] = useState(initialConversations);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(5);
-  const [newMessage, setNewMessage] = useState("");
-  const MAX_MESSAGE_LENGTH = 1500;
-  const { toast } = useToast();
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+    const { toast } = useToast();
+    const router = useRouter();
+    const [conversations, setConversations] = useState(initialConversations);
+    const [selectedConversation, setSelectedConversation] = useState<(Omit<Conversation, 'vendor'>) | null>(initialConversations[0]);
+    
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    
+    const [newMessage, setNewMessage] = useState("");
+    const MAX_MESSAGE_LENGTH = 1500;
 
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
-  
-  const handleReportConversation = (id: number) => {
-    setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'flagged' } : c));
-    toast({
-        title: "Conversation Reported",
-        description: "Thank you. Our moderation team will review this chat.",
-    });
-  }
+    const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !selectedConversationId) return;
+    useEffect(() => {
+        if (selectedConversation?.awaitingVendorDecision) {
+            setIsConversionDialogOpen(true);
+        } else {
+            setIsConversionDialogOpen(false);
+        }
+    }, [selectedConversation]);
 
-    const newMessageObj: Message = { 
-        id: Math.random().toString(),
-        sender: "vendor", 
-        text: newMessage,
-        status: 'sent',
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    setConversations(prev =>
-      prev.map(convo => 
-        convo.id === selectedConversationId
-          ? { ...convo, messages: [...convo.messages, newMessageObj] }
-          : convo
-      )
-    );
-    setNewMessage("");
-  };
-  
-  const handleSelectConversation = (id: number) => {
-    setSelectedConversationId(id);
-    setConversations(prev =>
-        prev.map(convo => 
-            convo.id === id ? { ...convo, unread: false, unreadCount: 0 } : convo
-        )
-    );
-  }
+    useEffect(() => {
+        scrollToBottom();
+    }, [selectedConversation?.messages.length]);
 
-  const getLastMessage = (messages: Message[]) => {
-      if (messages.length === 0) return "No messages yet.";
-      const lastMsg = messages.filter(m => m.sender !== 'system').pop();
-      if (!lastMsg) return "No messages yet.";
-      
-      const prefix = lastMsg.sender === 'vendor' ? 'You: ' : '';
-      if (lastMsg.text) return `${prefix}${lastMsg.text}`;
-      if (lastMsg.attachments && lastMsg.attachments.length > 0) return `${prefix}Sent ${lastMsg.attachments.length} attachment(s)`;
-      return "No messages yet.";
-  }
-  
-    const getStatusIcon = (status?: 'sent' | 'delivered' | 'read') => {
-      switch(status) {
-          case 'read':
-              return <Eye className="h-4 w-4 text-primary-foreground" />;
-          case 'delivered':
-              return <EyeOff className="h-4 w-4 text-primary-foreground" />;
-          case 'sent':
-              return <Check className="h-4 w-4 text-primary-foreground" />;
-          default:
-              return null;
+     const handleContinueChat = () => {
+        if (!selectedConversation) return;
+        
+        const updatedConversation = { 
+            ...selectedConversation,
+            awaitingVendorDecision: false,
+            messages: [...selectedConversation.messages, {id: 'system-continue', sender: 'system' as const, text: 'You extended the chat. 8 messages remaining.'}]
+        };
+        
+        setConversations(prev => prev.map(t => t.id === selectedConversation.id ? updatedConversation : t));
+        setSelectedConversation(updatedConversation);
+
+        setIsConversionDialogOpen(false);
+        toast({ title: 'Chat Extended', description: 'You can now send 8 more messages.' });
+    };
+
+    const handleEndChat = () => {
+        if (!selectedConversation) return;
+        const updatedConversation = { 
+            ...selectedConversation, 
+            awaitingVendorDecision: false,
+            status: 'locked',
+            messages: [...selectedConversation.messages, {id: 'system-end', sender: 'system' as const, text: 'You have ended the chat.'}]
+        } as Omit<Conversation, 'vendor'>;
+
+        setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedConversation : c));
+        setSelectedConversation(updatedConversation);
+        
+        setIsConversionDialogOpen(false);
+        toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
+    };
+
+     const handleSendMessage = useCallback(async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newMessage.trim() || !selectedConversation) return;
+
+        const newVendorMessage: Message = { 
+            id: `vendor-${Date.now()}`,
+            sender: "vendor", 
+            text: newMessage,
+            timestamp: new Date(),
+            status: 'sent'
+        };
+
+        const currentTicketId = selectedConversation.id;
+        
+        const newConversations = conversations.map(t => {
+            if (t.id === currentTicketId) {
+                const updatedConvo = {
+                    ...t,
+                    messages: [...t.messages, newVendorMessage],
+                    userMessageCount: t.userMessageCount + 1,
+                };
+                
+                if (updatedConvo.userMessageCount === 5) {
+                    updatedConvo.awaitingVendorDecision = true;
+                }
+
+                return updatedConvo;
+            }
+            return t;
+        });
+
+        setConversations(newConversations);
+        setSelectedConversation(newConversations.find(t => t.id === currentTicketId) || null);
+        
+        setNewMessage("");
+
+      }, [newMessage, selectedConversation, conversations]);
+
+      const handleSelectConversation = (id: string) => {
+        const ticket = conversations.find(t => t.id === id);
+        if(ticket) {
+            setSelectedConversation(ticket);
+            // Mark as read
+            setConversations(prev => prev.map(t => t.id === id ? {...t, unread: false, unreadCount: 0} : t));
+        }
       }
-    }
 
     const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
@@ -129,165 +199,136 @@ export default function CorporateMessagesPage() {
       }
       
       return { limit, remaining: Math.max(0, remaining), isLocked };
-  }
+  };
 
-    const { remaining, isLocked } = getChatLimit();
+  const { remaining, isLocked } = getChatLimit();
 
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = "auto";
-            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-        }
-    }, [newMessage]);
+    const getStatusIcon = (status?: 'sending' | 'sent' | 'read') => {
+      switch(status) {
+          case 'sending':
+              return <Clock className="h-3 w-3 text-primary-foreground/70" />;
+          case 'sent':
+              return <Check className="h-3 w-3 text-primary-foreground" />;
+          case 'read':
+               return <CheckCheck className="h-3 w-3 text-primary-foreground" />;
+          default:
+              return null;
+      }
+    }
 
-    useEffect(() => {
-        if (scrollAreaRef.current) {
-             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-             if(scrollableView){
-                 scrollableView.scrollTop = scrollableView.scrollHeight;
-             }
-        }
-    }, [selectedConversation?.messages, selectedConversationId]);
 
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-full">
-        <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full border-r bg-card">
-          <div className="p-4 border-b">
-            <h1 className="text-2xl font-bold font-headline">Corporate Messages</h1>
-            <div className="relative mt-2">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Search conversations..." className="pl-8" />
-            </div>
-          </div>
-          <ScrollArea className="flex-1">
-            {conversations.map(convo => (
-              <div
-                key={convo.id}
-                className={cn(
-                  "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
-                  selectedConversationId === convo.id && "bg-muted"
-                )}
-                onClick={() => handleSelectConversation(convo.id)}
-              >
-                <Avatar>
-                  <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
-                  <AvatarFallback>{convo.customerId?.charAt(0)}</AvatarFallback>
-                </Avatar>
-                <div className="flex-1 overflow-hidden">
-                    <div className="flex justify-between items-center">
-                        <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
-                        <div className="flex items-center gap-2">
-                        {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
-                        {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
-                        {convo.unread && convo.unreadCount && convo.unreadCount > 0 && <Badge variant="secondary" className="px-1.5">{convo.unreadCount}</Badge>}
+    return (
+        <>
+        <div className="grid md:grid-cols-3 gap-8 items-start h-[calc(100vh-12rem)]">
+            <div className="md:col-span-1 h-full">
+                 <Card className="h-full flex flex-col">
+                    <CardHeader>
+                        <CardTitle>Corporate Messages</CardTitle>
+                        <CardDescription>Manage inquiries from corporate clients.</CardDescription>
+                         <div className="relative mt-2">
+                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                          <Input placeholder="Search messages..." className="pl-8" />
                         </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
-                </div>
-              </div>
-            ))}
-          </ScrollArea>
-        </div>
-        <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full">
-          {selectedConversation ? (
-            <Card className="flex flex-col h-full rounded-none border-0">
-              <div className="p-4 border-b flex flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
-                  <Avatar>
-                    <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} data-ai-hint="person face" />
-                    <AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback>
-                  </Avatar>
-                   <div>
-                       <h2 className="text-lg font-semibold">{`Chat #${selectedConversation.id.toString().padStart(6, '0')}`}</h2>
-                       {selectedConversation.status === 'flagged' && <Badge variant="destructive" className="mt-1">Flagged for Review</Badge>}
-                   </div>
-                </div>
-                 <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => handleReportConversation(selectedConversation.id)}>
-                        <AlertTriangle className="h-5 w-5" />
-                        <span className="sr-only">Report Conversation</span>
-                    </Button>
-                    <div className="text-sm text-muted-foreground">
-                        {selectedConversation.status === 'active' ? (isLocked ? 'Message limit reached' : `${remaining} messages left`) : 'Chat disabled'}
-                    </div>
-                </div>
-              </div>
-              
-              {selectedConversation.status === 'flagged' ? (
-                 <div className="flex flex-col flex-1 items-center justify-center text-center p-8 bg-muted/20">
-                      <AlertTriangle className="h-12 w-12 text-destructive mb-4" />
-                      <h2 className="text-xl font-bold">Chat Flagged for Review</h2>
-                      <p className="text-muted-foreground max-w-sm">
-                          This conversation has been flagged for a potential policy violation. It is currently disabled pending review by our moderation team.
-                      </p>
-                  </div>
-              ) : (
-                <div className="flex-1 flex flex-col min-h-0">
-                    <ScrollArea className="flex-1 bg-muted/20">
-                        <div className="p-4 space-y-4" ref={messagesContainerRef}>
-                        {selectedConversation.messages.map((msg, index) => (
-                            msg.sender === 'system' ? (
-                                <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
-                            ) : (
-                            <div key={index} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
-                            {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={selectedConversation.avatar} alt={selectedConversation.customerId} /><AvatarFallback>{selectedConversation.customerId?.charAt(0)}</AvatarFallback></Avatar>}
-                            <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
-                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
-                                {msg.attachments && (
-                                    <div className="grid gap-2 grid-cols-2">
-                                        {msg.attachments.map((att, i) => (
-                                            att.type === 'image' ? (
-                                                <div key={i} className="relative aspect-video rounded-md overflow-hidden">
-                                                    <Image src={att.url} alt={att.name} fill className="object-cover" data-ai-hint="attached image" />
-                                                </div>
-                                            ) : (
-                                                <a href={att.url} key={i} download={att.name} className="flex items-center gap-2 p-2 rounded-md bg-background/50 hover:bg-background/80">
-                                                    <span className="text-xs truncate">{att.name}</span>
-                                                </a>
-                                            )
-                                        ))}
-                                    </div>
-                                )}
-                                {msg.sender === 'vendor' && (
-                                    <div className="flex justify-end items-center gap-1 h-4 mt-1">
-                                        {getStatusIcon(msg.status)}
-                                    </div>
-                                )}
+                    </CardHeader>
+                    <CardContent className="flex-1 overflow-y-auto space-y-2 p-4">
+                        {conversations.map(ticket => (
+                             <div 
+                                key={ticket.id} 
+                                className={`p-3 rounded-lg cursor-pointer border ${selectedConversation?.id === ticket.id ? 'bg-muted ring-2 ring-primary' : 'bg-card hover:bg-muted/50'}`}
+                                onClick={() => handleSelectConversation(ticket.id)}
+                            >
+                                <div className="flex justify-between items-center">
+                                    <p className="font-semibold text-sm truncate">{ticket.subject}</p>
+                                    <Badge variant={ticket.status === 'active' ? 'secondary' : 'default'}>{ticket.status}</Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground">{ticket.id} - {ticket.date}</p>
                             </div>
-                            {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Vendor" /><AvatarFallback>V</AvatarFallback></Avatar>}
-                            </div>
-                            )
                         ))}
-                        </div>
-                    </ScrollArea>
-                    <form onSubmit={handleSendMessage} className="p-4 border-t space-y-2 flex-shrink-0">
-                        <div className="flex items-center gap-2">
-                            <div className="relative flex-1">
-                                <Textarea
-                                    ref={textareaRef}
-                                    placeholder={"Type your message..."}
-                                    className="pr-20 resize-none max-h-48"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    maxLength={MAX_MESSAGE_LENGTH}
-                                    rows={1}
-                                />
-                                <p className="absolute bottom-1 right-12 text-xs text-muted-foreground">{newMessage.length}/{MAX_MESSAGE_LENGTH}</p>
+                    </CardContent>
+                </Card>
+            </div>
+             <div className="md:col-span-2 h-full">
+                {selectedConversation ? (
+                     <Card className="h-full flex flex-col">
+                        <CardHeader className="flex-shrink-0">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <CardTitle className="text-xl">{selectedConversation.subject}</CardTitle>
+                                    <CardDescription className="mt-1">
+                                        From: {selectedConversation.customerId}
+                                    </CardDescription>
+                                </div>
+                                <Avatar>
+                                    <AvatarImage src={"https://placehold.co/40x40.png"} alt={"Client"} />
+                                    <AvatarFallback>C</AvatarFallback>
+                                </Avatar>
                             </div>
-                            <Button type="submit" size="icon" disabled={!newMessage.trim()}><Send className="h-4 w-4" /></Button>
+                             <div className="text-sm text-muted-foreground pt-2">
+                                {isLocked ? 'Message limit reached' : `${remaining} messages left`}
+                            </div>
+                        </CardHeader>
+                        <div className="flex-1 flex flex-col min-h-0 bg-card">
+                            <ScrollArea className="flex-1 bg-muted/20">
+                                <div className="p-4 space-y-4">
+                                     {selectedConversation.messages.map((msg) => (
+                                        msg.sender === 'system' ? (
+                                            <div key={msg.id} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                                        ) : (
+                                        <div key={msg.id} className={cn("flex items-end gap-2", msg.sender === 'vendor' ? 'justify-end' : 'justify-start')}>
+                                            {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="Client" /><AvatarFallback>C</AvatarFallback></Avatar>}
+                                            <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'vendor' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                                {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                                                {msg.sender === 'vendor' && msg.status && (
+                                                    <div className="flex justify-end items-center gap-1 h-4 mt-1">
+                                                        <span className="text-xs text-primary-foreground/70">{msg.status}</span>
+                                                        {getStatusIcon(msg.status)}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src="https://placehold.co/40x40.png" alt="You" /><AvatarFallback>V</AvatarFallback></Avatar>}
+                                        </div>
+                                        )
+                                    ))}
+                                    <div ref={messagesEndRef} />
+                                </div>
+                            </ScrollArea>
+                             <form onSubmit={handleSendMessage} className="p-4 border-t space-y-2">
+                                 {selectedConversation.status === 'active' && (
+                                     <div className="flex items-center gap-2">
+                                        <Textarea
+                                            ref={textareaRef}
+                                            placeholder={isLocked ? "Awaiting your decision..." : "Type your message..."}
+                                            className="pr-12 resize-none max-h-48"
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            rows={1}
+                                            disabled={isLocked}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && !e.shiftKey) {
+                                                    e.preventDefault();
+                                                    handleSendMessage(e);
+                                                }
+                                            }}
+                                        />
+                                        <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
+                                    </div>
+                                 )}
+                            </form>
                         </div>
-                    </form>
-                </div>
-              )}
-            </Card>
-          ) : (
-             <div className="flex flex-col items-center justify-center h-full text-muted-foreground p-8 text-center bg-card">
-                <MessageSquare className="h-16 w-16 mb-4"/>
-                <h2 className="text-xl font-semibold">Select a conversation</h2>
-                <p>Choose a conversation from the left panel to view messages and reply to your corporate clients.</p>
-             </div>
-          )}
+                    </Card>
+                ) : (
+                    <div className="flex items-center justify-center h-full border-2 border-dashed rounded-lg">
+                        <p className="text-muted-foreground">Select a message to view details.</p>
+                    </div>
+                )}
+            </div>
         </div>
-    </div>
-  );
+         <ConversionCheckDialog 
+            open={isConversionDialogOpen} 
+            onOpenChange={setIsConversionDialogOpen}
+            onContinue={handleContinueChat}
+            onEnd={handleEndChat}
+        />
+        </>
+    );
 }
