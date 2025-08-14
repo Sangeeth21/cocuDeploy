@@ -186,12 +186,11 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
             userMessageCount: prev.userMessageCount + 1
         };
 
-        if (updatedConvo.userMessageCount === 9) {
-            updatedConvo.awaitingVendorDecision = true;
+        if (updatedConvo.userMessageCount >= 4) {
             updatedConvo.messages.push({
-                id: 'system-wait',
+                id: 'system-limit',
                 sender: 'system',
-                text: 'You have reached the initial message limit. Please wait for the vendor to respond.'
+                text: 'You have reached the message limit for this conversation.'
             });
         }
         return updatedConvo;
@@ -221,19 +220,11 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
   }, []);
   
   const getChatLimit = () => {
-      const { userMessageCount, awaitingVendorDecision } = conversation;
-      const INITIAL_LIMIT = 9;
-      const EXTENDED_LIMIT = 15; // Placeholder for when vendor extends
-
-      const isLocked = awaitingVendorDecision || userMessageCount >= INITIAL_LIMIT;
-      let limit = INITIAL_LIMIT;
-      let remaining = limit - userMessageCount;
-      
-      if(awaitingVendorDecision) {
-        remaining = 0;
-      }
-      
-      return { limit, remaining: Math.max(0, remaining), isLocked };
+      const { userMessageCount } = conversation;
+      const MAX_MESSAGES = 4;
+      const isLocked = userMessageCount >= MAX_MESSAGES;
+      const remaining = Math.max(0, MAX_MESSAGES - userMessageCount);
+      return { limit: MAX_MESSAGES, remaining, isLocked };
   }
 
   const { remaining, isLocked } = getChatLimit();
@@ -314,7 +305,7 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
                         {isLocked ? 'Message limit reached' : `${remaining} messages left`}
                      </DialogDescription>
                 </DialogHeader>
-                 <div className="flex-1 overflow-hidden min-h-0">
+                <div className="flex-1 overflow-hidden min-h-0">
                     <ScrollArea className="h-full bg-muted/20">
                         <div className="p-4 space-y-4" ref={messagesContainerRef}>
                         {conversation.messages.map((msg, index) => (
@@ -422,3 +413,5 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
     </>
   );
 }
+
+    

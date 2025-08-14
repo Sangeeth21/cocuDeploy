@@ -524,20 +524,11 @@ export default function AccountPage() {
   
   const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
-
-      const INITIAL_LIMIT = 9;
-      const EXTENDED_LIMIT = 15; // 9 initial + 6 extended
-
-      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
-      let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
-      let remaining = limit - userMessageCount;
-      
-      if(awaitingVendorDecision) {
-        remaining = 0;
-      }
-      
-      return { limit, remaining: Math.max(0, remaining), isLocked };
+      const { userMessageCount, status } = selectedConversation;
+      const MAX_MESSAGES = 4;
+      const isLocked = userMessageCount >= MAX_MESSAGES || status !== 'active';
+      const remaining = Math.max(0, MAX_MESSAGES - userMessageCount);
+      return { limit: MAX_MESSAGES, remaining, isLocked };
   }
   
   const { remaining, isLocked } = getChatLimit();
@@ -784,7 +775,7 @@ export default function AccountPage() {
                                   "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
                                   selectedConversationId === convo.id && "bg-muted"
                                 )}
-                                onClick={() => handleSelectConversation(convo.id)}
+                                onClick={() => handleSelectConversation(convo.id as string)}
                               >
                                 <Avatar>
                                   <AvatarImage src={convo.avatar} alt={convo.vendorId} data-ai-hint="company logo" />
@@ -805,7 +796,7 @@ export default function AccountPage() {
                           <DropdownMenuContent>
                               <DropdownMenuLabel>Chat Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive" onClick={() => handleReportConversation(convo.id)}>
+                              <DropdownMenuItem className="text-destructive" onClick={() => handleReportConversation(convo.id as string)}>
                                 <AlertTriangle className="mr-2 h-4 w-4" />
                                 Report Conversation
                               </DropdownMenuItem>
@@ -826,7 +817,7 @@ export default function AccountPage() {
                             <h2 className="text-lg font-semibold">{`Chat #${selectedConversation.id.toString().padStart(6, '0')}`}</h2>
                         </div>
                          <div className="flex items-center gap-4">
-                             <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => handleReportConversation(selectedConversation.id)}>
+                             <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => handleReportConversation(selectedConversation.id as string)}>
                                  <AlertTriangle className="h-5 w-5" />
                                  <span className="sr-only">Report Conversation</span>
                              </Button>
@@ -1225,3 +1216,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    
