@@ -119,6 +119,12 @@ export default function CorporateMessagesPage() {
                        <h2 className="text-lg font-semibold">{selectedConversation.customerId}</h2>
                    </div>
                 </div>
+                 <div className="flex items-center gap-4">
+                    <Button variant="ghost" size="icon" className="text-muted-foreground">
+                        <AlertTriangle className="h-5 w-5" />
+                        <span className="sr-only">Report Conversation</span>
+                    </Button>
+                </div>
               </div>
                 <>
                 <CardContent className="flex-1 p-0">

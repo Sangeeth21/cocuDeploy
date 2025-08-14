@@ -15,6 +15,8 @@ import type { Message, Conversation } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useVerification } from "@/context/vendor-verification-context";
 
 type Attachment = {
     name: string;
@@ -22,7 +24,7 @@ type Attachment = {
     url: string;
 }
 
-const initialConversations: Conversation[] = [
+const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] = [
   {
     id: 1,
     customerId: "CUST001",
@@ -37,6 +39,7 @@ const initialConversations: Conversation[] = [
     userMessageCount: 3,
     awaitingVendorDecision: false,
     status: 'active',
+    type: 'customer',
   },
   {
     id: 2,
@@ -48,6 +51,7 @@ const initialConversations: Conversation[] = [
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
+    type: 'customer',
   },
   {
     id: 3,
@@ -59,6 +63,7 @@ const initialConversations: Conversation[] = [
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
+    type: 'customer',
   },
    {
     id: 4,
@@ -70,7 +75,23 @@ const initialConversations: Conversation[] = [
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
+    type: 'customer',
   },
+  {
+    id: 5,
+    customerId: "Corporate Client Inc.",
+    vendorId: "VDR001",
+    avatar: "https://placehold.co/40x40.png",
+    messages: [
+      { id: 'ccm1', sender: 'customer', text: 'Hello, we are interested in a bulk order of the Classic Leather Watch for a corporate event. Can you provide a quote for 500 units?' },
+      { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?', status: 'sent'},
+    ],
+    unread: true,
+    userMessageCount: 1,
+    awaitingVendorDecision: false,
+    status: 'active',
+    type: 'corporate',
+  }
 ];
 
 function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open: boolean, onOpenChange: (open: boolean) => void, onContinue: () => void, onEnd: () => void }) {
@@ -96,7 +117,7 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
 }
 
 export default function PersonalMessagesPage() {
-  const [conversations, setConversations] = useState(initialConversations);
+  const [conversations, setConversations] = useState(initialConversations.filter(c => c.type === 'customer'));
   const [selectedConversationId, setSelectedConversationId] = useState<number | null>(1);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -105,6 +126,7 @@ export default function PersonalMessagesPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
+  const { vendorType } = useVerification();
 
   const selectedConversation = conversations.find(c => c.id === selectedConversationId);
 
