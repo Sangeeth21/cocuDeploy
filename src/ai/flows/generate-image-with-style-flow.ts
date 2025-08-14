@@ -15,7 +15,6 @@ import { z } from 'genkit';
 const GenerateImageWithStyleInputSchema = z.object({
   prompt: z.string().describe('The user\'s description of the image they want.'),
   styleBackendPrompt: z.string().describe('A pre-defined string of keywords and phrases that define the artistic style, e.g., "Ghibli".'),
-  aspectRatio: z.string().optional().describe('The desired aspect ratio for the generated image, e.g., "1:1", "16:9", "4:5".'),
   referenceImageDataUri: z
     .string()
     .optional()
@@ -44,13 +43,14 @@ const generateImageWithStyleFlow = ai.defineFlow(
     
     const promptParts: any[] = [];
     
+    // If a reference image is provided, instruct the AI to transform it.
     if (input.referenceImageDataUri) {
         promptParts.push({ media: { url: input.referenceImageDataUri } });
-        // When an image is provided, the text prompt should guide the transformation.
-        const imageGuidance = input.prompt ? ` Additional guidance for the transformation: "${input.prompt}".` : '';
+        // The text prompt should guide the transformation of the existing image.
+        const imageGuidance = input.prompt ? ` The user has provided this additional guidance for the transformation: "${input.prompt}".` : '';
         promptParts.push({ text: `Transform the provided image using the following style: ${input.styleBackendPrompt}.${imageGuidance}` });
     } else {
-        // When no image is provided, the prompt is a direct text-to-image request.
+        // If no image is provided, the prompt is a direct text-to-image request.
         promptParts.push({ text: `${input.prompt}, ${input.styleBackendPrompt}` });
     }
     
@@ -59,7 +59,6 @@ const generateImageWithStyleFlow = ai.defineFlow(
       prompt: promptParts,
       config: {
           responseModalities: ['TEXT', 'IMAGE'],
-          aspectRatio: input.aspectRatio,
       },
     });
 

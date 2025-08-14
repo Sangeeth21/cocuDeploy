@@ -630,7 +630,6 @@ export default function CorporateCustomizePage() {
     // AI Image Generation State
     const [aiPrompt, setAiPrompt] = useState("");
     const [aiStyle, setAiStyle] = useState("");
-    const [aspectRatio, setAspectRatio] = useState("1:1");
     const [aiReferenceImage, setAiReferenceImage] = useState<{ file: File, src: string } | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     
@@ -852,9 +851,8 @@ export default function CorporateCustomizePage() {
             const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
             
             const result = await generateImageWithStyle({
-                prompt: aiPrompt || 'A beautiful image',
-                styleBackendPrompt: style?.backendPrompt || '',
-                aspectRatio,
+                prompt: aiPrompt || 'An enhanced image based on the reference',
+                styleBackendPrompt: style?.backendPrompt || 'photorealistic',
                 referenceImageDataUri
             });
 
@@ -1069,8 +1067,8 @@ export default function CorporateCustomizePage() {
                                         </div>
                                     )}
                                     </TabsContent>
-                                    <TabsContent value="ai-image" className="mt-0 space-y-4">
-                                        <Card>
+                                    <TabsContent value="ai-image" className="mt-0">
+                                         <Card>
                                             <CardHeader>
                                                 <CardTitle className="text-base">AI Image Generator</CardTitle>
                                             </CardHeader>
@@ -1085,19 +1083,6 @@ export default function CorporateCustomizePage() {
                                                         <SelectTrigger><SelectValue placeholder="Select a style..." /></SelectTrigger>
                                                         <SelectContent>
                                                             {availableStyles.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-                                                 <div className="space-y-2">
-                                                    <Label>Aspect Ratio</Label>
-                                                    <Select value={aspectRatio} onValueChange={setAspectRatio}>
-                                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                                        <SelectContent>
-                                                            <SelectItem value="1:1">1:1 (For Mugs, Coasters, Lockets)</SelectItem>
-                                                            <SelectItem value="4:5">4:5 (For Posters, T-Shirt Chest)</SelectItem>
-                                                            <SelectItem value="9:16">9:16 (For Phone Cases, Tumblers)</SelectItem>
-                                                            <SelectItem value="3:4">3:4 (For Small Posters, Apparel)</SelectItem>
-                                                            <SelectItem value="1.91:1">1.91:1 (For Landscape Banners)</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </div>
