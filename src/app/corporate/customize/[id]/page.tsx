@@ -841,8 +841,8 @@ export default function CorporateCustomizePage() {
     }
 
     const handleGenerateAiImage = async () => {
-        if (!aiPrompt.trim()) {
-            toast({ variant: 'destructive', title: 'A prompt is required.' });
+        if (!aiPrompt.trim() && !aiReferenceImage) {
+            toast({ variant: 'destructive', title: 'A prompt or reference image is required.' });
             return;
         }
         setIsGenerating(true);
@@ -851,7 +851,7 @@ export default function CorporateCustomizePage() {
             const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
             
             const result = await generateImageWithStyle({
-                prompt: aiPrompt,
+                prompt: aiPrompt || 'enhance this image',
                 styleBackendPrompt: stylePrompt,
                 referenceImageDataUri
             });
@@ -1101,7 +1101,7 @@ export default function CorporateCustomizePage() {
                                                     )}
                                                     <input id="ai-ref-upload" type="file" accept="image/*" className="sr-only" onChange={(e) => e.target.files && setAiReferenceImage({ file: e.target.files[0], src: URL.createObjectURL(e.target.files[0])})} />
                                                 </div>
-                                                <Button className="w-full" disabled={isGenerating} onClick={handleGenerateAiImage}>
+                                                <Button className="w-full" disabled={isGenerating || (!aiPrompt.trim() && !aiReferenceImage)} onClick={handleGenerateAiImage}>
                                                     {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Bot className="mr-2 h-4 w-4" />}
                                                     Generate Image
                                                 </Button>
