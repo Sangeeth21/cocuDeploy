@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { VendorSidebarLayout } from "./_components/vendor-sidebar-layout";
@@ -13,6 +14,3 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </VendorSidebarLayout>
     );
 }
-
-
-

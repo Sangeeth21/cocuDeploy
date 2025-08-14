@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -1063,7 +1064,60 @@ export default function NewProductPage() {
                     )}
                 </CardContent>
             </Card>
+        </div>
 
+        <aside className="md:col-span-1 grid gap-8 sticky top-24">
+             <Card>
+                <CardHeader>
+                    <CardTitle className="font-headline">Pricing</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        <Label htmlFor="price">Price</Label>
+                        <div className="relative">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                            <Input id="price" type="number" placeholder="19.99" className="pl-6"/>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+            <Card>
+                 <CardHeader>
+                    <CardTitle className="font-headline">Organize</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="category">Category</Label>
+                        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
+                            <SelectTrigger id="category">
+                                <SelectValue placeholder="Select a category" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {mockCategories.map(category => (
+                                    <SelectItem key={category.name} value={category.name}>{category.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="tags">Tags</Label>
+                        <Input id="tags" placeholder="e.g. watch, leather, timeless" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label>Product Status</Label>
+                        <div className="flex items-center gap-4 p-2 border rounded-md">
+                            <Switch 
+                                id="status" 
+                                checked={status === 'Live'} 
+                                onCheckedChange={(checked) => setStatus(checked ? 'Live' : 'Draft')}
+                                disabled={!isVerified} 
+                            />
+                            <Label htmlFor="status" className="font-normal">{status}</Label>
+                        </div>
+                         {!isVerified && <p className="text-xs text-muted-foreground">Complete verification to publish products.</p>}
+                    </div>
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader>
                     <CardTitle className="font-headline">Delivery & Shipping</CardTitle>
@@ -1125,60 +1179,7 @@ export default function NewProductPage() {
                     </RadioGroup>
                 </CardContent>
             </Card>
-        </div>
 
-        <aside className="md:col-span-1 grid gap-8 sticky top-24">
-             <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Pricing</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-2">
-                        <Label htmlFor="price">Price</Label>
-                        <div className="relative">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
-                            <Input id="price" type="number" placeholder="19.99" className="pl-6"/>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card>
-                 <CardHeader>
-                    <CardTitle className="font-headline">Organize</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="category">Category</Label>
-                        <Select value={selectedCategory} onValueChange={handleCategoryChange}>
-                            <SelectTrigger id="category">
-                                <SelectValue placeholder="Select a category" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {mockCategories.map(category => (
-                                    <SelectItem key={category.name} value={category.name}>{category.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="tags">Tags</Label>
-                        <Input id="tags" placeholder="e.g. watch, leather, timeless" />
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Product Status</Label>
-                        <div className="flex items-center gap-4 p-2 border rounded-md">
-                            <Switch 
-                                id="status" 
-                                checked={status === 'Live'} 
-                                onCheckedChange={(checked) => setStatus(checked ? 'Live' : 'Draft')}
-                                disabled={!isVerified} 
-                            />
-                            <Label htmlFor="status" className="font-normal">{status}</Label>
-                        </div>
-                         {!isVerified && <p className="text-xs text-muted-foreground">Complete verification to publish products.</p>}
-                    </div>
-                </CardContent>
-            </Card>
             {(vendorType === 'corporate' || vendorType === 'both') && (
                 <Card>
                     <CardHeader>
