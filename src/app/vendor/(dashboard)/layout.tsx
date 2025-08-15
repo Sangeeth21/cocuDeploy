@@ -10,8 +10,8 @@ import { BrandedLoader } from "@/components/branded-loader";
 export default function Layout({ children }: { children: React.ReactNode }) {
     const { vendorType, isVerified } = useVerification();
     
+    // Redirect logic handled in root vendor layout now, so we just render the correct sidebar.
     if(!vendorType) {
-        // This can be a loading state or a redirect to login if the type is not set
         return <BrandedLoader />;
     }
 
@@ -23,10 +23,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         return <CorporateLayout>{children}</CorporateLayout>;
     }
     
-    if (vendorType === 'both') {
-        return <BothLayout>{children}</BothLayout>;
-    }
-
-    // Fallback for unverified or other cases
+    // Default to the 'both' layout
     return <BothLayout>{children}</BothLayout>;
 }
