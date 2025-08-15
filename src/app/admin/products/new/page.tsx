@@ -8,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { mockCategories } from "@/lib/mock-data"
 import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
@@ -20,6 +19,9 @@ import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Category } from '@/lib/types';
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -144,10 +146,21 @@ export default function NewProductPage() {
     
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
+    const [categories, setCategories] = useState<Category[]>([]);
 
     const [galleryImages, setGalleryImages] = useState<{file: File, src: string}[]>([]);
     const [videoUrl, setVideoUrl] = useState("");
     const [videoEmbedUrl, setVideoEmbedUrl] = useState<string | null>(null);
+
+     useEffect(() => {
+        const q = query(collection(db, "categories"), orderBy("name"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const cats: Category[] = [];
+            snapshot.forEach(doc => cats.push({ ...doc.data(), id: doc.id } as Category));
+            setCategories(cats);
+        });
+        return () => unsubscribe();
+    }, []);
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, side: ImageSide) => {
         if (event.target.files && event.target.files[0]) {
@@ -433,8 +446,8 @@ export default function NewProductPage() {
                                 <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
                             <SelectContent>
-                                {mockCategories.map(category => (
-                                    <SelectItem key={category.name} value={category.name}>{category.name}</SelectItem>
+                                {categories.map(category => (
+                                    <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -506,5 +519,3 @@ export default function NewProductPage() {
     </>
   );
 }
-
-    

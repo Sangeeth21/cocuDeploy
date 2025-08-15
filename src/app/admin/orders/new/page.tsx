@@ -1,14 +1,13 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { mockProducts, mockUsers } from "@/lib/mock-data";
 import type { DisplayProduct, User } from "@/lib/types";
 import { ArrowLeft, Search, X, User as UserIcon, Package, DollarSign, Save, Trash2, CheckCircle, PlusCircle, Link as LinkIcon, Truck, Building, Copy, Loader2 } from "lucide-react";
 import Image from "next/image";
@@ -17,6 +16,8 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 
 type OrderItem = DisplayProduct & { quantity: number };
@@ -34,24 +35,45 @@ export default function NewOrderPage() {
     const [isFetchingShipping, setIsFetchingShipping] = useState(false);
     const [isSameAsShipping, setIsSameAsShipping] = useState(true);
     const [referralCommission, setReferralCommission] = useState<number | string>(0);
+    
+    // Data fetching
+    const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [allProducts, setAllProducts] = useState<DisplayProduct[]>([]);
+
+    useEffect(() => {
+        const usersQuery = query(collection(db, "users"), where("role", "==", "Customer"));
+        const productsQuery = query(collection(db, "products"));
+
+        const unsubUsers = onSnapshot(usersQuery, (snapshot) => {
+            setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+        });
+        const unsubProducts = onSnapshot(productsQuery, (snapshot) => {
+            setAllProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
+        });
+
+        return () => {
+            unsubUsers();
+            unsubProducts();
+        }
+    }, []);
 
     // Memos and Calculations
     const customerSearchResults = useMemo(() => {
         if (!customerSearchTerm) return [];
-        return mockUsers.filter(u => 
+        return allUsers.filter(u => 
             u.role === 'Customer' && (
                 u.name.toLowerCase().includes(customerSearchTerm.toLowerCase()) ||
                 u.email.toLowerCase().includes(customerSearchTerm.toLowerCase())
             )
         );
-    }, [customerSearchTerm]);
+    }, [customerSearchTerm, allUsers]);
 
     const productSearchResults = useMemo(() => {
         if (!productSearchTerm) return [];
-        return mockProducts.filter(p =>
+        return allProducts.filter(p =>
             p.name.toLowerCase().includes(productSearchTerm.toLowerCase())
         );
-    }, [productSearchTerm]);
+    }, [productSearchTerm, allProducts]);
 
     const subtotal = useMemo(() => {
         return orderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
@@ -74,20 +96,22 @@ export default function NewOrderPage() {
         setCustomerSearchTerm("");
     };
 
-    const handleAddNewCustomer = (newCustomer: Omit<User, 'id' | 'role' | 'status' | 'joinedDate' | 'avatar'>) => {
-        const newUser: User = {
-            id: `USR${(mockUsers.length + 1).toString().padStart(3, '0')}`,
-            ...newCustomer,
+    const handleAddNewCustomer = async (newCustomerData: Omit<User, 'id' | 'role' | 'status' | 'joinedDate' | 'avatar'>) => {
+        const newUser: Omit<User, 'id'> = {
+            ...newCustomerData,
             role: 'Customer',
             status: 'Active',
             joinedDate: new Date().toISOString().split('T')[0],
             avatar: 'https://placehold.co/40x40.png'
         }
-        // In a real app, you would add this to your database.
-        // For this mock, we'll just set them as selected.
-        setSelectedCustomer(newUser);
-        toast({ title: 'Customer Added', description: `${newUser.name} has been added and selected.`});
-        return newUser;
+        try {
+            const docRef = await addDoc(collection(db, "users"), newUser);
+            setSelectedCustomer({ id: docRef.id, ...newUser });
+            toast({ title: 'Customer Added', description: `${newUser.name} has been added and selected.`});
+        } catch (error) {
+            toast({ variant: 'destructive', title: 'Failed to add customer.' });
+            console.error("Error adding customer: ", error);
+        }
     }
     
     const handleProductSelect = (product: DisplayProduct) => {
@@ -400,6 +424,7 @@ const MOCK_PHONE_OTP = "654321";
 
 function NewCustomerDialog({ onSave }: { onSave: (customer: Omit<User, 'id' | 'role' | 'status' | 'joinedDate' | 'avatar'>) => void }) {
     const { toast } = useToast();
+    const [open, setOpen] = useState(false);
     const [step, setStep] = useState<'details' | 'verify'>('details');
     const [isLoading, setIsLoading] = useState(false);
     
@@ -437,53 +462,59 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: Omit<User, 'id' | 'r
         }
         
         onSave({ name, email });
+        setOpen(false);
     }
 
     return (
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>{step === 'details' ? 'Add New Customer' : 'Verify Contact Info'}</DialogTitle>
-                <DialogDescription>
-                    {step === 'details' 
-                        ? 'Enter the customer details below.' 
-                        : 'Enter the codes sent to the customer\'s email and phone.'}
-                </DialogDescription>
-            </DialogHeader>
-            {step === 'details' ? (
-                <form onSubmit={handleDetailsSubmit} className="space-y-4 py-2">
-                    <div className="space-y-2">
-                        <Label htmlFor="new-customer-name">Full Name</Label>
-                        <Input id="new-customer-name" value={name} onChange={e => setName(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="new-customer-email">Email</Label>
-                        <Input id="new-customer-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
-                    </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="new-customer-phone">Phone</Label>
-                        <Input id="new-customer-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} required />
-                    </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Send Verification Codes
-                    </Button>
-                </form>
-            ) : (
-                 <form onSubmit={handleVerificationSubmit} className="space-y-4 py-2">
-                    <div className="space-y-2">
-                        <Label htmlFor="email-otp">Email Verification Code</Label>
-                        <Input id="email-otp" value={emailOtp} onChange={e => setEmailOtp(e.target.value)} required />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="phone-otp">Phone Verification Code</Label>
-                        <Input id="phone-otp" value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} required />
-                    </div>
-                    <Button type="submit" className="w-full">Verify & Add Customer</Button>
-                    <Button variant="link" size="sm" onClick={() => setStep('details')} className="w-full">
-                        Back to details
-                    </Button>
-                </form>
-            )}
-        </DialogContent>
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4" />Add New Customer</Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{step === 'details' ? 'Add New Customer' : 'Verify Contact Info'}</DialogTitle>
+                    <DialogDescription>
+                        {step === 'details' 
+                            ? 'Enter the customer details below.' 
+                            : 'Enter the codes sent to the customer\'s email and phone.'}
+                    </DialogDescription>
+                </DialogHeader>
+                {step === 'details' ? (
+                    <form onSubmit={handleDetailsSubmit} className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="new-customer-name">Full Name</Label>
+                            <Input id="new-customer-name" value={name} onChange={e => setName(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="new-customer-email">Email</Label>
+                            <Input id="new-customer-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="new-customer-phone">Phone</Label>
+                            <Input id="new-customer-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} required />
+                        </div>
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Send Verification Codes
+                        </Button>
+                    </form>
+                ) : (
+                     <form onSubmit={handleVerificationSubmit} className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="email-otp">Email Verification Code</Label>
+                            <Input id="email-otp" value={emailOtp} onChange={e => setEmailOtp(e.target.value)} required />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="phone-otp">Phone Verification Code</Label>
+                            <Input id="phone-otp" value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} required />
+                        </div>
+                        <Button type="submit" className="w-full">Verify & Add Customer</Button>
+                        <Button variant="link" size="sm" onClick={() => setStep('details')} className="w-full">
+                            Back to details
+                        </Button>
+                    </form>
+                )}
+            </DialogContent>
+        </Dialog>
     );
 }
