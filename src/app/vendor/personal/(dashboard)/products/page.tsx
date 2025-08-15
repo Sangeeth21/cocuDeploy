@@ -103,7 +103,7 @@ export default function VendorProductsPage() {
                     </TableBody>
                 </Table>
                 {products.length === 0 && !loading && <p className="text-center text-muted-foreground p-4">No products in this category.</p>}
-                {loading && <p className="text-center text-muted-foreground p-4">Loading products...</p>}
+                 {loading && <p className="text-center text-muted-foreground p-4">Loading products...</p>}
             </CardContent>
         </Card>
     );
@@ -129,4 +129,3 @@ export default function VendorProductsPage() {
       </div>
     );
 }
-
