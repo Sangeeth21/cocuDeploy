@@ -70,7 +70,7 @@ function CustomSidebarTrigger() {
     )
 }
 
-export function VendorSidebarLayout({ children }: { children: React.ReactNode }) {
+function VendorSidebarLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { isVerified } = useVerification();
     const { open: isSidebarOpen } = useSidebar();
@@ -86,8 +86,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
     }, [isSidebarOpen]);
 
     return (
-        <div className="flex min-h-screen">
-        <SidebarProvider>
+        <>
             <Sidebar collapsible="icon" className="border-r hidden md:flex">
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -212,7 +211,20 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                     {children}
                 </main>
             </div>
-        </SidebarProvider>
+        </>
+    );
+}
+
+
+export function VendorSidebarLayout({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="flex min-h-screen">
+            <SidebarProvider>
+                <VendorSidebarLayoutContent>
+                    {children}
+                </VendorSidebarLayoutContent>
+            </SidebarProvider>
         </div>
     );
 }
+  
