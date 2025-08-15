@@ -16,7 +16,7 @@ import { useAdminAuth } from "@/context/admin-auth-context";
 const navLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/vendors", label: "Vendors", icon: Store },
-  { href: "/admin/customers", label: "Users", icon: Users },
+  { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/orders", label: "Orders", icon: ListChecks },
   { href: "/admin/bids", label: "Bids", icon: Gavel },
