@@ -65,12 +65,18 @@ export default function CorporateSupportPage() {
     const { toast } = useToast();
     const router = useRouter();
     const [tickets, setTickets] = useState(initialConversations);
-    const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(initialTickets[0]);
+    const [selectedTicket, setSelectedTicket] = useState<SupportTicket | null>(null);
     const [newMessage, setNewMessage] = useState("");
 
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     
+    useEffect(() => {
+        if (tickets.length > 0 && !selectedTicket) {
+            setSelectedTicket(tickets[0]);
+        }
+    }, [tickets, selectedTicket]);
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };

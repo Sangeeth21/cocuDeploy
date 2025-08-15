@@ -49,7 +49,7 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
 
 // The component now accepts conversations and a setter as props from the layout.
 export default function BothVendorMessagesPage({ conversations, setConversations }: { conversations: (Conversation & {type: 'customer' | 'corporate'})[], setConversations: React.Dispatch<React.SetStateAction<(Conversation & {type: 'customer' | 'corporate'})[]>> }) {
-  const [selectedConversation, setSelectedConversation] = useState<(Conversation & {type: 'customer' | 'corporate'}) | null>(conversations[0] || null);
+  const [selectedConversation, setSelectedConversation] = useState<(Conversation & {type: 'customer' | 'corporate'}) | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const MAX_MESSAGE_LENGTH = 1500;
   const { toast } = useToast();
@@ -58,6 +58,12 @@ export default function BothVendorMessagesPage({ conversations, setConversations
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'corporate' ? 'corporate' : 'customer';
+
+  useEffect(() => {
+    if (conversations.length > 0 && !selectedConversation) {
+      setSelectedConversation(conversations[0]);
+    }
+  }, [conversations, selectedConversation]);
 
   useEffect(() => {
     if (selectedConversation?.awaitingVendorDecision) {
