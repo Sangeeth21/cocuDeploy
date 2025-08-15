@@ -531,6 +531,9 @@ export const mockMarketingCampaigns: MarketingCampaign[] = [
             imageUrl: "https://placehold.co/400x400.png",
         }]
     },
+]
+
+export const mockCorporateCampaigns: MarketingCampaign[] = [
     {
         id: "CORP_CAMP001",
         name: "Q3 Bulk Discount Drive",
@@ -547,7 +550,9 @@ export const mockMarketingCampaigns: MarketingCampaign[] = [
             imageUrl: "https://placehold.co/1920x1080.png",
         }]
     },
-]
+];
+
+export const mockCampaigns: MarketingCampaign[] = [...mockMarketingCampaigns.filter(c => c.id.startsWith("CAMP"))];
 
 export const mockCorporateBids: CorporateBid[] = [
     {
@@ -633,3 +638,24 @@ export const mockPrograms: Omit<Program, 'id'>[] = [
         endDate: new Date('2024-12-31'),
     }
 ]
+
+export const mockActivity = [
+    { id: 'ACT001', type: 'order', text: 'New order #ORD004 for $215.00', time: '30m ago', href: '/admin/orders' },
+    { id: 'ACT002', type: 'message', text: 'New message from CUST001 about "Classic Leather Watch"', time: '2h ago', href: '/admin/chat-logs', actions: [{label: "Reply", href: "/admin/chat-logs"}] },
+    { id: 'ACT003', type: 'new_vendor', text: 'New vendor "HomeBody Decor" signed up', time: '8h ago', href: '/admin/vendors' },
+    { id: 'ACT004', type: 'user_report', text: 'User "Crafty Creations" reported for inappropriate language', time: '1d ago', href: '/admin/moderation', variant: 'destructive', actions: [{label: "Warn User", variant: "destructive"}, {label: "Dismiss", variant: "outline"}] },
+    { id: 'ACT005', type: 'stock', text: '"Handcrafted Ceramic Mug" is low on stock (8 left)', time: '1d ago', href: '/admin/products' },
+];
+
+export const mockVendorActivity = [
+    { id: 'VACT001', type: 'order', text: 'New order #ORD004 for $215.00', time: '30m ago', href: '/vendor/orders' },
+    { id: 'VACT002', type: 'message', text: 'New message from CUST001 about "Classic Leather Watch"', time: '2h ago', href: '/vendor/messages', actions: [{label: "Reply", href: "/vendor/messages"}] },
+    { id: 'VACT003', type: 'confirmation', text: 'Customer is requesting "Modern Minimalist Desk"', time: '3h ago', href: '/vendor/orders' },
+    { id: 'VACT004', type: 'stock', text: '"Handcrafted Ceramic Mug" is low on stock (8 left)', time: '1d ago', href: '/vendor/inventory' },
+];
+
+export const mockCorporateActivity = [
+    { id: 'CACT001', type: 'order', text: 'Your bulk order #CORP001 has shipped', time: '1d ago', href: '/corporate/orders' },
+    { id: 'CACT002', type: 'message', text: 'New message from Timeless Co. regarding Bid B2XJ5K1M', time: '3h ago', href: '/corporate/bids/B2XJ5K1M' },
+    { id: 'CACT003', type: 'bid_response', text: 'New bid received for request B2XJ5K1M', time: '1h ago', href: '/corporate/bids/B2XJ5K1M' },
+];
