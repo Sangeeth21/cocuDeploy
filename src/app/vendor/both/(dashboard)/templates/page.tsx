@@ -82,14 +82,14 @@ function TemplatePreview({ templateName }: { templateName: string }) {
 export default function VendorTemplatesPage() {
 
     return (
-        <div className="container py-12">
+        <div>
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h1 className="text-4xl font-bold font-headline">Landing Page Templates</h1>
                     <p className="text-muted-foreground mt-2">Create, manage, and customize templates for your product pages.</p>
                 </div>
                  <Button asChild>
-                    <Link href="/vendor/templates/new">
+                    <Link href="/vendor/both/templates/new">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Create New Template
                     </Link>
@@ -128,7 +128,7 @@ export default function VendorTemplatesPage() {
                                     </DialogContent>
                                </Dialog>
                                 <Button variant="secondary" size="sm" asChild>
-                                  <Link href="/vendor/templates/new">Edit</Link>
+                                  <Link href="/vendor/both/templates/new">Edit</Link>
                                 </Button>
                             </div>
                         </CardContent>

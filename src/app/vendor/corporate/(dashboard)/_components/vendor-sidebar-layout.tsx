@@ -15,7 +15,7 @@ import { mockVendorActivity } from "@/lib/mock-data";
 const navLinks = [
   { href: "/vendor/corporate/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/vendor/corporate/products", label: "Corporate Products", icon: Package },
-  { href: "/vendor/templates", label: "Templates", icon: Wand2 },
+  { href: "/vendor/both/(dashboard)/templates", label: "Templates", icon: Wand2 },
   { href: "/vendor/corporate/inventory", label: "Inventory", icon: Warehouse },
   { href: "/vendor/corporate/orders", label: "Corporate Orders", icon: ListChecks },
   { href: "/vendor/corporate/bids", label: "Bidding", icon: Gavel },
@@ -94,7 +94,7 @@ export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children
                                 >
                                     <Link href={link.href}>
                                         <link.icon />
-                                        <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
+                                        <span>{link.label}</span>
                                         {showBadge && <SidebarMenuBadge>{unreadMessages}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
@@ -108,7 +108,7 @@ export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children
                             <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
                                 <Link href="/">
                                     <Store />
-                                    <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
+                                    <span>Back to Store</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -116,7 +116,7 @@ export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children
                             <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
                                 <Link href="/vendor/login">
                                     <LogOut />
-                                    <span className="group-data-[state=collapsed]:hidden">Log Out</span>
+                                    <span>Log Out</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

@@ -110,18 +110,18 @@ export default function NewTemplatePage() {
             title: "Template Saved!",
             description: `The "${templateName}" template has been saved successfully.`,
         });
-        router.push("/vendor/templates");
+        router.push("/vendor/both/templates");
     };
 
     return (
-        <div className="py-12">
+        <div>
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
                 <div>
                     <h1 className="text-4xl font-bold font-headline">Create New Template</h1>
                     <p className="text-muted-foreground mt-2">Design a custom layout for your product pages.</p>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
-                   <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push('/vendor/templates')}>
+                   <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push('/vendor/both/templates')}>
                         <X className="mr-2 h-4 w-4" /> Cancel
                     </Button>
                    <Button variant="outline" onClick={() => setIsPreviewMobile(!isPreviewMobile)} className="w-full sm:w-auto">
