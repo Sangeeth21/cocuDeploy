@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User, Megaphone, Building, Database } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { collection, query, orderBy, limit, onSnapshot, where, getDocs,getCountFromServer } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, where, getDocs, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order, User as UserType, MarketingCampaign } from "@/lib/types";
 import { seedDatabase } from '../actions';
