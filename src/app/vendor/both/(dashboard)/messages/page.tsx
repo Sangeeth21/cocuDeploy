@@ -95,7 +95,7 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     ],
     unread: true,
     unreadCount: 1,
-    userMessageCount: 5, // Set to initial corporate limit
+    userMessageCount: 2, // Set to initial corporate limit
     awaitingVendorDecision: false,
     status: 'active',
     type: 'corporate',
@@ -194,31 +194,47 @@ export default function BothVendorMessagesPage() {
     e.preventDefault();
     if (!newMessage.trim() || !selectedConversationId) return;
 
-    const newMessageObj: Message = { 
-        id: Math.random().toString(),
-        sender: "vendor", 
-        text: newMessage,
-        status: 'sent',
+    const newMessageObj: Message = {
+      id: Math.random().toString(),
+      sender: "vendor",
+      text: newMessage,
+      status: 'sent',
     };
 
     setConversations(prev =>
       prev.map(convo => {
         if (convo.id !== selectedConversationId) return convo;
 
-        const newCount = convo.userMessageCount + 1;
-        const updatedConvo = {
-            ...convo,
-            messages: [...convo.messages, newMessageObj],
-            userMessageCount: newCount,
-        };
+        const updatedMessages = [...convo.messages, newMessageObj];
+        let newCount = convo.userMessageCount;
+        let awaitingDecision = convo.awaitingVendorDecision;
 
+        // Increment count only for vendor messages
+        if (newMessageObj.sender === 'vendor') {
+            newCount++;
+        }
+
+        // Logic for corporate chat limits
         if (convo.type === 'corporate' && newCount === 5) {
-            updatedConvo.awaitingVendorDecision = true;
+          awaitingDecision = true;
+          updatedMessages.push({
+            id: 'system-limit-corp',
+            sender: 'system',
+            text: 'You have reached the initial message limit. Decide whether to continue the chat.'
+          });
         }
         
+        const updatedConvo = {
+          ...convo,
+          messages: updatedMessages,
+          userMessageCount: newCount,
+          awaitingVendorDecision: awaitingDecision,
+        };
+
         return updatedConvo;
       })
     );
+
     setNewMessage("");
   };
   
@@ -260,26 +276,23 @@ export default function BothVendorMessagesPage() {
         const { userMessageCount, awaitingVendorDecision, type, status } = selectedConversation;
         const isPermanentlyLocked = status !== 'active';
 
+        let limit: number;
+        let isLocked: boolean;
+
         if (type === 'corporate') {
             const INITIAL_LIMIT = 5;
             const EXTENDED_LIMIT = 5 + 6;
-        
-            const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
-            let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
-            let remaining = limit - userMessageCount;
             
-            if(awaitingVendorDecision) {
-              remaining = 0;
-            }
-            
-            return { limit, remaining: Math.max(0, remaining), isLocked };
+            isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
+            limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+        } else {
+            // Personalized chat logic
+            limit = 4;
+            isLocked = userMessageCount >= limit || isPermanentlyLocked;
         }
-
-        // Personalized chat logic
-        const limit = 4;
-        const remaining = limit - userMessageCount;
-        const isLocked = userMessageCount >= limit || isPermanentlyLocked;
-        return { limit, remaining: Math.max(0, remaining), isLocked };
+        
+        const remaining = Math.max(0, limit - userMessageCount);
+        return { limit, remaining: awaitingVendorDecision ? 0 : remaining, isLocked };
     };
   
   const { remaining, isLocked } = getChatLimit();
