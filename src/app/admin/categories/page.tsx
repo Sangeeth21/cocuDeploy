@@ -21,7 +21,7 @@ import { app } from "@/lib/firebase";
 
 const storage = getStorage(app);
 
-function CategoryDialog({ open, onOpenChange, category, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; category?: Category | null; onSave: (data: Omit<Category, 'id' | 'productCount'>, file?: File | null) => void; }) {
+function CategoryDialog({ open, onOpenChange, category, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; category?: Category | null; onSave: (data: Omit<Category, 'id' | 'productCount' | 'imageUrl'> & { name: string }, file?: File | null) => void; }) {
     const [name, setName] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -48,7 +48,7 @@ function CategoryDialog({ open, onOpenChange, category, onSave }: { open: boolea
             toast({ variant: 'destructive', title: "Category name is required." });
             return;
         }
-        onSave({ name, imageUrl: previewUrl || "" }, imageFile);
+        onSave({ name }, imageFile);
     };
     
     return (
@@ -111,9 +111,9 @@ export default function AdminCategoriesPage() {
         return () => unsubscribe();
     }, []);
 
-    const handleSaveCategory = async (data: Omit<Category, 'id' | 'productCount'>, file: File | null) => {
+    const handleSaveCategory = async (data: { name: string }, file: File | null) => {
         setIsDialogOpen(false);
-        let finalImageUrl = editingCategory?.imageUrl || data.imageUrl;
+        let finalImageUrl = editingCategory?.imageUrl || "";
 
         try {
             if (file) {
