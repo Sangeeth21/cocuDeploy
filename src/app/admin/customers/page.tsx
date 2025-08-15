@@ -13,10 +13,12 @@ import { mockOrders, mockUsers } from "@/lib/mock-data";
 import { User } from "@/lib/types";
 import { MoreHorizontal, PlusCircle, User as UserIcon, ListChecks, DollarSign, X, Loader2, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 function CustomerProfileDialog({ user }: { user: User }) {
@@ -268,13 +270,28 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: User) => void }) {
 }
 
 export default function AdminCustomersPage() {
-    const [customers, setCustomers] = useState(mockUsers.filter(u => u.role === 'Customer'));
+    const [customers, setCustomers] = useState<User[]>([]);
     const [selectedCustomer, setSelectedCustomer] = useState<User | null>(null);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isSuspendOpen, setIsSuspendOpen] = useState(false);
     const { toast } = useToast();
 
+    useEffect(() => {
+        const q = query(collection(db, "users"), where("role", "==", "Customer"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const customersData: User[] = [];
+            querySnapshot.forEach((doc) => {
+                customersData.push({ id: doc.id, ...doc.data() } as User);
+            });
+            setCustomers(customersData);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
     const handleAddCustomer = (newCustomer: User) => {
+        // In a real app, this would be an API call to add a user.
+        // For now, we'll just optimistically update the state.
         setCustomers(prev => [newCustomer, ...prev]);
         toast({
             title: "Customer Added",
