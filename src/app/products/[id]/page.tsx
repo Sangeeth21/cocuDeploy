@@ -3,16 +3,13 @@
 
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Star, Heart } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductInteractions } from "./_components/product-interactions";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { useWishlist } from "@/context/wishlist-context";
 import { useUser } from "@/context/user-context";
@@ -20,7 +17,7 @@ import { useAuthDialog } from "@/context/auth-dialog-context";
 import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { DisplayProduct, Review } from "@/lib/types";
+import type { DisplayProduct } from "@/lib/types";
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
   loading: () => <div className="flex flex-col space-y-3">
@@ -36,11 +33,11 @@ const ProductCard = dynamic(() => import('@/components/product-card').then(mod =
     </div>,
 });
 
-const FrequentlyBoughtTogether = dynamic(() => import('./_components/frequently-bought-together-preview').then(mod => mod.FrequentlyBoughtTogetherPreview), {
+const FrequentlyBoughtTogetherPreview = dynamic(() => import('./_components/frequently-bought-together-preview').then(mod => mod.FrequentlyBoughtTogetherPreview), {
     loading: () => <Skeleton className="h-[200px] w-full rounded-xl" />
 });
 
-const CustomerReviews = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
+const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
     loading: () => <Skeleton className="h-[300px] w-full rounded-xl" />
 });
 
@@ -105,10 +102,6 @@ export default function ProductDetailPage() {
       }
       if (product) {
         toggleWishlist(product);
-        toast({
-            title: isWishlisted(product.id) ? "Removed from Wishlist" : "Added to Wishlist",
-            description: product.name,
-        });
       }
   }
 
@@ -181,11 +174,11 @@ export default function ProductDetailPage() {
 
       <div className="grid md:grid-cols-3 gap-12">
         <div className="md:col-span-2">
-          <CustomerReviews />
+          <ReviewsPreview productId={product.id} />
         </div>
         
         <div className="space-y-8">
-            <FrequentlyBoughtTogether />
+            <FrequentlyBoughtTogetherPreview currentProduct={product} />
         </div>
       </div>
 

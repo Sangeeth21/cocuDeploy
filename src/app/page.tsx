@@ -4,14 +4,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, CheckCircle, Truck, Gift, Zap, Store } from "lucide-react";
+import { ArrowRight, Store } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
-import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
-import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, limit, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { DisplayProduct, Category, MarketingCampaign } from "@/lib/types";

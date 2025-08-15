@@ -3,13 +3,16 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { mockProducts } from "@/lib/mock-data";
 import { Plus } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
+import { useEffect, useState } from "react";
+import { collection, query, where, getDocs, limit } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { DisplayProduct } from "@/lib/types";
 
-function ProductCardMini({ product }: { product: typeof mockProducts[0] }) {
+function ProductCardMini({ product }: { product: DisplayProduct }) {
   return (
     <div className="flex-1 flex items-center gap-2 group">
         <Link href={`/products/${product.id}`} className="flex-1 flex items-center gap-2">
@@ -25,17 +28,40 @@ function ProductCardMini({ product }: { product: typeof mockProducts[0] }) {
   );
 }
 
-
-export function FrequentlyBoughtTogetherPreview() {
+export function FrequentlyBoughtTogetherPreview({ currentProduct }: { currentProduct: DisplayProduct }) {
     const { toast } = useToast();
-    const product = mockProducts[0];
-    const frequentlyBoughtTogether = mockProducts.slice(1, 2);
-    const totalPrice = product.price + frequentlyBoughtTogether[0].price;
+    const [relatedProduct, setRelatedProduct] = useState<DisplayProduct | null>(null);
 
-     const handleAddBothToCart = () => {
+    useEffect(() => {
+        const fetchRelated = async () => {
+            if (!currentProduct.category) return;
+            // A more sophisticated version would analyze order data.
+            // For now, we fetch another product from the same category.
+            const q = query(
+                collection(db, "products"),
+                where("category", "==", currentProduct.category),
+                where("__name__", "!=", currentProduct.id),
+                limit(1)
+            );
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                setRelatedProduct({ id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as DisplayProduct);
+            }
+        };
+        fetchRelated();
+    }, [currentProduct]);
+
+    if (!relatedProduct) {
+        return null; // Or a loading skeleton
+    }
+
+    const totalPrice = currentProduct.price + relatedProduct.price;
+
+    const handleAddBothToCart = () => {
+        // This would dispatch to a cart context in a real app
         toast({
-        title: "Items Added!",
-        description: `${product.name} and ${frequentlyBoughtTogether[0].name} have been added to your cart.`
+            title: "Items Added!",
+            description: `${currentProduct.name} and ${relatedProduct.name} have been added to your cart.`
         });
     }
 
@@ -45,9 +71,9 @@ export function FrequentlyBoughtTogetherPreview() {
             <Card>
                 <CardContent className="p-4">
                     <div className="flex items-center">
-                        <ProductCardMini product={product} />
+                        <ProductCardMini product={currentProduct} />
                         <Plus className="h-5 w-5 mx-2 text-muted-foreground" />
-                        <ProductCardMini product={frequentlyBoughtTogether[0]} />
+                        <ProductCardMini product={relatedProduct} />
                     </div>
                     <div className="text-center mt-4">
                         <p className="text-lg font-semibold">Total Price: ${totalPrice.toFixed(2)}</p>

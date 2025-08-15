@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useState, useEffect } from 'react';
 import {
   Accordion,
   AccordionContent,
@@ -13,7 +14,10 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { mockCategories } from "@/lib/mock-data";
+import { collection, query, onSnapshot, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import type { Category } from '@/lib/types';
+import { Skeleton } from './ui/skeleton';
 
 const MAX_PRICE = 500;
 
@@ -36,6 +40,21 @@ export function ProductFilterSidebar({
   onPriceRangeChange,
   clearFilters,
 }: ProductFilterSidebarProps) {
+
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const q = query(collection(db, "categories"), orderBy("name"));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const cats: Category[] = [];
+        snapshot.forEach(doc => cats.push(doc.data() as Category));
+        setCategories(cats);
+        setLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   return (
     <aside className="lg:col-span-1 lg:sticky lg:top-24 h-fit">
       <Card>
@@ -65,21 +84,29 @@ export function ProductFilterSidebar({
               </AccordionTrigger>
               <AccordionContent>
                 <div className="space-y-2 pt-2">
-                  {mockCategories.map((category) => (
-                    <div
-                      key={category.name}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={category.name}
-                        checked={selectedCategories.includes(category.name)}
-                        onCheckedChange={() => onCategoryChange(category.name)}
-                      />
-                      <Label htmlFor={category.name} className="font-normal">
-                        {category.name}
-                      </Label>
+                  {loading ? (
+                    <div className="space-y-2">
+                        <Skeleton className="h-5 w-3/4" />
+                        <Skeleton className="h-5 w-2/3" />
+                        <Skeleton className="h-5 w-3/4" />
                     </div>
-                  ))}
+                  ) : (
+                    categories.map((category) => (
+                      <div
+                        key={category.name}
+                        className="flex items-center space-x-2"
+                      >
+                        <Checkbox
+                          id={category.name}
+                          checked={selectedCategories.includes(category.name)}
+                          onCheckedChange={() => onCategoryChange(category.name)}
+                        />
+                        <Label htmlFor={category.name} className="font-normal">
+                          {category.name}
+                        </Label>
+                      </div>
+                    ))
+                  )}
                 </div>
               </AccordionContent>
             </AccordionItem>
