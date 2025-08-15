@@ -12,9 +12,10 @@ import { useCart } from "@/context/cart-context";
 import { useUser } from "@/context/user-context";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 
 export default function CartPage() {
-  const { cartItems, updateQuantity, removeFromCart, subtotal } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, subtotal, loading } = useCart();
   const { isLoggedIn } = useUser();
   const { openDialog } = useAuthDialog();
   const router = useRouter();
@@ -32,6 +33,15 @@ export default function CartPage() {
   
   const hasCustomizations = (item: typeof cartItems[0]) => {
       return Object.keys(item.customizations).length > 0;
+  }
+
+  if (loading) {
+    return (
+        <div className="container py-12 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary"/>
+            <p className="mt-2 text-muted-foreground">Loading your cart...</p>
+        </div>
+    )
   }
 
   return (

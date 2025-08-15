@@ -6,23 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { mockProducts, mockUserOrders } from "@/lib/mock-data";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
-import { Loader2, Percent, Ticket, ShieldCheck, CheckCircle } from "lucide-react";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Loader2, ShieldCheck, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 import { useUser } from "@/context/user-context";
+import { useCart } from "@/context/cart-context";
+import { db } from "@/lib/firebase";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import type { OrderItem } from "@/lib/types";
 
-
-const MOCK_USER_DATA = {
-    walletBalance: 100, // in Rs
-    loyaltyPoints: 2500,
-    pointsRedemptionValue: 0.5, // 1 point = 0.5 Rs
-};
 
 const MOCK_EMAIL_OTP = "123456";
 const MOCK_PHONE_OTP = "654321";
@@ -32,26 +27,32 @@ type VerificationStatus = 'unverified' | 'pending' | 'verified';
 export default function CheckoutPage() {
     const { toast } = useToast();
     const router = useRouter();
-    const { isLoggedIn } = useUser();
+    const { user, isLoggedIn } = useUser();
+    const { cartItems, subtotal, clearCart, loading: isCartLoading } = useCart();
 
     const [isProcessing, setIsProcessing] = useState(false);
     
     // Form state
-    const [email, setEmail] = useState(isLoggedIn ? "john.doe@example.com" : "");
-    const [phone, setPhone] = useState(isLoggedIn ? "+1 (555) 123-4567" : "");
-    const [emailStatus, setEmailStatus] = useState<VerificationStatus>(isLoggedIn ? 'verified' : 'unverified');
-    const [phoneStatus, setPhoneStatus] = useState<VerificationStatus>(isLoggedIn ? 'verified' : 'unverified');
+    const [email, setEmail] = useState("");
+    const [phone, setPhone] = useState("");
+    const [emailStatus, setEmailStatus] = useState<VerificationStatus>('unverified');
+    const [phoneStatus, setPhoneStatus] = useState<VerificationStatus>('unverified');
     const [emailOtp, setEmailOtp] = useState("");
     const [phoneOtp, setPhoneOtp] = useState("");
     const [showEmailOtp, setShowEmailOtp] = useState(false);
     const [showPhoneOtp, setShowPhoneOtp] = useState(false);
 
-    const cartItems = mockProducts.slice(0, 2).map(p => ({ ...p, quantity: 1 }));
-    const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    useEffect(() => {
+        if(isLoggedIn && user) {
+            setEmail(user.email);
+            setPhone(user.phone || "");
+            setEmailStatus('verified');
+            setPhoneStatus('verified'); // Assume phone is verified if user is logged in for simplicity
+        }
+    }, [isLoggedIn, user]);
 
-    const loyaltyOrdersRequired = 3;
-    const hasLoyalty = mockUserOrders.length >= loyaltyOrdersRequired;
-    const shipping = hasLoyalty ? 0 : 5.00;
+    const hasLoyalty = (user?.loyalty?.totalOrdersForReward ?? 0) < 3;
+    const shipping = cartItems.length > 0 ? (hasLoyalty ? 0 : 5.00) : 0;
     
     const total = useMemo(() => {
         return subtotal + shipping;
@@ -91,20 +92,75 @@ export default function CheckoutPage() {
         }
     };
     
-    const handleFinalizePayment = (e: React.FormEvent) => {
+    const handleFinalizePayment = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!user) {
+            toast({ variant: "destructive", title: "You must be logged in to place an order." });
+            return;
+        }
+
         setIsProcessing(true);
-        setTimeout(() => {
-            setIsProcessing(false);
+        try {
+             const orderItemsForDb: OrderItem[] = cartItems.map(item => ({
+                productId: item.product.id,
+                productName: item.product.name,
+                productImage: item.product.imageUrl,
+                quantity: item.quantity,
+                price: item.product.price,
+                // Include customizations if they exist
+                ...(Object.keys(item.customizations).length > 0 && { customizations: item.customizations }),
+            }));
+
+            await addDoc(collection(db, "orders"), {
+                customer: {
+                    id: user.id,
+                    name: user.name,
+                    email: user.email,
+                    avatar: user.avatar,
+                },
+                items: orderItemsForDb,
+                total,
+                subtotal,
+                shipping,
+                status: 'Pending',
+                date: serverTimestamp(),
+                shippingAddress: {
+                    recipient: (e.target as HTMLFormElement)['first-name'].value + ' ' + (e.target as HTMLFormElement)['last-name'].value,
+                    line1: (e.target as HTMLFormElement).address1.value,
+                    city: (e.target as HTMLFormElement).city.value,
+                    zip: (e.target as HTMLFormElement).zip.value,
+                },
+                payment: {
+                    method: 'Mock Card',
+                    last4: 'XXXX',
+                }
+            });
+
+            await clearCart();
+
             toast({
                 title: "Payment Successful!",
                 description: "Your order has been placed.",
             });
             router.push('/account?tab=orders');
-        }, 2000);
+
+        } catch(error) {
+            console.error("Error creating order:", error);
+            toast({ variant: 'destructive', title: 'Order Failed', description: 'Could not place your order. Please try again.' });
+            setIsProcessing(false);
+        }
     }
     
     const isFormFullyVerified = emailStatus === 'verified' && phoneStatus === 'verified';
+
+     if (isCartLoading) {
+        return (
+            <div className="container py-12 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary"/>
+                <p className="mt-2 text-muted-foreground">Loading checkout...</p>
+            </div>
+        )
+    }
 
     return (
         <div className="container py-12">
@@ -124,7 +180,7 @@ export default function CheckoutPage() {
                                     <Label htmlFor="email">Email Address</Label>
                                     <div className="flex items-center gap-2">
                                         <Input id="email" type="email" placeholder="you@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} onBlur={() => email && emailStatus === 'unverified' && handleSendCode('email')} disabled={isLoggedIn || emailStatus !== 'unverified'} />
-                                        {emailStatus === 'verified' && <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="h-4 w-4 mr-1"/>Verified</Badge>}
+                                        {emailStatus === 'verified' && <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"><CheckCircle className="h-4 w-4 mr-1"/>Verified</Badge>}
                                     </div>
                                     {showEmailOtp && emailStatus === 'pending' && (
                                         <div className="flex items-center gap-2 mt-2">
@@ -137,7 +193,7 @@ export default function CheckoutPage() {
                                     <Label htmlFor="phone">Phone Number</Label>
                                      <div className="flex items-center gap-2">
                                         <Input id="phone" type="tel" placeholder="+1 (555) 123-4567" required value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => phone && phoneStatus === 'unverified' && handleSendCode('phone')} disabled={isLoggedIn || phoneStatus !== 'unverified'} />
-                                        {phoneStatus === 'verified' && <Badge variant="secondary" className="bg-green-100 text-green-800"><CheckCircle className="h-4 w-4 mr-1"/>Verified</Badge>}
+                                        {phoneStatus === 'verified' && <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"><CheckCircle className="h-4 w-4 mr-1"/>Verified</Badge>}
                                     </div>
                                     {showPhoneOtp && phoneStatus === 'pending' && (
                                         <div className="flex items-center gap-2 mt-2">
@@ -148,11 +204,11 @@ export default function CheckoutPage() {
                                 </div>
                                  <div className="col-span-1">
                                     <Label htmlFor="first-name">First Name</Label>
-                                    <Input id="first-name" placeholder="John" required defaultValue={isLoggedIn ? "John" : ""} />
+                                    <Input id="first-name" placeholder="John" required defaultValue={user?.name.split(' ')[0] || ""} />
                                 </div>
                                  <div className="col-span-1">
                                     <Label htmlFor="last-name">Last Name</Label>
-                                    <Input id="last-name" placeholder="Doe" required defaultValue={isLoggedIn ? "Doe" : ""} />
+                                    <Input id="last-name" placeholder="Doe" required defaultValue={user?.name.split(' ').slice(1).join(' ') || ""} />
                                 </div>
                                 <div className="col-span-2">
                                     <Label htmlFor="address1">Address Line 1</Label>
@@ -216,17 +272,17 @@ export default function CheckoutPage() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {cartItems.map(item => (
-                                        <div key={item.id} className="flex items-center justify-between">
+                                        <div key={item.instanceId} className="flex items-center justify-between">
                                             <div className="flex items-center gap-4">
                                                 <div className="relative w-16 h-16 rounded-md overflow-hidden">
-                                                    <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint={`${item.tags?.[0] || 'product'} ${item.tags?.[1] || ''}`} />
+                                                    <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" data-ai-hint={`${item.product.tags?.[0] || 'product'} ${item.product.tags?.[1] || ''}`} />
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold">{item.name}</p>
+                                                    <p className="font-semibold">{item.product.name}</p>
                                                     <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
                                                 </div>
                                             </div>
-                                            <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                                            <p className="font-semibold">${(item.product.price * item.quantity).toFixed(2)}</p>
                                         </div>
                                     ))}
                                 </div>
@@ -247,14 +303,14 @@ export default function CheckoutPage() {
                                     </div>
                                     <div className="flex justify-between font-bold text-lg">
                                         <p>Total</p>
-                                        <p>₹{total.toFixed(2)}</p>
+                                        <p>${total.toFixed(2)}</p>
                                     </div>
                                 </div>
                             </CardContent>
                             <CardFooter>
                                 <Button size="lg" type="submit" className="w-full" disabled={isProcessing || !isFormFullyVerified}>
                                     {isProcessing && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                                    {isProcessing ? 'Processing...' : `Pay Now (₹${total.toFixed(2)})`}
+                                    {isProcessing ? 'Processing...' : `Pay Now ($${total.toFixed(2)})`}
                                 </Button>
                             </CardFooter>
                         </Card>
