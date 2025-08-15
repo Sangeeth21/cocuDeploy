@@ -21,7 +21,7 @@ import { app } from "@/lib/firebase";
 
 const storage = getStorage(app);
 
-function CategoryDialog({ open, onOpenChange, category, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; category?: Category | null; onSave: (data: Omit<Category, 'productCount'>, file?: File | null) => void; }) {
+function CategoryDialog({ open, onOpenChange, category, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; category?: Category | null; onSave: (data: Omit<Category, 'id' | 'productCount'>, file?: File | null) => void; }) {
     const [name, setName] = useState("");
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -48,7 +48,7 @@ function CategoryDialog({ open, onOpenChange, category, onSave }: { open: boolea
             toast({ variant: 'destructive', title: "Category name is required." });
             return;
         }
-        onSave({ name, imageUrl: category?.imageUrl || "" }, imageFile);
+        onSave({ name, imageUrl: previewUrl || "" }, imageFile);
     };
     
     return (
@@ -113,16 +113,16 @@ export default function AdminCategoriesPage() {
 
     const handleSaveCategory = async (data: Omit<Category, 'id' | 'productCount'>, file: File | null) => {
         setIsDialogOpen(false);
-        let imageUrl = data.imageUrl;
+        let finalImageUrl = data.imageUrl;
 
         try {
             if (file) {
                 const storageRef = ref(storage, `category_images/${Date.now()}_${file.name}`);
                 const snapshot = await uploadBytes(storageRef, file);
-                imageUrl = await getDownloadURL(snapshot.ref);
+                finalImageUrl = await getDownloadURL(snapshot.ref);
             }
 
-            const categoryData = { ...data, imageUrl };
+            const categoryData = { name: data.name, imageUrl: finalImageUrl };
 
             if (editingCategory) {
                 await updateDoc(doc(db, 'categories', editingCategory.id!), categoryData);
