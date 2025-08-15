@@ -1,22 +1,62 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
-import { mockProducts } from "@/lib/mock-data";
+import { useState, useMemo, useEffect } from "react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { DisplayProduct } from "@/lib/types";
 import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
 import { B2bProductCard } from "../_components/b2b-product-card";
 import { Button } from "@/components/ui/button";
+import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const MAX_PRICE = 500;
 
 export default function CorporateProductsPage() {
+  const [products, setProducts] = useState<DisplayProduct[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedRatings, setSelectedRatings] = useState<number[]>([]);
   const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE]);
   const [sortOption, setSortOption] = useState('featured');
   
+  useEffect(() => {
+    setLoading(true);
+    let q = query(collection(db, "products"), where("b2bEnabled", "==", true));
+
+    // Apply filters
+    if (selectedCategories.length > 0) {
+        q = query(q, where('category', 'in', selectedCategories));
+    }
+    if (selectedRatings.length > 0) {
+        q = query(q, where('rating', '>=', Math.min(...selectedRatings)));
+    }
+    q = query(q, where('price', '>=', priceRange[0]), where('price', '<=', priceRange[1]));
+    
+     // Apply sorting
+    switch (sortOption) {
+      case 'price-asc':
+        q = query(q, orderBy('price', 'asc'));
+        break;
+      case 'price-desc':
+        q = query(q, orderBy('price', 'desc'));
+        break;
+      case 'rating':
+        q = query(q, orderBy('rating', 'desc'));
+        break;
+    }
+
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const productsData: DisplayProduct[] = [];
+        querySnapshot.forEach((doc) => {
+            productsData.push({ id: doc.id, ...doc.data() } as DisplayProduct);
+        });
+        setProducts(productsData);
+        setLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [selectedCategories, selectedRatings, priceRange, sortOption]);
 
   const handleCategoryChange = (categoryName: string) => {
     setSelectedCategories(prev =>
@@ -40,42 +80,6 @@ export default function CorporateProductsPage() {
       setPriceRange([0, MAX_PRICE]);
   }
 
-  const filteredAndSortedProducts = useMemo(() => {
-    let products: DisplayProduct[] = mockProducts.filter(p => p.b2bEnabled);
-
-    if (selectedCategories.length > 0) {
-      products = products.filter(p => selectedCategories.includes(p.category));
-    }
-
-    if (selectedRatings.length > 0) {
-      const minRating = Math.min(...selectedRatings);
-      products = products.filter(p => p.rating >= minRating);
-    }
-    
-    products = products.filter(p => p.price >= priceRange[0] && p.price <= priceRange[1]);
-
-    switch (sortOption) {
-      case 'price-asc':
-        products.sort((a, b) => a.price - b.price);
-        break;
-      case 'price-desc':
-        products.sort((a, b) => b.price - a.price);
-        break;
-      case 'newest':
-        products.sort((a, b) => parseInt(b.id) - parseInt(a.id));
-        break;
-      case 'rating':
-        products.sort((a, b) => b.rating - a.rating);
-        break;
-      case 'featured':
-      default:
-        break;
-    }
-
-    return products;
-  }, [selectedCategories, selectedRatings, sortOption, priceRange]);
-
-
   return (
     <div className="container space-y-8">
       <div className="text-center">
@@ -96,7 +100,7 @@ export default function CorporateProductsPage() {
 
         <main className="lg:col-span-3">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-            <p className="text-muted-foreground w-full sm:w-auto text-center sm:text-left">{filteredAndSortedProducts.length} products</p>
+            <p className="text-muted-foreground w-full sm:w-auto text-center sm:text-left">{products.length} products</p>
             <Select onValueChange={setSortOption} defaultValue="featured">
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Sort by" />
@@ -105,15 +109,14 @@ export default function CorporateProductsPage() {
                 <SelectItem value="featured">Featured</SelectItem>
                 <SelectItem value="price-asc">Price: Low to High</SelectItem>
                 <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
                 <SelectItem value="rating">Average Rating</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-            {filteredAndSortedProducts.length > 0 ? (
-                filteredAndSortedProducts.map((product) => (
+            {products.length > 0 ? (
+                products.map((product) => (
                     <B2bProductCard key={product.id} product={product} />
                 ))
             ) : (

@@ -1,14 +1,13 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import type { DisplayProduct, User } from '@/lib/types';
 import { ArrowLeft, X, CheckCircle, PlusCircle, Truck, Building, Loader2, Calendar, Clock, FileUp, Users, ShieldCheck } from "lucide-react";
 import Image from 'next/image';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
@@ -17,6 +16,9 @@ import { useBidRequest } from '@/context/bid-request-context';
 import Link from 'next/link';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useUser } from '@/context/user-context';
 
 const MOCK_OTP = "123456";
 
@@ -24,6 +26,7 @@ export default function NewBidPage() {
     const router = useRouter();
     const { toast } = useToast();
     const { bidItems, removeFromBid, clearBid } = useBidRequest();
+    const { user } = useUser();
 
     // State
     const [quantity, setQuantity] = useState(100);
@@ -36,25 +39,49 @@ export default function NewBidPage() {
     const [isOtpOpen, setIsOtpOpen] = useState(false);
     const [otp, setOtp] = useState("");
 
+    const handleFinalizeBid = async () => {
+        if (!user) {
+            toast({ variant: 'destructive', title: 'You must be logged in to create a bid.'});
+            return;
+        }
 
-    const handleFinalizeBid = () => {
         setIsSubmitting(true);
-        // Simulate API call
-        setTimeout(() => {
-            setIsSubmitting(false);
-            setIsOtpOpen(false);
+        try {
+            const expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + parseInt(biddingDuration, 10));
+
+            await addDoc(collection(db, "corporateBids"), {
+                products: bidItems,
+                quantity,
+                deliveryLocation,
+                deliveryPreference,
+                biddingDuration: parseInt(biddingDuration, 10),
+                notes,
+                status: 'Active',
+                createdAt: serverTimestamp(),
+                expiresAt: expiresAt.toISOString(),
+                customerId: user.id,
+                responses: []
+            });
+
             toast({
                 title: "Bid Submitted!",
                 description: "Vendors have been notified and will respond within your selected timeframe.",
             });
             clearBid();
             router.push("/corporate/bids");
-        }, 1500);
+
+        } catch (error) {
+            console.error("Error creating bid:", error);
+            toast({ variant: 'destructive', title: 'Failed to create bid.' });
+        } finally {
+            setIsSubmitting(false);
+            setIsOtpOpen(false);
+        }
     };
 
     const handleInitialSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Here you would typically trigger the OTP send
         toast({ title: "Verification Required", description: "An OTP has been sent to your registered phone number." });
         setIsOtpOpen(true);
     };

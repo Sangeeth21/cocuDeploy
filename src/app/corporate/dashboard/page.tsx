@@ -1,15 +1,17 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { mockProducts, mockCategories, mockCorporateCampaigns } from "@/lib/mock-data";
+import { mockCategories } from "@/lib/mock-data";
 import { ArrowRight, Store } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { B2bProductCard } from "../_components/b2b-product-card";
-
+import { collection, query, where, onSnapshot, limit } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { DisplayProduct, MarketingCampaign } from "@/lib/types";
 
 const DefaultHeroSlide = () => (
     <div className="relative h-[60vh] md:h-[70vh]">
@@ -43,10 +45,36 @@ const DefaultHeroSlide = () => (
     </div>
 );
 
-
 export default function CorporateMarketplacePage() {
-    const heroCampaigns = (mockCorporateCampaigns || []).filter(c => c.placement === 'hero' && c.status === 'Active' && c.creatives && c.creatives.length > 0);
-    const inlineCampaign = (mockCorporateCampaigns || []).find(c => c.placement === 'inline-banner' && c.status === 'Active' && c.creatives && c.creatives.length > 0);
+    const [heroCampaigns, setHeroCampaigns] = useState<MarketingCampaign[]>([]);
+    const [inlineCampaign, setInlineCampaign] = useState<MarketingCampaign | null>(null);
+    const [featuredProducts, setFeaturedProducts] = useState<DisplayProduct[]>([]);
+    const [topTierProducts, setTopTierProducts] = useState<DisplayProduct[]>([]);
+
+    useEffect(() => {
+        // Fetch Campaigns
+        const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"));
+        const unsubCampaigns = onSnapshot(campaignsQuery, (snapshot) => {
+            const campaigns: MarketingCampaign[] = [];
+            snapshot.forEach(doc => campaigns.push({ id: doc.id, ...doc.data() } as MarketingCampaign));
+            setHeroCampaigns(campaigns.filter(c => c.placement === 'hero' && c.creatives && c.creatives.length > 0));
+            setInlineCampaign(campaigns.find(c => c.placement === 'inline-banner' && c.creatives && c.creatives.length > 0) || null);
+        });
+
+        // Fetch Products
+        const productsQuery = query(collection(db, "products"), where("b2bEnabled", "==", true), limit(8));
+        const unsubProducts = onSnapshot(productsQuery, (snapshot) => {
+            const products: DisplayProduct[] = [];
+            snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() } as DisplayProduct));
+            setFeaturedProducts(products.slice(0, 4));
+            setTopTierProducts(products.slice(4, 8));
+        });
+
+        return () => {
+            unsubCampaigns();
+            unsubProducts();
+        };
+    }, []);
 
   return (
     <div className="space-y-12">
@@ -102,7 +130,7 @@ export default function CorporateMarketplacePage() {
       <section id="featured-b2b">
           <h2 className="text-3xl font-bold text-center mb-8 font-headline">Featured Bulk Products</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {mockProducts.filter(p => p.b2bEnabled).slice(0, 4).map((product) => (
+            {featuredProducts.map((product) => (
               <B2bProductCard key={product.id} product={product} />
             ))}
           </div>
@@ -126,7 +154,7 @@ export default function CorporateMarketplacePage() {
                  <div>
                     <h2 className="text-3xl font-bold text-center mb-8 font-headline">Top Tier Products</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {mockProducts.filter(p => p.b2bEnabled).slice(4, 8).map((product) => (
+                        {topTierProducts.map((product) => (
                          <B2bProductCard key={product.id} product={product} />
                         ))}
                     </div>

@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { mockCorporateBids } from '@/lib/mock-data';
 import type { CorporateBid, VendorBid } from '@/lib/types';
 import { ArrowLeft, Clock, CheckCircle, Hourglass, XCircle, Gavel, Users, Info, Award, MessageSquare, Package } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -26,9 +25,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogClose, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { BrandedLoader } from '@/components/branded-loader';
 
 function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     const calculateTimeLeft = () => {
@@ -54,7 +55,7 @@ function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     });
 
     const timerComponents = Object.keys(timeLeft)
-        .filter(interval => timeLeft[interval] > 0)
+        .filter(interval => timeLeft[interval] >= 0)
         .map(interval => (
             <span key={interval} className="font-semibold">{timeLeft[interval]}{interval.charAt(0)}</span>
         ));
@@ -141,8 +142,20 @@ export default function BidDetailsPage() {
     const { toast } = useToast();
     const id = params.id as string;
     
-    // In a real app, you'd fetch this data. For now, we find it in mock data.
-    const [bid, setBid] = useState<CorporateBid | undefined>(() => mockCorporateBids.find(b => b.id === id));
+    const [bid, setBid] = useState<CorporateBid | undefined | null>(undefined);
+
+    useEffect(() => {
+        if (!id) return;
+        const bidRef = doc(db, 'corporateBids', id);
+        const unsubscribe = onSnapshot(bidRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setBid({ id: docSnap.id, ...docSnap.data() } as CorporateBid);
+            } else {
+                setBid(null);
+            }
+        });
+        return () => unsubscribe();
+    }, [id]);
     
     const getStatusInfo = (status: CorporateBid['status']) => {
         switch(status) {
@@ -153,21 +166,31 @@ export default function BidDetailsPage() {
         }
     };
 
-    const handleAwardBid = (vendor: VendorBid) => {
+    const handleAwardBid = async (vendor: VendorBid) => {
         if (!bid) return;
-        setBid(prev => prev ? { ...prev, status: 'Awarded' } : undefined);
-        toast({
-            title: 'Bid Awarded!',
-            description: `You have awarded the bid to ${vendor.alias}. They have been notified to proceed.`,
-        });
+        const bidRef = doc(db, 'corporateBids', id);
+        try {
+            await updateDoc(bidRef, { status: 'Awarded', awardedTo: vendor.vendorId });
+            toast({
+                title: 'Bid Awarded!',
+                description: `You have awarded the bid to ${vendor.alias}. They have been notified to proceed.`,
+            });
+        } catch (error) {
+            console.error("Error awarding bid:", error);
+            toast({ variant: 'destructive', title: 'Failed to award bid.' });
+        }
     }
 
-    if (!bid) {
+    if (bid === undefined) {
+        return <BrandedLoader />;
+    }
+
+    if (bid === null) {
         notFound();
     }
 
     const { icon: StatusIcon, color: statusColor, label: statusLabel } = getStatusInfo(bid.status);
-    const awardedVendor = bid.status === 'Awarded' ? bid.responses[0] : null; // Mock: assume first response is the awarded one
+    const awardedVendor = bid.status === 'Awarded' ? bid.responses.find(r => r.vendorId === bid.awardedTo) : null;
 
     return (
         <div>

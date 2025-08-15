@@ -140,6 +140,7 @@ export type User = {
     username?: string;
     bio?: string;
     email: string;
+    phone?: string;
     role: 'Customer' | 'Vendor' | 'Admin';
     status: 'Active' | 'Suspended';
     joinedDate: string;
@@ -171,11 +172,12 @@ export type OrderItem = {
     productImage: string;
     quantity: number;
     price: number;
+    customizations?: { [key: string]: Partial<CustomizationValue> };
 };
 
 export type Order = {
     id: string;
-    date: string;
+    date: any; // Can be a Date object or a Firestore Timestamp
     customer: {
         id: string;
         name: string;
@@ -184,6 +186,8 @@ export type Order = {
     };
     items: OrderItem[];
     total: number;
+    subtotal: number;
+    shipping: number;
     status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
     shippingAddress: {
         recipient: string;
@@ -313,10 +317,12 @@ export type VendorBid = {
 
 export type CorporateBid = {
   id: string;
+  customerId: string;
   products: DisplayProduct[];
   quantity: number;
   status: 'Active' | 'Expired' | 'Awarded';
-  createdAt: string;
+  awardedTo?: string; // vendorId
+  createdAt: any;
   expiresAt: string;
   responses: VendorBid[];
 }

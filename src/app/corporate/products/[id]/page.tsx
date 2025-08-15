@@ -3,7 +3,6 @@
 
 import Image from "next/image";
 import { notFound, useParams, useRouter } from "next/navigation";
-import { mockProducts, mockCorporateCampaigns } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel } from "lucide-react";
@@ -20,10 +19,28 @@ import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
 import { CorporateProductInteractions } from "./_components/product-interactions";
 import { useBidRequest } from "@/context/bid-request-context";
+import { collection, doc, getDoc, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { DisplayProduct, MarketingCampaign } from "@/lib/types";
+import { BrandedLoader } from "@/components/branded-loader";
+
 
 function ProductPageCampaignBanner() {
-    const bannerCampaign = (mockCorporateCampaigns || []).find(c => c.placement === 'product-page-banner' && c.status === 'Active' && c.creatives && c.creatives.length > 0);
-    if (!bannerCampaign) {
+    const [bannerCampaign, setBannerCampaign] = useState<MarketingCampaign | null>(null);
+
+    useEffect(() => {
+        const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"), where("placement", "==", "product-page-banner"), limit(1));
+        const unsub = onSnapshot(campaignsQuery, (snapshot) => {
+            if (!snapshot.empty) {
+                setBannerCampaign({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as MarketingCampaign);
+            } else {
+                setBannerCampaign(null);
+            }
+        });
+        return () => unsub();
+    }, []);
+
+    if (!bannerCampaign || !bannerCampaign.creatives || bannerCampaign.creatives.length === 0) {
         return null;
     }
     const creative = bannerCampaign.creatives[0];
@@ -47,14 +64,34 @@ export default function B2BProductDetailPage() {
   const router = useRouter();
   const { toast } = useToast();
   const id = params.id as string;
-  const product = mockProducts.find((p) => p.id === id);
+  
+  const [product, setProduct] = useState<DisplayProduct | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [activeImage, setActiveImage] = useState(product?.imageUrl || 'https://placehold.co/600x600.png');
-  const [quantity, setQuantity] = useState(product?.moq || 100);
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(100);
   
   const { addToCart } = useCart();
   const { isComparing, toggleCompare } = useComparison();
   const { addToBid, isInBid } = useBidRequest();
+  
+   useEffect(() => {
+        if (!id) return;
+        setLoading(true);
+        const productRef = doc(db, 'products', id);
+        const unsubscribe = onSnapshot(productRef, (docSnap) => {
+            if (docSnap.exists() && docSnap.data().b2bEnabled) {
+                const productData = { id: docSnap.id, ...docSnap.data() } as DisplayProduct;
+                setProduct(productData);
+                setActiveImage(productData.imageUrl);
+                setQuantity(productData.moq || 100);
+            } else {
+                setProduct(null); // Triggers notFound()
+            }
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [id]);
 
   const isCustomizable = useMemo(() => {
     return Object.values(product?.customizationAreas || {}).some(areas => areas && areas.length > 0);
@@ -80,14 +117,11 @@ export default function B2BProductDetailPage() {
       }
   }
 
-  useEffect(() => {
-      // Set initial quantity to MOQ when product loads
-      if (product?.moq) {
-          setQuantity(product.moq);
-      }
-  }, [product]);
-
-  if (!product || !product.b2bEnabled) {
+  if (loading) {
+    return <BrandedLoader />;
+  }
+  
+  if (!product) {
     notFound();
   }
   
@@ -123,7 +157,7 @@ export default function B2BProductDetailPage() {
       <div className="grid md:grid-cols-2 gap-12 items-start">
         <div>
           <div className="aspect-square relative w-full overflow-hidden rounded-lg shadow-lg">
-            <Image src={activeImage} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+            {activeImage && <Image src={activeImage} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />}
              {isCustomizable && (
               <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-2">
                 <Wand2 className="h-4 w-4" />

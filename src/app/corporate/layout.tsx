@@ -6,16 +6,29 @@ import { usePathname, useRouter } from "next/navigation";
 import { CorporateSidebarLayout } from "./_components/corporate-sidebar-layout";
 import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
 import { BidRequestProvider } from "@/context/bid-request-context";
-import { mockCorporateCampaigns } from "@/lib/mock-data";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { MarketingCampaign } from "@/lib/types";
 
 function CorporateCampaignPopup() {
     const [isOpen, setIsOpen] = useState(false);
-    const popupCampaign = (mockCorporateCampaigns || []).find(c => c.placement === 'popup' && c.status === 'Active' && c.creatives && c.creatives.length > 0);
+    const [popupCampaign, setPopupCampaign] = useState<MarketingCampaign | null>(null);
+
+    useEffect(() => {
+        const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"), where("placement", "==", "popup"));
+        const unsubCampaigns = onSnapshot(campaignsQuery, (snapshot) => {
+            if (!snapshot.empty) {
+                const campaign = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as MarketingCampaign;
+                setPopupCampaign(campaign);
+            }
+        });
+        return () => unsubCampaigns();
+    }, []);
 
     useEffect(() => {
         if (popupCampaign) {
@@ -30,7 +43,7 @@ function CorporateCampaignPopup() {
         }
     }, [popupCampaign]);
     
-    if (!popupCampaign || !popupCampaign.creatives) {
+    if (!popupCampaign || !popupCampaign.creatives || popupCampaign.creatives.length === 0) {
         return null;
     }
 

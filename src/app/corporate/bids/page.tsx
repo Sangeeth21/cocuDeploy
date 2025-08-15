@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { mockCorporateBids } from "@/lib/mock-data";
-import type { CorporateBid, VendorBid } from "@/lib/types";
+import type { CorporateBid } from "@/lib/types";
 import Image from "next/image";
 import { Clock, Eye, Gavel, Plus, Users, CheckCircle, Hourglass, XCircle, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +15,9 @@ import Link from 'next/link';
 import NewBidPage from './new/page';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useUser } from "@/context/user-context";
 
 function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     const calculateTimeLeft = () => {
@@ -187,7 +189,21 @@ function BidCard({ bid }: { bid: CorporateBid }) {
 }
 
 export default function BidsPage() {
-    const [bids] = useState<CorporateBid[]>(mockCorporateBids);
+    const [bids, setBids] = useState<CorporateBid[]>([]);
+    const { user } = useUser();
+
+    useEffect(() => {
+        if (!user) return;
+        const q = query(collection(db, "corporateBids"), where('customerId', '==', user.id));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const bidsData: CorporateBid[] = [];
+            snapshot.forEach(doc => {
+                bidsData.push({ id: doc.id, ...doc.data() } as CorporateBid);
+            });
+            setBids(bidsData);
+        });
+        return () => unsubscribe();
+    }, [user]);
 
     const filteredBids = (status: CorporateBid['status'] | 'all') => {
         if (status === 'all') return bids;
