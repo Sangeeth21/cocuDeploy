@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +79,7 @@ export default function VendorOrdersPage() {
                                     <TableRow key={order.id}>
                                         <TableCell className="font-medium">{order.id}</TableCell>
                                         <TableCell>{order.customer.id}</TableCell>
-                                        <TableCell className="hidden sm:table-cell">{order.date}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{order.date ? new Date(order.date.seconds * 1000).toLocaleDateString() : 'N/A'}</TableCell>
                                         <TableCell>
                                             <Badge 
                                                 variant={order.status === 'Delivered' ? 'default' : order.status === 'Shipped' ? 'secondary' : 'outline'}

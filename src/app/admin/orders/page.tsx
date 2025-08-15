@@ -203,7 +203,7 @@ export default function AdminOrdersPage() {
                                         <div className="font-medium">{order.customer.name}</div>
                                     </div>
                                 </TableCell>
-                                <TableCell className="hidden md:table-cell text-muted-foreground">{order.date}</TableCell>
+                                <TableCell className="hidden md:table-cell text-muted-foreground">{new Date(order.date.seconds * 1000).toLocaleDateString()}</TableCell>
                                 <TableCell>
                                     <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
                                 </TableCell>
@@ -229,7 +229,7 @@ export default function AdminOrdersPage() {
                                         <DialogContent className="sm:max-w-3xl">
                                             <DialogHeader>
                                                 <DialogTitle>Order Details: {order.id}</DialogTitle>
-                                                <DialogDescription>{order.date}</DialogDescription>
+                                                <DialogDescription>{new Date(order.date.seconds * 1000).toLocaleString()}</DialogDescription>
                                             </DialogHeader>
                                             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 py-4">
                                                 <div className="lg:col-span-2 space-y-6">

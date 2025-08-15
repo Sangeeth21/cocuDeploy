@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
@@ -35,7 +36,7 @@ function CountdownTimer({ expiryDate }: { expiryDate: string }) {
         return timeLeft;
     };
 
-    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -198,7 +199,8 @@ export default function BidsPage() {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const bidsData: CorporateBid[] = [];
             snapshot.forEach(doc => {
-                bidsData.push({ id: doc.id, ...doc.data() } as CorporateBid);
+                const data = doc.data();
+                bidsData.push({ id: doc.id, createdAt: data.createdAt.toDate(), ...data } as CorporateBid);
             });
             setBids(bidsData);
         });

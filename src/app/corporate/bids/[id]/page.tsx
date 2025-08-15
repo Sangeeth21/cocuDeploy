@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -149,7 +150,8 @@ export default function BidDetailsPage() {
         const bidRef = doc(db, 'corporateBids', id);
         const unsubscribe = onSnapshot(bidRef, (docSnap) => {
             if (docSnap.exists()) {
-                setBid({ id: docSnap.id, ...docSnap.data() } as CorporateBid);
+                const data = docSnap.data();
+                setBid({ id: docSnap.id, createdAt: data.createdAt.toDate(), ...data } as CorporateBid);
             } else {
                 setBid(null);
             }
