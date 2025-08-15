@@ -40,8 +40,9 @@ import { useCart } from "@/context/cart-context";
 import { Progress } from "@/components/ui/progress";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 
 type Attachment = {
@@ -422,22 +423,36 @@ export default function AccountPage() {
     });
   }
 
-  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files[0]) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        if (e.target?.result) {
-            updateAvatar(e.target.result as string);
-            toast({
-                title: "Avatar Updated",
-                description: "Your new profile picture has been set.",
-            });
-        }
-      }
-      reader.readAsDataURL(file);
+  const handleAvatarChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || !event.target.files[0] || !user) return;
+
+    const file = event.target.files[0];
+    const storageRef = ref(storage, `avatars/${user.id}/${file.name}`);
+
+    try {
+        toast({ title: 'Uploading new avatar...' });
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        const userDocRef = doc(db, 'users', user.id);
+        await updateDoc(userDocRef, { avatar: downloadURL });
+
+        updateAvatar(downloadURL); // Update local context state
+
+        toast({
+            title: "Avatar Updated",
+            description: "Your new profile picture has been set.",
+        });
+    } catch (error) {
+        console.error("Error updating avatar: ", error);
+        toast({
+            variant: 'destructive',
+            title: 'Upload Failed',
+            description: 'Could not update your avatar. Please try again.',
+        });
     }
   };
+
 
   const handleAvatarClick = () => {
       fileInputRef.current?.click();
