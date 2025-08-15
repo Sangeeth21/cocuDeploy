@@ -6,24 +6,54 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User, Megaphone, Building } from "lucide-react";
+import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User, Megaphone, Building, Database } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { collection, query, orderBy, limit, onSnapshot, where } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, where, getDocs,getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order, User as UserType, MarketingCampaign } from "@/lib/types";
+import { seedDatabase } from '../actions';
+import { useToast } from "@/hooks/use-toast";
 
 
 export default function AdminDashboardPage() {
+    const { toast } = useToast();
+    const [stats, setStats] = useState({
+        revenue: 0,
+        signups: 0,
+        orders: 0,
+        vendors: 0,
+    });
     const [recentSales, setRecentSales] = useState<Order[]>([]);
-    const [newUsers, setNewUsers] = useState<UserType[]>([]);
     const [activity, setActivity] = useState<any[]>([]);
     const [heroCampaigns, setHeroCampaigns] = useState<MarketingCampaign[]>([]);
     const [bannerCampaign, setBannerCampaign] = useState<MarketingCampaign | null>(null);
     const [corporateHeroCampaigns, setCorporateHeroCampaigns] = useState<MarketingCampaign[]>([]);
+    const [isSeeding, setIsSeeding] = useState(false);
 
     useEffect(() => {
-        // Fetch recent sales
+        // Fetch stats
+        const fetchStats = async () => {
+            const ordersQuery = query(collection(db, "orders"), where("status", "!=", "Cancelled"));
+            const usersQuery = query(collection(db, "users"), where("role", "==", "Customer"));
+            const vendorsQuery = query(collection(db, "users"), where("role", "==", "Vendor"));
+            
+            const ordersSnapshot = await getDocs(ordersQuery);
+            const usersSnapshot = await getCountFromServer(usersQuery);
+            const vendorsSnapshot = await getCountFromServer(vendorsQuery);
+
+            const totalRevenue = ordersSnapshot.docs.reduce((acc, doc) => acc + doc.data().total, 0);
+            
+            setStats({
+                revenue: totalRevenue,
+                signups: usersSnapshot.data().count,
+                orders: ordersSnapshot.size,
+                vendors: vendorsSnapshot.data().count
+            });
+        };
+        fetchStats();
+
+        // Fetch recent sales (live)
         const salesQuery = query(collection(db, "orders"), orderBy("date", "desc"), limit(5));
         const unsubscribeSales = onSnapshot(salesQuery, (querySnapshot) => {
             const salesData: Order[] = [];
@@ -32,25 +62,15 @@ export default function AdminDashboardPage() {
             });
             setRecentSales(salesData);
         });
-
-        // Fetch new users
-        const usersQuery = query(collection(db, "users"), orderBy("joinedDate", "desc"), limit(2));
-        const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
-            const usersData: UserType[] = [];
-            querySnapshot.forEach((doc) => {
-                usersData.push({ id: doc.id, ...doc.data() } as UserType);
-            });
-            setNewUsers(usersData);
-        });
         
-        // Fetch Activity
+        // Fetch Activity (live)
         const activityQuery = query(collection(db, "notifications"), where("forAdmin", "==", true), orderBy("timestamp", "desc"), limit(5));
         const unsubscribeActivity = onSnapshot(activityQuery, (snapshot) => {
             const activityData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setActivity(activityData);
         });
         
-        // Fetch Campaigns
+        // Fetch Campaigns (live)
         const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"));
         const unsubCampaigns = onSnapshot(campaignsQuery, (snapshot) => {
             const campaigns: MarketingCampaign[] = [];
@@ -62,11 +82,28 @@ export default function AdminDashboardPage() {
 
         return () => {
             unsubscribeSales();
-            unsubscribeUsers();
             unsubscribeActivity();
             unsubCampaigns();
         };
     }, []);
+
+    const handleSeedDatabase = async () => {
+        setIsSeeding(true);
+        const result = await seedDatabase();
+        if(result.success) {
+            toast({
+                title: "Database Seeded!",
+                description: "Your database has been populated with sample data.",
+            });
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Seeding Failed",
+                description: result.message,
+            });
+        }
+        setIsSeeding(false);
+    }
 
     const notificationIcons: { [key: string]: React.ElementType } = {
         'user_report': ShieldAlert,
@@ -78,6 +115,10 @@ export default function AdminDashboardPage() {
     <>
       <div className="flex items-center justify-between space-y-2">
         <h1 className="text-3xl font-bold tracking-tight font-headline">Dashboard</h1>
+         <Button onClick={handleSeedDatabase} disabled={isSeeding}>
+            <Database className="mr-2 h-4 w-4" />
+            {isSeeding ? 'Seeding...' : 'Seed Database'}
+        </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4 my-8">
         <Card>
@@ -88,7 +129,7 @@ export default function AdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
+            <div className="text-2xl font-bold">${stats.revenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
               +20.1% from last month
             </p>
@@ -102,7 +143,7 @@ export default function AdminDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+2350</div>
+            <div className="text-2xl font-bold">+{stats.signups}</div>
             <p className="text-xs text-muted-foreground">
               +180.1% from last month
             </p>
@@ -114,7 +155,7 @@ export default function AdminDashboardPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+12,234</div>
+            <div className="text-2xl font-bold">+{stats.orders}</div>
             <p className="text-xs text-muted-foreground">
               +19% from last month
             </p>
@@ -128,7 +169,7 @@ export default function AdminDashboardPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+573</div>
+            <div className="text-2xl font-bold">+{stats.vendors}</div>
             <p className="text-xs text-muted-foreground">
               +201 since last hour
             </p>

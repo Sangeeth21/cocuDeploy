@@ -1,6 +1,5 @@
 
-
-import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign, CustomizationOption, CorporateBid, AiImageStyle } from './types';
+import type { DisplayProduct, Review, Category, User, FlashDeal, HeroCampaign, Order, OrderedCombo, WishlistedCombo, MarketingCampaign, CustomizationOption, CorporateBid, AiImageStyle, Program } from './types';
 
 export const mockProducts: DisplayProduct[] = [
   {
@@ -228,10 +227,10 @@ export const mockProducts: DisplayProduct[] = [
 ];
 
 export const mockReviews: Review[] = [
-    { id: '1', author: 'Jane D.', avatarUrl: 'https://placehold.co/40x40.png', rating: 5, title: 'Absolutely love it!', comment: 'This is the best purchase I have made this year. The quality is outstanding and it looks even better in person.', date: '2024-05-15' },
-    { id: '2', author: 'John S.', avatarUrl: 'https://placehold.co/40x40.png', rating: 4, title: 'Pretty good', comment: 'Solid product, works as advertised. The packaging was a bit flimsy but the product itself is great.', date: '2024-05-12' },
-    { id: '3', author: 'Emily R.', avatarUrl: 'https://placehold.co/40x40.png', rating: 5, title: 'Exceeded my expectations', comment: 'I was hesitant at first but I am so glad I bought it. Highly recommended!', date: '2024-05-10' },
-    { id: '4', author: 'Mike T.', avatarUrl: 'https://placehold.co/40x40.png', rating: 3, title: 'It\'s okay', comment: 'Does the job, but it feels a bit overpriced for what it is. Not bad, but not amazing either.', date: '2024-05-08' },
+    { id: 'REV001', productId: '1', author: 'Jane D.', avatarUrl: 'https://placehold.co/40x40.png', rating: 5, title: 'Absolutely love it!', comment: 'This is the best purchase I have made this year. The quality is outstanding and it looks even better in person.', date: '2024-05-15' },
+    { id: 'REV002', productId: '1', author: 'John S.', avatarUrl: 'https://placehold.co/40x40.png', rating: 4, title: 'Pretty good', comment: 'Solid product, works as advertised. The packaging was a bit flimsy but the product itself is great.', date: '2024-05-12' },
+    { id: 'REV003', productId: '2', author: 'Emily R.', avatarUrl: 'https://placehold.co/40x40.png', rating: 5, title: 'Exceeded my expectations', comment: 'I was hesitant at first but I am so glad I bought it. Highly recommended!', date: '2024-05-10' },
+    { id: 'REV004', productId: '2', author: 'Mike T.', avatarUrl: 'https://placehold.co/40x40.png', rating: 3, title: 'It\'s okay', comment: 'Does the job, but it feels a bit overpriced for what it is. Not bad, but not amazing either.', date: '2024-05-08' },
 ];
 
 export const mockCategories: Category[] = [
@@ -285,16 +284,35 @@ export const categoryCustomizationMap: { [key: string]: string[] } = {
     'Food & Beverage Gifts': ['debossing', 'uv-printing', 'screen-printing', 'foil-stamping', 'laser-engraving']
 };
 
-
 export const mockUsers: User[] = [
-    { id: 'USR001', name: 'Olivia Martin', email: 'olivia.martin@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-01-15', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'USR002', name: 'Timeless Co.', email: 'contact@timeless.co', role: 'Vendor', status: 'Active', joinedDate: '2024-02-20', avatar: 'https://placehold.co/40x40.png' },
+    { 
+        id: 'USR001', 
+        name: 'Olivia Martin', 
+        email: 'customer@example.com', 
+        role: 'Customer', 
+        status: 'Active', 
+        joinedDate: '2024-01-15', 
+        avatar: 'https://placehold.co/40x40.png',
+        loyalty: {
+            referralCode: "OLIVIA-M-REF",
+            referrals: 2,
+            referralsForNextTier: 5,
+            walletBalance: 25.50,
+            ordersToNextReward: 1,
+            totalOrdersForReward: 3,
+            loyaltyPoints: 5280,
+            loyaltyTier: 'Bronze',
+            nextLoyaltyTier: 'Silver',
+            pointsToNextTier: 7500,
+        }
+    },
+    { id: 'VDR001', name: 'Timeless Co.', email: 'vendor@example.com', role: 'Vendor', status: 'Active', joinedDate: '2024-02-20', avatar: 'https://placehold.co/40x40.png' },
     { id: 'USR003', name: 'Jackson Lee', email: 'jackson.lee@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-03-10', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'USR004', name: 'Crafty Creations', email: 'hello@crafty.com', role: 'Vendor', status: 'Suspended', joinedDate: '2024-03-15', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'VDR002', name: 'Crafty Creations', email: 'crafty@example.com', role: 'Vendor', status: 'Suspended', joinedDate: '2024-03-15', avatar: 'https://placehold.co/40x40.png' },
     { id: 'USR005', name: 'Isabella Nguyen', email: 'isabella.nguyen@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-04-05', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'USR006', name: 'Gadget Guru', email: 'support@gadgetguru.io', role: 'Vendor', status: 'Active', joinedDate: '2024-04-22', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'VDR003', name: 'Gadget Guru', email: 'gadget@example.com', role: 'Vendor', status: 'Active', joinedDate: '2024-04-22', avatar: 'https://placehold.co/40x40.png' },
     { id: 'USR007', name: 'William Kim', email: 'will@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-05-30', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'USR008', name: 'HomeBody Decor', email: 'sales@homebody.com', role: 'Vendor', status: 'Active', joinedDate: '2024-06-01', avatar: 'https://placehold.co/40x40.png' },
+    { id: 'VDR004', name: 'HomeBody Decor', email: 'home@example.com', role: 'Vendor', status: 'Active', joinedDate: '2024-06-01', avatar: 'https://placehold.co/40x40.png' },
 ];
 
 export const mockOrders: Order[] = [
@@ -379,31 +397,20 @@ export const mockUserOrders = [
 ];
 
 
-export const mockVendorActivity = [
-    { type: 'order', id: 'ORD004', text: 'New order #ORD004 from CUST004 for $215.00', time: '30m ago', href: '/vendor/orders' },
-    { type: 'message', id: 'MSG012', text: 'New message from CUST001 about "Classic Leather Watch"', time: '2h ago', href: '/vendor/messages', actions: [{label: "Reply", href: "/vendor/messages"}] },
-    { type: 'stock', id: 'CM-HND-BL', text: '"Handcrafted Ceramic Mug" is low on stock (8 left)', time: '1d ago', href: '/vendor/inventory' },
-    { type: 'confirmation', id: 'REQ001', text: 'Confirmation requested for "Professional Yoga Mat"', time: '2d ago', href: '/vendor/orders', actions: [{label: "Approve"}, {label: "Reject", variant: "destructive"}] },
+export const mockNotifications = [
+    // For Admin
+    { forAdmin: true, type: 'user_report', text: 'User "Crafty Creations" reported for inappropriate language', timestamp: new Date(Date.now() - 3600000), href: '/admin/moderation', actions: [{label: "Warn User", variant: "destructive"}, {label: "Dismiss", variant: "outline"}] },
+    { forAdmin: true, type: 'new_vendor', text: 'New vendor "HomeBody Decor" signed up', timestamp: new Date(Date.now() - 8 * 3600000), href: '/admin/users?role=vendor' },
+    // For Vendor
+    { vendorId: 'VDR001', type: 'order', text: 'New order #ORD004 for $215.00', timestamp: new Date(Date.now() - 1800000), href: '/vendor/orders' },
+    { vendorId: 'VDR001', type: 'message', text: 'New message from CUST001 about "Classic Leather Watch"', timestamp: new Date(Date.now() - 7200000), href: '/vendor/messages', actions: [{label: "Reply", href: "/vendor/messages"}] },
+    { vendorId: 'VDR001', type: 'stock', text: '"Handcrafted Ceramic Mug" is low on stock (8 left)', timestamp: new Date(Date.now() - 86400000), href: '/vendor/inventory' },
+    // For Customer
+    { customerId: 'USR001', type: 'order_shipped', text: 'Your order #ORD002 has shipped!', timestamp: new Date(Date.now() - 86400000), href: '/account?tab=orders', actions: [{label: 'Track', href: '/account?tab=orders'}] },
+    { customerId: 'USR001', type: 'request_approved', text: 'Your request for "Classic Leather Watch" was approved!', timestamp: new Date(Date.now() - 2 * 86400000), href: '/cart', actions: [{label: 'Go to Cart', href: '/cart'}] },
 ];
 
-export const mockActivity = [
-    { type: 'user_report', id: 'REP003', text: 'User "Crafty Creations" reported for inappropriate language', time: '1h ago', href: '/admin/moderation', actions: [{label: "Warn User", variant: "destructive"}, {label: "Dismiss", variant: "outline"}] },
-    { type: 'product_review', id: 'PROD006', text: 'Product needs pricing review', time: '3h ago', href: '/admin/smart-pricing?productId=6' },
-    { type: 'new_vendor', id: 'USR008', text: 'New vendor "HomeBody Decor" signed up', time: '8h ago', href: '/admin/vendors' },
-    { type: 'confirmation_request', id: 'REQ001', text: 'Confirmation needed for "Professional Yoga Mat"', time: '1d ago', href: '/admin/orders' },
-];
-
-export const mockCorporateActivity = [
-    { type: 'order_shipped', id: 'CORP_ORD001', text: 'Your bulk order #CORP_ORD001 has shipped!', time: '1d ago', href: '/corporate/orders', actions: [{label: 'Track Shipment', href: '/corporate/orders'}] },
-    { type: 'request_approved', id: 'QUOTE005', text: 'Your quote request for "Custom Logo T-Shirts" has been approved.', time: '2d ago', href: '/corporate/quotes', actions: [{label: 'View Quote', href: '/corporate/quotes'}] },
-];
-
-
-// Mock data for the new marketing features
-const futureDate = new Date();
-futureDate.setDate(futureDate.getDate() + 3);
-
-export const mockCampaigns: MarketingCampaign[] = [
+export const mockMarketingCampaigns: MarketingCampaign[] = [
     {
         id: "CAMP001",
         name: "Summer Sale 2024",
@@ -524,9 +531,6 @@ export const mockCampaigns: MarketingCampaign[] = [
             imageUrl: "https://placehold.co/400x400.png",
         }]
     },
-]
-
-export const mockCorporateCampaigns: MarketingCampaign[] = [
     {
         id: "CORP_CAMP001",
         name: "Q3 Bulk Discount Drive",
@@ -543,173 +547,12 @@ export const mockCorporateCampaigns: MarketingCampaign[] = [
             imageUrl: "https://placehold.co/1920x1080.png",
         }]
     },
-    {
-        id: "CORP_CAMP002",
-        name: "Client Appreciation Event",
-        type: "Promotion",
-        status: "Active",
-        startDate: "2024-06-15",
-        endDate: "2024-08-30",
-        placement: "inline-banner",
-        creatives: [{
-            id: 1,
-            title: "The Art of Appreciation",
-            description: "Customizable gift kits to strengthen your client relationships.",
-            cta: "View Gifting Kits",
-            imageUrl: "https://placehold.co/1200x400.png",
-        }]
-    },
-    {
-        id: "CORP_CAMP003",
-        name: "Tech Refresh Program",
-        type: "Sale",
-        status: "Active",
-        startDate: "2024-07-15",
-        endDate: "2024-08-15",
-        placement: "product-page-banner",
-        creatives: [{
-            id: 1,
-            title: "Corporate Tech Refresh",
-            description: "Special pricing available when you order 50+ units.",
-            cta: "Request Quote",
-            imageUrl: "https://placehold.co/600x400.png"
-        }]
-    },
-    {
-        id: "CORP_CAMP004",
-        name: "End of Year Gifting",
-        type: "Promotion",
-        status: "Active",
-        startDate: "2024-07-01",
-        endDate: "2024-08-31",
-        placement: "popup",
-        creatives: [{
-            id: 1,
-            title: "Plan Your End-of-Year Gifting Early!",
-            description: "Contact our corporate specialists to plan your holiday gifts.",
-            cta: "Contact Us",
-            imageUrl: "https://placehold.co/600x400.png"
-        }]
-    },
-    {
-        id: "CORP_CAMP005",
-        name: "Corporate Announcement",
-        type: "Promotion",
-        status: "Active",
-        startDate: "2024-07-01",
-        endDate: "2024-08-31",
-        placement: "corporate-banner",
-        creatives: [{
-            id: 1,
-            title: "New Tiered Pricing Available!",
-            description: "Save more when you buy in bulk.",
-            cta: "Learn More",
-            imageUrl: null,
-        }]
-    }
 ]
-
-export const mockFlashDeals: FlashDeal[] = [
-    {
-        product: mockProducts[1],
-        discountPercentage: 25,
-        endDate: futureDate.toISOString(),
-        stock: 100,
-        sold: 45,
-    },
-    {
-        product: mockProducts[6],
-        discountPercentage: 30,
-        endDate: futureDate.toISOString(),
-        stock: 50,
-        sold: 12,
-    },
-    {
-        product: mockProducts[7],
-        discountPercentage: 20,
-        endDate: futureDate.toISOString(),
-        stock: 80,
-        sold: 60,
-    },
-    {
-        product: mockProducts[0],
-        discountPercentage: 15,
-        endDate: futureDate.toISOString(),
-        stock: 40,
-        sold: 5,
-    },
-]
-
-export const mockHeroCampaigns: HeroCampaign[] = [
-    {
-        title: "Summer Collection is Here!",
-        description: "Fresh looks for sunny days. Explore our new arrivals in apparel and accessories.",
-        link: "/products?category=Apparel",
-        cta: "Shop Now",
-        imageUrl: "https://placehold.co/1920x1080.png",
-        hint: "summer fashion"
-    },
-    {
-        title: "Upgrade Your Workspace",
-        description: "Find the perfect gear to boost your productivity. Desks, chairs, and tech gadgets.",
-        link: "/products?category=Furniture",
-        cta: "Explore Home Office",
-        imageUrl: "https://placehold.co/1920x1080.png",
-        hint: "modern office"
-    },
-    {
-        title: "Save Big on Electronics",
-        description: "Limited-time deals on headphones, smart watches, and more.",
-        link: "/products?category=Electronics",
-        cta: "View Deals",
-        imageUrl: "https://placehold.co/1920x1080.png",
-        hint: "tech gadgets"
-    }
-]
-
-export const mockOrderedCombos: OrderedCombo[] = [
-  {
-    id: 'OC001',
-    products: [mockProducts[6], mockProducts[3]],
-    orderCount: 18,
-    orders: [
-      { orderId: 'ORD003', customer: mockUsers[4], date: '2024-06-15', vendorId: 'VDR007' },
-      { orderId: 'ORD006', customer: mockUsers[0], date: '2024-06-14', vendorId: 'VDR004' },
-    ],
-  },
-  {
-    id: 'OC002',
-    products: [mockProducts[7], mockProducts[8]],
-    orderCount: 12,
-    orders: [
-      { orderId: 'ORD004', customer: mockUsers[6], date: '2024-06-12', vendorId: 'VDR008' },
-    ],
-  },
-];
-
-export const mockWishlistedCombos: WishlistedCombo[] = [
-  {
-    id: 'WC001',
-    products: [mockProducts[0], mockProducts[2]],
-    wishlistCount: 25,
-    customers: [
-      { customer: mockUsers[0], date: '2024-06-21', vendorId: 'VDR001' },
-      { customer: mockUsers[2], date: '2024-06-20', vendorId: 'VDR003' },
-    ],
-  },
-  {
-    id: 'WC002',
-    products: [mockProducts[4], mockProducts[3]],
-    wishlistCount: 21,
-    customers: [
-      { customer: mockUsers[4], date: '2024-06-19', vendorId: 'VDR005' },
-    ],
-  },
-];
 
 export const mockCorporateBids: CorporateBid[] = [
     {
         id: 'B2XJ5K1M',
+        customerId: 'CORP001',
         products: [mockProducts[0], mockProducts[3]],
         quantity: 250,
         status: 'Active',
@@ -722,6 +565,7 @@ export const mockCorporateBids: CorporateBid[] = [
     },
     {
         id: 'A9S3H7F2',
+        customerId: 'CORP002',
         products: [mockProducts[1]],
         quantity: 100,
         status: 'Expired',
@@ -733,6 +577,7 @@ export const mockCorporateBids: CorporateBid[] = [
     },
      {
         id: 'P4G8R2T9',
+        customerId: 'CORP001',
         products: [mockProducts[8], mockProducts[4]],
         quantity: 500,
         status: 'Awarded',
@@ -765,3 +610,26 @@ export const mockAiImageStyles: AiImageStyle[] = [
   { id: 'style-12', name: 'Double Exposure', backendPrompt: ', double exposure effect, silhouette combined with a landscape, artistic, thoughtful, professional', target: 'corporate', order: 7 },
 ];
 
+export const mockPrograms: Omit<Program, 'id'>[] = [
+    {
+        name: "Welcome Bonus",
+        target: "customer",
+        type: "milestone",
+        reward: { type: "wallet_credit", value: 500 },
+        productScope: 'all',
+        status: 'Active',
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'),
+        expiryDays: 90
+    },
+     {
+        name: "Vendor Referral",
+        target: "vendor",
+        type: "referral",
+        reward: { type: "commission_discount", value: 1 },
+        productScope: 'all',
+        status: 'Active',
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-12-31'),
+    }
+]
