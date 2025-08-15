@@ -15,6 +15,8 @@ import type { Message, Conversation } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useVerification } from "@/context/vendor-verification-context";
 
 type Attachment = {
     name: string;
@@ -22,7 +24,7 @@ type Attachment = {
     url: string;
 }
 
-const initialConversations: Conversation[] = [
+const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] = [
   {
     id: 1,
     customerId: "CUST001",
@@ -37,6 +39,7 @@ const initialConversations: Conversation[] = [
     userMessageCount: 3,
     awaitingVendorDecision: false,
     status: 'active',
+    type: 'customer',
   },
   {
     id: 2,
@@ -48,6 +51,7 @@ const initialConversations: Conversation[] = [
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
+    type: 'customer',
   },
   {
     id: 3,
@@ -59,6 +63,7 @@ const initialConversations: Conversation[] = [
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
+    type: 'customer',
   },
    {
     id: 4,
@@ -70,27 +75,102 @@ const initialConversations: Conversation[] = [
     userMessageCount: 1,
     awaitingVendorDecision: false,
     status: 'active',
+    type: 'customer',
+  },
+  {
+    id: 5,
+    customerId: "Corporate Client Inc.",
+    vendorId: "VDR001",
+    avatar: "https://placehold.co/40x40.png",
+    messages: [
+      { id: 'ccm1', sender: 'customer', text: 'Hello, we are interested in a bulk order of the Classic Leather Watch for a corporate event. Can you provide a quote for 500 units?' },
+      { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?', status: 'sent'},
+    ],
+    unread: true,
+    userMessageCount: 1,
+    awaitingVendorDecision: false,
+    status: 'active',
+    type: 'corporate',
   }
 ];
 
+function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open: boolean, onOpenChange: (open: boolean) => void, onContinue: () => void, onEnd: () => void }) {
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><AlertTriangle className="text-primary"/> Potential Conversion</DialogTitle>
+                    <DialogDescription>
+                        You've reached the initial message limit. Do you believe this customer will place an order?
+                    </DialogDescription>
+                </DialogHeader>
+                <p className="text-sm text-muted-foreground">
+                    Continuing the chat will grant 8 more messages. Ending the chat will lock the conversation.
+                </p>
+                <DialogFooter>
+                    <Button variant="outline" onClick={onEnd}>End Chat</Button>
+                    <Button onClick={onContinue}>Yes, Continue Chat</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 export default function VendorMessagesPage() {
   const [conversations, setConversations] = useState(initialConversations);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(1);
+  const [selectedConversation, setSelectedConversation] = useState<(Conversation & {type: 'customer' | 'corporate'}) | null>(conversations.find(c => c.id === 1) || null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1500;
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
+  const { vendorType } = useVerification();
+  const defaultTab = vendorType === 'corporate' ? 'corporate' : 'customer';
 
-  const selectedConversation = conversations.find(c => c.id === selectedConversationId);
-
+  useEffect(() => {
+    if (selectedConversation?.awaitingVendorDecision) {
+        setIsConversionDialogOpen(true);
+    } else {
+        setIsConversionDialogOpen(false);
+    }
+  }, [selectedConversation]);
+  
   const handleReportConversation = (id: number) => {
     setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'flagged' } : c));
     toast({
         title: "Conversation Reported",
         description: "Thank you. Our moderation team will review this chat.",
     });
+  }
+
+  const handleContinueChat = () => {
+    if (!selectedConversation) return;
+    const updatedConvo = {
+        ...selectedConversation,
+        awaitingVendorDecision: false,
+        messages: [...selectedConversation.messages, {id: 'system-continue', sender: 'system' as const, text: 'Vendor extended the chat. 8 messages remaining.'}]
+    };
+    
+    setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
+    setSelectedConversation(updatedConvo);
+    setIsConversionDialogOpen(false);
+    toast({ title: 'Chat Extended', description: 'You can now send 8 more messages.' });
+  }
+
+  const handleEndChat = () => {
+      if (!selectedConversation) return;
+      const updatedConvo = {
+            ...selectedConversation,
+            awaitingVendorDecision: false,
+            status: 'locked' as const,
+            messages: [...selectedConversation.messages, {id: 'system-end', sender: 'system' as const, text: 'You have ended the chat.'}]
+      };
+      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
+      setSelectedConversation(updatedConvo);
+      setIsConversionDialogOpen(false);
+      toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -114,7 +194,7 @@ export default function VendorMessagesPage() {
   
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if ((!newMessage.trim() && attachments.length === 0) || !selectedConversationId) return;
+    if ((!newMessage.trim() && attachments.length === 0) || !selectedConversation) return;
 
     const newAttachments: Attachment[] = attachments.map(file => ({
         name: file.name,
@@ -130,27 +210,56 @@ export default function VendorMessagesPage() {
         ...(newAttachments.length > 0 && {attachments: newAttachments})
     };
 
+    let updatedConvo: (Conversation & {type: 'customer' | 'corporate'}) | null = null;
     setConversations(prev =>
       prev.map(convo => {
-         if (convo.id !== selectedConversationId) return convo;
+         if (convo.id !== selectedConversation.id) return convo;
         
-        return {
+        let newCount = convo.userMessageCount;
+        if(newMessageObj.sender === 'vendor') {
+            newCount++;
+        }
+        
+        const updatedMessages = [...convo.messages, newMessageObj];
+        let awaitingDecision = convo.awaitingVendorDecision;
+
+        if (convo.type === 'corporate' && newCount === 5) {
+          awaitingDecision = true;
+          updatedMessages.push({
+            id: 'system-limit-corp',
+            sender: 'system',
+            text: 'You have reached the initial message limit. Decide whether to continue the chat.'
+          });
+        }
+        
+        updatedConvo = {
             ...convo,
-            messages: [...convo.messages, newMessageObj],
+            messages: updatedMessages,
+            userMessageCount: newCount,
+            awaitingVendorDecision: awaitingDecision,
         };
+        return updatedConvo;
       })
     );
+
+    if (updatedConvo) {
+      setSelectedConversation(updatedConvo);
+    }
+
     setNewMessage("");
     setAttachments([]);
   };
   
   const handleSelectConversation = (id: number) => {
-    setSelectedConversationId(id);
-    setConversations(prev =>
-        prev.map(convo => 
-            convo.id === id ? { ...convo, unread: false } : convo
-        )
-    );
+    const convo = conversations.find(c => c.id === id);
+    if(convo){
+        setSelectedConversation(convo);
+        setConversations(prev =>
+            prev.map(c => 
+                c.id === id ? { ...c, unread: false } : c
+            )
+        );
+    }
   }
 
   const getLastMessage = (messages: Message[]) => {
@@ -171,7 +280,7 @@ export default function VendorMessagesPage() {
           case 'delivered':
               return <EyeOff className="h-4 w-4 text-primary-foreground" />;
           case 'sent':
-              return <Check className="h-4 w-4 text-primary-foreground" />;
+              return <EyeOff className="h-4 w-4 text-primary-foreground/70" />;
           default:
               return null;
       }
@@ -179,10 +288,28 @@ export default function VendorMessagesPage() {
     
   const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, status } = selectedConversation;
+      const { userMessageCount, awaitingVendorDecision, status, type } = selectedConversation;
+      
+      const isPermanentlyLocked = status !== 'active';
+
+      if (type === 'corporate') {
+        const INITIAL_LIMIT = 5;
+        const EXTENDED_LIMIT = 5 + 6;
+        
+        const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
+        let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+        let remaining = limit - userMessageCount;
+        
+        if(awaitingVendorDecision) {
+          remaining = 0;
+        }
+        
+        return { limit, remaining: Math.max(0, remaining), isLocked };
+      }
+      
       const limit = 4;
+      const isLocked = userMessageCount >= limit || isPermanentlyLocked;
       const remaining = limit - userMessageCount;
-      const isLocked = userMessageCount >= limit || status !== 'active';
       return { limit, remaining: Math.max(0, remaining), isLocked };
   }
   
@@ -195,11 +322,14 @@ export default function VendorMessagesPage() {
         }
     }, [newMessage]);
 
-     useEffect(() => {
-        if (messagesContainerRef.current) {
-             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+    useEffect(() => {
+        if (scrollAreaRef.current) {
+             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+             if(scrollableView){
+                 scrollableView.scrollTop = scrollableView.scrollHeight;
+             }
         }
-    }, [selectedConversation?.messages, selectedConversationId]);
+    }, [selectedConversation?.messages, selectedConversation]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-full">
@@ -211,13 +341,13 @@ export default function VendorMessagesPage() {
               <Input placeholder="Search conversations..." className="pl-8" />
             </div>
           </div>
-          <ScrollArea>
+          <ScrollArea className="flex-1">
               {conversations.map(convo => (
               <div
                   key={convo.id}
                   className={cn(
                   "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
-                  selectedConversationId === convo.id && "bg-muted"
+                  selectedConversation?.id === convo.id && "bg-muted"
                   )}
                   onClick={() => handleSelectConversation(convo.id)}
               >
@@ -255,7 +385,7 @@ export default function VendorMessagesPage() {
                 </div>
                  <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => handleReportConversation(selectedConversation.id)}>
-                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                        <AlertTriangle className="h-5 w-5" />
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
@@ -275,8 +405,8 @@ export default function VendorMessagesPage() {
               ) : (
                 <>
                 <CardContent className="flex-1 p-0">
-                    <ScrollArea className="h-full bg-muted/20">
-                        <div className="p-4 space-y-4" ref={messagesContainerRef}>
+                    <ScrollArea className="h-full bg-muted/20" ref={scrollAreaRef}>
+                        <div className="p-4 space-y-4">
                         {selectedConversation.messages.map((msg, index) => (
                             msg.sender === 'system' ? (
                                 <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
@@ -331,7 +461,7 @@ export default function VendorMessagesPage() {
                       <div className="relative flex-1">
                           <Textarea
                               ref={textareaRef}
-                              placeholder={isLocked ? "Message limit reached." : "Type your message..."}
+                              placeholder={isLocked ? "Message limit reached. Awaiting your decision..." : "Type your message..."}
                               className="pr-20 resize-none max-h-48"
                               value={newMessage}
                               onChange={(e) => setNewMessage(e.target.value)}
@@ -359,6 +489,12 @@ export default function VendorMessagesPage() {
              </div>
           )}
         </div>
+      <ConversionCheckDialog 
+        open={isConversionDialogOpen} 
+        onOpenChange={setIsConversionDialogOpen}
+        onContinue={handleContinueChat}
+        onEnd={handleEndChat}
+      />
     </div>
   );
 }

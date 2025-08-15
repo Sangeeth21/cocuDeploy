@@ -126,7 +126,7 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
 
 export default function BothVendorMessagesPage() {
   const [conversations, setConversations] = useState(initialConversations);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(1);
+  const [selectedConversation, setSelectedConversation] = useState<(Conversation & {type: 'customer' | 'corporate'}) | null>(initialConversations[0]);
   const [newMessage, setNewMessage] = useState("");
   const MAX_MESSAGE_LENGTH = 1500;
   const { toast } = useToast();
@@ -135,8 +135,6 @@ export default function BothVendorMessagesPage() {
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') === 'corporate' ? 'corporate' : 'customer';
-
-  const selectedConversation = useMemo(() => conversations.find(c => c.id === selectedConversationId), [conversations, selectedConversationId]);
 
   useEffect(() => {
     if (selectedConversation?.awaitingVendorDecision) {
@@ -147,7 +145,9 @@ export default function BothVendorMessagesPage() {
   }, [selectedConversation]);
   
   const handleReportConversation = (id: number) => {
-    setConversations(prev => prev.map(c => c.id === id ? { ...c, status: 'flagged' } : c));
+    const updatedConvo = { ...selectedConversation!, status: 'flagged' as const };
+    setConversations(prev => prev.map(c => c.id === id ? updatedConvo : c));
+    setSelectedConversation(updatedConvo);
     toast({
         title: "Conversation Reported",
         description: "Thank you. Our moderation team will review this chat.",
@@ -155,44 +155,35 @@ export default function BothVendorMessagesPage() {
   }
 
   const handleContinueChat = () => {
-    if (!selectedConversationId) return;
-    const updatedConversations = conversations.map(c => {
-        if (c.id === selectedConversationId) {
-            return {
-                ...c,
-                awaitingVendorDecision: false,
-                messages: [...c.messages, {id: 'system-continue', sender: 'system' as const, text: 'You extended the chat. 6 messages remaining.'}]
-            };
-        }
-        return c;
-    });
-
-    setConversations(updatedConversations);
+    if (!selectedConversation) return;
+    const updatedConvo = {
+        ...selectedConversation,
+        awaitingVendorDecision: false,
+        messages: [...selectedConversation.messages, {id: 'system-continue', sender: 'system' as const, text: 'You extended the chat. 6 messages remaining.'}]
+    };
+    setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
+    setSelectedConversation(updatedConvo);
     setIsConversionDialogOpen(false);
     toast({ title: 'Chat Extended', description: 'You can now send 6 more messages.' });
   }
 
   const handleEndChat = () => {
-      if (!selectedConversationId) return;
-      const updatedConversations = conversations.map(c => {
-        if (c.id === selectedConversationId) {
-            return {
-                ...c,
-                awaitingVendorDecision: false,
-                status: 'locked' as const,
-                messages: [...c.messages, {id: 'system-end', sender: 'system' as const, text: 'You have ended the chat.'}]
-            };
-        }
-        return c;
-      });
-      setConversations(updatedConversations);
+      if (!selectedConversation) return;
+      const updatedConvo = {
+            ...selectedConversation,
+            awaitingVendorDecision: false,
+            status: 'locked' as const,
+            messages: [...selectedConversation.messages, {id: 'system-end', sender: 'system' as const, text: 'You have ended the chat.'}]
+      };
+      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
+      setSelectedConversation(updatedConvo);
       setIsConversionDialogOpen(false);
       toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
   }
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConversationId) return;
+    if (!newMessage.trim() || !selectedConversation) return;
 
     const newMessageObj: Message = {
       id: Math.random().toString(),
@@ -201,50 +192,53 @@ export default function BothVendorMessagesPage() {
       status: 'sent',
     };
 
-    setConversations(prev =>
-      prev.map(convo => {
-        if (convo.id !== selectedConversationId) return convo;
+    let updatedConvo: (Conversation & {type: 'customer' | 'corporate'}) | null = null;
+    const newConversations = conversations.map(convo => {
+      if (convo.id !== selectedConversation.id) return convo;
 
-        const updatedMessages = [...convo.messages, newMessageObj];
-        let newCount = convo.userMessageCount;
-        let awaitingDecision = convo.awaitingVendorDecision;
+      let newCount = convo.userMessageCount;
+      if (newMessageObj.sender === 'vendor') {
+        newCount++;
+      }
+      
+      const updatedMessages = [...convo.messages, newMessageObj];
+      let awaitingDecision = convo.awaitingVendorDecision;
 
-        // Increment count only for vendor messages
-        if (newMessageObj.sender === 'vendor') {
-            newCount++;
-        }
+      if (convo.type === 'corporate' && newCount === 5) {
+        awaitingDecision = true;
+        updatedMessages.push({
+          id: 'system-limit-corp',
+          sender: 'system',
+          text: 'You have reached the initial message limit. Decide whether to continue the chat.'
+        });
+      }
+      
+      updatedConvo = {
+        ...convo,
+        messages: updatedMessages,
+        userMessageCount: newCount,
+        awaitingVendorDecision: awaitingDecision,
+      };
+      return updatedConvo;
+    });
 
-        // Logic for corporate chat limits
-        if (convo.type === 'corporate' && newCount === 5) {
-          awaitingDecision = true;
-          updatedMessages.push({
-            id: 'system-limit-corp',
-            sender: 'system',
-            text: 'You have reached the initial message limit. Decide whether to continue the chat.'
-          });
-        }
-        
-        const updatedConvo = {
-          ...convo,
-          messages: updatedMessages,
-          userMessageCount: newCount,
-          awaitingVendorDecision: awaitingDecision,
-        };
-
-        return updatedConvo;
-      })
-    );
-
+    setConversations(newConversations);
+    if(updatedConvo) {
+      setSelectedConversation(updatedConvo);
+    }
     setNewMessage("");
   };
   
   const handleSelectConversation = (id: number) => {
-    setSelectedConversationId(id);
-    setConversations(prev =>
-        prev.map(convo => 
-            convo.id === id ? { ...convo, unread: false, unreadCount: 0 } : convo
-        )
-    );
+    const convo = conversations.find(c => c.id === id);
+    if(convo){
+        setSelectedConversation(convo);
+        setConversations(prev =>
+            prev.map(c => 
+                c.id === id ? { ...c, unread: false, unreadCount: 0 } : c
+            )
+        );
+    }
   }
 
   const getLastMessage = (messages: Message[]) => {
@@ -265,7 +259,7 @@ export default function BothVendorMessagesPage() {
           case 'delivered':
               return <EyeOff className="h-4 w-4 text-primary-foreground" />;
           case 'sent':
-              return <Check className="h-4 w-4 text-primary-foreground" />;
+              return <EyeOff className="h-4 w-4 text-primary-foreground/70" />;
           default:
               return null;
       }
@@ -276,23 +270,25 @@ export default function BothVendorMessagesPage() {
         const { userMessageCount, awaitingVendorDecision, type, status } = selectedConversation;
         const isPermanentlyLocked = status !== 'active';
 
-        let limit: number;
-        let isLocked: boolean;
-
         if (type === 'corporate') {
             const INITIAL_LIMIT = 5;
             const EXTENDED_LIMIT = 5 + 6;
             
-            isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
-            limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+            const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
+            let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+            let remaining = limit - userMessageCount;
+            
+            if(awaitingVendorDecision) {
+              remaining = 0;
+            }
+            
+            return { limit, remaining: Math.max(0, remaining), isLocked };
         } else {
-            // Personalized chat logic
-            limit = 4;
-            isLocked = userMessageCount >= limit || isPermanentlyLocked;
+            const limit = 4;
+            const isLocked = userMessageCount >= limit || isPermanentlyLocked;
+            const remaining = limit - userMessageCount;
+            return { limit, remaining: Math.max(0, remaining), isLocked };
         }
-        
-        const remaining = Math.max(0, limit - userMessageCount);
-        return { limit, remaining: awaitingVendorDecision ? 0 : remaining, isLocked };
     };
   
   const { remaining, isLocked } = getChatLimit();
@@ -308,7 +304,7 @@ export default function BothVendorMessagesPage() {
         if (messagesContainerRef.current) {
              messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
-    }, [selectedConversation?.messages, selectedConversationId]);
+    }, [selectedConversation?.messages]);
 
     const customerUnreadCount = conversations.filter(c => c.type === 'customer' && c.unread).length;
     const corporateUnreadCount = conversations.filter(c => c.type === 'corporate' && c.unread).length;
@@ -322,7 +318,7 @@ export default function BothVendorMessagesPage() {
                     key={convo.id}
                     className={cn(
                     "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
-                    selectedConversationId === convo.id && "bg-muted"
+                    selectedConversation?.id === convo.id && "bg-muted"
                     )}
                     onClick={() => handleSelectConversation(convo.id)}
                 >

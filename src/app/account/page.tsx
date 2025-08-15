@@ -341,22 +341,18 @@ export default function AccountPage() {
   
   // Chat state
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1500;
-
-  const selectedConversation = useMemo(() => conversations.find(c => c.id === selectedConversationId), [conversations, selectedConversationId]);
 
   // Handle navigation from product page
   useEffect(() => {
     const vendorId = searchParams.get('vendorId');
     const productName = searchParams.get('productName');
     if (vendorId) {
-      // Logic from product interactions will prevent this if limit is reached
       let convo = conversations.find(c => c.vendorId === vendorId);
       if (!convo) {
-        // Create a new conversation if one doesn't exist
         const newConvo: Conversation = {
           id: (conversations.length + 1).toString(),
           vendorId: vendorId,
@@ -367,7 +363,6 @@ export default function AccountPage() {
           status: 'active',
         };
         
-        // Update simulated global state
         if (!new Set(conversations.map(c => c.vendorId)).has(vendorId)) {
             uniqueVendorChats++;
         }
@@ -375,22 +370,20 @@ export default function AccountPage() {
         setConversations(prev => [...prev, newConvo]);
         convo = newConvo;
       }
-      setSelectedConversationId(convo.id);
+      setSelectedConversation(convo);
       
       if (productName) {
         setNewMessage(`Hi, I have a question about the "${productName}"...`);
       }
       
-      // Clean up URL and switch to messages tab
       window.history.replaceState(null, '', '/account?tab=messages');
       setTab('messages');
     } else {
-        // Default to first conversation if no specific one is targeted
-        if (conversations.length > 0 && !selectedConversationId) {
-            setSelectedConversationId(conversations[0].id);
+        if (conversations.length > 0 && !selectedConversation) {
+            setSelectedConversation(conversations[0]);
         }
     }
-  }, [searchParams, conversations, selectedConversationId]);
+  }, [searchParams, conversations, selectedConversation]);
 
   const handleSaveChanges = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -466,14 +459,12 @@ export default function AccountPage() {
   
   const handleSendMessage = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedConversationId || (!newMessage.trim() && attachments.length === 0)) return;
+    if (!selectedConversation || (!newMessage.trim() && attachments.length === 0)) return;
 
     const lowerCaseMessage = newMessage.toLowerCase();
     const hasForbiddenKeyword = FORBIDDEN_KEYWORDS.some(keyword => lowerCaseMessage.includes(keyword));
 
     if (hasForbiddenKeyword) {
-        // This is a client-side check. A server-side function would be needed for robust flagging.
-        // For now, we'll just show a toast.
         toast({
             variant: "destructive",
             title: "Message Not Sent",
@@ -487,37 +478,33 @@ export default function AccountPage() {
         sender: "customer", 
         text: newMessage,
         timestamp: serverTimestamp(), // Use server-side timestamp
-        // attachments will need to be uploaded to storage first, this is a placeholder
     };
 
-    const updatedConversations = conversations.map(c => {
-        if (c.id === selectedConversationId) {
-            const newCount = c.userMessageCount + 1;
-            const updatedConvo = {
-                ...c,
-                messages: [...c.messages, newMessageObj],
-                userMessageCount: newCount,
-            };
-             if (newCount >= 4) {
-                updatedConvo.status = 'locked';
-            }
-            return updatedConvo;
-        }
-        return c;
-    });
+    const newCount = selectedConversation.userMessageCount + 1;
+    let updatedConvo: Conversation = {
+        ...selectedConversation,
+        messages: [...selectedConversation.messages, newMessageObj],
+        userMessageCount: newCount,
+    };
+     if (newCount >= 4) {
+        updatedConvo.status = 'locked';
+    }
 
-    setConversations(updatedConversations);
+    setConversations(prev => prev.map(c => c.id === updatedConvo.id ? updatedConvo : c));
+    setSelectedConversation(updatedConvo);
+
     setNewMessage("");
     setAttachments([]);
-  }, [attachments, newMessage, selectedConversationId, toast, conversations]);
+  }, [attachments, newMessage, selectedConversation, toast, conversations]);
 
   const handleSelectConversation = useCallback((id: string) => {
-    setSelectedConversationId(id);
-    // Logic to mark as read would happen here, e.g., update a document in Firestore
-  }, []);
+    const convo = conversations.find(c => c.id === id);
+    if (convo) {
+        setSelectedConversation(convo);
+    }
+  }, [conversations]);
   
   const handleReportConversation = (id: string) => {
-    // In a real app, this would trigger a backend function to flag the conversation.
     toast({
         title: "Conversation Reported",
         description: "Thank you. Our moderation team will review this chat.",
@@ -569,6 +556,19 @@ export default function AccountPage() {
     const loyaltyProgress = ((MOCK_USER_DATA.totalOrdersForReward - MOCK_USER_DATA.ordersToNextReward) / MOCK_USER_DATA.totalOrdersForReward) * 100;
     const referralsProgress = (MOCK_USER_DATA.referrals / MOCK_USER_DATA.referralsForNextTier) * 100;
     const loyaltyPointsProgress = (MOCK_USER_DATA.loyaltyPoints / MOCK_USER_DATA.pointsToNextTier) * 100;
+    
+    const getStatusIcon = (status?: 'sent' | 'delivered' | 'read') => {
+      switch(status) {
+          case 'read':
+              return <Eye className="h-4 w-4 text-primary-foreground" />;
+          case 'delivered':
+              return <EyeOff className="h-4 w-4 text-primary-foreground" />;
+          case 'sent':
+              return <EyeOff className="h-4 w-4 text-primary-foreground/70" />;
+          default:
+              return null;
+      }
+    }
 
 
   if (!isLoggedIn) {
@@ -787,7 +787,7 @@ export default function AccountPage() {
                               <div
                                 className={cn(
                                   "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
-                                  selectedConversationId === convo.id && "bg-muted"
+                                  selectedConversation?.id === convo.id && "bg-muted"
                                 )}
                                 onClick={() => handleSelectConversation(convo.id as string)}
                               >
