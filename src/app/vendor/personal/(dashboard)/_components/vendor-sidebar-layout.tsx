@@ -19,7 +19,7 @@ const navLinks = [
   { href: "/vendor/personal/inventory", label: "Inventory", icon: Warehouse },
   { href: "/vendor/personal/orders", label: "Orders", icon: ListChecks },
   { href: "/vendor/personal/analytics", label: "Analytics", icon: LineChart },
-  { href: "/vendor/personal/messages", label: "Messages", icon: MessageSquare, badge: "5" },
+  { href: "/vendor/personal/messages", label: "Messages", icon: MessageSquare, id: "messages" },
   { href: "/vendor/personal/referrals", label: "Referrals", icon: Gift },
   { href: "/vendor/personal/support", label: "Support", icon: LifeBuoy },
   { href: "/vendor/personal/settings", label: "Settings", icon: Settings },
@@ -43,7 +43,7 @@ function CustomSidebarTrigger() {
     )
 }
 
-export function VendorSidebarLayout({ children }: { children: React.ReactNode }) {
+export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number; }) {
     const pathname = usePathname();
     const { isVerified } = useVerification();
 
@@ -76,13 +76,15 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                     className="bg-accent text-accent-foreground hover:bg-accent/90"
                                 >
                                     <Link href="/vendor/verify">
-                                        <ShieldAlert className="h-5 w-5" />
+                                        <ShieldAlert />
                                         <span>Verify Account</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         )}
-                        {navLinks.map(link => (
+                        {navLinks.map(link => {
+                            const showBadge = link.id === 'messages' && unreadMessages > 0;
+                            return (
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton 
                                     asChild
@@ -91,12 +93,12 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                 >
                                     <Link href={link.href}>
                                         <link.icon />
-                                        <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
-                                        {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
+                                        <span>{link.label}</span>
+                                        {showBadge && <SidebarMenuBadge>{unreadMessages}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
-                        ))}
+                        )})}
                     </SidebarMenu>
                 </SidebarContent>
                 <SidebarFooter>
@@ -105,7 +107,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                             <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
                                 <Link href="/">
                                     <Store />
-                                    <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
+                                    <span>Back to Store</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -113,7 +115,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                             <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
                                 <Link href="/vendor/login">
                                     <LogOut />
-                                    <span className="group-data-[state=collapsed]:hidden">Log Out</span>
+                                    <span>Log Out</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

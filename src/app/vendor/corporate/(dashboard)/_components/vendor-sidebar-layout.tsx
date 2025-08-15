@@ -20,7 +20,7 @@ const navLinks = [
   { href: "/vendor/corporate/orders", label: "Corporate Orders", icon: ListChecks },
   { href: "/vendor/corporate/bids", label: "Bidding", icon: Gavel },
   { href: "/vendor/corporate/analytics", label: "Analytics", icon: LineChart },
-  { href: "/vendor/corporate/messages", label: "Corporate Messages", icon: MessageSquare, badge: "2" },
+  { href: "/vendor/corporate/messages", label: "Corporate Messages", icon: MessageSquare, id: "messages" },
   { href: "/vendor/corporate/referrals", label: "Referrals", icon: Gift },
   { href: "/vendor/corporate/support", label: "Support", icon: LifeBuoy },
   { href: "/vendor/corporate/settings", label: "Settings", icon: Settings },
@@ -44,7 +44,7 @@ function CustomSidebarTrigger() {
     )
 }
 
-export function VendorSidebarLayout({ children }: { children: React.ReactNode }) {
+export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number; }) {
     const pathname = usePathname();
     const { isVerified } = useVerification();
 
@@ -77,13 +77,15 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                     className="bg-accent text-accent-foreground hover:bg-accent/90"
                                 >
                                     <Link href="/vendor/verify">
-                                        <ShieldAlert className="h-5 w-5" />
+                                        <ShieldAlert />
                                         <span>Verify Account</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
                         )}
-                        {navLinks.map(link => (
+                        {navLinks.map(link => {
+                             const showBadge = link.id === 'messages' && unreadMessages > 0;
+                            return (
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton 
                                     asChild
@@ -91,13 +93,13 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                     tooltip={{children: link.label}}
                                 >
                                     <Link href={link.href}>
-                                        <link.icon className="h-5 w-5" />
+                                        <link.icon />
                                         <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
-                                        {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
+                                        {showBadge && <SidebarMenuBadge>{unreadMessages}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
-                        ))}
+                        )})}
                     </SidebarMenu>
                 </SidebarContent>
                 <SidebarFooter>
@@ -105,7 +107,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                          <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
                                 <Link href="/">
-                                    <Store className="h-5 w-5" />
+                                    <Store />
                                     <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
                                 </Link>
                             </SidebarMenuButton>
@@ -113,7 +115,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                          <SidebarMenuItem>
                             <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
                                 <Link href="/vendor/login">
-                                    <LogOut className="h-5 w-5" />
+                                    <LogOut />
                                     <span className="group-data-[state=collapsed]:hidden">Log Out</span>
                                 </Link>
                             </SidebarMenuButton>
