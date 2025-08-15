@@ -24,7 +24,7 @@ type Attachment = {
     url: string;
 }
 
-const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] = [
+export const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] = [
   {
     id: 1,
     customerId: "CUST001",
@@ -72,7 +72,7 @@ const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] 
     avatar: "https://placehold.co/40x40.png",
     messages: [{ id: 'msg6', sender: "customer", text: "What is the return policy?" }],
     unread: true,
-    userMessageCount: 1,
+    userMessageCount: 4, // Set to limit to test
     awaitingVendorDecision: false,
     status: 'active',
     type: 'customer',
@@ -117,7 +117,7 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
 }
 
 export default function VendorMessagesPage() {
-  const [conversations, setConversations] = useState(initialConversations);
+  const [conversations, setConversations] = useState(initialConversations.filter(c => c.type === 'customer'));
   const [selectedConversation, setSelectedConversation] = useState<(Conversation & {type: 'customer' | 'corporate'}) | null>(conversations.find(c => c.id === 1) || null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -146,31 +146,36 @@ export default function VendorMessagesPage() {
   }
 
   const handleContinueChat = () => {
-    if (!selectedConversation) return;
-    const updatedConvo = {
-        ...selectedConversation,
-        awaitingVendorDecision: false,
-        messages: [...selectedConversation.messages, {id: 'system-continue', sender: 'system' as const, text: 'Vendor extended the chat. 8 messages remaining.'}]
-    };
-    
-    setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
-    setSelectedConversation(updatedConvo);
+    if (!selectedConversationId) return;
+    setConversations(prev => prev.map(c => {
+        if (c.id === selectedConversationId) {
+            return {
+                ...c,
+                awaitingVendorDecision: false,
+                messages: [...c.messages, {id: 'system-continue', sender: 'system' as const, text: 'Vendor extended the chat. 8 messages remaining.'}]
+            };
+        }
+        return c;
+    }));
     setIsConversionDialogOpen(false);
     toast({ title: 'Chat Extended', description: 'You can now send 8 more messages.' });
   }
 
   const handleEndChat = () => {
-      if (!selectedConversation) return;
-      const updatedConvo = {
-            ...selectedConversation,
-            awaitingVendorDecision: false,
-            status: 'locked' as const,
-            messages: [...selectedConversation.messages, {id: 'system-end', sender: 'system' as const, text: 'You have ended the chat.'}]
-      };
-      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
-      setSelectedConversation(updatedConvo);
-      setIsConversionDialogOpen(false);
-      toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
+      if (!selectedConversationId) return;
+      setConversations(prev => prev.map(c => {
+        if (c.id === selectedConversationId) {
+            return {
+                ...c,
+                awaitingVendorDecision: false,
+                userMessageCount: 23, // 15 + 8, to lock it
+                messages: [...c.messages, {id: 'system-end', sender: 'system' as const, text: 'Vendor has ended the chat.'}]
+            };
+        }
+        return c;
+    }));
+    setIsConversionDialogOpen(false);
+    toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -215,29 +220,18 @@ export default function VendorMessagesPage() {
       prev.map(convo => {
          if (convo.id !== selectedConversation.id) return convo;
         
-        let newCount = convo.userMessageCount;
-        if(newMessageObj.sender === 'vendor') {
-            newCount++;
-        }
-        
         const updatedMessages = [...convo.messages, newMessageObj];
-        let awaitingDecision = convo.awaitingVendorDecision;
-
-        if (convo.type === 'corporate' && newCount === 5) {
-          awaitingDecision = true;
-          updatedMessages.push({
-            id: 'system-limit-corp',
-            sender: 'system',
-            text: 'You have reached the initial message limit. Decide whether to continue the chat.'
-          });
-        }
         
         updatedConvo = {
             ...convo,
             messages: updatedMessages,
-            userMessageCount: newCount,
-            awaitingVendorDecision: awaitingDecision,
+            userMessageCount: convo.userMessageCount + 1,
         };
+
+        if (updatedConvo.userMessageCount === 15) {
+            updatedConvo.awaitingVendorDecision = true;
+        }
+        
         return updatedConvo;
       })
     );
@@ -255,8 +249,8 @@ export default function VendorMessagesPage() {
     if(convo){
         setSelectedConversation(convo);
         setConversations(prev =>
-            prev.map(c => 
-                c.id === id ? { ...c, unread: false } : c
+            prev.map(convo => 
+                convo.id === id ? { ...convo, unread: false } : convo
             )
         );
     }
@@ -280,7 +274,7 @@ export default function VendorMessagesPage() {
           case 'delivered':
               return <EyeOff className="h-4 w-4 text-primary-foreground" />;
           case 'sent':
-              return <EyeOff className="h-4 w-4 text-primary-foreground/70" />;
+              return <Check className="h-4 w-4 text-primary-foreground" />;
           default:
               return null;
       }
@@ -288,32 +282,24 @@ export default function VendorMessagesPage() {
     
   const getChatLimit = () => {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-      const { userMessageCount, awaitingVendorDecision, status, type } = selectedConversation;
-      
-      const isPermanentlyLocked = status !== 'active';
+      const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
 
-      if (type === 'corporate') {
-        const INITIAL_LIMIT = 5;
-        const EXTENDED_LIMIT = 5 + 6;
-        
-        const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
-        let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
-        let remaining = limit - userMessageCount;
-        
-        if(awaitingVendorDecision) {
-          remaining = 0;
-        }
-        
-        return { limit, remaining: Math.max(0, remaining), isLocked };
+      const INITIAL_LIMIT = 15;
+      const EXTENDED_LIMIT = 15 + 8;
+
+      const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
+      let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+      let remaining = limit - userMessageCount;
+      
+      if(awaitingVendorDecision) {
+        remaining = 0;
       }
       
-      const limit = 4;
-      const isLocked = userMessageCount >= limit || isPermanentlyLocked;
-      const remaining = limit - userMessageCount;
       return { limit, remaining: Math.max(0, remaining), isLocked };
   }
   
   const { remaining, isLocked } = getChatLimit();
+  const selectedConversationId = selectedConversation?.id;
 
     useEffect(() => {
         if (textareaRef.current) {
@@ -329,7 +315,7 @@ export default function VendorMessagesPage() {
                  scrollableView.scrollTop = scrollableView.scrollHeight;
              }
         }
-    }, [selectedConversation?.messages, selectedConversation]);
+    }, [selectedConversation?.messages, selectedConversationId]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-full">
@@ -347,7 +333,7 @@ export default function VendorMessagesPage() {
                   key={convo.id}
                   className={cn(
                   "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
-                  selectedConversation?.id === convo.id && "bg-muted"
+                  selectedConversationId === convo.id && "bg-muted"
                   )}
                   onClick={() => handleSelectConversation(convo.id)}
               >
