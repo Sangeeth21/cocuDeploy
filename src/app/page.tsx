@@ -1,11 +1,9 @@
 
-
 "use client";
 
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { mockProducts, mockCategories, mockCampaigns, mockHeroCampaigns } from "@/lib/mock-data";
 import { ArrowRight, CheckCircle, Truck, Gift, Zap, Store } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +12,10 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
+import { collection, query, where, onSnapshot, limit, orderBy } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { DisplayProduct, Category, MarketingCampaign } from "@/lib/types";
+
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
   loading: () => <div className="flex flex-col space-y-3">
@@ -63,8 +65,46 @@ const DefaultHeroSlide = () => (
 
 
 export default function Home() {
-  const heroCampaigns = mockCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active' && c.creatives);
-  const inlineCampaign = mockCampaigns.find(c => c.placement === 'inline-banner' && c.status === 'Active');
+    const [heroCampaigns, setHeroCampaigns] = useState<MarketingCampaign[]>([]);
+    const [inlineCampaign, setInlineCampaign] = useState<MarketingCampaign | null>(null);
+    const [featuredProducts, setFeaturedProducts] = useState<DisplayProduct[]>([]);
+    const [newArrivals, setNewArrivals] = useState<DisplayProduct[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+
+    useEffect(() => {
+        // Fetch Campaigns
+        const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"));
+        const unsubCampaigns = onSnapshot(campaignsQuery, (snapshot) => {
+            const campaigns: MarketingCampaign[] = [];
+            snapshot.forEach(doc => campaigns.push({ id: doc.id, ...doc.data() } as MarketingCampaign));
+            setHeroCampaigns(campaigns.filter(c => c.placement === 'hero' && c.creatives && c.creatives.length > 0));
+            setInlineCampaign(campaigns.find(c => c.placement === 'inline-banner' && c.creatives && c.creatives.length > 0) || null);
+        });
+
+        // Fetch Products
+        const productsQuery = query(collection(db, "products"), where("status", "==", "Live"), orderBy("rating", "desc"), limit(8));
+        const unsubProducts = onSnapshot(productsQuery, (snapshot) => {
+            const products: DisplayProduct[] = [];
+            snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() } as DisplayProduct));
+            setFeaturedProducts(products.slice(0, 4));
+            setNewArrivals(products.slice(4, 8));
+        });
+
+        // Fetch Categories
+        const categoriesQuery = query(collection(db, "categories"), orderBy("name"));
+        const unsubCategories = onSnapshot(categoriesQuery, (snapshot) => {
+            const cats: Category[] = [];
+            snapshot.forEach(doc => cats.push(doc.data() as Category));
+            setCategories(cats);
+        });
+
+
+        return () => {
+            unsubCampaigns();
+            unsubProducts();
+            unsubCategories();
+        };
+    }, []);
 
   return (
     <div className="flex flex-col">
@@ -77,7 +117,7 @@ export default function Home() {
             >
             <CarouselContent>
                 {heroCampaigns.length > 0 ? heroCampaigns.map((campaign, index) => (
-                <CarouselItem key={index}>
+                <CarouselItem key={campaign.id}>
                     <div className="relative h-[60vh] md:h-[70vh]">
                         <Image
                             src={campaign.creatives![0].imageUrl || 'https://placehold.co/1920x1080.png'}
@@ -121,7 +161,7 @@ export default function Home() {
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-8 font-headline">Featured Products</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {mockProducts.slice(0, 4).map((product) => (
+            {featuredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
@@ -147,7 +187,7 @@ export default function Home() {
                  <div>
                     <h2 className="text-3xl font-bold text-center mb-8 font-headline">New Arrivals</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        {mockProducts.slice(4, 8).map((product) => (
+                        {newArrivals.map((product) => (
                         <ProductCard key={product.id} product={product} />
                         ))}
                     </div>
@@ -160,7 +200,7 @@ export default function Home() {
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center mb-8 font-headline">Shop by Category</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {mockCategories.map((category) => (
+            {categories.map((category) => (
               <Link href={`/products?category=${category.name}`} key={category.name}>
                 <div className="group text-center flex flex-col items-center">
                   <div className="relative w-32 h-32 rounded-full overflow-hidden mb-2 border-2 border-transparent group-hover:border-primary transition-all duration-300 shadow-md">
