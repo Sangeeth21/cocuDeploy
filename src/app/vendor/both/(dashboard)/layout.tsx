@@ -95,7 +95,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return (
         <VendorSidebarLayout unreadMessages={unreadMessages}>
             <VerificationFlowHandler />
-            {React.cloneElement(children as React.ReactElement, { conversations, setConversations })}
+            {React.isValidElement(children) 
+              ? React.cloneElement(children as React.ReactElement, { conversations, setConversations })
+              : children
+            }
         </VendorSidebarLayout>
     );
 }

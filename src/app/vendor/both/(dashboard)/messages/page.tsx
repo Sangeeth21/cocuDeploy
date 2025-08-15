@@ -48,7 +48,7 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
 }
 
 // The component now accepts conversations and a setter as props from the layout.
-export default function BothVendorMessagesPage({ conversations, setConversations }: { conversations: (Conversation & {type: 'customer' | 'corporate'})[], setConversations: React.Dispatch<React.SetStateAction<(Conversation & {type: 'customer' | 'corporate'})[]>> }) {
+export default function BothVendorMessagesPage({ conversations = [], setConversations }: { conversations?: (Conversation & {type: 'customer' | 'corporate'})[], setConversations?: React.Dispatch<React.SetStateAction<(Conversation & {type: 'customer' | 'corporate'})[]>> }) {
   const [selectedConversation, setSelectedConversation] = useState<(Conversation & {type: 'customer' | 'corporate'}) | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const MAX_MESSAGE_LENGTH = 1500;
@@ -75,7 +75,7 @@ export default function BothVendorMessagesPage({ conversations, setConversations
   
   const handleReportConversation = (id: number) => {
     const updatedConvo = { ...selectedConversation!, status: 'flagged' as const };
-    setConversations(prev => prev.map(c => c.id === id ? updatedConvo : c));
+    setConversations?.(prev => prev.map(c => c.id === id ? updatedConvo : c));
     setSelectedConversation(updatedConvo);
     toast({
         title: "Conversation Reported",
@@ -90,7 +90,7 @@ export default function BothVendorMessagesPage({ conversations, setConversations
         awaitingVendorDecision: false,
         messages: [...selectedConversation.messages, {id: 'system-continue', sender: 'system' as const, text: 'You extended the chat. 6 messages remaining.'}]
     };
-    setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
+    setConversations?.(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
     setSelectedConversation(updatedConvo);
     setIsConversionDialogOpen(false);
     toast({ title: 'Chat Extended', description: 'You can now send 6 more messages.' });
@@ -104,7 +104,7 @@ export default function BothVendorMessagesPage({ conversations, setConversations
             status: 'locked' as const,
             messages: [...selectedConversation.messages, {id: 'system-end', sender: 'system' as const, text: 'You have ended the chat.'}]
       };
-      setConversations(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
+      setConversations?.(prev => prev.map(c => c.id === selectedConversation.id ? updatedConvo : c));
       setSelectedConversation(updatedConvo);
       setIsConversionDialogOpen(false);
       toast({ variant: 'destructive', title: 'Chat Ended', description: 'This conversation has been locked.' });
@@ -122,36 +122,37 @@ export default function BothVendorMessagesPage({ conversations, setConversations
     };
 
     let updatedConvo: (Conversation & {type: 'customer' | 'corporate'}) | null = null;
-    const newConversations = conversations.map(convo => {
-      if (convo.id !== selectedConversation.id) return convo;
+    setConversations?.(prev =>
+      prev.map(convo => {
+         if (convo.id !== selectedConversation.id) return convo;
+        
+        let newCount = convo.userMessageCount;
+        if (newMessageObj.sender === 'vendor') {
+          newCount++;
+        }
+        
+        const updatedMessages = [...convo.messages, newMessageObj];
+        let awaitingDecision = convo.awaitingVendorDecision;
 
-      let newCount = convo.userMessageCount;
-      if (newMessageObj.sender === 'vendor') {
-        newCount++;
-      }
-      
-      const updatedMessages = [...convo.messages, newMessageObj];
-      let awaitingDecision = convo.awaitingVendorDecision;
+        if (convo.type === 'corporate' && newCount === 5) {
+          awaitingDecision = true;
+          updatedMessages.push({
+            id: 'system-limit-corp',
+            sender: 'system',
+            text: 'You have reached the initial message limit. Decide whether to continue the chat.'
+          });
+        }
+        
+        updatedConvo = {
+          ...convo,
+          messages: updatedMessages,
+          userMessageCount: newCount,
+          awaitingVendorDecision: awaitingDecision,
+        };
+        return updatedConvo;
+      })
+    );
 
-      if (convo.type === 'corporate' && newCount === 5) {
-        awaitingDecision = true;
-        updatedMessages.push({
-          id: 'system-limit-corp',
-          sender: 'system',
-          text: 'You have reached the initial message limit. Decide whether to continue the chat.'
-        });
-      }
-      
-      updatedConvo = {
-        ...convo,
-        messages: updatedMessages,
-        userMessageCount: newCount,
-        awaitingVendorDecision: awaitingDecision,
-      };
-      return updatedConvo;
-    });
-
-    setConversations(newConversations);
     if(updatedConvo) {
       setSelectedConversation(updatedConvo);
     }
@@ -162,7 +163,7 @@ export default function BothVendorMessagesPage({ conversations, setConversations
     const convo = conversations.find(c => c.id === id);
     if(convo){
         setSelectedConversation(convo);
-        setConversations(prev =>
+        setConversations?.(prev =>
             prev.map(c => 
                 c.id === id ? { ...c, unread: false, unreadCount: 0 } : c
             )
