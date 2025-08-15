@@ -12,10 +12,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { mockProducts, mockReviews, mockCampaigns } from "@/lib/mock-data";
 import type { DisplayProduct, MarketingCampaign } from "@/lib/types";
 import { format, addDays, parseISO } from "date-fns";
-import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User, PlusCircle, Trash2, Clock, Settings } from "lucide-react";
+import { Calendar as CalendarIcon, Save, ArrowLeft, Search, X, Image as ImageIcon, Video, Eye, Smartphone, Laptop, ArrowRight, Star, Store, ShoppingCart, User, PlusCircle, Trash2, Clock, Settings, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import type { DateRange } from "react-day-picker";
@@ -25,6 +24,8 @@ import { Separator } from "@/components/ui/separator";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { Switch } from "@/components/ui/switch";
+import { db } from "@/lib/firebase";
+import { collection, onSnapshot, query, where, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 
 
 const getYoutubeEmbedUrl = (url: string) => {
@@ -93,7 +94,7 @@ function IndependentTimerPreview({ title, description, ctaLink, placement }: { t
                         </Button>
                     </div>
                      <header className="flex justify-between items-center p-4 border-b">
-                        <div className="flex items-center gap-2"><Store className="h-6 w-6"/> <span className="font-bold">ShopSphere</span></div>
+                        <div className="flex items-center gap-2"><Store className="h-6 w-6"/> <span className="font-bold">Co & Cu</span></div>
                         <div className="flex items-center gap-2"><ShoppingCart className="h-5 w-5"/> <User className="h-5 w-5"/></div>
                     </header>
                     <div className="p-4"><p className="text-sm text-muted-foreground text-center">Page content...</p></div>
@@ -143,6 +144,8 @@ export default function NewCampaignPage() {
 
     const [campaignId, setCampaignId] = useState<string | null>(null);
     const [pageTitle, setPageTitle] = useState("Create New Campaign");
+    const [isLoading, setIsLoading] = useState(false);
+    const [products, setProducts] = useState<DisplayProduct[]>([]);
 
     const [campaignName, setCampaignName] = useState("");
     const [campaignType, setCampaignType] = useState<MarketingCampaign['type'] | ''>('');
@@ -170,41 +173,89 @@ export default function NewCampaignPage() {
     const [placement, setPlacement] = useState('hero');
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [previewingCreative, setPreviewingCreative] = useState<Creative | null>(null);
+    
+     // Fetch products for selection
+    useEffect(() => {
+        const q = query(collection(db, "products"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedProducts: DisplayProduct[] = [];
+            snapshot.forEach(doc => fetchedProducts.push({ id: doc.id, ...doc.data() } as DisplayProduct));
+            setProducts(fetchedProducts);
+        });
+        return () => unsubscribe();
+    }, []);
 
      useEffect(() => {
         const id = searchParams.get('id');
         if (id) {
-            const existingCampaign = mockCampaigns.find(c => c.id === id);
-            if (existingCampaign) {
-                setCampaignId(id);
-                setPageTitle(`Editing: ${existingCampaign.name}`);
-                setCampaignName(existingCampaign.name);
-                setCampaignType(existingCampaign.type);
-                setDate({
-                    from: parseISO(existingCampaign.startDate),
-                    to: parseISO(existingCampaign.endDate),
-                });
-                setStartTime(existingCampaign.startTime || "00:00");
-                setEndTime(existingCampaign.endTime || "23:59");
-                setShowCountdown(existingCampaign.showCountdown || false);
+            setCampaignId(id);
+            setIsLoading(true);
+            const fetchCampaign = async () => {
+                const docRef = doc(db, "marketingCampaigns", id);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const campaignData = docSnap.data() as MarketingCampaign;
+                    setPageTitle(`Editing: ${campaignData.name}`);
+                    setCampaignName(campaignData.name);
+                    setCampaignType(campaignData.type);
+                    setDate({
+                        from: parseISO(campaignData.startDate),
+                        to: parseISO(campaignData.endDate),
+                    });
+                    setStartTime(campaignData.startTime || "00:00");
+                    setEndTime(campaignData.endTime || "23:59");
+                    setShowCountdown(campaignData.showCountdown || false);
+                    setPlacement(campaignData.placement || 'hero');
+                    setCreatives(campaignData.creatives || []);
+                }
+                setIsLoading(false);
             }
+            fetchCampaign();
         } else {
             // Set initial date on client-side to avoid hydration mismatch
             setDate({ from: new Date(), to: addDays(new Date(), 7) });
         }
     }, [searchParams]);
 
-    const handleCreateCampaign = () => {
-        const toastTitle = campaignId ? "Campaign Updated!" : "Campaign Created!";
-        const toastDescription = campaignId 
-            ? `The campaign "${campaignName}" has been updated successfully.`
-            : "The new marketing campaign has been saved successfully.";
+    const handleCreateCampaign = async () => {
+        setIsLoading(true);
+        try {
+            const campaignData = {
+                name: campaignName,
+                type: campaignType,
+                status: "Active", // Or based on dates
+                startDate: date?.from?.toISOString(),
+                endDate: date?.to?.toISOString(),
+                startTime,
+                endTime,
+                placement,
+                showCountdown,
+                countdownPlacement,
+                timerDetails: showCountdown && countdownPlacement === 'independent' ? {
+                    placement: timerIndependentPlacement,
+                    title: timerTitle,
+                    description: timerDescription,
+                    ctaLink: timerCtaLink
+                } : null,
+                creatives,
+                associatedProducts: selectedProducts.map(p => p.id),
+            };
 
-        toast({
-            title: toastTitle,
-            description: toastDescription,
-        });
-        router.push("/admin/marketing");
+            if (campaignId) {
+                await updateDoc(doc(db, "marketingCampaigns", campaignId), campaignData);
+                 toast({ title: "Campaign Updated!", description: `The campaign "${campaignName}" has been updated successfully.` });
+            } else {
+                await addDoc(collection(db, "marketingCampaigns"), campaignData);
+                 toast({ title: "Campaign Created!", description: "The new marketing campaign has been saved successfully." });
+            }
+            router.push("/admin/marketing");
+
+        } catch (error) {
+            console.error("Error saving campaign:", error);
+            toast({ variant: 'destructive', title: "Failed to save campaign." });
+        } finally {
+            setIsLoading(false);
+        }
     };
     
     const handleProductSelect = (product: DisplayProduct) => {
@@ -269,11 +320,9 @@ export default function NewCampaignPage() {
     };
 
     const searchResults = searchTerm
-        ? mockProducts.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        ? products.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
         : [];
         
-    const mockProductForPreview = mockProducts[0];
-    const mockReviewForPreview = mockReviews[0];
     
     const handlePreviewClick = (creative: Creative) => {
         setPreviewingCreative(creative);
@@ -558,7 +607,10 @@ export default function NewCampaignPage() {
                         <CardContent>
                             <p className="text-sm text-muted-foreground mb-4">Review your campaign settings before saving or publishing.</p>
                             <div className="flex flex-col gap-2">
-                                <Button onClick={handleCreateCampaign}><Save className="mr-2 h-4 w-4" /> Save Campaign</Button>
+                                <Button onClick={handleCreateCampaign} disabled={isLoading}>
+                                    {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4" />}
+                                     {isLoading ? "Saving..." : "Save Campaign"}
+                                </Button>
                             </div>
                         </CardContent>
                     </Card>
@@ -603,7 +655,7 @@ export default function NewCampaignPage() {
                                         </div>
                                         <div className="p-4 flex-1">
                                             <header className="flex justify-between items-center p-4 border-b">
-                                                <div className="flex items-center gap-2"><Store className="h-6 w-6"/> <span className="font-bold">ShopSphere</span></div>
+                                                <div className="flex items-center gap-2"><Store className="h-6 w-6"/> <span className="font-bold">Co & Cu</span></div>
                                                 <div className="flex items-center gap-2"><ShoppingCart className="h-5 w-5"/> <User className="h-5 w-5"/></div>
                                             </header>
                                             <p className="text-sm text-center text-muted-foreground pt-8">Page content...</p>
@@ -649,44 +701,6 @@ export default function NewCampaignPage() {
                                         </div>
                                     </div>
                                 )}
-                                {placement === 'product-page-banner' && (
-                                    <div className="w-full h-full p-4 md:p-8 space-y-8">
-                                        <div className={cn("grid gap-6", isPreviewMobile ? "grid-cols-1" : "grid-cols-2")}>
-                                            <div className="aspect-square bg-muted rounded-lg"></div>
-                                            <div className="space-y-3">
-                                                <h1 className="text-2xl font-bold font-headline">{mockProductForPreview.name}</h1>
-                                                <p className="text-2xl">${mockProductForPreview.price.toFixed(2)}</p>
-                                                <div className="flex items-center gap-1"><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-accent fill-accent" /><Star className="w-4 h-4 text-muted" /> <span className="text-xs text-muted-foreground ml-1">({mockProductForPreview.reviewCount} reviews)</span></div>
-                                                <p className="text-sm text-muted-foreground">{mockProductForPreview.description.substring(0, 100)}...</p>
-                                                <Button className="w-full">Add to Cart</Button>
-                                            </div>
-                                        </div>
-                                        <Separator />
-                                        <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4">
-                                            <Image src={previewingCreative.image!.src} alt={previewingCreative.title} width={100} height={100} className="rounded-md object-cover w-full md:w-24 h-auto md:h-24" />
-                                            <div className="flex-1 text-center md:text-left">
-                                                <h3 className="font-bold">{previewingCreative.title}</h3>
-                                                {showCountdown && countdownPlacement === 'on-creative' && <div className="my-2"><CountdownTimerPreview /></div>}
-                                                <p className="text-sm text-muted-foreground">{previewingCreative.description}</p>
-                                            </div>
-                                            <Button>{previewingCreative.cta}</Button>
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl font-bold font-headline mb-4">Customer Reviews</h2>
-                                             <Card>
-                                                <CardHeader>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-8 h-8 rounded-full bg-muted"></div>
-                                                        <p className="font-semibold text-sm">{mockReviewForPreview.author}</p>
-                                                    </div>
-                                                </CardHeader>
-                                                <CardContent>
-                                                    <p className="text-xs text-muted-foreground">{mockReviewForPreview.comment}</p>
-                                                </CardContent>
-                                            </Card>
-                                        </div>
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>
@@ -709,4 +723,3 @@ export default function NewCampaignPage() {
         </div>
     );
 }
-

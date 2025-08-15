@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store } from "lucide-react";
+import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -17,7 +17,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-
+import { collection, query, onSnapshot, addDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 type ProgramTarget = 'customer' | 'vendor';
 
@@ -36,55 +37,6 @@ type Program = {
     endDate: Date;
     expiryDays?: number;
 };
-
-const initialPrograms: Program[] = [
-    {
-        id: 'PROG001',
-        name: 'New Customer Referral',
-        target: 'customer',
-        type: 'referral',
-        reward: { type: 'wallet_credit', value: 100 },
-        productScope: 'all',
-        status: 'Active',
-        startDate: new Date(2024, 0, 1),
-        endDate: new Date(2024, 11, 31),
-    },
-    {
-        id: 'PROG002',
-        name: 'Frequent Buyer Reward',
-        target: 'customer',
-        type: 'milestone',
-        reward: { type: 'free_shipping', value: 2 },
-        productScope: 'selected',
-        status: 'Active',
-        startDate: new Date(2024, 5, 1),
-        endDate: new Date(2024, 6, 31),
-        expiryDays: 60
-    },
-     {
-        id: 'PROG003',
-        name: 'Vendor Referral Bonus',
-        target: 'vendor',
-        type: 'referral',
-        reward: { type: 'commission_discount', value: 1 },
-        productScope: 'all',
-        status: 'Active',
-        startDate: new Date(),
-        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-    },
-    {
-        id: 'PROG004',
-        name: 'New Vendor Onboarding',
-        target: 'vendor',
-        type: 'onboarding',
-        reward: { type: 'commission_discount', value: 2 },
-        productScope: 'all',
-        status: 'Active',
-        startDate: new Date(),
-        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)),
-    }
-];
-
 
 const programOptions = {
     customer: {
@@ -110,7 +62,7 @@ const programOptions = {
 }
 
 
-function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void }) {
+function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Program, 'id'>) => void, isLoading: boolean }) {
     const [open, setOpen] = useState(false);
     const [name, setName] = useState('');
     const [targetAudience, setTargetAudience] = useState<ProgramTarget | ''>('');
@@ -140,8 +92,7 @@ function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void })
     }
 
     const handleSave = () => {
-        const newProgram: Program = {
-            id: `PROG${(Math.random() * 1000).toFixed(0).padStart(3, '0')}`,
+        const newProgram: Omit<Program, 'id'> = {
             name,
             target: targetAudience as ProgramTarget,
             type: type,
@@ -246,7 +197,10 @@ function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void })
                 </div>
                 <DialogFooter>
                     <Button variant="outline" onClick={() => handleOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSave}>Save Program</Button>
+                    <Button onClick={handleSave} disabled={isLoading}>
+                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Program
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -255,14 +209,41 @@ function CreateProgramDialog({ onSave }: { onSave: (program: Program) => void })
 
 export default function ReferralsPage() {
     const { toast } = useToast();
-    const [programs, setPrograms] = useState<Program[]>(initialPrograms);
+    const [programs, setPrograms] = useState<Program[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const handleAddProgram = (newProgram: Program) => {
-        setPrograms(prev => [newProgram, ...prev]);
-        toast({
-            title: "Program Created!",
-            description: `"${newProgram.name}" has been successfully added.`,
+    useEffect(() => {
+        const q = query(collection(db, "programs"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const programsData: Program[] = [];
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                programsData.push({ 
+                    id: doc.id,
+                    ...data,
+                    startDate: data.startDate.toDate(), // Convert Firestore Timestamp to JS Date
+                    endDate: data.endDate.toDate()
+                } as Program);
+            });
+            setPrograms(programsData);
         });
+        return () => unsubscribe();
+    }, []);
+
+    const handleAddProgram = async (newProgram: Omit<Program, 'id'>) => {
+        setIsLoading(true);
+        try {
+            await addDoc(collection(db, "programs"), newProgram);
+            toast({
+                title: "Program Created!",
+                description: `"${newProgram.name}" has been successfully added.`,
+            });
+        } catch (error) {
+             console.error("Error adding program: ", error);
+             toast({ variant: 'destructive', title: 'Failed to create program.' });
+        } finally {
+            setIsLoading(false);
+        }
     }
 
     const getStatusVariant = (status: Program['status']) => {
@@ -299,7 +280,7 @@ export default function ReferralsPage() {
                     <h1 className="text-3xl font-bold font-headline">Promotions Engine</h1>
                     <p className="text-muted-foreground">Create and manage your customer and vendor incentive programs.</p>
                 </div>
-                <CreateProgramDialog onSave={handleAddProgram} />
+                <CreateProgramDialog onSave={handleAddProgram} isLoading={isLoading} />
             </div>
 
              <Card>
@@ -362,5 +343,3 @@ export default function ReferralsPage() {
         </div>
     )
 }
-
-    

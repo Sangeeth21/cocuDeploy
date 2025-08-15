@@ -7,20 +7,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { mockUsers } from "@/lib/mock-data";
 import { MoreHorizontal, PlusCircle, Loader2, ShieldAlert } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { User } from "@/lib/types";
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 const MOCK_EMAIL_OTP = "123456";
 const MOCK_PHONE_OTP = "654321";
 
-function NewVendorDialog({ onSave }: { onSave: (vendor: User) => void }) {
+function NewVendorDialog({ onSave }: { onSave: (vendor: Omit<User, 'id'>) => void }) {
     const { toast } = useToast();
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState<'details' | 'verify'>('details');
@@ -75,8 +76,7 @@ function NewVendorDialog({ onSave }: { onSave: (vendor: User) => void }) {
             return;
         }
         
-        const newVendor: User = {
-            id: `VDR${(mockUsers.filter(u => u.role === 'Vendor').length + 1).toString().padStart(3, '0')}`,
+        const newVendor: Omit<User, 'id'> = {
             name,
             email,
             role: 'Vendor',
@@ -170,17 +170,35 @@ function SuspendVendorDialog({ vendor, onConfirm, open, onOpenChange }: { vendor
 }
 
 export default function AdminVendorsPage() {
-    const [vendors, setVendors] = useState(mockUsers.filter(u => u.role === 'Vendor'));
+    const [vendors, setVendors] = useState<User[]>([]);
     const [selectedVendor, setSelectedVendor] = useState<User | null>(null);
     const [isSuspendOpen, setIsSuspendOpen] = useState(false);
     const { toast } = useToast();
 
-    const handleAddVendor = (newVendor: User) => {
-        setVendors(prev => [newVendor, ...prev]);
-        toast({
-            title: "Vendor Added",
-            description: `${newVendor.name} has been added and verified.`
+     useEffect(() => {
+        const q = query(collection(db, "users"), where("role", "==", "Vendor"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const vendorsData: User[] = [];
+            querySnapshot.forEach((doc) => {
+                vendorsData.push({ id: doc.id, ...doc.data() } as User);
+            });
+            setVendors(vendorsData);
         });
+
+        return () => unsubscribe();
+    }, []);
+
+    const handleAddVendor = async (newVendor: Omit<User, 'id'>) => {
+        try {
+            await addDoc(collection(db, "users"), newVendor);
+            toast({
+                title: "Vendor Added",
+                description: `${newVendor.name} has been added and verified.`
+            });
+        } catch (error) {
+            console.error("Error adding vendor:", error);
+            toast({ variant: "destructive", title: "Failed to add vendor." });
+        }
     }
 
     const handleSuspendClick = (vendor: User) => {
@@ -188,15 +206,21 @@ export default function AdminVendorsPage() {
         setIsSuspendOpen(true);
     };
 
-     const handleConfirmSuspend = () => {
+     const handleConfirmSuspend = async () => {
         if (!selectedVendor) return;
-        setVendors(prev => prev.map(v => 
-            v.id === selectedVendor.id ? { ...v, status: 'Suspended' } : v
-        ));
-        toast({
-            title: "Vendor Suspended",
-            description: `${selectedVendor.name}'s account has been suspended.`
-        });
+        
+        const vendorRef = doc(db, "users", selectedVendor.id);
+        try {
+            await updateDoc(vendorRef, { status: "Suspended" });
+            toast({
+                title: "Vendor Suspended",
+                description: `${selectedVendor.name}'s account has been suspended.`
+            });
+        } catch (error) {
+            console.error("Error suspending vendor:", error);
+            toast({ variant: 'destructive', title: "Failed to suspend vendor." });
+        }
+        
         setIsSuspendOpen(false);
         setSelectedVendor(null);
     }

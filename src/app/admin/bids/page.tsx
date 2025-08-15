@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,23 +10,26 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { mockCorporateBids, mockUsers } from "@/lib/mock-data";
 import { MoreHorizontal, Search, Gavel, Users, Clock, Trash2, ShieldAlert, Plus, CheckCircle, Hourglass, XCircle, AlertTriangle } from 'lucide-react';
 import type { CorporateBid, VendorBid } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { collection, query, onSnapshot, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 function BidDetailsDialog({ bid }: { bid: CorporateBid }) {
     const { toast } = useToast();
-    const customer = mockUsers.find(u => u.name === "Corporate Client" || u.id === bid.responses[0]?.vendorId); // Placeholder logic
-
-    const handleFlagBid = () => {
+    
+    const handleFlagBid = async () => {
+        const bidRef = doc(db, 'corporateBids', bid.id);
+        await updateDoc(bidRef, { status: 'Flagged' }); // Or a more specific status
         toast({ variant: 'destructive', title: 'Bid Flagged', description: `Bid ${bid.id} has been flagged for review.` });
     };
 
-    const handleDeleteBid = () => {
+    const handleDeleteBid = async () => {
+        await deleteDoc(doc(db, 'corporateBids', bid.id));
         toast({ variant: 'destructive', title: 'Bid Deleted', description: `Bid ${bid.id} has been permanently deleted.` });
     };
 
@@ -46,12 +49,12 @@ function BidDetailsDialog({ bid }: { bid: CorporateBid }) {
                         </CardHeader>
                         <CardContent className="text-sm space-y-2">
                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Customer</span>
-                                <span>{customer?.name || 'Corporate Client'}</span>
+                                <span className="text-muted-foreground">Customer ID</span>
+                                <span>{bid.customerId}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Created</span>
-                                <span>{new Date(bid.createdAt).toLocaleDateString()}</span>
+                                <span>{new Date(bid.createdAt.toDate()).toLocaleDateString()}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Expires</span>
@@ -128,9 +131,21 @@ function BidDetailsDialog({ bid }: { bid: CorporateBid }) {
 
 
 export default function AdminBidsPage() {
-    const [bids] = useState<CorporateBid[]>(mockCorporateBids);
+    const [bids, setBids] = useState<CorporateBid[]>([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("all");
+    
+    useEffect(() => {
+        const q = query(collection(db, "corporateBids"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const bidsData: CorporateBid[] = [];
+            snapshot.forEach(doc => {
+                bidsData.push({ id: doc.id, ...doc.data() } as CorporateBid);
+            });
+            setBids(bidsData.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate()));
+        });
+        return () => unsubscribe();
+    }, []);
 
     const filteredBids = useMemo(() => {
         let filtered = bids;
@@ -257,5 +272,3 @@ export default function AdminBidsPage() {
         </div>
     );
 }
-
-    

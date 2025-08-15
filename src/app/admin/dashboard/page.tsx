@@ -9,21 +9,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User, Megaphone, Building } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Order, User as UserType } from "@/lib/types";
-import { mockCorporateCampaigns, mockCampaigns } from "@/lib/mock-data";
-
-
-const heroCampaigns = mockCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active');
-const bannerCampaign = mockCampaigns.find(c => c.placement === 'banner' && c.status === 'Active');
-const corporateHeroCampaigns = mockCorporateCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active');
+import type { Order, User as UserType, MarketingCampaign } from "@/lib/types";
 
 
 export default function AdminDashboardPage() {
     const [recentSales, setRecentSales] = useState<Order[]>([]);
     const [newUsers, setNewUsers] = useState<UserType[]>([]);
     const [activity, setActivity] = useState<any[]>([]);
+    const [heroCampaigns, setHeroCampaigns] = useState<MarketingCampaign[]>([]);
+    const [bannerCampaign, setBannerCampaign] = useState<MarketingCampaign | null>(null);
+    const [corporateHeroCampaigns, setCorporateHeroCampaigns] = useState<MarketingCampaign[]>([]);
 
     useEffect(() => {
         // Fetch recent sales
@@ -52,18 +49,29 @@ export default function AdminDashboardPage() {
             const activityData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setActivity(activityData);
         });
+        
+        // Fetch Campaigns
+        const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"));
+        const unsubCampaigns = onSnapshot(campaignsQuery, (snapshot) => {
+            const campaigns: MarketingCampaign[] = [];
+            snapshot.forEach(doc => campaigns.push({ id: doc.id, ...doc.data() } as MarketingCampaign));
+            setHeroCampaigns(campaigns.filter(c => c.placement === 'hero' && c.creatives && c.creatives.length > 0));
+            setBannerCampaign(campaigns.find(c => c.placement === 'banner' && c.creatives && c.creatives.length > 0) || null);
+            setCorporateHeroCampaigns(campaigns.filter(c => c.placement === 'hero' && c.creatives && c.creatives.length > 0));
+        });
 
         return () => {
             unsubscribeSales();
             unsubscribeUsers();
             unsubscribeActivity();
+            unsubCampaigns();
         };
     }, []);
 
     const notificationIcons: { [key: string]: React.ElementType } = {
         'user_report': ShieldAlert,
         'new_vendor': User,
-        'default': Bell,
+        'default': BellRing,
     };
 
   return (

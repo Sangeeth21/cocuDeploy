@@ -1,15 +1,14 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { mockAiImageStyles } from "@/lib/mock-data";
 import type { AiImageStyle } from "@/lib/types";
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, PlusCircle, Edit, Trash2, Eye } from "lucide-react";
+import { GripVertical, PlusCircle, Edit, Trash2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +16,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { collection, query, onSnapshot, addDoc, updateDoc, doc, deleteDoc, writeBatch } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 function StyleDialog({ open, onOpenChange, style, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; style?: AiImageStyle | null; onSave: (style: Omit<AiImageStyle, 'id' | 'order'>) => void; }) {
     const [name, setName] = useState(style?.name || "");
@@ -24,6 +25,18 @@ function StyleDialog({ open, onOpenChange, style, onSave }: { open: boolean; onO
     const [target, setTarget] = useState(style?.target || "both");
     
     const { toast } = useToast();
+
+    useEffect(() => {
+        if (style) {
+            setName(style.name);
+            setPrompt(style.backendPrompt);
+            setTarget(style.target);
+        } else {
+            setName("");
+            setPrompt("");
+            setTarget("both");
+        }
+    }, [style, open]);
 
     const handleSave = () => {
         if (!name.trim() || !prompt.trim()) {
@@ -110,44 +123,63 @@ function SortableItem({ id, style, onEdit, onRemove }: { id: string, style: AiIm
 }
 
 export default function AiStylesPage() {
-    const [styles, setStyles] = useState<AiImageStyle[]>(mockAiImageStyles.sort((a,b) => a.order - b.order));
+    const [styles, setStyles] = useState<AiImageStyle[]>([]);
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingStyle, setEditingStyle] = useState<AiImageStyle | null>(null);
 
     const { toast } = useToast();
 
+    useEffect(() => {
+        const q = query(collection(db, 'aiImageStyles'), orderBy('order'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const stylesData: AiImageStyle[] = [];
+            snapshot.forEach(doc => stylesData.push({ id: doc.id, ...doc.data() } as AiImageStyle));
+            setStyles(stylesData);
+        });
+        return () => unsubscribe();
+    }, []);
+
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
-    const handleDragEnd = (event: DragEndEvent) => {
+    const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
         if (over && active.id !== over.id) {
-            setStyles((items) => {
-                const oldIndex = items.findIndex(item => item.id === active.id);
-                const newIndex = items.findIndex(item => item.id === over.id);
-                const reordered = arrayMove(items, oldIndex, newIndex);
-                // Update order property after reordering
-                return reordered.map((item, index) => ({ ...item, order: index + 1 }));
+            const oldIndex = styles.findIndex(item => item.id === active.id);
+            const newIndex = styles.findIndex(item => item.id === over.id);
+            const reordered = arrayMove(styles, oldIndex, newIndex);
+            setStyles(reordered);
+            setActiveId(null);
+            
+            // Update order in Firestore
+            const batch = writeBatch(db);
+            reordered.forEach((style, index) => {
+                const docRef = doc(db, 'aiImageStyles', style.id);
+                batch.update(docRef, { order: index });
             });
+            await batch.commit();
+            toast({ title: 'Style order updated!' });
         }
-        setActiveId(null);
     };
 
-    const handleSaveStyle = (styleData: Omit<AiImageStyle, 'id' | 'order'>) => {
-        if (editingStyle) { // Update existing
-            setStyles(styles.map(s => s.id === editingStyle.id ? { ...editingStyle, ...styleData } : s));
-            toast({ title: "Style updated!" });
-        } else { // Create new
-            const newStyle: AiImageStyle = {
-                id: `style-${Date.now()}`,
-                ...styleData,
-                order: styles.length + 1,
-            };
-            setStyles([...styles, newStyle]);
-            toast({ title: "Style created!" });
+    const handleSaveStyle = async (styleData: Omit<AiImageStyle, 'id' | 'order'>) => {
+        try {
+            if (editingStyle) { // Update existing
+                await updateDoc(doc(db, 'aiImageStyles', editingStyle.id), styleData as any);
+                toast({ title: "Style updated!" });
+            } else { // Create new
+                await addDoc(collection(db, 'aiImageStyles'), {
+                    ...styleData,
+                    order: styles.length,
+                });
+                toast({ title: "Style created!" });
+            }
+        } catch (error) {
+            console.error("Error saving style:", error);
+            toast({ variant: 'destructive', title: 'Failed to save style.' });
         }
         setEditingStyle(null);
     };
@@ -162,8 +194,8 @@ export default function AiStylesPage() {
         setIsDialogOpen(true);
     };
     
-    const handleRemove = (id: string) => {
-        setStyles(styles.filter(s => s.id !== id));
+    const handleRemove = async (id: string) => {
+        await deleteDoc(doc(db, 'aiImageStyles', id));
         toast({ title: "Style removed.", variant: "destructive"});
     };
 

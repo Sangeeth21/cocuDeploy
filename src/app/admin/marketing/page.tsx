@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { PlusCircle, MoreHorizontal, Copy, Trash2, Edit, Megaphone, Zap, Gift } from "lucide-react";
@@ -12,8 +11,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import type { MarketingCampaign } from "@/lib/types";
 import Link from "next/link";
-import { mockCampaigns as initialCampaigns } from "@/lib/mock-data";
 import { useToast } from "@/hooks/use-toast";
+import { collection, query, onSnapshot, addDoc, doc, deleteDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 const campaignTypeIcons: { [key in MarketingCampaign['type']]: React.ElementType } = {
@@ -26,31 +26,43 @@ const campaignTypeIcons: { [key in MarketingCampaign['type']]: React.ElementType
 
 export default function AdminMarketingPage() {
     const { toast } = useToast();
-    const [campaigns, setCampaigns] = useState<MarketingCampaign[]>(initialCampaigns);
+    const [campaigns, setCampaigns] = useState<MarketingCampaign[]>([]);
     const [campaignToDelete, setCampaignToDelete] = useState<MarketingCampaign | null>(null);
 
-    const handleDuplicate = (campaignId: string) => {
+     useEffect(() => {
+        const q = query(collection(db, "marketingCampaigns"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const campaignsData: MarketingCampaign[] = [];
+            snapshot.forEach(doc => campaignsData.push({ id: doc.id, ...doc.data() } as MarketingCampaign));
+            setCampaigns(campaignsData);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const handleDuplicate = async (campaignId: string) => {
         const campaignToDuplicate = campaigns.find(c => c.id === campaignId);
         if (!campaignToDuplicate) return;
 
-        const newCampaign: MarketingCampaign = {
-            ...campaignToDuplicate,
-            id: `CAMP${(Math.random() * 1000).toFixed(0).padStart(3, '0')}`,
+        const { id, ...campaignData } = campaignToDuplicate; // Exclude ID from duplication
+        const newCampaignData = {
+            ...campaignData,
             name: `${campaignToDuplicate.name} (Copy)`,
-            status: 'Draft'
+            status: 'Draft' as const
         };
+        
+        await addDoc(collection(db, 'marketingCampaigns'), newCampaignData);
 
-        setCampaigns(prev => [newCampaign, ...prev]);
         toast({
             title: "Campaign Duplicated",
             description: `"${campaignToDuplicate.name}" has been duplicated.`,
         });
     }
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
         if (!campaignToDelete) return;
         
-        setCampaigns(prev => prev.filter(c => c.id !== campaignToDelete.id));
+        await deleteDoc(doc(db, "marketingCampaigns", campaignToDelete.id));
+
         toast({
             variant: "destructive",
             title: "Campaign Deleted",
