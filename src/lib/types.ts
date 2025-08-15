@@ -26,6 +26,14 @@ export type CustomizationArea = {
   maxLength?: number;
 };
 
+export type CommissionRule = {
+    commission: number; // percentage
+    buffer: {
+        type: 'fixed' | 'percentage';
+        value: number;
+    };
+};
+
 export type DisplayProduct = {
   id: string;
   name: string;
@@ -56,6 +64,7 @@ export type DisplayProduct = {
       top?: CustomizationArea[];
       bottom?: CustomizationArea[];
   };
+  commission?: CommissionRule;
 };
 
 export type DraftProduct = {
@@ -66,6 +75,7 @@ export type DraftProduct = {
 
 export type Review = {
   id: string;
+  productId: string;
   author: string;
   avatarUrl: string;
   rating: number;
@@ -150,6 +160,7 @@ export type User = {
     vendorDetails?: VendorDetails;
     wishlist?: DisplayProduct[];
     loyalty?: LoyaltyData;
+    cart?: any[]; // Can be more specific if needed
 }
 
 export type Conversation = {

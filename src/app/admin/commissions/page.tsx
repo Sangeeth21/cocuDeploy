@@ -11,20 +11,12 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Percent, Edit, Search, Trash2 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { User, DisplayProduct, Category } from "@/lib/types";
+import type { User, DisplayProduct, Category, CommissionRule } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { collection, doc, onSnapshot, query, updateDoc, writeBatch, getDocs, addDoc, deleteDoc, where, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-
-type CommissionRule = {
-    commission: number; // percentage
-    buffer: {
-        type: 'fixed' | 'percentage';
-        value: number;
-    };
-};
 
 type CategoryCommissions = {
     [categoryName: string]: CommissionRule;

@@ -76,14 +76,28 @@ export default function NewOrderPage() {
     }, [productSearchTerm, allProducts]);
 
     const subtotal = useMemo(() => {
-        return orderItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+        return orderItems.reduce((acc, item) => {
+            const buffer = item.commission?.buffer;
+            let finalPrice = item.price;
+            if (buffer) {
+                if (buffer.type === 'fixed') {
+                    finalPrice += buffer.value;
+                } else { // percentage
+                    finalPrice *= (1 + buffer.value / 100);
+                }
+            }
+            return acc + finalPrice * item.quantity;
+        }, 0);
     }, [orderItems]);
 
     const fees = useMemo(() => {
         const razorpayFee = 15; // placeholder
-        const platformCommission = subtotal * 0.05; // 5% placeholder
+        const platformCommission = orderItems.reduce((acc, item) => {
+             const commissionRate = item.commission?.commission || 0;
+             return acc + (item.price * item.quantity * (commissionRate / 100));
+        }, 0);
         return razorpayFee + platformCommission;
-    }, [subtotal])
+    }, [orderItems])
 
     const total = useMemo(() => {
         return subtotal + shippingCost;
