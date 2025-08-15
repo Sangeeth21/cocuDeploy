@@ -50,12 +50,13 @@ export function NotificationPopover({ forAdmin = false }: { notifications?: any[
         const q = query(
             collection(db, "notifications"), 
             where(forAdmin ? "forAdmin" : "vendorId", "==", targetId),
-            orderBy("timestamp", "desc"),
             limit(10)
         );
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+            // Sort by timestamp on the client side
+            notifs.sort((a, b) => b.timestamp.toDate() - a.timestamp.toDate());
             setNotifications(notifs);
         });
 
