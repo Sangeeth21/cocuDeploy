@@ -15,11 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Category } from "@/lib/types";
 import { collection, query, onSnapshot, addDoc, updateDoc, deleteDoc, doc, where, getDocs, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { app } from "@/lib/firebase";
-
-const storage = getStorage(app);
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 function CategoryDialog({ open, onOpenChange, category, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; category?: Category | null; onSave: (data: Omit<Category, 'id' | 'productCount' | 'imageUrl'> & { name: string }, file?: File | null) => void; }) {
     const [name, setName] = useState("");
@@ -96,6 +93,7 @@ export default function AdminCategoriesPage() {
     useEffect(() => {
         const q = query(collection(db, "categories"), orderBy("name"));
         const unsubscribe = onSnapshot(q, async (snapshot) => {
+            setLoading(true);
             const categoriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
             
             // Fetch product counts for each category
