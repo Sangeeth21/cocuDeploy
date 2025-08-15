@@ -19,8 +19,9 @@ import { Slider } from "@/components/ui/slider"
 import { useToast } from "@/hooks/use-toast"
 import { generateProductImages } from "./actions"
 import { Separator } from "@/components/ui/separator"
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { collection, onSnapshot, query, orderBy, addDoc } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Category } from '@/lib/types';
 
 
@@ -283,6 +284,66 @@ export default function NewProductPage() {
         setIsConfirmationAlertOpen(false);
     };
 
+    const handlePublish = async () => {
+        if (!images.front?.src) {
+            toast({ variant: 'destructive', title: 'A front-facing image is required to publish.'});
+            return;
+        }
+
+        toast({ title: 'Publishing product...', description: 'Uploading images and saving data.' });
+        setIsGenerating(true); // Re-use loading state
+
+        try {
+            // 1. Upload all images and get their URLs
+            const imageUrls: { [key in ImageSide]?: string } = {};
+            for (const side of imageSides) {
+                const img = images[side];
+                if (img?.file) { // Only upload files selected by user
+                    const storageRef = ref(storage, `product_images/${Date.now()}_${img.file.name}`);
+                    const snapshot = await uploadBytes(storageRef, img.file);
+                    imageUrls[side] = await getDownloadURL(snapshot.ref);
+                } else if (img?.src) { // Keep existing or generated URLs
+                    imageUrls[side] = img.src;
+                }
+            }
+
+             const galleryImageUrls = await Promise.all(
+                galleryImages.map(async (img) => {
+                    const storageRef = ref(storage, `product_images/${Date.now()}_${img.file.name}`);
+                    const snapshot = await uploadBytes(storageRef, img.file);
+                    return getDownloadURL(snapshot.ref);
+                })
+            );
+
+            // 2. Prepare product data for Firestore
+            const productData = {
+                name: productName,
+                description: productDescription,
+                price: 19.99, // Placeholder
+                category: "Category Placeholder",
+                imageUrl: imageUrls.front, // Main image
+                images: Object.values(imageUrls),
+                galleryImages: galleryImageUrls,
+                videoUrl: videoEmbedUrl,
+                status: 'Live',
+                // ... add other fields like price, category, etc.
+            };
+
+            // 3. Save to Firestore
+            await addDoc(collection(db, "products"), productData);
+            
+            toast({ title: 'Product Published!', description: `${productName} is now live.` });
+            // Optionally, redirect user after publish
+            // router.push('/vendor/products');
+
+        } catch (error) {
+            console.error("Error publishing product: ", error);
+            toast({ variant: 'destructive', title: 'Failed to publish product.' });
+        } finally {
+            setIsGenerating(false);
+        }
+    }
+
   return (
     <>
     <div className="container py-12">
@@ -460,7 +521,7 @@ export default function NewProductPage() {
                         <Label>Product Status</Label>
                         <div className="flex items-center gap-4 p-2 border rounded-md">
                             <Switch id="status" checked={status} onCheckedChange={setStatus} />
-                            <Label htmlFor="status" className="font-normal">{ status ? "Active" : "Draft"}</Label>
+                            <Label htmlFor="status" className="font-normal">{ status ? "Live" : "Draft"}</Label>
                         </div>
                     </div>
                 </CardContent>
@@ -488,9 +549,9 @@ export default function NewProductPage() {
         <Button>
             Save as Draft
         </Button>
-         <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-            <CheckCircle className="mr-2 h-4 w-4"/>
-            Publish Product
+         <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={handlePublish} disabled={isGenerating}>
+            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4"/>}
+            {isGenerating ? 'Publishing...' : 'Publish Product'}
         </Button>
       </div>
     </div>
