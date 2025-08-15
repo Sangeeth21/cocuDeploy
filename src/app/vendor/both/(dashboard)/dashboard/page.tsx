@@ -1,4 +1,6 @@
 
+"use client";
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign, Check, X } from "lucide-react";
@@ -7,6 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { mockVendorActivity } from "@/lib/mock-data";
 
 export default function BothVendorDashboardPage() {
+  // In a real app, these values would come from API calls or a data store
+  const revenue = "$45,231.89";
+  const revenueChange = "+20.1% from last month";
+  const activeOrders = "+23";
+  const newMessages = "+5";
+  const activeListings = "125";
+
   return (
       <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
@@ -23,8 +32,8 @@ export default function BothVendorDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+            <div className="text-2xl font-bold">{revenue}</div>
+            <p className="text-xs text-muted-foreground">{revenueChange}</p>
           </CardContent>
         </Card>
         <Card>
@@ -33,7 +42,7 @@ export default function BothVendorDashboardPage() {
             <ListChecks className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+23</div>
+            <div className="text-2xl font-bold">{activeOrders}</div>
             <p className="text-xs text-muted-foreground">Ready to be fulfilled</p>
           </CardContent>
         </Card>
@@ -42,11 +51,11 @@ export default function BothVendorDashboardPage() {
             <CardTitle className="text-sm font-medium">New Messages</CardTitle>
             <div className="relative">
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                <Badge className="absolute -top-2 -right-2 h-4 w-4 justify-center p-0">5</Badge>
+                <Badge className="absolute -top-2 -right-2 h-4 w-4 justify-center p-0">{newMessages.replace('+', '')}</Badge>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+5</div>
+            <div className="text-2xl font-bold">{newMessages}</div>
             <p className="text-xs text-muted-foreground">From interested customers</p>
           </CardContent>
         </Card>
@@ -56,7 +65,7 @@ export default function BothVendorDashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">125</div>
+            <div className="text-2xl font-bold">{activeListings}</div>
             <p className="text-xs text-muted-foreground">Products currently for sale</p>
           </CardContent>
         </Card>
