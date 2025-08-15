@@ -88,6 +88,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const [conversations, setConversations] = useState(initialConversations);
 
     const unreadMessages = useMemo(() => {
+        if (!conversations) return 0;
         return conversations.filter(c => c.unread).length;
     }, [conversations]);
 
@@ -96,6 +97,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <VerificationFlowHandler />
             {React.Children.map(children, child => {
                 if (React.isValidElement(child)) {
+                    // Pass the conversations and the setter to the child page component
                     return React.cloneElement(child, { conversations, setConversations } as any);
                 }
                 return child;
