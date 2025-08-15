@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Save, X, Smartphone, Laptop } from "lucide-react";
+import { GripVertical, Save, X, Smartphone, Laptop, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,9 @@ import { ReviewsPreview } from "./_components/reviews-preview";
 import { SimilarProductsPreview } from "./_components/similar-products-preview";
 import { FrequentlyBoughtTogetherPreview } from "./_components/frequently-bought-together-preview";
 import { useVerification } from "@/context/vendor-verification-context";
+import { addDoc, collection } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
 
 type ComponentMap = {
     [key: string]: { name: string; component: React.FC<any> };
@@ -69,6 +72,7 @@ function SortableItem({ id }: { id: string }) {
 export default function NewTemplatePage() {
     const router = useRouter();
     const { toast } = useToast();
+    const [isLoading, setIsLoading] = useState(false);
     const { vendorType } = useVerification();
     const [templateName, setTemplateName] = useState("");
     const [layout, setLayout] = useState('standard');
@@ -99,7 +103,7 @@ export default function NewTemplatePage() {
         setActiveId(null);
     }
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!templateName.trim()) {
             toast({
                 variant: "destructive",
@@ -108,11 +112,27 @@ export default function NewTemplatePage() {
             });
             return;
         }
-        toast({
-            title: "Template Saved!",
-            description: `The "${templateName}" template has been saved successfully.`,
-        });
-        router.push(`/vendor/templates`);
+        setIsLoading(true);
+        try {
+            await addDoc(collection(db, "templates"), {
+                name: templateName,
+                layout,
+                components,
+                vendorId: "VDR001", // Placeholder for logged-in vendor
+                createdAt: new Date(),
+            });
+
+            toast({
+                title: "Template Saved!",
+                description: `The "${templateName}" template has been saved successfully.`,
+            });
+            router.push("/vendor/templates");
+        } catch (error) {
+            console.error("Error saving template: ", error);
+            toast({ variant: "destructive", title: "Failed to save template." });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -134,8 +154,9 @@ export default function NewTemplatePage() {
                         )}
                         {isPreviewMobile ? 'Desktop View' : 'Mobile View'}
                     </Button>
-                   <Button className="w-full sm:w-auto" onClick={handleSave}>
-                        <Save className="mr-2 h-4 w-4" /> Save Template
+                   <Button className="w-full sm:w-auto" onClick={handleSave} disabled={isLoading}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                        Save Template
                     </Button>
                 </div>
             </div>

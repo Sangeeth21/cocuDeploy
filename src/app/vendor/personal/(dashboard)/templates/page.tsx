@@ -4,12 +4,13 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function RedirectToNewTemplates() {
+export default function RedirectToTemplates() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/vendor/both/(dashboard)/templates");
+    // Redirect to the unified templates page.
+    router.replace("/vendor/templates");
   }, [router]);
 
-  return null; // or a loading spinner
+  return null;
 }

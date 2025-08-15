@@ -1,13 +1,33 @@
 
+"use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign, Check, X } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { mockVendorActivity } from "@/lib/mock-data";
+import { collection, onSnapshot, query, where, orderBy, limit } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { useState, useEffect } from "react";
 
 export default function PersonalVendorDashboardPage() {
+    const [notifications, setNotifications] = useState<any[]>([]);
+
+    useEffect(() => {
+        const vendorId = "VDR001"; // Placeholder
+        const q = query(
+            collection(db, "notifications"), 
+            where("vendorId", "==", vendorId),
+            orderBy("timestamp", "desc"),
+            limit(5)
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setNotifications(notifs);
+        });
+        return () => unsubscribe();
+    }, []);
+
   return (
       <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
@@ -69,8 +89,9 @@ export default function PersonalVendorDashboardPage() {
             <CardTitle className="font-headline">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {mockVendorActivity.map(item => {
+            {notifications.map(item => {
                 const Icon = item.type === 'stock' ? Package : item.type === 'message' ? MessageSquare : item.type === 'confirmation' ? Bell : ListChecks;
+                 const timestamp = item.timestamp?.toDate ? new Date(item.timestamp.toDate()).toLocaleTimeString() : 'Just now';
                 return (
                      <div key={item.id} className="flex items-start gap-4">
                         <div className="p-2 bg-primary/10 rounded-full">
@@ -78,8 +99,8 @@ export default function PersonalVendorDashboardPage() {
                         </div>
                         <div className="flex-1 space-y-2">
                             <div className="grid gap-1">
-                                <p className="text-sm"><Link href={item.href} className="font-semibold hover:underline">{item.text}</Link></p>
-                                <p className="text-xs text-muted-foreground">{item.time}</p>
+                                <p className="text-sm"><Link href={item.href || '#'} className="font-semibold hover:underline">{item.text}</Link></p>
+                                <p className="text-xs text-muted-foreground">{timestamp}</p>
                             </div>
                             {item.type === 'confirmation' && (
                                 <div className="flex gap-2">
@@ -89,7 +110,7 @@ export default function PersonalVendorDashboardPage() {
                             )}
                              {item.type === 'message' && (
                                 <Button size="sm" variant="outline" asChild>
-                                    <Link href={item.href}>
+                                    <Link href={item.href || '#'}>
                                         Reply <ArrowRight className="ml-2 h-4 w-4"/>
                                     </Link>
                                 </Button>
@@ -120,6 +141,3 @@ export default function PersonalVendorDashboardPage() {
       </div>
   );
 }
-
-
-

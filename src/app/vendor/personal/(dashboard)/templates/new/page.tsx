@@ -8,8 +8,8 @@ export default function RedirectToNewTemplates() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/vendor/both/(dashboard)/templates/new");
+    router.replace("/vendor/templates/new");
   }, [router]);
 
-  return null; // or a loading spinner
+  return null;
 }

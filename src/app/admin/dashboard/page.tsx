@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,7 +12,7 @@ import { useEffect, useState } from "react";
 import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order, User as UserType } from "@/lib/types";
-import { mockCorporateCampaigns, mockCampaigns, mockActivity } from "@/lib/mock-data";
+import { mockCorporateCampaigns, mockCampaigns } from "@/lib/mock-data";
 
 
 const heroCampaigns = mockCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active');
@@ -24,6 +23,7 @@ const corporateHeroCampaigns = mockCorporateCampaigns.filter(c => c.placement ==
 export default function AdminDashboardPage() {
     const [recentSales, setRecentSales] = useState<Order[]>([]);
     const [newUsers, setNewUsers] = useState<UserType[]>([]);
+    const [activity, setActivity] = useState<any[]>([]);
 
     useEffect(() => {
         // Fetch recent sales
@@ -45,12 +45,26 @@ export default function AdminDashboardPage() {
             });
             setNewUsers(usersData);
         });
+        
+        // Fetch Activity
+        const activityQuery = query(collection(db, "notifications"), where("forAdmin", "==", true), orderBy("timestamp", "desc"), limit(5));
+        const unsubscribeActivity = onSnapshot(activityQuery, (snapshot) => {
+            const activityData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setActivity(activityData);
+        });
 
         return () => {
             unsubscribeSales();
             unsubscribeUsers();
+            unsubscribeActivity();
         };
     }, []);
+
+    const notificationIcons: { [key: string]: React.ElementType } = {
+        'user_report': ShieldAlert,
+        'new_vendor': User,
+        'default': Bell,
+    };
 
   return (
     <>
@@ -211,8 +225,9 @@ export default function AdminDashboardPage() {
                     <CardDescription>Recent events across the platform.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-6">
-                    {mockActivity.map(item => {
-                        const Icon = item.icon
+                    {activity.map(item => {
+                        const Icon = notificationIcons[item.type] || notificationIcons.default;
+                        const timestamp = item.timestamp?.toDate ? new Date(item.timestamp.toDate()).toLocaleTimeString() : 'Just now';
                         return (
                             <div key={item.id} className="flex items-start gap-4">
                                 <div className={`p-2 rounded-full ${item.variant === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'}`}>
@@ -221,14 +236,15 @@ export default function AdminDashboardPage() {
                                 <div className="flex-1 space-y-2">
                                     <div className="grid gap-1">
                                       <p className="text-sm font-medium leading-none">
-                                          <Link href={item.href} className="hover:underline">{item.text}</Link>
+                                          <Link href={item.href || '#'} className="hover:underline">{item.text}</Link>
                                       </p>
-                                      <p className="text-sm text-muted-foreground">{item.time}</p>
+                                      <p className="text-sm text-muted-foreground">{timestamp}</p>
                                     </div>
-                                    {item.type === 'user_report' && (
+                                    {item.actions && (
                                         <div className="flex gap-2">
-                                            <Button size="sm" variant="outline">Dismiss</Button>
-                                            <Button size="sm" variant="destructive">Warn User</Button>
+                                            {item.actions.map((action: any) => (
+                                                <Button key={action.label} size="sm" variant={action.variant || 'outline'}>{action.label}</Button>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
