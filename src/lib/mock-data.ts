@@ -300,62 +300,72 @@ export const mockUsers: User[] = [
 export const mockOrders: Order[] = [
     {
         id: "ORD001",
-        date: "2024-06-20",
+        date: new Date("2024-06-20"),
         customer: mockUsers[0],
         items: [
             { productId: '1', productName: 'Classic Leather Watch', productImage: mockProducts[0].imageUrl, quantity: 1, price: 199.99 },
             { productId: '3', productName: 'Organic Cotton T-Shirt', productImage: mockProducts[2].imageUrl, quantity: 2, price: 29.99 }
         ],
         total: 259.97,
+        subtotal: 259.97,
+        shipping: 0,
         status: "Delivered",
         shippingAddress: { recipient: 'Olivia Martin', line1: '123 Main St', city: 'Anytown', zip: '12345' },
         payment: { method: 'Visa', last4: '4242' }
     },
     {
         id: "ORD002",
-        date: "2024-06-18",
+        date: new Date("2024-06-18"),
         customer: mockUsers[2],
         items: [
             { productId: '2', productName: 'Wireless Bluetooth Headphones', productImage: mockProducts[1].imageUrl, quantity: 1, price: 149.50 }
         ],
         total: 149.50,
+        subtotal: 149.50,
+        shipping: 0,
         status: "Shipped",
         shippingAddress: { recipient: 'Jackson Lee', line1: '456 Oak Ave', city: 'Someville', zip: '67890' },
         payment: { method: 'Mastercard', last4: '5555' }
     },
     {
         id: "ORD003",
-        date: "2024-06-15",
+        date: new Date("2024-06-15"),
         customer: mockUsers[4],
         items: [
             { productId: '7', productName: 'Modern Minimalist Desk', productImage: mockProducts[6].imageUrl, quantity: 1, price: 349.00 },
              { productId: '4', productName: 'Handcrafted Ceramic Mug', productImage: mockProducts[3].imageUrl, quantity: 4, price: 24.00 }
         ],
         total: 445.00,
+        subtotal: 445.00,
+        shipping: 0,
         status: "Processing",
         shippingAddress: { recipient: 'Isabella Nguyen', line1: '789 Pine Ln', city: 'Metropolis', zip: '10111' },
         payment: { method: 'Visa', last4: '1111' }
     },
     {
         id: "ORD004",
-        date: "2024-06-12",
+        date: new Date("2024-06-12"),
         customer: mockUsers[6],
         items: [
             { productId: '8', productName: 'All-Natural Skincare Set', productImage: mockProducts[7].imageUrl, quantity: 1, price: 89.99 }
         ],
         total: 89.99,
+        subtotal: 89.99,
+        shipping: 0,
         status: "Pending",
         shippingAddress: { recipient: 'William Kim', line1: '321 Maple Dr', city: 'Townsburgh', zip: '22233' },
         payment: { method: 'PayPal', last4: 'N/A' }
     },
     {
         id: "ORD005",
-        date: "2024-06-10",
+        date: new Date("2024-06-10"),
         customer: mockUsers[0],
         items: [
             { productId: '9', productName: 'Hand-poured Soy Candle', productImage: mockProducts[8].imageUrl, quantity: 3, price: 22.50 }
         ],
         total: 67.50,
+        subtotal: 67.50,
+        shipping: 0,
         status: "Cancelled",
         shippingAddress: { recipient: 'Olivia Martin', line1: '123 Main St', city: 'Anytown', zip: '12345' },
         payment: { method: 'Visa', last4: '4242' }
@@ -703,7 +713,7 @@ export const mockCorporateBids: CorporateBid[] = [
         products: [mockProducts[0], mockProducts[3]],
         quantity: 250,
         status: 'Active',
-        createdAt: '2024-07-22',
+        createdAt: new Date('2024-07-22'),
         expiresAt: new Date(new Date().getTime() + 2 * 24 * 60 * 60 * 1000).toISOString(), // Expires in 2 days
         responses: [
             { alias: 'Vendor A', vendorId: 'VDR001', vendorName: 'Timeless Co.', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 165.00, estimatedDelivery: '10 business days' },
@@ -715,7 +725,7 @@ export const mockCorporateBids: CorporateBid[] = [
         products: [mockProducts[1]],
         quantity: 100,
         status: 'Expired',
-        createdAt: '2024-07-20',
+        createdAt: new Date('2024-07-20'),
         expiresAt: '2024-07-22T12:00:00Z',
         responses: [
             { alias: 'Vendor C', vendorId: 'VDR002', vendorName: 'Gadget Guru', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 120.00, estimatedDelivery: '5 business days' },
@@ -726,8 +736,9 @@ export const mockCorporateBids: CorporateBid[] = [
         products: [mockProducts[8], mockProducts[4]],
         quantity: 500,
         status: 'Awarded',
-        createdAt: '2024-07-18',
+        createdAt: new Date('2024-07-18'),
         expiresAt: '2024-07-20T10:00:00Z',
+        awardedTo: 'VDR004',
         responses: [
              { alias: 'Vendor D', vendorId: 'VDR004', vendorName: 'Crafty Creations', vendorAvatar: 'https://placehold.co/40x40.png', pricePerUnit: 18.50, estimatedDelivery: '12 business days' },
         ]
@@ -753,3 +764,4 @@ export const mockAiImageStyles: AiImageStyle[] = [
   { id: 'style-11', name: 'Infographic Style', backendPrompt: ', modern infographic style, clean vector art, flat design, isometric perspective, corporate branding', target: 'corporate', order: 6 },
   { id: 'style-12', name: 'Double Exposure', backendPrompt: ', double exposure effect, silhouette combined with a landscape, artistic, thoughtful, professional', target: 'corporate', order: 7 },
 ];
+
