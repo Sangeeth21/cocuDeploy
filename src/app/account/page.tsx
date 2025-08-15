@@ -33,7 +33,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import Link from "next/link";
 import type { Message, Conversation, DisplayProduct, Order } from "@/lib/types";
-import { mockProducts } from "@/lib/mock-data";
 import { useUser } from "@/context/user-context";
 import { useWishlist } from "@/context/wishlist-context";
 import { ProductCard } from "@/components/product-card";
@@ -321,9 +320,10 @@ export default function AccountPage() {
   const hasMadePurchase = orders.length > 0;
 
   useEffect(() => {
-    // Listener for orders
     // In a real app, you'd filter by the current user's ID
-    const ordersQuery = query(collection(db, "orders")); 
+    const currentUserId = "USR001"; // Placeholder for logged-in user
+
+    const ordersQuery = query(collection(db, "orders"), where("customer.id", "==", currentUserId)); 
     const unsubscribeOrders = onSnapshot(ordersQuery, (querySnapshot) => {
         const userOrders: Order[] = [];
         querySnapshot.forEach((doc) => {
@@ -332,8 +332,7 @@ export default function AccountPage() {
         setOrders(userOrders);
     });
 
-    // Listener for conversations
-    const convosQuery = query(collection(db, "conversations")); // Filter by userId in real app
+    const convosQuery = query(collection(db, "conversations"), where("customerId", "==", currentUserId));
     const unsubscribeConversations = onSnapshot(convosQuery, (querySnapshot) => {
         const convos: Conversation[] = [];
         querySnapshot.forEach((doc) => {
@@ -485,7 +484,7 @@ export default function AccountPage() {
     };
 
     try {
-        const conversationRef = collection(db, "conversations", selectedConversation.id, "messages");
+        const conversationRef = collection(db, "conversations", selectedConversation.id as string, "messages");
         await addDoc(conversationRef, newMessageObj);
 
         // Here you would also update the parent conversation document's `lastMessage` and `timestamp` fields.
@@ -1237,5 +1236,3 @@ export default function AccountPage() {
     </div>
   );
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,22 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User } from "lucide-react";
 import Link from "next/link";
-
-
-const mockRecentSales = [
-    { id: '1', name: 'Olivia Martin', email: 'olivia.martin@email.com', amount: 199.99, avatar: 'https://placehold.co/40x40.png' },
-    { id: '2', name: 'Jackson Lee', email: 'jackson.lee@email.com', amount: 39.00, avatar: 'https://placehold.co/40x40.png' },
-    { id: '3', name: 'Isabella Nguyen', email: 'isabella.nguyen@email.com', amount: 299.00, avatar: 'https://placehold.co/40x40.png' },
-    { id: '4', name: 'William Kim', email: 'will@email.com', amount: 99.00, avatar: 'https://placehold.co/40x40.png' },
-    { id: '5', name: 'Sofia Davis', email: 'sofia.davis@email.com', amount: 39.00, avatar: 'https://placehold.co/40x40.png' },
-]
-
-const mockActivity = [
-    { type: 'user_report', id: 'REP003', text: 'User "Crafty Creations" reported for inappropriate language', time: '1h ago', icon: ShieldAlert, variant: 'destructive', href: '/admin/moderation' },
-    { type: 'product_review', id: 'PROD006', text: 'Product needs pricing review', time: '3h ago', icon: Package, variant: 'default', href: '/admin/smart-pricing?productId=6' },
-    { type: 'new_vendor', id: 'USR008', text: 'New vendor "HomeBody Decor" signed up', time: '8h ago', icon: User, variant: 'default', href: '/admin/vendors' },
-    { type: 'confirmation_request', id: 'REQ001', text: 'Confirmation needed for "Professional Yoga Mat"', time: '1d ago', icon: BellRing, variant: 'default', href: '/admin/orders' },
-]
+import { mockRecentSales, mockActivity } from "@/lib/mock-data";
 
 
 export default function AdminDashboardPage() {

@@ -1,5 +1,7 @@
 
 
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,7 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User, Megaphone, Building } from "lucide-react";
 import Link from "next/link";
-import { mockRecentSales, mockActivity, mockCampaigns, mockCorporateCampaigns } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
+import { collection, query, orderBy, limit, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { Order, User as UserType } from "@/lib/types";
+import { mockCorporateCampaigns, mockCampaigns, mockActivity } from "@/lib/mock-data";
 
 
 const heroCampaigns = mockCampaigns.filter(c => c.placement === 'hero' && c.status === 'Active');
@@ -16,6 +22,36 @@ const corporateHeroCampaigns = mockCorporateCampaigns.filter(c => c.placement ==
 
 
 export default function AdminDashboardPage() {
+    const [recentSales, setRecentSales] = useState<Order[]>([]);
+    const [newUsers, setNewUsers] = useState<UserType[]>([]);
+
+    useEffect(() => {
+        // Fetch recent sales
+        const salesQuery = query(collection(db, "orders"), orderBy("date", "desc"), limit(5));
+        const unsubscribeSales = onSnapshot(salesQuery, (querySnapshot) => {
+            const salesData: Order[] = [];
+            querySnapshot.forEach((doc) => {
+                salesData.push({ id: doc.id, ...doc.data() } as Order);
+            });
+            setRecentSales(salesData);
+        });
+
+        // Fetch new users
+        const usersQuery = query(collection(db, "users"), orderBy("joinedDate", "desc"), limit(2));
+        const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
+            const usersData: UserType[] = [];
+            querySnapshot.forEach((doc) => {
+                usersData.push({ id: doc.id, ...doc.data() } as UserType);
+            });
+            setNewUsers(usersData);
+        });
+
+        return () => {
+            unsubscribeSales();
+            unsubscribeUsers();
+        };
+    }, []);
+
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
@@ -82,7 +118,7 @@ export default function AdminDashboardPage() {
             <CardHeader className="flex flex-row items-center">
                 <div className="grid gap-2">
                     <CardTitle>Recent Sales</CardTitle>
-                    <CardDescription>You made 265 sales this month.</CardDescription>
+                    <CardDescription>Your most recent sales from the store.</CardDescription>
                 </div>
                 <Button asChild size="sm" className="ml-auto gap-1">
                     <Link href="/admin/orders">
@@ -100,21 +136,21 @@ export default function AdminDashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {mockRecentSales.map(sale => (
+                        {recentSales.map(sale => (
                             <TableRow key={sale.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-4">
                                         <Avatar>
-                                            <AvatarImage src={sale.avatar} alt={sale.name} data-ai-hint="person face" />
-                                            <AvatarFallback>{sale.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                            <AvatarImage src={sale.customer.avatar} alt={sale.customer.name} data-ai-hint="person face" />
+                                            <AvatarFallback>{sale.customer.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <div className="font-medium">{sale.name}</div>
-                                            <div className="text-sm text-muted-foreground">{sale.email}</div>
+                                            <div className="font-medium">{sale.customer.name}</div>
+                                            <div className="text-sm text-muted-foreground">{sale.customer.email}</div>
                                         </div>
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-right">${sale.amount.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">${sale.total.toFixed(2)}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
