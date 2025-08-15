@@ -12,7 +12,8 @@ const firebaseConfig = {
   "storageBucket": "shopsphere-bsdmb.appspot.com",
   "apiKey": "AIzaSyBknQPeIJCiMW-6pLGpWi8S7R4qKJ_P87c",
   "authDomain": "shopsphere-bsdmb.firebaseapp.com",
-  "messagingSenderId": "938269739088"
+  "messagingSenderId": "938269739088",
+  "measurementId": "G-5B9T3F5C0G"
 };
 
 // Initialize Firebase
