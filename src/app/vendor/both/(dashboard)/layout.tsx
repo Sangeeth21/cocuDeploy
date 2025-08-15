@@ -1,9 +1,9 @@
 
 "use client";
 
+import React, { useMemo, useState } from "react";
 import { VendorSidebarLayout } from "./_components/vendor-sidebar-layout";
 import { VerificationFlowHandler } from "../../_components/verification-flow-handler";
-import { useMemo, useState } from "react";
 import type { Conversation, Message } from "@/lib/types";
 
 // Moved initialConversations here to be the single source of truth for this layout scope.
