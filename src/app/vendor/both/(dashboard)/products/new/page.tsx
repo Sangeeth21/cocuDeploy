@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -9,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { mockCategories, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data"
-import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck, Box } from "lucide-react"
+import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck, Box, AlertTriangle, Percent } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
@@ -639,6 +640,17 @@ export default function NewProductPage() {
     const [packageLength, setPackageLength] = useState("");
     const [packageWidth, setPackageWidth] = useState("");
     const [packageHeight, setPackageHeight] = useState("");
+    const [commissionRates, setCommissionRates] = useState<{ [key: string]: { commission: number } }>({});
+
+    useEffect(() => {
+        const commissionRef = doc(db, 'commissions', 'categories');
+        const unsubscribe = onSnapshot(commissionRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setCommissionRates(docSnap.data());
+            }
+        });
+        return () => unsubscribe();
+    }, []);
     
     const canSave = productName && packageWeight && packageLength && packageWidth && packageHeight;
 
@@ -844,7 +856,7 @@ export default function NewProductPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                     {isCustomizable && (
+                     {isCustomizable ? (
                         <>
                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                             {imageSides.map(side => (
@@ -932,6 +944,11 @@ export default function NewProductPage() {
                          {is3DEnabled && !canPreview3D && <p className="text-xs text-muted-foreground mt-2">Upload or generate Front, Left, &amp; Right images to enable the 3D preview.</p>}
                          <Separator className="my-6" />
                         </>
+                     ) : (
+                        <Alert variant="default" className="bg-muted/50">
+                            <AlertTriangle className="h-4 w-4"/>
+                            <AlertDesc>Customization tools are disabled. Enable the "Is this product customizable?" switch to define customization areas.</AlertDesc>
+                        </Alert>
                      )}
                      
                      <div className="space-y-4">
@@ -982,15 +999,6 @@ export default function NewProductPage() {
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="font-headline">Customization Types</CardTitle>
-                    <CardDescription>Select the personalization methods available for this product.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground text-center py-4">This section has been deprecated. Please use the "Define Area" buttons under each product image in the Media section to create customizable zones.</p>
-                </CardContent>
-            </Card>
         </div>
 
         <aside className="md:col-span-1 grid gap-8 sticky top-24">
@@ -1052,6 +1060,12 @@ export default function NewProductPage() {
                                 ))}
                             </SelectContent>
                         </Select>
+                         {selectedCategory && commissionRates[selectedCategory] && (
+                            <div className="text-xs text-muted-foreground flex items-center gap-1.5 pt-1">
+                                <Percent className="h-3 w-3" />
+                                <span>Commission Rate: {commissionRates[selectedCategory].commission}%</span>
+                            </div>
+                        )}
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="tags">Tags</Label>
@@ -1196,5 +1210,3 @@ export default function NewProductPage() {
     </>
   );
 }
-
-    
