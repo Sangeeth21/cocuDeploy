@@ -3,7 +3,6 @@
 
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
-import { mockProducts, mockReviews, mockCampaigns } from "@/lib/mock-data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Star, Heart } from "lucide-react";
@@ -18,8 +17,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useWishlist } from "@/context/wishlist-context";
 import { useUser } from "@/context/user-context";
 import { useAuthDialog } from "@/context/auth-dialog-context";
-import { useMemo } from "react";
-
+import { useMemo, useState, useEffect } from "react";
+import { collection, doc, getDoc, getDocs, query, where, limit } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { DisplayProduct, Review } from "@/lib/types";
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
   loading: () => <div className="flex flex-col space-y-3">
@@ -43,59 +44,102 @@ const CustomerReviews = dynamic(() => import('./_components/reviews-preview').th
     loading: () => <Skeleton className="h-[300px] w-full rounded-xl" />
 });
 
-function ProductPageCampaignBanner() {
-    const bannerCampaign = mockCampaigns.find(c => c.status === 'Active' && c.placement === 'product-page-banner');
-    if (!bannerCampaign || !bannerCampaign.creatives || bannerCampaign.creatives.length === 0) {
-        return null;
-    }
-    const creative = bannerCampaign.creatives[0];
-
-    return (
-        <div className="bg-accent/20 border border-accent rounded-lg p-4 flex flex-col md:flex-row items-center gap-4 my-8">
-            <div className="relative w-full md:w-24 h-32 md:h-24 rounded-md overflow-hidden flex-shrink-0">
-                {creative.imageUrl && <Image src={creative.imageUrl} alt={creative.title} fill className="object-cover" />}
-            </div>
-            <div className="flex-1 text-center md:text-left">
-                <h3 className="font-bold">{creative.title}</h3>
-                <p className="text-sm text-muted-foreground">{creative.description}</p>
-            </div>
-            <Button asChild><Link href={`/products?campaign=${bannerCampaign.id}`}>{creative.cta}</Link></Button>
-        </div>
-    );
-}
 
 export default function ProductDetailPage() {
   const { toast } = useToast();
   const params = useParams();
   const id = params.id as string;
-  const product = mockProducts.find((p) => p.id === id);
+  const [product, setProduct] = useState<DisplayProduct | null>(null);
+  const [similarProducts, setSimilarProducts] = useState<DisplayProduct[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isLoggedIn } = useUser();
   const { openDialog } = useAuthDialog();
   
+  useEffect(() => {
+    if (!id) return;
+
+    const fetchProduct = async () => {
+        setLoading(true);
+        const docRef = doc(db, "products", id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            const productData = { id: docSnap.id, ...docSnap.data() } as DisplayProduct;
+            setProduct(productData);
+
+            // Fetch similar products
+            if(productData.category) {
+                const q = query(
+                    collection(db, "products"), 
+                    where("category", "==", productData.category),
+                    where("__name__", "!=", id),
+                    limit(4)
+                );
+                const querySnapshot = await getDocs(q);
+                const fetchedSimilar: DisplayProduct[] = [];
+                querySnapshot.forEach((doc) => {
+                    fetchedSimilar.push({ id: doc.id, ...doc.data() } as DisplayProduct);
+                });
+                setSimilarProducts(fetchedSimilar);
+            }
+        } else {
+            console.log("No such document!");
+        }
+        setLoading(false);
+    };
+
+    fetchProduct();
+  }, [id]);
+
   const isCustomizable = useMemo(() => {
     if (!product) return false;
-    // A product is customizable if it has any defined customization areas on any side.
     return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
   }, [product]);
-
-  if (!product) {
-    notFound();
-  }
-  
-  const similarProducts = mockProducts.filter(p => p.id !== product.id && p.category === product.category).slice(0, 4);
 
   const handleWishlistClick = () => {
       if (!isLoggedIn) {
           openDialog('login');
           return;
       }
-      toggleWishlist(product);
-      toast({
-          title: isWishlisted(product.id) ? "Removed from Wishlist" : "Added to Wishlist",
-          description: product.name,
-      });
+      if (product) {
+        toggleWishlist(product);
+        toast({
+            title: isWishlisted(product.id) ? "Removed from Wishlist" : "Added to Wishlist",
+            description: product.name,
+        });
+      }
+  }
+
+  if (loading) {
+      return (
+          <div className="container py-12">
+            <div className="grid md:grid-cols-2 gap-12 items-start">
+                <div>
+                     <Skeleton className="aspect-square w-full rounded-lg" />
+                     <div className="grid grid-cols-5 gap-2 mt-4">
+                         {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-square w-full rounded-md" />)}
+                     </div>
+                </div>
+                <div className="space-y-6">
+                    <Skeleton className="h-6 w-1/4" />
+                    <Skeleton className="h-10 w-3/4" />
+                    <Skeleton className="h-6 w-1/2" />
+                    <Skeleton className="h-8 w-1/3" />
+                    <Skeleton className="h-24 w-full" />
+                    <div className="flex flex-col gap-2">
+                         <Skeleton className="h-12 w-full" />
+                         <Skeleton className="h-12 w-full" />
+                    </div>
+                </div>
+            </div>
+          </div>
+      )
+  }
+
+  if (!product) {
+    notFound();
   }
 
   return (
@@ -133,8 +177,6 @@ export default function ProductDetailPage() {
         </div>
       </div>
       
-      <ProductPageCampaignBanner />
-
       <Separator className="my-12" />
 
       <div className="grid md:grid-cols-3 gap-12">

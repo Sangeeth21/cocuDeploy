@@ -8,11 +8,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
-import { mockProducts } from "@/lib/mock-data";
 import Image from "next/image";
+import { useEffect, useState } from "react";
+import type { DisplayProduct } from "@/lib/types";
+import { collection, onSnapshot, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 export default function AdminProductsPage() {
+    const [products, setProducts] = useState<DisplayProduct[]>([]);
+
+    useEffect(() => {
+        const q = query(collection(db, "products"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const productsData: DisplayProduct[] = [];
+            querySnapshot.forEach((doc) => {
+                productsData.push({ id: doc.id, ...doc.data() } as DisplayProduct);
+            });
+            setProducts(productsData);
+        });
+
+        return () => unsubscribe();
+    }, []);
     
     return (
       <div>
@@ -45,7 +62,7 @@ export default function AdminProductsPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                   {mockProducts.map(product => (
+                   {products.map(product => (
                      <TableRow key={product.id}>
                         <TableCell className="hidden sm:table-cell p-2">
                              <div className="relative w-16 h-16 rounded-md overflow-hidden">
