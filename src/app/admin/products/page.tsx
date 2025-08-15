@@ -11,16 +11,28 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import type { DisplayProduct } from "@/lib/types";
-import { collection, onSnapshot, query } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useSearchParams } from 'next/navigation'
 
 
 export default function AdminProductsPage() {
+    const searchParams = useSearchParams()
+    const category = searchParams.get('category')
     const [products, setProducts] = useState<DisplayProduct[]>([]);
     const [loading, setLoading] = useState(true);
+    const [pageTitle, setPageTitle] = useState("All Products");
 
     useEffect(() => {
-        const q = query(collection(db, "products"));
+        let q = query(collection(db, "products"));
+
+        if (category) {
+            q = query(q, where("category", "==", category));
+            setPageTitle(`Products in: ${category}`);
+        } else {
+            setPageTitle("All Products");
+        }
+
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const productsData: DisplayProduct[] = [];
             querySnapshot.forEach((doc) => {
@@ -31,13 +43,13 @@ export default function AdminProductsPage() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [category]);
     
     return (
       <div>
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div>
-                <h1 className="text-3xl font-bold font-headline">Products</h1>
+                <h1 className="text-3xl font-bold font-headline">{pageTitle}</h1>
                 <p className="text-muted-foreground">Manage all product listings on the platform.</p>
             </div>
             <Button asChild>
