@@ -831,8 +831,8 @@ export default function AccountPage() {
                             <h2 className="text-lg font-semibold">{`Chat #${selectedConversation.id.toString().padStart(6, '0')}`}</h2>
                         </div>
                          <div className="flex items-center gap-4">
-                             <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => handleReportConversation(selectedConversation.id as string)}>
-                                 <AlertTriangle className="h-5 w-5" />
+                             <Button variant="ghost" size="icon" onClick={() => handleReportConversation(selectedConversation.id as string)}>
+                                 <AlertTriangle className="h-5 w-5 text-destructive" />
                                  <span className="sr-only">Report Conversation</span>
                              </Button>
                              <div className="text-sm text-muted-foreground">

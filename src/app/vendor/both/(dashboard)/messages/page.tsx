@@ -377,7 +377,7 @@ export default function BothVendorMessagesPage() {
                 </div>
                  <div className="flex items-center gap-4">
                     <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => handleReportConversation(selectedConversation.id)}>
-                        <AlertTriangle className="h-5 w-5" />
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
                         <span className="sr-only">Report Conversation</span>
                     </Button>
                     <div className="text-sm text-muted-foreground">
