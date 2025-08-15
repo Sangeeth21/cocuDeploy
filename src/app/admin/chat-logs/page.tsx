@@ -14,6 +14,8 @@ import type { Message, Conversation as AdminConversation } from "@/lib/types";
 import { useSearchParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { collection, onSnapshot, query, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 type Conversation = Omit<AdminConversation, 'awaitingVendorDecision' | 'userMessageCount'> & {
@@ -22,69 +24,63 @@ type Conversation = Omit<AdminConversation, 'awaitingVendorDecision' | 'userMess
   type?: 'customer' | 'corporate';
 }
 
-const initialConversations: Conversation[] = [
-  {
-    id: "1",
-    customerId: "CUST001",
-    vendorId: "VDR001",
-    customerAvatar: "https://placehold.co/40x40.png",
-    vendorAvatar: "https://placehold.co/40x40.png",
-    status: 'active',
-    messages: [
-      { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?", timestamp: new Date() },
-      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it.", timestamp: new Date() },
-      { id: 'msg3', sender: "customer", text: "That would be great, thank you!", timestamp: new Date() },
-    ],
-    avatar: '', // not used in this view
-    type: 'customer',
-  },
-  {
-    id: "2",
-    customerId: "CUST002",
-    vendorId: "VDR002",
-    customerAvatar: "https://placehold.co/40x40.png",
-    vendorAvatar: "https://placehold.co/40x40.png",
-    status: 'flagged',
-    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada? My email is test@example.com", timestamp: new Date() }],
-     avatar: '',
-     type: 'customer',
-  },
-  {
-    id: "CORP_CONV_1",
-    customerId: "Corporate Client Inc.",
-    vendorId: "VDR001",
-    customerAvatar: "https://placehold.co/40x40.png",
-    vendorAvatar: "https://placehold.co/40x40.png",
-    status: 'active',
-    messages: [
-        { id: 'ccm1', sender: 'customer', text: 'Hello, we are interested in a bulk order of the Classic Leather Watch for a corporate event. Can you provide a quote for 500 units?' },
-        { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?' },
-    ],
-    avatar: '',
-    type: 'corporate',
-  }
-];
-
 export default function AdminChatLogsPage() {
-  const [conversations, setConversations] = useState<Conversation[]>(initialConversations);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
   const { toast } = useToast();
   
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   
   const selectedConversation = useMemo(() => conversations.find(c => c.id === selectedConversationId), [conversations, selectedConversationId]);
 
+  // Fetch all conversations
   useEffect(() => {
-    if(!selectedConversationId && conversations.length > 0){
-        setSelectedConversationId(conversations[0].id);
-    }
-  }, [conversations, selectedConversationId]);
+    const q = query(collection(db, "conversations"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const convos: Conversation[] = [];
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            convos.push({ 
+                id: doc.id,
+                ...data,
+                // These would be fetched from user profiles in a real app
+                customerAvatar: "https://placehold.co/40x40.png", 
+                vendorAvatar: "https://placehold.co/40x40.png",
+            } as Conversation);
+        });
+        setConversations(convos);
+        if (!selectedConversationId && convos.length > 0) {
+            setSelectedConversationId(convos[0].id);
+        }
+    });
+    return () => unsubscribe();
+  }, [selectedConversationId]);
+
+  // Fetch messages for the selected conversation
+  useEffect(() => {
+    if (!selectedConversationId) {
+        setMessages([]);
+        return;
+    };
+
+    const messagesQuery = query(collection(db, "conversations", selectedConversationId, "messages"));
+    const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
+        const msgs: Message[] = [];
+        querySnapshot.forEach((doc) => {
+            msgs.push({ id: doc.id, ...doc.data() } as Message);
+        });
+        setMessages(msgs);
+    });
+
+    return () => unsubscribe();
+  }, [selectedConversationId]);
 
   useEffect(() => {
     if (messagesContainerRef.current) {
         messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-  }, [selectedConversationId, selectedConversation?.messages.length]);
+  }, [messages]);
 
 
   const handleSelectConversation = (id: string) => {
@@ -201,7 +197,7 @@ export default function AdminChatLogsPage() {
                     <div className="flex-1 min-h-0">
                         <ScrollArea className="h-full">
                             <div ref={messagesContainerRef} className="p-4 space-y-4">
-                            {selectedConversation.messages.map((msg, index) => (
+                            {messages.map((msg, index) => (
                                 msg.sender === 'system' ? (
                                     <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
                                 ) : (
