@@ -113,7 +113,7 @@ export default function AdminCategoriesPage() {
 
     const handleSaveCategory = async (data: Omit<Category, 'id' | 'productCount'>, file: File | null) => {
         setIsDialogOpen(false);
-        let finalImageUrl = data.imageUrl;
+        let finalImageUrl = editingCategory?.imageUrl || data.imageUrl;
 
         try {
             if (file) {
