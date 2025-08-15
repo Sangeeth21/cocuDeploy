@@ -112,7 +112,7 @@ export default function NewTemplatePage() {
             title: "Template Saved!",
             description: `The "${templateName}" template has been saved successfully.`,
         });
-        router.push(`/vendor/${vendorType}/templates`);
+        router.push(`/vendor/templates`);
     };
 
     return (
@@ -123,7 +123,7 @@ export default function NewTemplatePage() {
                     <p className="text-muted-foreground mt-2">Design a custom layout for your product pages.</p>
                 </div>
                 <div className="flex gap-2 w-full sm:w-auto">
-                   <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/vendor/${vendorType}/templates`)}>
+                   <Button variant="outline" className="w-full sm:w-auto" onClick={() => router.push(`/vendor/templates`)}>
                         <X className="mr-2 h-4 w-4" /> Cancel
                     </Button>
                    <Button variant="outline" onClick={() => setIsPreviewMobile(!isPreviewMobile)} className="w-full sm:w-auto">

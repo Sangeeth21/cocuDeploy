@@ -227,4 +227,3 @@ export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children
         </div>
     );
 }
-  

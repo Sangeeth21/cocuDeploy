@@ -53,7 +53,7 @@ export default function CorporateMessagesPage({ conversations = [], setConversat
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (conversations.length > 0 && !selectedConversation) {
+    if (conversations && conversations.length > 0 && !selectedConversation) {
       const firstCorporateChat = conversations.find(c => c.type === 'corporate');
       setSelectedConversation(firstCorporateChat || null);
     }
@@ -120,12 +120,12 @@ export default function CorporateMessagesPage({ conversations = [], setConversat
       prev.map(convo => {
          if (convo.id !== selectedConversation.id) return convo;
         
-        let newCount = convo.userMessageCount + 1;
-        
+        const vendorMessageCount = convo.messages.filter(m => m.sender === 'vendor').length;
         const updatedMessages = [...convo.messages, newMessageObj];
         let awaitingDecision = convo.awaitingVendorDecision;
 
-        if (convo.type === 'corporate' && newCount === 5) {
+        // Apply corporate logic
+        if (vendorMessageCount + 1 === 5) { // Check before incrementing
           awaitingDecision = true;
           updatedMessages.push({
             id: 'system-limit-corp',
@@ -137,7 +137,6 @@ export default function CorporateMessagesPage({ conversations = [], setConversat
         updatedConvo = {
           ...convo,
           messages: updatedMessages,
-          userMessageCount: newCount,
           awaitingVendorDecision: awaitingDecision,
         };
         
@@ -157,7 +156,7 @@ export default function CorporateMessagesPage({ conversations = [], setConversat
         setSelectedConversation(convo);
         setConversations(prev =>
             prev.map(c => 
-                c.id === id ? { ...c, unread: false, unreadCount: 0 } : c
+                c.id === id ? { ...c, unread: false } : c
             )
         );
     }
@@ -181,7 +180,7 @@ export default function CorporateMessagesPage({ conversations = [], setConversat
           case 'delivered':
               return <EyeOff className="h-4 w-4 text-primary-foreground" />;
           case 'sent':
-              return <EyeOff className="h-4 w-4 text-primary-foreground/70" />;
+              return <Check className="h-4 w-4 text-primary-foreground" />;
           default:
               return null;
       }
@@ -189,15 +188,16 @@ export default function CorporateMessagesPage({ conversations = [], setConversat
     
     const getChatLimit = () => {
         if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-        const { userMessageCount, awaitingVendorDecision, type, status } = selectedConversation;
+        const { messages, awaitingVendorDecision, status } = selectedConversation;
         const isPermanentlyLocked = status !== 'active';
+        const vendorMessageCount = messages.filter(m => m.sender === 'vendor').length;
 
         const INITIAL_LIMIT = 5;
         const EXTENDED_LIMIT = 5 + 6;
         
-        const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
-        let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
-        let remaining = limit - userMessageCount;
+        const isLocked = awaitingVendorDecision || vendorMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
+        let limit = vendorMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+        let remaining = limit - vendorMessageCount;
         
         if(awaitingVendorDecision) {
             remaining = 0;
@@ -307,27 +307,26 @@ export default function CorporateMessagesPage({ conversations = [], setConversat
                                 </div>
                             </ScrollArea>
                             <form onSubmit={handleSendMessage} className="p-4 border-t space-y-2">
-                                <div className="flex items-center gap-2">
-                                <div className="relative flex-1">
-                                    <Textarea
-                                        ref={textareaRef}
-                                        placeholder={isLocked ? "This chat is locked." : "Type your message..."}
-                                        className="pr-12 resize-none max-h-48"
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        rows={1}
-                                        disabled={isLocked}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && !e.shiftKey) {
-                                                e.preventDefault();
-                                                handleSendMessage(e);
-                                            }
-                                        }}
-                                    />
-                                </div>
-                                <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
-                            </div>
-                            </form>
+                                     {selectedConversation.status !== 'Resolved' && (
+                                         <div className="flex items-center gap-2">
+                                            <Textarea
+                                                placeholder={"Type your message..."}
+                                                className="pr-12 resize-none max-h-48"
+                                                value={newMessage}
+                                                onChange={(e) => setNewMessage(e.target.value)}
+                                                rows={1}
+                                                disabled={isLocked}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                                        e.preventDefault();
+                                                        handleSendMessage(e);
+                                                    }
+                                                }}
+                                            />
+                                            <Button type="submit" size="icon" disabled={isLocked || !newMessage.trim()}><Send className="h-4 w-4" /></Button>
+                                        </div>
+                                     )}
+                                </form>
                         </div>
                     </Card>
                 ) : (

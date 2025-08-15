@@ -48,7 +48,7 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
 }
 
 // The component now accepts conversations and a setter as props from the layout.
-export default function BothVendorMessagesPage({ conversations = [], setConversations }: { conversations?: (Conversation & {type: 'customer' | 'corporate'})[], setConversations?: React.Dispatch<React.SetStateAction<(Conversation & {type: 'customer' | 'corporate'})[]>> }) {
+export default function BothVendorMessagesPage({ conversations = [], setConversations }: { conversations: (Conversation & {type: 'customer' | 'corporate'})[], setConversations: React.Dispatch<React.SetStateAction<(Conversation & {type: 'customer' | 'corporate'})[]>> }) {
   const [selectedConversation, setSelectedConversation] = useState<(Conversation & {type: 'customer' | 'corporate'}) | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const MAX_MESSAGE_LENGTH = 1500;
@@ -125,13 +125,20 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
       prev.map(convo => {
          if (convo.id !== selectedConversation.id) return convo;
         
-        let newCount = convo.userMessageCount + 1;
-        
+        const customerMessageCount = convo.messages.filter(m => m.sender === 'customer').length;
+        const vendorMessageCount = convo.messages.filter(m => m.sender === 'vendor').length;
+
         const updatedMessages = [...convo.messages, newMessageObj];
         let awaitingDecision = convo.awaitingVendorDecision;
 
-        // Apply corporate logic
-        if (convo.type === 'corporate' && newCount === 5) {
+        if (convo.type === 'customer' && customerMessageCount >= 4 && vendorMessageCount === 0) {
+            awaitingDecision = true;
+            updatedMessages.push({
+                id: 'system-limit-personal',
+                sender: 'system',
+                text: 'You have reached the initial message limit. Decide whether to continue the chat.'
+            });
+        } else if (convo.type === 'corporate' && vendorMessageCount + 1 === 5) {
           awaitingDecision = true;
           updatedMessages.push({
             id: 'system-limit-corp',
@@ -143,7 +150,6 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
         const updatedConvo = {
           ...convo,
           messages: updatedMessages,
-          userMessageCount: newCount,
           awaitingVendorDecision: awaitingDecision,
         };
 
@@ -185,7 +191,7 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
           case 'delivered':
               return <EyeOff className="h-4 w-4 text-primary-foreground" />;
           case 'sent':
-              return <EyeOff className="h-4 w-4 text-primary-foreground/70" />;
+              return <Check className="h-4 w-4 text-primary-foreground" />;
           default:
               return null;
       }
@@ -193,16 +199,17 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
     
     const getChatLimit = () => {
         if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
-        const { userMessageCount, awaitingVendorDecision, type, status } = selectedConversation;
+        const { messages, awaitingVendorDecision, type, status } = selectedConversation;
         const isPermanentlyLocked = status !== 'active';
+        const vendorMessageCount = messages.filter(m => m.sender === 'vendor').length;
 
         if (type === 'corporate') {
             const INITIAL_LIMIT = 5;
             const EXTENDED_LIMIT = 5 + 6;
             
-            const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
-            let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
-            let remaining = limit - userMessageCount;
+            const isLocked = awaitingVendorDecision || vendorMessageCount >= EXTENDED_LIMIT || isPermanentlyLocked;
+            let limit = vendorMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+            let remaining = limit - vendorMessageCount;
             
             if(awaitingVendorDecision) {
               remaining = 0;
@@ -210,9 +217,18 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
             
             return { limit, remaining: Math.max(0, remaining), isLocked };
         } else {
-            const limit = 4;
-            const isLocked = userMessageCount >= limit || isPermanentlyLocked;
-            const remaining = limit - userMessageCount;
+            const customerMessageCount = messages.filter(m => m.sender === 'customer').length;
+            const INITIAL_LIMIT = 4;
+            const EXTENDED_LIMIT = 4 + 8;
+            const isLocked = (customerMessageCount >= INITIAL_LIMIT && awaitingVendorDecision) || (customerMessageCount >= INITIAL_LIMIT && vendorMessageCount >= EXTENDED_LIMIT) || isPermanentlyLocked;
+            
+            let limit = customerMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
+            let remaining = limit - vendorMessageCount;
+            
+            if(awaitingVendorDecision) {
+                remaining = 0;
+            }
+            
             return { limit, remaining: Math.max(0, remaining), isLocked };
         }
     };

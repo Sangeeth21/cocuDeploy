@@ -1,6 +1,7 @@
 
 "use client";
 
+import React from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar } from "@/components/ui/sidebar";
@@ -15,7 +16,7 @@ import { mockVendorActivity } from "@/lib/mock-data";
 const navLinks = [
   { href: "/vendor/personal/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/vendor/personal/products", label: "Products", icon: Package },
-  { href: "/vendor/both/(dashboard)/templates", label: "Templates", icon: Wand2 },
+  { href: "/vendor/templates", label: "Templates", icon: Wand2 },
   { href: "/vendor/personal/inventory", label: "Inventory", icon: Warehouse },
   { href: "/vendor/personal/orders", label: "Orders", icon: ListChecks },
   { href: "/vendor/personal/analytics", label: "Analytics", icon: LineChart },
