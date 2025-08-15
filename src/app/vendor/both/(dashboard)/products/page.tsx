@@ -8,16 +8,38 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
-import { mockProducts } from "@/lib/mock-data";
 import Image from "next/image";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import type { DisplayProduct } from "@/lib/types";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 export default function VendorProductsPage() {
+    const [products, setProducts] = useState<DisplayProduct[]>([]);
+    const [loading, setLoading] = useState(true);
+    const vendorId = "VDR001"; // Placeholder for logged-in vendor
+
+    useEffect(() => {
+        setLoading(true);
+        const q = query(collection(db, "products"), where("vendorId", "==", vendorId));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const productsData: DisplayProduct[] = [];
+            querySnapshot.forEach((doc) => {
+                productsData.push({ id: doc.id, ...doc.data() } as DisplayProduct);
+            });
+            setProducts(productsData);
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching vendor products: ", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [vendorId]);
     
-    const liveProducts = useMemo(() => mockProducts.filter(p => p.status === 'Live' || p.status === 'Needs Review'), []);
-    const draftProducts = useMemo(() => mockProducts.filter(p => p.status === 'Draft' || p.status === 'Archived'), []);
+    const liveProducts = useMemo(() => products.filter(p => p.status === 'Live' || p.status === 'Needs Review'), [products]);
+    const draftProducts = useMemo(() => products.filter(p => p.status === 'Draft' || p.status === 'Archived'), [products]);
 
     const renderProductTable = (products: DisplayProduct[], title: string) => (
         <Card>
@@ -79,7 +101,8 @@ export default function VendorProductsPage() {
                     ))}
                     </TableBody>
                 </Table>
-                {products.length === 0 && <p className="text-center text-muted-foreground p-4">No products in this category.</p>}
+                {products.length === 0 && !loading && <p className="text-center text-muted-foreground p-4">No products in this category.</p>}
+                 {loading && <p className="text-center text-muted-foreground p-4">Loading products...</p>}
             </CardContent>
         </Card>
     );
