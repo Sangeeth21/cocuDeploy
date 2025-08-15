@@ -294,7 +294,7 @@ export default function NewOrderPage() {
                                         <Label>City</Label>
                                         <Input placeholder="City"/>
                                     </div>
-                                    <div className="space-y-2">
+                                     <div className="space-y-2">
                                         <Label>ZIP Code</Label>
                                         <Input placeholder="ZIP Code"/>
                                     </div>
