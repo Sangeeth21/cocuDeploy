@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,87 +15,12 @@ import type { Message, Conversation } from "@/lib/types";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useVerification } from "@/context/vendor-verification-context";
 
 type Attachment = {
     name: string;
     type: 'image' | 'file';
     url: string;
 }
-
-export const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] = [
-  {
-    id: 1,
-    customerId: "CUST001",
-    vendorId: "VDR001",
-    avatar: "https://placehold.co/40x40.png",
-    messages: [
-      { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?" },
-      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it.", status: 'read' },
-      { id: 'msg3', sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}] },
-    ],
-    unread: true,
-    unreadCount: 1,
-    userMessageCount: 3,
-    awaitingVendorDecision: false,
-    status: 'active',
-    type: 'customer',
-  },
-  {
-    id: 2,
-    customerId: "CUST002",
-    vendorId: "VDR002",
-    avatar: "https://placehold.co/40x40.png",
-    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}] }],
-    unread: true,
-    unreadCount: 1,
-    userMessageCount: 1,
-    awaitingVendorDecision: false,
-    status: 'active',
-    type: 'customer',
-  },
-  {
-    id: 3,
-    customerId: "CUST003",
-    vendorId: "VDR003",
-    avatar: "https://placehold.co/40x40.png",
-    messages: [{ id: 'msg5', sender: "vendor", text: "Thank you!", status: 'delivered' }],
-    unread: false,
-    userMessageCount: 1,
-    awaitingVendorDecision: false,
-    status: 'active',
-    type: 'customer',
-  },
-   {
-    id: 4,
-    customerId: "CUST004",
-    vendorId: "VDR004",
-    avatar: "https://placehold.co/40x40.png",
-    messages: [{ id: 'msg6', sender: "customer", text: "What is the return policy?" }],
-    unread: true,
-    unreadCount: 9,
-    userMessageCount: 4, // Set to limit to test
-    awaitingVendorDecision: false,
-    status: 'active',
-    type: 'customer',
-  },
-  {
-    id: 5,
-    customerId: "Corporate Client Inc.",
-    vendorId: "VDR001",
-    avatar: "https://placehold.co/40x40.png",
-    messages: [
-      { id: 'ccm1', sender: 'customer', text: 'Hello, we are interested in a bulk order of the Classic Leather Watch for a corporate event. Can you provide a quote for 500 units?' },
-      { id: 'ccm2', sender: 'vendor', text: 'Absolutely! For 500 units, we can offer a price of $159.99 per unit. This includes custom engraving on the back. What is your required delivery date?', status: 'sent'},
-    ],
-    unread: true,
-    userMessageCount: 1,
-    awaitingVendorDecision: false,
-    status: 'active',
-    type: 'corporate',
-  }
-];
 
 function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open: boolean, onOpenChange: (open: boolean) => void, onContinue: () => void, onEnd: () => void }) {
     return (
@@ -119,22 +44,20 @@ function ConversionCheckDialog({ open, onOpenChange, onContinue, onEnd }: { open
     )
 }
 
-export default function VendorMessagesPage() {
-  const [conversations, setConversations] = useState(initialConversations);
+export default function VendorMessagesPage({ conversations = [], setConversations }: { conversations: (Conversation & {type: 'customer' | 'corporate'})[], setConversations: React.Dispatch<React.SetStateAction<(Conversation & {type: 'customer' | 'corporate'})[]>> }) {
   const [selectedConversation, setSelectedConversation] = useState<(Conversation & {type: 'customer' | 'corporate'}) | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1500;
   const { toast } = useToast();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [isConversionDialogOpen, setIsConversionDialogOpen] = useState(false);
-  const { vendorType } = useVerification();
-  const defaultTab = vendorType === 'corporate' ? 'corporate' : 'customer';
 
   useEffect(() => {
     if (conversations.length > 0 && !selectedConversation) {
-      setSelectedConversation(conversations[0]);
+      const firstCustomerChat = conversations.find(c => c.type === 'customer');
+      setSelectedConversation(firstCustomerChat || null);
     }
   }, [conversations, selectedConversation]);
 
@@ -229,18 +152,27 @@ export default function VendorMessagesPage() {
       prev.map(convo => {
          if (convo.id !== selectedConversation.id) return convo;
         
+        let newCount = convo.userMessageCount + 1;
         const updatedMessages = [...convo.messages, newMessageObj];
+        let awaitingDecision = convo.awaitingVendorDecision;
+        const customerMessageCount = convo.messages.filter(m => m.sender === 'customer').length;
         
-        updatedConvo = {
-            ...convo,
-            messages: updatedMessages,
-            userMessageCount: convo.userMessageCount + 1,
-        };
-
-        if (updatedConvo.userMessageCount === 15) {
-            updatedConvo.awaitingVendorDecision = true;
+        if (customerMessageCount === 4 && newCount < 15) { // Assuming first vendor response after 4th customer message
+           awaitingDecision = true;
+           updatedMessages.push({
+            id: 'system-limit',
+            sender: 'system',
+            text: 'You have reached the initial message limit. Decide whether to continue the chat.'
+           });
         }
         
+        updatedConvo = {
+          ...convo,
+          messages: updatedMessages,
+          userMessageCount: newCount,
+          awaitingVendorDecision: awaitingDecision,
+        };
+
         return updatedConvo;
       })
     );
@@ -259,7 +191,7 @@ export default function VendorMessagesPage() {
         setSelectedConversation(convo);
         setConversations(prev =>
             prev.map(convo => 
-                convo.id === id ? { ...convo, unread: false } : convo
+                convo.id === id ? { ...convo, unread: false, unreadCount: 0 } : convo
             )
         );
     }
@@ -283,7 +215,7 @@ export default function VendorMessagesPage() {
           case 'delivered':
               return <EyeOff className="h-4 w-4 text-primary-foreground" />;
           case 'sent':
-              return <Check className="h-4 w-4 text-primary-foreground" />;
+              return <EyeOff className="h-4 w-4 text-primary-foreground/70" />;
           default:
               return null;
       }
@@ -293,8 +225,8 @@ export default function VendorMessagesPage() {
       if (!selectedConversation) return { limit: 0, remaining: 0, isLocked: true };
       const { userMessageCount, awaitingVendorDecision, status } = selectedConversation;
 
-      const INITIAL_LIMIT = 15;
-      const EXTENDED_LIMIT = 15 + 8;
+      const INITIAL_LIMIT = 4;
+      const EXTENDED_LIMIT = 4 + 8;
 
       const isLocked = awaitingVendorDecision || userMessageCount >= EXTENDED_LIMIT || status !== 'active';
       let limit = userMessageCount < INITIAL_LIMIT ? INITIAL_LIMIT : EXTENDED_LIMIT;
@@ -318,68 +250,51 @@ export default function VendorMessagesPage() {
     }, [newMessage]);
 
     useEffect(() => {
-        if (scrollAreaRef.current) {
-             const scrollableView = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-             if(scrollableView){
-                 scrollableView.scrollTop = scrollableView.scrollHeight;
-             }
+        if (messagesContainerRef.current) {
+             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
     }, [selectedConversation?.messages, selectedConversationId]);
-    
-    const renderConversationList = (type: 'customer' | 'corporate') => {
-        const filteredList = conversations.filter(c => c.type === type);
-        return (
-            <ScrollArea className="flex-1">
-                {filteredList.map(convo => (
-                <div
-                    key={convo.id}
-                    className={cn(
-                    "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
-                    selectedConversationId === convo.id && "bg-muted"
-                    )}
-                    onClick={() => handleSelectConversation(convo.id)}
-                >
-                    <Avatar>
-                    <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
-                    <AvatarFallback>{convo.customerId?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 overflow-hidden">
-                        <div className="flex justify-between items-center">
-                            <p className="font-semibold">{convo.customerId}</p>
-                            <div className="flex items-center gap-2">
-                            {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
-                            {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
-                            </div>
-                        </div>
-                        <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
-                    </div>
-                </div>
-                ))}
-            </ScrollArea>
-        )
-    }
+
+    const customerConversations = conversations.filter(c => c.type === 'customer');
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 h-full">
         <div className="md:col-span-1 xl:col-span-1 flex flex-col h-full border-r bg-card">
           <div className="p-4 border-b">
             <h1 className="text-2xl font-bold font-headline">Inbox</h1>
-             {(vendorType === 'both') ? (
-                  <Tabs defaultValue={defaultTab} className="w-full mt-2">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="customer">Customer</TabsTrigger>
-                        <TabsTrigger value="corporate">Corporate</TabsTrigger>
-                    </TabsList>
-                 </Tabs>
-             ) : (
-                <h2 className="text-lg font-medium text-muted-foreground capitalize">{vendorType} Messages</h2>
-             )}
             <div className="relative mt-2">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search conversations..." className="pl-8" />
             </div>
           </div>
-          {renderConversationList(vendorType === 'corporate' ? 'corporate' : 'customer')}
+          <ScrollArea className="flex-1">
+            {customerConversations.map(convo => (
+            <div
+                key={convo.id}
+                className={cn(
+                "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
+                selectedConversationId === convo.id && "bg-muted"
+                )}
+                onClick={() => handleSelectConversation(convo.id)}
+            >
+                <Avatar>
+                <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
+                <AvatarFallback>{convo.customerId?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 overflow-hidden">
+                    <div className="flex justify-between items-center">
+                        <p className="font-semibold">{convo.customerId}</p>
+                        <div className="flex items-center gap-2">
+                          {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
+                          {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
+                          {convo.unread && convo.unreadCount && convo.unreadCount > 0 && <Badge variant="secondary" className="px-1.5">{convo.unreadCount}</Badge>}
+                        </div>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">{getLastMessage(convo.messages)}</p>
+                </div>
+            </div>
+            ))}
+        </ScrollArea>
         </div>
         <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full">
           {selectedConversation ? (
@@ -400,7 +315,7 @@ export default function VendorMessagesPage() {
                         <AlertTriangle className="h-5 w-5" />
                         <span className="sr-only">Report Conversation</span>
                     </Button>
-                    <div className="text-sm text-muted-foreground">
+                     <div className="text-sm text-muted-foreground">
                         {selectedConversation.status === 'active' ? (remaining > 0 ? `${remaining} messages left` : 'Message limit reached') : 'Chat disabled'}
                     </div>
                 </div>
@@ -417,7 +332,7 @@ export default function VendorMessagesPage() {
               ) : (
                 <>
                 <CardContent className="flex-1 p-0">
-                    <ScrollArea className="h-full bg-muted/20" ref={scrollAreaRef}>
+                    <ScrollArea className="h-full bg-muted/20" ref={messagesContainerRef}>
                         <div className="p-4 space-y-4">
                         {selectedConversation.messages.map((msg, index) => (
                             msg.sender === 'system' ? (

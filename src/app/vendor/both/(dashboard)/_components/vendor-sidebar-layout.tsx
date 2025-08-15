@@ -12,7 +12,7 @@ import { useVerification } from "@/context/vendor-verification-context";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockVendorActivity } from "@/lib/mock-data";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 const navLinks = [
   { href: "/vendor/both/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -46,7 +46,7 @@ const navLinks = [
   { href: "/vendor/both/bids", label: "Bidding", icon: Gavel },
   { href: "/vendor/templates", label: "Templates", icon: Wand2 },
   { href: "/vendor/both/analytics", label: "Analytics", icon: LineChart },
-  { href: "/vendor/both/messages", label: "Messages", icon: MessageSquare, badge: "7" },
+  { href: "/vendor/both/messages", label: "Messages", icon: MessageSquare, id: "messages" },
   { href: "/vendor/both/referrals", label: "Referrals", icon: Gift },
   { href: "/vendor/both/support", label: "Support", icon: LifeBuoy },
   { href: "/vendor/both/settings", label: "Settings", icon: Settings },
@@ -70,7 +70,7 @@ function CustomSidebarTrigger() {
     )
 }
 
-function VendorSidebarLayoutContent({ children }: { children: React.ReactNode }) {
+function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number }) {
     const pathname = usePathname();
     const { isVerified } = useVerification();
     const { open: isSidebarOpen } = useSidebar();
@@ -120,7 +120,9 @@ function VendorSidebarLayoutContent({ children }: { children: React.ReactNode })
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             )}
-                            {navLinks.map((link) => (
+                            {navLinks.map((link) => {
+                                const showBadge = link.id === 'messages' && unreadMessages > 0;
+                                return (
                                 <SidebarMenuItem key={link.id || link.href}>
                                     {link.subLinks ? (
                                         <AccordionItem value={link.id!} className="border-b-0">
@@ -133,7 +135,6 @@ function VendorSidebarLayoutContent({ children }: { children: React.ReactNode })
                                                     <div className="flex items-center gap-2">
                                                         <link.icon className="h-5 w-5 stroke-[1.5]" />
                                                         <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
-                                                        {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                                     </div>
                                                 </SidebarMenuButton>
                                             </AccordionTrigger>
@@ -150,7 +151,6 @@ function VendorSidebarLayoutContent({ children }: { children: React.ReactNode })
                                                                 <Link href={subLink.href}>
                                                                     <subLink.icon className="h-5 w-5 stroke-[1.5]" />
                                                                     <span>{subLink.label}</span>
-                                                                    {subLink.badge && <SidebarMenuBadge>{subLink.badge}</SidebarMenuBadge>}
                                                                 </Link>
                                                             </SidebarMenuButton>
                                                         </SidebarMenuItem>
@@ -167,12 +167,12 @@ function VendorSidebarLayoutContent({ children }: { children: React.ReactNode })
                                             <Link href={link.href}>
                                                 <link.icon className="h-5 w-5 stroke-[1.5]" />
                                                 <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
-                                                 {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
+                                                 {showBadge && <SidebarMenuBadge>{unreadMessages}</SidebarMenuBadge>}
                                             </Link>
                                         </SidebarMenuButton>
                                     )}
                                 </SidebarMenuItem>
-                            ))}
+                            )})}
                         </SidebarMenu>
                     </Accordion>
                 </SidebarContent>
@@ -216,11 +216,11 @@ function VendorSidebarLayoutContent({ children }: { children: React.ReactNode })
 }
 
 
-export function VendorSidebarLayout({ children }: { children: React.ReactNode }) {
+export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number; }) {
     return (
         <div className="flex min-h-screen">
             <SidebarProvider>
-                <VendorSidebarLayoutContent>
+                <VendorSidebarLayoutContent unreadMessages={unreadMessages}>
                     {children}
                 </VendorSidebarLayoutContent>
             </SidebarProvider>

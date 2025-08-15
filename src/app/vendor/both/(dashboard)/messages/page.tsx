@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,7 +60,7 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
   const initialTab = searchParams.get('tab') === 'corporate' ? 'corporate' : 'customer';
 
   useEffect(() => {
-    if (conversations.length > 0 && !selectedConversation) {
+    if (conversations && conversations.length > 0 && !selectedConversation) {
       setSelectedConversation(conversations[0]);
     }
   }, [conversations, selectedConversation]);
@@ -112,7 +112,7 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !selectedConversation) return;
+    if (!newMessage.trim() || !selectedConversation || !setConversations) return;
 
     const newMessageObj: Message = {
       id: Math.random().toString(),
@@ -121,19 +121,16 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
       status: 'sent',
     };
 
-    let updatedConvo: (Conversation & {type: 'customer' | 'corporate'}) | null = null;
-    setConversations?.(prev =>
+    setConversations(prev =>
       prev.map(convo => {
          if (convo.id !== selectedConversation.id) return convo;
         
-        let newCount = convo.userMessageCount;
-        if (newMessageObj.sender === 'vendor') {
-          newCount++;
-        }
+        let newCount = convo.userMessageCount + 1;
         
         const updatedMessages = [...convo.messages, newMessageObj];
         let awaitingDecision = convo.awaitingVendorDecision;
 
+        // Apply corporate logic
         if (convo.type === 'corporate' && newCount === 5) {
           awaitingDecision = true;
           updatedMessages.push({
@@ -143,19 +140,18 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
           });
         }
         
-        updatedConvo = {
+        const updatedConvo = {
           ...convo,
           messages: updatedMessages,
           userMessageCount: newCount,
           awaitingVendorDecision: awaitingDecision,
         };
+
+        setSelectedConversation(updatedConvo);
         return updatedConvo;
       })
     );
 
-    if(updatedConvo) {
-      setSelectedConversation(updatedConvo);
-    }
     setNewMessage("");
   };
   
@@ -236,11 +232,11 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
         }
     }, [selectedConversation?.messages]);
 
-    const customerUnreadCount = conversations.filter(c => c.type === 'customer' && c.unread).length;
-    const corporateUnreadCount = conversations.filter(c => c.type === 'corporate' && c.unread).length;
+    const customerUnreadCount = conversations?.filter(c => c.type === 'customer' && c.unread).length || 0;
+    const corporateUnreadCount = conversations?.filter(c => c.type === 'corporate' && c.unread).length || 0;
     
     const renderConversationList = (type: 'customer' | 'corporate') => {
-        const filteredList = conversations.filter(c => c.type === type);
+        const filteredList = conversations?.filter(c => c.type === type) || [];
         return (
             <ScrollArea className="h-full">
                 {filteredList.map(convo => (
@@ -297,7 +293,7 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
                     {renderConversationList('customer')}
                 </TabsContent>
                 <TabsContent value="corporate" className="h-[calc(100vh-22rem)] overflow-y-auto">
-                    {renderConversationList('corporate')}
+                     {renderConversationList('corporate')}
                 </TabsContent>
             </Tabs>
           </div>

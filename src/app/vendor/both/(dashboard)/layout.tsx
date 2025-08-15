@@ -1,13 +1,13 @@
 
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState, useMemo } from "react";
 import { VendorSidebarLayout } from "./_components/vendor-sidebar-layout";
 import { VerificationFlowHandler } from "../../_components/verification-flow-handler";
 import type { Conversation, Message } from "@/lib/types";
 
-// Moved initialConversations here to be the single source of truth for this layout scope.
-export const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] = [
+// The single source of truth for conversation data for this layout and its children.
+const initialConversations: (Conversation & {type: 'customer' | 'corporate'})[] = [
   {
     id: 1,
     customerId: "CUST001",
@@ -85,7 +85,6 @@ export const initialConversations: (Conversation & {type: 'customer' | 'corporat
 ];
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-    // This state now lives in the layout, which is the correct place.
     const [conversations, setConversations] = useState(initialConversations);
 
     const unreadMessages = useMemo(() => {
@@ -95,10 +94,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return (
         <VendorSidebarLayout unreadMessages={unreadMessages}>
             <VerificationFlowHandler />
-            {React.isValidElement(children) 
-              ? React.cloneElement(children as React.ReactElement, { conversations, setConversations })
-              : children
-            }
+            {React.Children.map(children, child => {
+                if (React.isValidElement(child)) {
+                    return React.cloneElement(child, { conversations, setConversations } as any);
+                }
+                return child;
+            })}
         </VendorSidebarLayout>
     );
 }
