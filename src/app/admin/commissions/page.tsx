@@ -14,7 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { User, DisplayProduct } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
-import { collection, doc, onSnapshot, query, updateDoc, writeBatch, getDocs, addDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, updateDoc, writeBatch, getDocs, addDoc, deleteDoc, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { mockCategories } from "@/lib/mock-data";
 
