@@ -121,9 +121,24 @@ export type VendorDetails = {
     fssaiLicense?: string;
 };
 
+export type LoyaltyData = {
+  referralCode: string;
+  referrals: number;
+  referralsForNextTier: number;
+  walletBalance: number;
+  ordersToNextReward: number;
+  totalOrdersForReward: number;
+  loyaltyPoints: number;
+  loyaltyTier: string;
+  nextLoyaltyTier: string;
+  pointsToNextTier: number;
+};
+
 export type User = {
     id: string;
     name: string;
+    username?: string;
+    bio?: string;
     email: string;
     role: 'Customer' | 'Vendor' | 'Admin';
     status: 'Active' | 'Suspended';
@@ -131,6 +146,8 @@ export type User = {
     avatar: string;
     verificationStatus?: VerificationStatus;
     vendorDetails?: VendorDetails;
+    wishlist?: DisplayProduct[];
+    loyalty?: LoyaltyData;
 }
 
 export type Conversation = {

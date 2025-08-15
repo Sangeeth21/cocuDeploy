@@ -3,8 +3,10 @@
 
 import React, { createContext, useContext, useReducer, ReactNode, useEffect } from 'react';
 import type { DisplayProduct, CustomizationValue } from '@/lib/types';
-import { mockProducts } from '@/lib/mock-data';
 import { useUser } from './user-context';
+import { db } from '@/lib/firebase';
+import { doc, onSnapshot, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 // Define the shape of a cart item
 export type CartItem = {
@@ -14,7 +16,6 @@ export type CartItem = {
     customizations: { [key: string]: Partial<CustomizationValue> };
 };
 
-
 // Define the shape of the cart state
 interface CartState {
     cartItems: CartItem[];
@@ -22,9 +23,10 @@ interface CartState {
 
 // Define the actions that can be performed on the cart
 type CartAction =
-    | { type: 'ADD_TO_CART'; payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> } } }
+    | { type: 'ADD_TO_CART'; payload: CartItem }
     | { type: 'REMOVE_FROM_CART'; payload: { instanceId: string } }
-    | { type: 'UPDATE_QUANTITY'; payload: { instanceId: string; delta: number } }
+    | { type: 'UPDATE_QUANTITY'; payload: { instanceId: string; quantity: number } }
+    | { type: 'SET_CART'; payload: CartItem[] }
     | { type: 'CLEAR_CART' };
 
 // Create the context
@@ -38,43 +40,10 @@ interface CartContextType extends CartState {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Reducer function to manage cart state
 const cartReducer = (state: CartState, action: CartAction): CartState => {
     switch (action.type) {
-        case 'ADD_TO_CART': {
-            const { product, customizations } = action.payload;
-            const hasCustomizations = Object.keys(customizations).length > 0;
-
-            // If the item has no customizations, check if it already exists in the cart.
-            if (!hasCustomizations) {
-                const existingItemIndex = state.cartItems.findIndex(
-                    (item) => item.product.id === product.id && Object.keys(item.customizations).length === 0
-                );
-
-                if (existingItemIndex !== -1) {
-                    // Item exists, so we just increment its quantity.
-                    const updatedCartItems = [...state.cartItems];
-                    updatedCartItems[existingItemIndex] = {
-                        ...updatedCartItems[existingItemIndex],
-                        quantity: updatedCartItems[existingItemIndex].quantity + 1,
-                    };
-                    return { ...state, cartItems: updatedCartItems };
-                }
-            }
-
-            // If the item has customizations OR it's a new non-customized item, add it as a new line item.
-            const newCartItem: CartItem = {
-                instanceId: `${product.id}-${Date.now()}`, // Simple unique ID for each instance
-                product,
-                quantity: 1,
-                customizations,
-            };
-
-            return {
-                ...state,
-                cartItems: [...state.cartItems, newCartItem],
-            };
-        }
+        case 'ADD_TO_CART':
+            return { ...state, cartItems: [...state.cartItems, action.payload] };
         case 'REMOVE_FROM_CART':
             return {
                 ...state,
@@ -84,15 +53,12 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
             return {
                 ...state,
                 cartItems: state.cartItems
-                    .map(item => {
-                        if (item.instanceId === action.payload.instanceId) {
-                            return { ...item, quantity: Math.max(0, item.quantity + action.payload.delta) };
-                        }
-                        return item;
-                    })
-                    .filter(item => item.quantity > 0), // Remove item if quantity is 0
+                    .map(item => item.instanceId === action.payload.instanceId ? { ...item, quantity: action.payload.quantity } : item)
+                    .filter(item => item.quantity > 0),
             };
         }
+        case 'SET_CART':
+            return { ...state, cartItems: action.payload };
         case 'CLEAR_CART':
             return { ...state, cartItems: [] };
         default:
@@ -100,44 +66,81 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     }
 };
 
-// CartProvider component
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-    const { isLoggedIn } = useUser();
-    
-    // Initial state logic adjusted
-    const getInitialState = (): CartState => {
-        if (isLoggedIn) {
-            const sampleProducts = [mockProducts.find(p => p.id === '1'), mockProducts.find(p => p.id === '4')].filter(Boolean) as DisplayProduct[];
-            return {
-                cartItems: sampleProducts.map((p, index) => ({
-                    instanceId: `${p.id}-${index}`,
-                    product: p,
-                    quantity: 1,
-                    customizations: {},
-                })),
-            };
-        }
-        return { cartItems: [] };
-    };
-    
-    const [state, dispatch] = useReducer(cartReducer, getInitialState());
+    const { isLoggedIn, user } = useUser();
+    const { toast } = useToast();
+    const [state, dispatch] = useReducer(cartReducer, { cartItems: [] });
 
+    // Load cart from Firestore
     useEffect(() => {
-        if (!isLoggedIn) {
+        if (isLoggedIn && user?.id) {
+            const userDocRef = doc(db, "users", user.id);
+            const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    dispatch({ type: 'SET_CART', payload: docSnap.data().cart || [] });
+                }
+            });
+            return () => unsubscribe();
+        } else {
             dispatch({ type: 'CLEAR_CART' });
         }
-    }, [isLoggedIn]);
-
-    const addToCart = (payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> } }) => {
-        dispatch({ type: 'ADD_TO_CART', payload });
+    }, [isLoggedIn, user?.id]);
+    
+    // Abstract Firestore update logic
+    const updateFirestoreCart = async (newCart: CartItem[]) => {
+        if (!user?.id) return;
+        const userDocRef = doc(db, "users", user.id);
+        try {
+            await updateDoc(userDocRef, { cart: newCart });
+        } catch (error) {
+            console.error("Failed to update cart in Firestore:", error);
+            toast({ variant: 'destructive', title: "Could not sync your cart." });
+        }
     };
 
-    const removeFromCart = (instanceId: string) => {
-        dispatch({ type: 'REMOVE_FROM_CART', payload: { instanceId } });
+    const addToCart = async (payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> } }) => {
+        const { product, customizations } = payload;
+        const hasCustomizations = Object.keys(customizations).length > 0;
+        const existingItem = !hasCustomizations 
+            ? state.cartItems.find(item => item.product.id === product.id && Object.keys(item.customizations).length === 0)
+            : null;
+
+        let newCart: CartItem[];
+        if (existingItem) {
+            newCart = state.cartItems.map(item => 
+                item.instanceId === existingItem.instanceId 
+                ? { ...item, quantity: item.quantity + 1 } 
+                : item
+            );
+        } else {
+            const newCartItem: CartItem = {
+                instanceId: `${product.id}-${Date.now()}`,
+                product,
+                quantity: 1,
+                customizations,
+            };
+            newCart = [...state.cartItems, newCartItem];
+        }
+        dispatch({ type: 'SET_CART', payload: newCart });
+        await updateFirestoreCart(newCart);
     };
 
-    const updateQuantity = (instanceId: string, delta: number) => {
-        dispatch({ type: 'UPDATE_QUANTITY', payload: { instanceId, delta } });
+    const removeFromCart = async (instanceId: string) => {
+        const newCart = state.cartItems.filter(item => item.instanceId !== instanceId);
+        dispatch({ type: 'SET_CART', payload: newCart });
+        await updateFirestoreCart(newCart);
+    };
+
+    const updateQuantity = async (instanceId: string, delta: number) => {
+        const itemToUpdate = state.cartItems.find(item => item.instanceId === instanceId);
+        if (!itemToUpdate) return;
+        
+        const newQuantity = Math.max(1, itemToUpdate.quantity + delta);
+        const newCart = state.cartItems.map(item => 
+            item.instanceId === instanceId ? { ...item, quantity: newQuantity } : item
+        );
+        dispatch({ type: 'SET_CART', payload: newCart });
+        await updateFirestoreCart(newCart);
     };
 
     const subtotal = state.cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
@@ -150,7 +153,6 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     );
 };
 
-// Custom hook to use the cart context
 export const useCart = () => {
     const context = useContext(CartContext);
     if (context === undefined) {

@@ -1,13 +1,17 @@
 
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import type { User } from '@/lib/types';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
 
 // Define the shape of the user context state
 interface UserState {
     isLoggedIn: boolean;
+    user: User | null;
     avatar: string;
 }
 
@@ -16,6 +20,7 @@ interface UserContextType extends UserState {
     login: () => void;
     logout: () => void;
     updateAvatar: (newAvatar: string) => void;
+    setUser: (user: User | null) => void; // Allow setting the user object
 }
 
 // Create the context
@@ -24,25 +29,46 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 // UserProvider component
 export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(true);
-    const [avatar, setAvatar] = useState(DEFAULT_AVATAR);
+    const [user, setUser] = useState<User | null>(null);
+
+    // Fetch initial user data
+    useEffect(() => {
+        if (isLoggedIn) {
+            const userId = "USR001"; // This would come from an auth session in a real app
+            const unsub = onSnapshot(doc(db, "users", userId), (doc) => {
+                if (doc.exists()) {
+                    setUser({ id: doc.id, ...doc.data() } as User);
+                } else {
+                    console.error("User not found in Firestore!");
+                    setUser(null);
+                }
+            });
+            return () => unsub();
+        } else {
+            setUser(null);
+        }
+    }, [isLoggedIn]);
 
     const login = () => {
         setIsLoggedIn(true);
-        // In a real app, you would fetch user data here
-        setAvatar(DEFAULT_AVATAR);
     };
 
     const logout = () => {
         setIsLoggedIn(false);
-        setAvatar(DEFAULT_AVATAR); // Reset avatar on logout
+        setUser(null);
     };
 
     const updateAvatar = (newAvatar: string) => {
-        setAvatar(newAvatar);
+        if (user) {
+            setUser({ ...user, avatar: newAvatar });
+            // Here you would also update the avatar in Firestore
+        }
     };
+    
+    const avatar = user?.avatar || DEFAULT_AVATAR;
 
     return (
-        <UserContext.Provider value={{ isLoggedIn, avatar, login, logout, updateAvatar }}>
+        <UserContext.Provider value={{ isLoggedIn, user, avatar, login, logout, updateAvatar, setUser }}>
             {children}
         </UserContext.Provider>
     );

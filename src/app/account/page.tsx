@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import Link from "next/link";
-import type { Message, Conversation, DisplayProduct, Order } from "@/lib/types";
+import type { Message, Conversation, DisplayProduct, Order, User } from "@/lib/types";
 import { useUser } from "@/context/user-context";
 import { useWishlist } from "@/context/wishlist-context";
 import { ProductCard } from "@/components/product-card";
@@ -40,7 +40,7 @@ import { useCart } from "@/context/cart-context";
 import { Progress } from "@/components/ui/progress";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 
@@ -50,34 +50,25 @@ type Attachment = {
     url: string;
 }
 
+type Address = {
+    id: string;
+    type: string;
+    recipient: string;
+    line1: string;
+    city: string;
+    zip: string;
+    isDefault: boolean;
+    phone: string | null;
+}
+
+type PaymentMethod = {
+    id: string;
+    type: string;
+    last4: string;
+    expiry: string;
+}
+
 const FORBIDDEN_KEYWORDS = ['phone', 'email', 'contact', '@', '.com', 'number', 'cash', 'paypal', 'venmo'];
-
-
-const mockAddresses = [
-    { id: 1, type: "Home", recipient: "John Doe", line1: "123 Main St", city: "Anytown", zip: "12345", isDefault: true, phone: "+1 (555) 111-2222" },
-    { id: 2, type: "Work", recipient: "Jane Smith", line1: "456 Office Ave", city: "Busytown", zip: "54321", isDefault: false, phone: null },
-]
-
-const mockPaymentMethods = [
-    { id: 1, type: "Visa", last4: "4242", expiry: "12/26"},
-    { id: 2, type: "Mastercard", last4: "5555", expiry: "08/25"},
-]
-
-const MOCK_USER_DATA = {
-    referralCode: "JOHN-D4E8",
-    referrals: 2,
-    referralsForNextTier: 5,
-    walletBalance: 100, // in Rs
-    ordersToNextReward: 1,
-    totalOrdersForReward: 3,
-    loyaltyPoints: 2500,
-    loyaltyTier: "Silver",
-    nextLoyaltyTier: "Gold",
-    pointsToNextTier: 7500,
-};
-
-// Simulate tracking for chat abuse prevention
-let uniqueVendorChats = new Set().size; // This will be managed by real data now
 
 const MAX_PRICE = 500;
 
@@ -222,12 +213,10 @@ function WishlistTabContent({orders}: {orders: Order[]}) {
     )
 }
 
-function ShareDialog() {
+function ShareDialog({ referralCode }: { referralCode: string }) {
     const { toast } = useToast();
-    const referralCode = MOCK_USER_DATA.referralCode;
     const shareUrl = "https://coandcu.example.com/signup"; 
 
-    // Platform-specific messages
     const genericText = `I love shopping on Co & Cu! Sign up with my referral code to get a special discount on your first order: ${referralCode}`;
     const fullMessage = `${genericText}\n\nSign up here: ${shareUrl}`;
     const twitterText = `Shopping on @CoAndCu is great! Use my code ${referralCode} for a discount on your first order. #coandcu #referral`;
@@ -290,13 +279,12 @@ function ShareDialog() {
 export default function AccountPage() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  const { avatar, updateAvatar, isLoggedIn } = useUser();
+  const { avatar, updateAvatar, isLoggedIn, user, setUser } = useUser();
   const { openDialog } = useAuthDialog();
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
-
 
   const [tab, setTab] = useState(searchParams.get('tab') || 'profile');
   
@@ -305,23 +293,47 @@ export default function AccountPage() {
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [isCardFormOpen, setIsCardFormOpen] = useState(false);
 
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  
   // Live data states
   const [orders, setOrders] = useState<Order[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
+  
+  const [addresses, setAddresses] = useState<Address[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  
   const MAX_MESSAGE_LENGTH = 1500;
   
   const hasMadePurchase = orders.length > 0;
+  const currentUserId = user?.id || "USR001"; // Placeholder for logged-in user
 
   useEffect(() => {
-    // In a real app, you'd filter by the current user's ID
-    const currentUserId = "USR001"; // Placeholder for logged-in user
+    if (!isLoggedIn || !currentUserId) return;
+
+    // Fetch user-specific data
+    const userDocRef = doc(db, "users", currentUserId);
+    const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
+        if (doc.exists()) {
+            setUser({ id: doc.id, ...doc.data() } as User);
+        }
+    });
+    
+    // Fetch addresses
+    const addressesQuery = query(collection(db, `users/${currentUserId}/addresses`));
+    const unsubscribeAddresses = onSnapshot(addressesQuery, snapshot => {
+        const addrData: Address[] = [];
+        snapshot.forEach(doc => addrData.push({ id: doc.id, ...doc.data() } as Address));
+        setAddresses(addrData);
+    });
+
+    // Fetch payment methods
+    const paymentsQuery = query(collection(db, `users/${currentUserId}/paymentMethods`));
+    const unsubscribePayments = onSnapshot(paymentsQuery, snapshot => {
+        const payData: PaymentMethod[] = [];
+        snapshot.forEach(doc => payData.push({ id: doc.id, ...doc.data() } as PaymentMethod));
+        setPaymentMethods(payData);
+    });
 
     const ordersQuery = query(collection(db, "orders"), where("customer.id", "==", currentUserId)); 
     const unsubscribeOrders = onSnapshot(ordersQuery, (querySnapshot) => {
@@ -339,14 +351,16 @@ export default function AccountPage() {
             convos.push({ id: doc.id, ...doc.data() } as Conversation);
         });
         setConversations(convos);
-        uniqueVendorChats = new Set(convos.map(c => c.vendorId)).size;
     });
 
     return () => {
+        unsubscribeUser();
+        unsubscribeAddresses();
+        unsubscribePayments();
         unsubscribeOrders();
         unsubscribeConversations();
     };
-  }, []);
+  }, [isLoggedIn, currentUserId, setUser]);
 
 
   // Handle navigation from product page
@@ -356,6 +370,7 @@ export default function AccountPage() {
     if (vendorId) {
       let convo = conversations.find(c => c.vendorId === vendorId);
       if (!convo) {
+        // In a real app, this would be an `addDoc` call, but for now we just manage local state
         const newConvo: Conversation = {
           id: (conversations.length + 1).toString(),
           vendorId: vendorId,
@@ -364,13 +379,8 @@ export default function AccountPage() {
           userMessageCount: 0,
           awaitingVendorDecision: false,
           status: 'active',
-          customerId: 'current_user_id', // placeholder
+          customerId: currentUserId,
         };
-        
-        if (!new Set(conversations.map(c => c.vendorId)).has(vendorId)) {
-            uniqueVendorChats++;
-        }
-
         setConversations(prev => [...prev, newConvo]);
         convo = newConvo;
       }
@@ -387,7 +397,7 @@ export default function AccountPage() {
             setSelectedConversation(conversations[0]);
         }
     }
-  }, [searchParams, conversations, selectedConversation]);
+  }, [searchParams, conversations, selectedConversation, currentUserId]);
 
   const handleSaveChanges = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -487,9 +497,6 @@ export default function AccountPage() {
         const conversationRef = collection(db, "conversations", selectedConversation.id as string, "messages");
         await addDoc(conversationRef, newMessageObj);
 
-        // Here you would also update the parent conversation document's `lastMessage` and `timestamp` fields.
-        // For simplicity, we'll rely on the onSnapshot listener to update the view.
-
         setNewMessage("");
         setAttachments([]);
     } catch (error) {
@@ -517,9 +524,8 @@ export default function AccountPage() {
     });
   }
 
-
   const getLastMessage = (messages: Message[]) => {
-      if (messages.length === 0) return "No messages yet.";
+      if (!messages || messages.length === 0) return "No messages yet.";
       const lastMsg = messages.filter(m => m.sender !== 'system').pop();
       if (!lastMsg) return "No messages yet.";
       
@@ -553,52 +559,32 @@ export default function AccountPage() {
         }
     }, [selectedConversation?.messages.length]);
 
+    const loyaltyProgress = ((user?.loyalty?.totalOrdersForReward ?? 3) - (user?.loyalty?.ordersToNextReward ?? 1)) / (user?.loyalty?.totalOrdersForReward ?? 3) * 100;
+    const referralsProgress = (user?.loyalty?.referrals ?? 0) / (user?.loyalty?.referralsForNextTier ?? 5) * 100;
+    const loyaltyPointsProgress = (user?.loyalty?.loyaltyPoints ?? 0) / (user?.loyalty?.pointsToNextTier ?? 7500) * 100;
 
-    const copyReferralCode = () => {
-        navigator.clipboard.writeText(MOCK_USER_DATA.referralCode);
-        toast({ title: 'Copied!', description: 'Referral code copied to clipboard.' });
-    }
-
-    const loyaltyProgress = ((MOCK_USER_DATA.totalOrdersForReward - MOCK_USER_DATA.ordersToNextReward) / MOCK_USER_DATA.totalOrdersForReward) * 100;
-    const referralsProgress = (MOCK_USER_DATA.referrals / MOCK_USER_DATA.referralsForNextTier) * 100;
-    const loyaltyPointsProgress = (MOCK_USER_DATA.loyaltyPoints / MOCK_USER_DATA.pointsToNextTier) * 100;
-    
-    const getStatusIcon = (status?: 'sent' | 'delivered' | 'read') => {
-      switch(status) {
-          case 'read':
-              return <Eye className="h-4 w-4 text-primary-foreground" />;
-          case 'delivered':
-              return <EyeOff className="h-4 w-4 text-primary-foreground" />;
-          case 'sent':
-              return <EyeOff className="h-4 w-4 text-primary-foreground/70" />;
-          default:
-              return null;
-      }
-    }
-
-
-  if (!isLoggedIn) {
-    return (
-        <div className="container py-12 text-center">
-            <div className="flex flex-col items-center gap-4 max-w-sm mx-auto">
-                <UserIcon className="h-16 w-16 text-muted-foreground" />
-                <h1 className="text-2xl font-bold font-headline">Please Log In</h1>
-                <p className="text-muted-foreground">
-                    You need to be logged in to view your account details, orders, and messages.
-                </p>
-                <Button onClick={() => openDialog('login')}>Login / Sign Up</Button>
+    if (!isLoggedIn || !user) {
+        return (
+            <div className="container py-12 text-center">
+                <div className="flex flex-col items-center gap-4 max-w-sm mx-auto">
+                    <UserIcon className="h-16 w-16 text-muted-foreground" />
+                    <h1 className="text-2xl font-bold font-headline">Please Log In</h1>
+                    <p className="text-muted-foreground">
+                        You need to be logged in to view your account details, orders, and messages.
+                    </p>
+                    <Button onClick={() => openDialog('login')}>Login / Sign Up</Button>
+                </div>
             </div>
-        </div>
-    )
-  }
+        )
+    }
 
   return (
     <div className="container py-12">
       <div className="flex items-center gap-6 mb-8">
         <div className="relative group">
             <Avatar className="h-24 w-24">
-            <AvatarImage src={avatar} alt="User Avatar" data-ai-hint="person face" />
-            <AvatarFallback>JD</AvatarFallback>
+            <AvatarImage src={user.avatar} alt="User Avatar" data-ai-hint="person face" />
+            <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
             </Avatar>
             <button 
                 onClick={handleAvatarClick} 
@@ -616,7 +602,7 @@ export default function AccountPage() {
             />
         </div>
         <div>
-          <h1 className="text-3xl font-bold font-headline">John Doe's Account</h1>
+          <h1 className="text-3xl font-bold font-headline">{user.name}'s Account</h1>
           <p className="text-muted-foreground">Manage your profile, orders, and settings.</p>
         </div>
       </div>
@@ -641,16 +627,16 @@ export default function AccountPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name">Full Name</Label>
-                                <Input id="name" defaultValue="John Doe" />
+                                <Input id="name" defaultValue={user.name} />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="username">Username</Label>
-                                <Input id="username" defaultValue="johndoe" />
+                                <Input id="username" defaultValue={user.username || user.name.split(' ')[0].toLowerCase()} />
                             </div>
                         </div>
                     <div className="space-y-2">
                         <Label htmlFor="bio">Bio</Label>
-                        <Textarea id="bio" placeholder="Tell us a little about yourself" defaultValue="Lover of all things tech and design. Avid collector of handcrafted mugs."/>
+                        <Textarea id="bio" placeholder="Tell us a little about yourself" defaultValue={user.bio || ""}/>
                     </div>
                     <Button onClick={handleSaveChanges}>Save Changes</Button>
                     </CardContent>
@@ -661,7 +647,7 @@ export default function AccountPage() {
                         <CardDescription>Recent updates about your orders and account activity.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex items-center gap-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                         <div className="flex items-center gap-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
                                 <div className="p-2 bg-blue-100 rounded-full dark:bg-blue-900">
                                     <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400"/>
                                 </div>
@@ -685,18 +671,6 @@ export default function AccountPage() {
                                     <Link href="/cart">Go to Cart</Link>
                                 </Button>
                         </div>
-                        <div className="flex items-center gap-4 p-4 border rounded-lg bg-red-50 dark:bg-red-950">
-                            <div className="p-2 bg-red-100 rounded-full dark:bg-red-900">
-                                    <X className="h-5 w-5 text-red-600 dark:text-red-400"/>
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold text-red-800 dark:text-red-200">"Modern Minimalist Desk" is unavailable.</p>
-                                    <p className="text-sm text-red-600 dark:text-red-400">We're sorry, the vendor could not confirm your request in time.</p>
-                                </div>
-                                <Button size="sm" variant="secondary" asChild>
-                                <Link href="/products?category=Furniture">View Similar</Link>
-                                </Button>
-                        </div>
                     </CardContent>
                 </Card>
             </div>
@@ -709,15 +683,15 @@ export default function AccountPage() {
                         <div>
                             <p className="text-sm text-muted-foreground mb-2">Share your code with friends. When they make their first purchase, you both get a reward!</p>
                              <div className="flex">
-                                <Input value={MOCK_USER_DATA.referralCode} readOnly className="rounded-r-none focus:ring-0 focus:ring-offset-0"/>
-                                <ShareDialog />
+                                <Input value={user.loyalty?.referralCode || ''} readOnly className="rounded-r-none focus:ring-0 focus:ring-offset-0"/>
+                                <ShareDialog referralCode={user.loyalty?.referralCode || ''} />
                             </div>
                         </div>
                         <Separator />
                          <div>
                             <Progress value={referralsProgress} />
                              <p className="text-sm text-muted-foreground text-center mt-2">
-                                You have <span className="font-bold text-primary">{MOCK_USER_DATA.referrals}</span> successful referrals. You're <span className="font-bold text-primary">{MOCK_USER_DATA.referralsForNextTier - MOCK_USER_DATA.referrals}</span> away from the next bonus reward!
+                                You have <span className="font-bold text-primary">{user.loyalty?.referrals || 0}</span> successful referrals. You're <span className="font-bold text-primary">{(user.loyalty?.referralsForNextTier || 5) - (user.loyalty?.referrals || 0)}</span> away from the next bonus reward!
                             </p>
                          </div>
                     </CardContent>
@@ -731,32 +705,32 @@ export default function AccountPage() {
                          <div>
                             <div className="flex justify-between items-baseline mb-1">
                                 <Label>Frequent Buyer Reward</Label>
-                                <span className="text-xs font-mono">{MOCK_USER_DATA.totalOrdersForReward - MOCK_USER_DATA.ordersToNextReward}/{MOCK_USER_DATA.totalOrdersForReward} Orders</span>
+                                <span className="text-xs font-mono">{(user.loyalty?.totalOrdersForReward || 3) - (user.loyalty?.ordersToNextReward || 1)}/{user.loyalty?.totalOrdersForReward || 3} Orders</span>
                             </div>
                             <Progress value={loyaltyProgress} />
                             <p className="text-xs text-muted-foreground text-center mt-2">
-                                You're <span className="font-bold text-primary">{MOCK_USER_DATA.ordersToNextReward}</span> order away from your next reward!
+                                You're <span className="font-bold text-primary">{user.loyalty?.ordersToNextReward || 1}</span> order away from your next reward!
                             </p>
                         </div>
                         <Separator />
                         <div>
                             <div className="flex justify-between items-baseline mb-1">
-                                 <Label>Loyalty Tier: <span className="font-bold text-primary">{MOCK_USER_DATA.loyaltyTier}</span></Label>
-                                <span className="text-xs font-mono">{MOCK_USER_DATA.loyaltyPoints.toLocaleString()}/{MOCK_USER_DATA.pointsToNextTier.toLocaleString()} Points</span>
+                                 <Label>Loyalty Tier: <span className="font-bold text-primary">{user.loyalty?.loyaltyTier || 'Bronze'}</span></Label>
+                                <span className="text-xs font-mono">{(user.loyalty?.loyaltyPoints || 0).toLocaleString()}/{(user.loyalty?.pointsToNextTier || 7500).toLocaleString()} Points</span>
                             </div>
                              <Progress value={loyaltyPointsProgress} />
                              <p className="text-xs text-muted-foreground text-center mt-2">
-                                Earn <span className="font-bold text-primary">{(MOCK_USER_DATA.pointsToNextTier - MOCK_USER_DATA.loyaltyPoints).toLocaleString()}</span> more points to reach <span className="font-bold text-primary">{MOCK_USER_DATA.nextLoyaltyTier}</span> tier.
+                                Earn <span className="font-bold text-primary">{((user.loyalty?.pointsToNextTier || 7500) - (user.loyalty?.loyaltyPoints || 0)).toLocaleString()}</span> more points to reach <span className="font-bold text-primary">{user.loyalty?.nextLoyaltyTier || 'Silver'}</span> tier.
                             </p>
                         </div>
                          <Separator />
                          <div className="grid grid-cols-2 gap-4">
                             <div className="p-2 bg-muted/50 rounded-lg text-center">
-                                <p className="text-2xl font-bold text-green-600">₹{MOCK_USER_DATA.walletBalance.toFixed(2)}</p>
+                                <p className="text-2xl font-bold text-green-600">₹{(user.loyalty?.walletBalance || 0).toFixed(2)}</p>
                                 <p className="text-xs text-muted-foreground">Wallet Balance</p>
                             </div>
                              <div className="p-2 bg-muted/50 rounded-lg text-center">
-                                 <p className="text-2xl font-bold text-primary">{MOCK_USER_DATA.loyaltyPoints.toLocaleString()}</p>
+                                 <p className="text-2xl font-bold text-primary">{(user.loyalty?.loyaltyPoints || 0).toLocaleString()}</p>
                                 <p className="text-xs text-muted-foreground">Loyalty Points</p>
                             </div>
                          </div>
@@ -859,7 +833,7 @@ export default function AccountPage() {
                           <div className="flex-1 flex flex-col min-h-0">
                                 <ScrollArea className="flex-1 bg-muted/20">
                                     <div className="p-4 space-y-4" ref={messagesContainerRef}>
-                                    {selectedConversation.messages.map((msg, index) => (
+                                    {(selectedConversation.messages || []).map((msg, index) => (
                                         msg.sender === 'system' ? (
                                             <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
                                         ) : (
@@ -885,7 +859,7 @@ export default function AccountPage() {
                                                 </div>
                                             )}
                                         </div>
-                                        {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={avatar} alt="You" /><AvatarFallback>Y</AvatarFallback></Avatar>}
+                                        {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={user.avatar} alt="You" /><AvatarFallback>Y</AvatarFallback></Avatar>}
                                         </div>
                                         )
                                     ))}
@@ -990,7 +964,7 @@ export default function AccountPage() {
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <Label className="font-medium">Email Address</Label>
-                        <div className="text-sm text-muted-foreground">john.doe@example.com <Badge variant="secondary" className="ml-2">Verified</Badge></div>
+                        <div className="text-sm text-muted-foreground">{user.email} <Badge variant="secondary" className="ml-2">Verified</Badge></div>
                       </div>
                       <Dialog open={isEmailVerifyOpen} onOpenChange={setIsEmailVerifyOpen}>
                         <DialogTrigger asChild><Button variant="outline">Change</Button></DialogTrigger>
@@ -1015,41 +989,6 @@ export default function AccountPage() {
                         </DialogContent>
                       </Dialog>
                     </div>
-                    <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <Label className="font-medium">Primary Phone</Label>
-                        <div className="text-sm text-muted-foreground">+1 (555) 123-4567 <Badge variant="secondary" className="ml-2">Verified</Badge></div>
-                      </div>
-                       <Dialog open={isPhoneVerifyOpen} onOpenChange={setIsPhoneVerifyOpen}>
-                         <DialogTrigger asChild><Button variant="outline">Change</Button></DialogTrigger>
-                         <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Change Phone Number</DialogTitle>
-                                <DialogDescription>A verification code will be sent to your new phone number.</DialogDescription>
-                            </DialogHeader>
-                             <div className="space-y-4 py-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="new-phone">New Phone Number</Label>
-                                    <Input id="new-phone" type="tel" placeholder="+1 (555) 555-5555" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="phone-otp">Verification Code</Label>
-                                    <Input id="phone-otp" placeholder="Enter 6-digit code" />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button onClick={() => handleVerifySubmit('phone')}>Verify & Update</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                       </Dialog>
-                    </div>
-                     <div className="flex items-center justify-between p-4 border rounded-lg">
-                      <div>
-                        <Label className="font-medium">Secondary Phone</Label>
-                        <div className="text-sm text-muted-foreground">Not provided</div>
-                      </div>
-                      <Button variant="outline">Add</Button>
-                    </div>
                   </div>
                 </div>
                 <Separator/>
@@ -1058,16 +997,16 @@ export default function AccountPage() {
                     <div className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="current-password">Current Password</Label>
-                            <Input id="current-password" type={showCurrentPassword ? "text" : "password"} />
+                            <Input id="current-password" type="password" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              <div className="space-y-2">
                                 <Label htmlFor="new-password">New Password</Label>
-                                <Input id="new-password" type={showNewPassword ? 'text' : 'password'} />
+                                <Input id="new-password" type="password" />
                             </div>
                              <div className="space-y-2">
                                 <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                <Input id="confirm-password" type={showConfirmPassword ? 'text' : 'password'} />
+                                <Input id="confirm-password" type="password" />
                             </div>
                         </div>
                     </div>
@@ -1154,7 +1093,7 @@ export default function AccountPage() {
                         </Dialog>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                       {mockAddresses.map(address => (
+                       {addresses.map(address => (
                          <div key={address.id} className="flex items-start justify-between p-4 border rounded-lg gap-4">
                             <div className="flex items-start gap-4">
                                 <Home className="h-6 w-6 text-muted-foreground mt-1"/>
@@ -1216,7 +1155,7 @@ export default function AccountPage() {
                         </Dialog>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                       {mockPaymentMethods.map(pm => (
+                       {paymentMethods.map(pm => (
                          <div key={pm.id} className="flex items-center justify-between p-4 border rounded-lg">
                            <div className="flex items-center gap-4">
                                 <CreditCard className="h-6 w-6 text-muted-foreground"/>
