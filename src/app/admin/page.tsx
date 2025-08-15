@@ -1,5 +1,7 @@
 
 
+"use client";
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,10 +9,58 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User } from "lucide-react";
 import Link from "next/link";
-import { mockRecentSales, mockActivity } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
+import { collection, query, orderBy, limit, onSnapshot, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { Order, User as UserType } from "@/lib/types";
 
 
 export default function AdminDashboardPage() {
+    const [recentSales, setRecentSales] = useState<Order[]>([]);
+    const [newUsers, setNewUsers] = useState<UserType[]>([]);
+    const [activity, setActivity] = useState<any[]>([]);
+
+    useEffect(() => {
+        // Fetch recent sales
+        const salesQuery = query(collection(db, "orders"), orderBy("date", "desc"), limit(5));
+        const unsubscribeSales = onSnapshot(salesQuery, (querySnapshot) => {
+            const salesData: Order[] = [];
+            querySnapshot.forEach((doc) => {
+                salesData.push({ id: doc.id, ...doc.data() } as Order);
+            });
+            setRecentSales(salesData);
+        });
+
+        // Fetch new users
+        const usersQuery = query(collection(db, "users"), orderBy("joinedDate", "desc"), limit(2));
+        const unsubscribeUsers = onSnapshot(usersQuery, (querySnapshot) => {
+            const usersData: UserType[] = [];
+            querySnapshot.forEach((doc) => {
+                usersData.push({ id: doc.id, ...doc.data() } as UserType);
+            });
+            setNewUsers(usersData);
+        });
+        
+        // Fetch Activity
+        const activityQuery = query(collection(db, "notifications"), where("forAdmin", "==", true), orderBy("timestamp", "desc"), limit(5));
+        const unsubscribeActivity = onSnapshot(activityQuery, (snapshot) => {
+            const activityData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setActivity(activityData);
+        });
+
+        return () => {
+            unsubscribeSales();
+            unsubscribeUsers();
+            unsubscribeActivity();
+        };
+    }, []);
+
+    const notificationIcons: { [key: string]: React.ElementType } = {
+        'user_report': ShieldAlert,
+        'new_vendor': User,
+        'default': BellRing,
+    };
+
   return (
     <>
       <div className="flex items-center justify-between space-y-2">
@@ -77,7 +127,7 @@ export default function AdminDashboardPage() {
             <CardHeader className="flex flex-row items-center">
                 <div className="grid gap-2">
                     <CardTitle>Recent Sales</CardTitle>
-                    <CardDescription>You made 265 sales this month.</CardDescription>
+                    <CardDescription>Your most recent sales from the store.</CardDescription>
                 </div>
                 <Button asChild size="sm" className="ml-auto gap-1">
                     <Link href="/admin/orders">
@@ -95,21 +145,21 @@ export default function AdminDashboardPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {mockRecentSales.map(sale => (
+                        {recentSales.map(sale => (
                             <TableRow key={sale.id}>
                                 <TableCell>
                                     <div className="flex items-center gap-4">
                                         <Avatar>
-                                            <AvatarImage src={sale.avatar} alt={sale.name} data-ai-hint="person face" />
-                                            <AvatarFallback>{sale.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                                            <AvatarImage src={sale.customer.avatar} alt={sale.customer.name} data-ai-hint="person face" />
+                                            <AvatarFallback>{sale.customer.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                                         </Avatar>
                                         <div>
-                                            <div className="font-medium">{sale.name}</div>
-                                            <div className="text-sm text-muted-foreground">{sale.email}</div>
+                                            <div className="font-medium">{sale.customer.name}</div>
+                                            <div className="text-sm text-muted-foreground">{sale.customer.email}</div>
                                         </div>
                                     </div>
                                 </TableCell>
-                                <TableCell className="text-right">${sale.amount.toFixed(2)}</TableCell>
+                                <TableCell className="text-right">${sale.total.toFixed(2)}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -123,8 +173,9 @@ export default function AdminDashboardPage() {
                     <CardDescription>Recent events across the platform.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-6">
-                    {mockActivity.map(item => {
-                        const Icon = item.icon
+                    {activity.map(item => {
+                        const Icon = notificationIcons[item.type] || notificationIcons.default;
+                        const timestamp = item.timestamp?.toDate ? new Date(item.timestamp.toDate()).toLocaleTimeString() : 'Just now';
                         return (
                             <div key={item.id} className="flex items-start gap-4">
                                 <div className={`p-2 rounded-full ${item.variant === 'destructive' ? 'bg-destructive/10' : 'bg-primary/10'}`}>
@@ -133,14 +184,15 @@ export default function AdminDashboardPage() {
                                 <div className="flex-1 space-y-2">
                                     <div className="grid gap-1">
                                       <p className="text-sm font-medium leading-none">
-                                          <Link href={item.href} className="hover:underline">{item.text}</Link>
+                                          <Link href={item.href || '#'} className="hover:underline">{item.text}</Link>
                                       </p>
-                                      <p className="text-sm text-muted-foreground">{item.time}</p>
+                                      <p className="text-sm text-muted-foreground">{timestamp}</p>
                                     </div>
-                                    {item.type === 'user_report' && (
+                                    {item.actions && (
                                         <div className="flex gap-2">
-                                            <Button size="sm" variant="outline">Dismiss</Button>
-                                            <Button size="sm" variant="destructive">Warn User</Button>
+                                            {item.actions.map((action: any) => (
+                                                <Button key={action.label} size="sm" variant={action.variant || 'outline'}>{action.label}</Button>
+                                            ))}
                                         </div>
                                     )}
                                 </div>
@@ -163,28 +215,19 @@ export default function AdminDashboardPage() {
                     </Button>
                 </CardHeader>
                 <CardContent className="grid gap-8">
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-9 w-9">
-                            <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar" data-ai-hint="person face" />
-                            <AvatarFallback>OM</AvatarFallback>
-                        </Avatar>
-                        <div className="grid gap-1">
-                            <p className="text-sm font-medium leading-none">Olivia Martin</p>
-                            <p className="text-sm text-muted-foreground">olivia.martin@email.com</p>
+                     {newUsers.map(user => (
+                        <div key={user.id} className="flex items-center gap-4">
+                            <Avatar className="h-9 w-9">
+                                <AvatarImage src={user.avatar} alt="Avatar" data-ai-hint="person face" />
+                                <AvatarFallback>{user.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                            </Avatar>
+                            <div className="grid gap-1">
+                                <p className="text-sm font-medium leading-none">{user.name}</p>
+                                <p className="text-sm text-muted-foreground">{user.email}</p>
+                            </div>
+                            <div className="ml-auto font-medium"><Badge variant={user.role === 'Vendor' ? 'secondary' : 'default'}>{user.role}</Badge></div>
                         </div>
-                        <div className="ml-auto font-medium"><Badge>Customer</Badge></div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <Avatar className="h-9 w-9">
-                            <AvatarImage src="https://placehold.co/40x40.png" alt="Avatar" data-ai-hint="company logo" />
-                            <AvatarFallback>TC</AvatarFallback>
-                        </Avatar>
-                        <div className="grid gap-1">
-                            <p className="text-sm font-medium leading-none">Timeless Co.</p>
-                            <p className="text-sm text-muted-foreground">contact@timeless.co</p>
-                        </div>
-                        <div className="ml-auto font-medium"><Badge variant="secondary">Vendor</Badge></div>
-                    </div>
+                     ))}
                 </CardContent>
             </Card>
         </div>
