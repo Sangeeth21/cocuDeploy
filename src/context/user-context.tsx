@@ -28,7 +28,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 
 // UserProvider component
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-    const [isLoggedIn, setIsLoggedIn] = useState(true);
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState<User | null>(null);
 
     // Fetch initial user data
