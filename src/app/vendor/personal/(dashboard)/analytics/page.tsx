@@ -9,7 +9,7 @@ export default function RedirectToAnalytics() {
 
   useEffect(() => {
     // Redirect to the unified analytics page.
-    router.replace("/vendor/both/analytics");
+    router.replace("/vendor/both/analytics?view=personal");
   }, [router]);
 
   return null;

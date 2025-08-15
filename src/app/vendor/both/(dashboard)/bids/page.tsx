@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { mockCorporateBids } from "@/lib/mock-data";
 import { CheckCircle, Clock, Gavel, Loader2, Send } from 'lucide-react';
 import type { CorporateBid, VendorBid } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,7 +16,8 @@ import Image from "next/image";
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
+import { collection, onSnapshot, query, doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     const calculateTimeLeft = () => {
@@ -65,33 +65,36 @@ function PlaceBidDialog({ bid, onBidPlaced, existingBid }: { bid: CorporateBid; 
 
     const competitorBids = useMemo(() => {
         return bid.responses
-            .filter(r => r.alias !== 'You') // Exclude the current vendor's bid
+            .filter(r => r.vendorId !== "VDR001-SELF") // Exclude the current vendor's bid
             .sort((a, b) => a.pricePerUnit - b.pricePerUnit);
     }, [bid.responses]);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!pricePerUnit || !estimatedDelivery) {
             toast({ variant: 'destructive', title: 'Missing Information', description: 'Please provide both price and delivery estimates.' });
             return;
         }
 
         setIsSubmitting(true);
-        // Simulate API call
-        setTimeout(() => {
+        try {
             const newBidResponse: VendorBid = {
-                alias: "You", // This would be the logged-in vendor's alias
-                vendorId: "VDR001-SELF", // Logged-in vendor ID
-                vendorName: "Timeless Co.",
-                vendorAvatar: 'https://placehold.co/40x40.png',
+                alias: "You", // Placeholder for logged-in vendor's display name
+                vendorId: "VDR001-SELF", // Placeholder for logged-in vendor ID
+                vendorName: "Timeless Co.", // Placeholder
+                vendorAvatar: 'https://placehold.co/40x40.png', // Placeholder
                 pricePerUnit: Number(pricePerUnit),
                 estimatedDelivery,
                 notes,
             };
             onBidPlaced(bid.id, newBidResponse);
-            setIsSubmitting(false);
             setOpen(false);
             toast({ title: 'Bid Submitted!', description: `Your bid for ${bid.id} has been placed.` });
-        }, 1500);
+        } catch (error) {
+            console.error("Error placing bid:", error);
+            toast({ variant: 'destructive', title: 'Failed to place bid.' });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -187,8 +190,11 @@ function PlaceBidDialog({ bid, onBidPlaced, existingBid }: { bid: CorporateBid; 
     );
 }
 
-
-function BidList({ bids, onBidPlaced }: { bids: CorporateBid[]; onBidPlaced: (bidId: string, response: VendorBid) => void }) {
+function BidList({ bids, onBidPlaced, loading }: { bids: CorporateBid[]; onBidPlaced: (bidId: string, response: VendorBid) => void; loading: boolean; }) {
+    
+    if (loading) {
+        return <div className="text-center text-muted-foreground py-8">Loading bids...</div>;
+    }
     
     if (bids.length === 0) {
         return <p className="text-center text-muted-foreground py-8">No bids in this category.</p>
@@ -207,8 +213,8 @@ function BidList({ bids, onBidPlaced }: { bids: CorporateBid[]; onBidPlaced: (bi
             </TableHeader>
             <TableBody>
                 {bids.map(bid => {
-                    const vendorBid = bid.responses.find(r => r.alias === 'You');
-                    const competitorCount = bid.responses.filter(r => r.alias !== 'You').length;
+                    const vendorBid = bid.responses.find(r => r.vendorId === "VDR001-SELF");
+                    const competitorCount = bid.responses.filter(r => r.vendorId !== "VDR001-SELF").length;
                     const isWinning = vendorBid && bid.responses.length > 0 && Math.min(...bid.responses.map(r => r.pricePerUnit)) === vendorBid.pricePerUnit;
                     
                     return (
@@ -248,30 +254,37 @@ function BidList({ bids, onBidPlaced }: { bids: CorporateBid[]; onBidPlaced: (bi
 }
 
 export default function BothVendorBidsPage() {
-    const [bids, setBids] = useState<CorporateBid[]>(mockCorporateBids);
+    const [bids, setBids] = useState<CorporateBid[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleBidPlaced = (bidId: string, response: VendorBid) => {
-        setBids(prev => prev.map(bid => {
-            if (bid.id === bidId) {
-                // Check if this vendor has already bid to update it, otherwise add it.
-                const existingBidIndex = bid.responses.findIndex(r => r.alias === "You");
-                const newResponses = [...bid.responses];
+    useEffect(() => {
+        const q = query(collection(db, "corporateBids"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const bidsData: CorporateBid[] = [];
+            querySnapshot.forEach((doc) => {
+                bidsData.push({ id: doc.id, ...doc.data() } as CorporateBid);
+            });
+            setBids(bidsData);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, []);
 
-                if (existingBidIndex > -1) {
-                    newResponses[existingBidIndex] = response;
-                } else {
-                    newResponses.push(response);
-                }
-                
-                return { ...bid, responses: newResponses };
-            }
-            return bid;
-        }));
+    const handleBidPlaced = async (bidId: string, response: VendorBid) => {
+        const bidRef = doc(db, "corporateBids", bidId);
+        // Atomically update the responses array.
+        // This removes any previous bid from this vendor and adds the new one.
+        const currentDoc = await (await import("firebase/firestore")).getDoc(bidRef);
+        const currentResponses = currentDoc.data()?.responses || [];
+        const newResponses = currentResponses.filter((r: VendorBid) => r.vendorId !== response.vendorId);
+        newResponses.push(response);
+
+        await updateDoc(bidRef, { responses: newResponses });
     };
     
     const activeBids = useMemo(() => bids.filter(b => b.status === 'Active'), [bids]);
-    const awardedBids = useMemo(() => bids.filter(b => b.status === 'Awarded' && b.responses.some(r => r.alias === 'You')), [bids]);
-    const pastBids = useMemo(() => bids.filter(b => b.status === 'Expired' || (b.status === 'Awarded' && !b.responses.some(r => r.alias === 'You'))), [bids]);
+    const awardedBids = useMemo(() => bids.filter(b => b.status === 'Awarded' && b.responses.some(r => r.vendorId === "VDR001-SELF")), [bids]);
+    const pastBids = useMemo(() => bids.filter(b => b.status === 'Expired' || (b.status === 'Awarded' && !b.responses.some(r => r.vendorId === "VDR001-SELF"))), [bids]);
 
     return (
         <div>
@@ -290,13 +303,13 @@ export default function BothVendorBidsPage() {
                 <Card className="mt-4">
                     <CardContent className="p-0">
                          <TabsContent value="active">
-                            <BidList bids={activeBids} onBidPlaced={handleBidPlaced} />
+                            <BidList bids={activeBids} onBidPlaced={handleBidPlaced} loading={loading} />
                         </TabsContent>
                          <TabsContent value="awarded">
-                             <BidList bids={awardedBids} onBidPlaced={handleBidPlaced} />
+                             <BidList bids={awardedBids} onBidPlaced={handleBidPlaced} loading={loading} />
                         </TabsContent>
                          <TabsContent value="past">
-                            <BidList bids={pastBids} onBidPlaced={handleBidPlaced} />
+                            <BidList bids={pastBids} onBidPlaced={handleBidPlaced} loading={loading} />
                         </TabsContent>
                     </CardContent>
                 </Card>

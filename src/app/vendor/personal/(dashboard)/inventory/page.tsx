@@ -8,7 +8,7 @@ export default function RedirectToInventory() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/vendor/both/inventory");
+    router.replace("/vendor/both/inventory?view=personal");
   }, [router]);
 
   return null; 

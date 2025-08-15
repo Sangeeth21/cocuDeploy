@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { mockProducts } from "@/lib/mock-data";
 import type { DisplayProduct } from "@/lib/types";
 import { useVerification } from "@/context/vendor-verification-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Loader2 } from "lucide-react";
 
 function getStockStatus(stock: number): { text: string; variant: "default" | "secondary" | "destructive" } {
     if (stock === 0) return { text: "Out of Stock", variant: "destructive" };
@@ -20,17 +22,19 @@ function getStockStatus(stock: number): { text: string; variant: "default" | "se
     return { text: "In Stock", variant: "default" };
 }
 
-function InventoryTable({ products: initialProducts }: { products: DisplayProduct[] }) {
+function InventoryTable({ products, loading }: { products: DisplayProduct[], loading: boolean }) {
     const { toast } = useToast();
-    const [products, setProducts] = useState<DisplayProduct[]>(initialProducts);
     const [editingQuantities, setEditingQuantities] = useState<{ [key: string]: string }>({});
+    const [savingId, setSavingId] = useState<string | null>(null);
 
     const handleQuantityChange = (productId: string, value: string) => {
         setEditingQuantities(prev => ({ ...prev, [productId]: value }));
     };
 
-    const handleSaveQuantity = (productId: string) => {
-        const newQuantity = parseInt(editingQuantities[productId], 10);
+    const handleSaveQuantity = async (productId: string) => {
+        const newQuantityStr = editingQuantities[productId];
+        const newQuantity = parseInt(newQuantityStr, 10);
+        
         if (isNaN(newQuantity) || newQuantity < 0) {
             toast({
                 variant: "destructive",
@@ -40,20 +44,30 @@ function InventoryTable({ products: initialProducts }: { products: DisplayProduc
             return;
         }
 
-        setProducts(prevProducts =>
-            prevProducts.map(p => (p.id === productId ? { ...p, stock: newQuantity } : p))
-        );
+        setSavingId(productId);
+        try {
+            const productRef = doc(db, "products", productId);
+            await updateDoc(productRef, {
+                stock: newQuantity
+            });
 
-        toast({
-            title: "Inventory Updated",
-            description: `Stock for product ${productId} has been set to ${newQuantity}.`,
-        });
+            toast({
+                title: "Inventory Updated",
+                description: `Stock for product ${productId} has been set to ${newQuantity}.`,
+            });
+            
+            setEditingQuantities(prev => {
+                const newEditingQuantities = { ...prev };
+                delete newEditingQuantities[productId];
+                return newEditingQuantities;
+            });
 
-        setEditingQuantities(prev => {
-            const newEditingQuantities = { ...prev };
-            delete newEditingQuantities[productId];
-            return newEditingQuantities;
-        });
+        } catch (error) {
+            console.error("Error updating stock:", error);
+            toast({ variant: "destructive", title: "Failed to update stock" });
+        } finally {
+            setSavingId(null);
+        }
     };
 
     return (
@@ -71,7 +85,11 @@ function InventoryTable({ products: initialProducts }: { products: DisplayProduc
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {products.map(product => {
+                        {loading ? (
+                             <TableRow>
+                                <TableCell colSpan={6} className="text-center h-24">Loading inventory...</TableCell>
+                            </TableRow>
+                        ) : products.map(product => {
                             const status = getStockStatus(product.stock ?? 0);
                             const isEditing = editingQuantities[product.id] !== undefined;
 
@@ -104,8 +122,8 @@ function InventoryTable({ products: initialProducts }: { products: DisplayProduc
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {isEditing && (
-                                            <Button size="sm" onClick={() => handleSaveQuantity(product.id)}>
-                                                Save
+                                            <Button size="sm" onClick={() => handleSaveQuantity(product.id)} disabled={savingId === product.id}>
+                                                {savingId === product.id ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Save'}
                                             </Button>
                                         )}
                                     </TableCell>
@@ -122,9 +140,32 @@ function InventoryTable({ products: initialProducts }: { products: DisplayProduc
 
 export default function BothVendorInventoryPage() {
     const { vendorType } = useVerification();
+    const [personalProducts, setPersonalProducts] = useState<DisplayProduct[]>([]);
+    const [corporateProducts, setCorporateProducts] = useState<DisplayProduct[]>([]);
+    const [loading, setLoading] = useState(true);
+    const vendorId = "VDR001"; // Placeholder for logged-in vendor
+
+    useEffect(() => {
+        setLoading(true);
+        const q = query(collection(db, "products"), where("vendorId", "==", vendorId));
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const allProducts: DisplayProduct[] = [];
+            querySnapshot.forEach((doc) => {
+                allProducts.push({ id: doc.id, ...doc.data() } as DisplayProduct);
+            });
+            
+            setPersonalProducts(allProducts.filter(p => !p.b2bEnabled));
+            setCorporateProducts(allProducts.filter(p => p.b2bEnabled));
+            setLoading(false);
+        }, (error) => {
+            console.error("Error fetching inventory:", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [vendorId]);
     
-    const personalProducts = mockProducts.filter(p => !p.b2bEnabled);
-    const corporateProducts = mockProducts.filter(p => p.b2bEnabled);
 
     return (
         <div>
@@ -139,10 +180,10 @@ export default function BothVendorInventoryPage() {
                     <TabsTrigger value="corporate">Corporate & Bulk</TabsTrigger>
                 </TabsList>
                 <TabsContent value="personalized" className="mt-4">
-                     <InventoryTable products={personalProducts} />
+                     <InventoryTable products={personalProducts} loading={loading} />
                 </TabsContent>
                 <TabsContent value="corporate" className="mt-4">
-                    <InventoryTable products={corporateProducts} />
+                    <InventoryTable products={corporateProducts} loading={loading} />
                 </TabsContent>
             </Tabs>
         </div>
