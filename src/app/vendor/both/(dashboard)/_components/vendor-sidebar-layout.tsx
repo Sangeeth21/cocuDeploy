@@ -12,6 +12,7 @@ import { useVerification } from "@/context/vendor-verification-context";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockVendorActivity } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 
 const navLinks = [
   { href: "/vendor/both/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -72,6 +73,17 @@ function CustomSidebarTrigger() {
 export function VendorSidebarLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const { isVerified } = useVerification();
+    const { open: isSidebarOpen } = useSidebar();
+    const [accordionValue, setAccordionValue] = useState<string[]>(['products', 'inventory', 'orders']);
+
+    // Collapse accordions when sidebar collapses
+    useEffect(() => {
+        if (!isSidebarOpen) {
+            setAccordionValue([]);
+        } else {
+             setAccordionValue(['products', 'inventory', 'orders']);
+        }
+    }, [isSidebarOpen]);
 
     return (
         <div className="flex min-h-screen">
@@ -84,7 +96,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                 <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
                                 <AvatarFallback>V</AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
                                 <span className="text-lg font-semibold">Hybrid Vendor,</span>
                                 <span className="text-lg font-bold -mt-1">Timeless Co.</span>
                             </div>
@@ -92,7 +104,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                     </div>
                 </SidebarHeader>
                 <SidebarContent className="p-2">
-                    <Accordion type="multiple" className="w-full" defaultValue={['products', 'inventory', 'orders']}>
+                    <Accordion type="multiple" className="w-full" value={accordionValue} onValueChange={setAccordionValue}>
                          <SidebarMenu>
                             {!isVerified && (
                                 <SidebarMenuItem>
@@ -117,16 +129,16 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                                 <SidebarMenuButton
                                                     isActive={pathname.startsWith(link.href || `/vendor/both/${link.id}`)}
                                                     tooltip={{children: link.label}}
-                                                    className="w-full justify-start [&_svg:last-child]:hidden"
+                                                    className="w-full justify-start [&>svg:last-child]:hidden"
                                                 >
                                                     <div className="flex items-center gap-2">
                                                         <link.icon className="h-5 w-5 stroke-[1.5]" />
-                                                        <span>{link.label}</span>
+                                                        <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
                                                         {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                                     </div>
                                                 </SidebarMenuButton>
                                             </AccordionTrigger>
-                                            <AccordionContent className="pb-0 pl-4">
+                                            <AccordionContent className="pb-0 pl-4 group-data-[state=collapsed]:hidden">
                                                 <SidebarMenu>
                                                     {link.subLinks.map(subLink => (
                                                          <SidebarMenuItem key={subLink.href}>
@@ -155,7 +167,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                         >
                                             <Link href={link.href}>
                                                 <link.icon className="h-5 w-5 stroke-[1.5]" />
-                                                <span>{link.label}</span>
+                                                <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
                                                  {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                             </Link>
                                         </SidebarMenuButton>
@@ -171,7 +183,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                             <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
                                 <Link href="/">
                                     <Store className="h-5 w-5 stroke-[1.5]" />
-                                    <span>Back to Store</span>
+                                    <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -179,7 +191,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                             <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
                                 <Link href="/vendor/login">
                                     <LogOut className="h-5 w-5 stroke-[1.5]" />
-                                    <span>Log Out</span>
+                                    <span className="group-data-[state=collapsed]:hidden">Log Out</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

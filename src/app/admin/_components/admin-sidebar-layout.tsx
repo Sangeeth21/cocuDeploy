@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -73,7 +72,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                                 <AvatarImage src="https://placehold.co/100x100.png" alt="Admin Avatar" data-ai-hint="person face" />
                                 <AvatarFallback>A</AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
                                 <span className="text-lg font-semibold">Admin</span>
                             </div>
                         </div>
@@ -85,7 +84,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                              <SidebarMenuButton asChild tooltip={{children: 'Create Order'}}>
                                 <Link href="/admin/orders/new">
                                     <PlusCircle/>
-                                    <span>New Order</span>
+                                    <span className="group-data-[state=collapsed]:hidden">New Order</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -93,7 +92,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                              <SidebarMenuButton asChild tooltip={{children: 'Create Campaign'}}>
                                 <Link href="/admin/marketing/new">
                                     <Megaphone/>
-                                    <span>New Campaign</span>
+                                    <span className="group-data-[state=collapsed]:hidden">New Campaign</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -101,7 +100,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                              <SidebarMenuButton asChild tooltip={{children: 'New Corporate Campaign'}}>
                                 <Link href="/admin/corporate-marketing/new">
                                     <Building/>
-                                    <span>New Corporate Campaign</span>
+                                    <span className="group-data-[state=collapsed]:hidden">New Corporate Campaign</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -114,7 +113,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                                 >
                                     <Link href={link.href}>
                                         <link.icon />
-                                        <span>{link.label}</span>
+                                        <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
                                         {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
@@ -128,14 +127,14 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                             <SidebarMenuButton asChild tooltip={{children: 'Back to Homepage'}}>
                                 <Link href="/">
                                     <Home />
-                                    <span>Homepage</span>
+                                    <span className="group-data-[state=collapsed]:hidden">Homepage</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                          <SidebarMenuItem>
                             <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
                                 <LogOut />
-                                <span>Log Out</span>
+                                <span className="group-data-[state=collapsed]:hidden">Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>

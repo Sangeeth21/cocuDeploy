@@ -59,7 +59,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                 <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
                                 <AvatarFallback>V</AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
                                 <span className="text-lg font-semibold">Corporate Vendor,</span>
                                 <span className="text-lg font-bold -mt-1">Timeless Co.</span>
                             </div>
@@ -92,7 +92,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                                 >
                                     <Link href={link.href}>
                                         <link.icon className="h-5 w-5" />
-                                        <span>{link.label}</span>
+                                        <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
                                         {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
@@ -106,7 +106,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                             <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
                                 <Link href="/">
                                     <Store className="h-5 w-5" />
-                                    <span>Back to Store</span>
+                                    <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -114,7 +114,7 @@ export function VendorSidebarLayout({ children }: { children: React.ReactNode })
                             <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
                                 <Link href="/vendor/login">
                                     <LogOut className="h-5 w-5" />
-                                    <span>Log Out</span>
+                                    <span className="group-data-[state=collapsed]:hidden">Log Out</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>

@@ -55,15 +55,6 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
     const { totalItems: cartItemsCount } = useCart();
     const { totalItems: comparisonItemsCount } = useComparison();
     const { totalItems: bidItemsCount } = useBidRequest();
-    const { setOpen } = useSidebar();
-    
-    const handleMouseEnter = () => {
-      setOpen(true)
-    }
-
-    const handleMouseLeave = () => {
-       setOpen(false)
-    }
 
     const handleLogout = () => {
         adminLogout();
@@ -75,8 +66,6 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
             <Sidebar 
                 collapsible="icon" 
                 className="border-r hidden md:flex"
-                onMouseEnter={handleMouseEnter}
-                onMouseLeave={handleMouseLeave}
             >
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -84,7 +73,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                            <Avatar className="h-10 w-10">
                                <Building className="h-6 w-6"/>
                             </Avatar>
-                            <div className="flex flex-col group-hover:group-data-[collapsible=icon]:flex group-data-[collapsible=icon]:hidden">
+                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
                                 <span className="text-lg font-semibold">Corporate Client</span>
                             </div>
                         </Link>
@@ -111,7 +100,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                                     >
                                         <Link href={link.href}>
                                             <link.icon />
-                                            <span className="group-hover:group-data-[collapsible=icon]:inline-block group-data-[collapsible=icon]:hidden">{link.label}</span>
+                                            <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
                                              {badgeContent && <SidebarMenuBadge>{badgeContent}</SidebarMenuBadge>}
                                         </Link>
                                     </SidebarMenuButton>
@@ -125,7 +114,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                          <SidebarMenuItem>
                             <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
                                 <LogOut />
-                                <span className="group-hover:group-data-[collapsible=icon]:inline-block group-data-[collapsible=icon]:hidden">Log Out</span>
+                                <span className="group-data-[state=collapsed]:hidden">Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
@@ -165,7 +154,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
 export function CorporateSidebarLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex min-h-screen bg-background">
-            <SidebarProvider defaultOpen={false}>
+            <SidebarProvider defaultOpen={true}>
                 <CorporateSidebarLayoutContent>
                     {children}
                 </CorporateSidebarLayoutContent>
