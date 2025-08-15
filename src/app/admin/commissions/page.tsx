@@ -11,12 +11,11 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { DollarSign, Percent, Edit, Search, Trash2 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { User, DisplayProduct } from "@/lib/types";
+import type { User, DisplayProduct, Category } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
-import { collection, doc, onSnapshot, query, updateDoc, writeBatch, getDocs, addDoc, deleteDoc, where } from 'firebase/firestore';
+import { collection, doc, onSnapshot, query, updateDoc, writeBatch, getDocs, addDoc, deleteDoc, where, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { mockCategories } from "@/lib/mock-data";
 
 
 type CommissionRule = {
@@ -51,6 +50,7 @@ export default function CommissionEnginePage() {
     const { toast } = useToast();
     
     // State for commissions
+    const [allCategories, setAllCategories] = useState<Category[]>([]);
     const [categoryCommissions, setCategoryCommissions] = useState<CategoryCommissions>({});
     const [vendorOverrides, setVendorOverrides] = useState<VendorCommissionOverride[]>([]);
     const [productOverrides, setProductOverrides] = useState<ProductCommissionOverride[]>([]);
@@ -67,11 +67,37 @@ export default function CommissionEnginePage() {
     
     // Data fetching from Firestore
     useEffect(() => {
-        // Fetch Category Commissions (assuming one document holds all)
+        // 1. Fetch all categories
+        const categoriesQuery = query(collection(db, 'categories'));
+        const unsubCategories = onSnapshot(categoriesQuery, (snapshot) => {
+            const cats: Category[] = [];
+            snapshot.forEach(doc => cats.push({ id: doc.id, ...doc.data() } as Category));
+            setAllCategories(cats);
+        });
+
+        // 2. Fetch Category Commissions and create defaults if missing
         const catComRef = doc(db, 'commissions', 'categories');
-        const unsubCat = onSnapshot(catComRef, (doc) => {
-            if (doc.exists()) {
-                setCategoryCommissions(doc.data() as CategoryCommissions);
+        const unsubCat = onSnapshot(catComRef, async (docSnap) => {
+            const fetchedCommissions = docSnap.exists() ? docSnap.data() as CategoryCommissions : {};
+
+            const categoriesSnapshot = await getDocs(query(collection(db, 'categories')));
+            const allCategoryNames = categoriesSnapshot.docs.map(doc => doc.data().name);
+            
+            let updatedCommissions = { ...fetchedCommissions };
+            let hasChanged = false;
+
+            allCategoryNames.forEach(name => {
+                if (!updatedCommissions[name]) {
+                    updatedCommissions[name] = { commission: 10, buffer: { type: 'fixed', value: 1.00 } };
+                    hasChanged = true;
+                }
+            });
+
+            setCategoryCommissions(updatedCommissions);
+
+            if (hasChanged) {
+                // Save the newly created default commissions back to Firestore
+                await setDoc(catComRef, updatedCommissions, { merge: true });
             }
         });
 
@@ -92,6 +118,7 @@ export default function CommissionEnginePage() {
         });
 
         return () => {
+            unsubCategories();
             unsubCat();
             unsubVendor();
             unsubProduct();
