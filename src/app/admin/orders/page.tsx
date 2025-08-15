@@ -11,7 +11,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockOrders } from "@/lib/mock-data";
 import type { Order } from "@/lib/types";
 import { MoreHorizontal, PackageCheck, Truck, ListChecks, DollarSign, Search, File, User, CreditCard, PlusCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +19,8 @@ import Image from "next/image";
 import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { collection, onSnapshot, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const getStatusVariant = (status: Order['status']) => {
   switch (status) {
@@ -39,12 +40,25 @@ const getStatusVariant = (status: Order['status']) => {
 export default function AdminOrdersPage() {
     const { toast } = useToast();
     const searchParams = useSearchParams();
-    const [orders, setOrders] = useState<Order[]>(mockOrders);
+    const [orders, setOrders] = useState<Order[]>([]);
     
     // Search and filter state
     const customerIdQuery = searchParams.get('customerId');
     const [searchTerm, setSearchTerm] = useState(searchParams.get('search') ?? "");
     const [activeTab, setActiveTab] = useState("all");
+    
+    useEffect(() => {
+        const q = query(collection(db, "orders"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const ordersData: Order[] = [];
+            querySnapshot.forEach((doc) => {
+                ordersData.push({ id: doc.id, ...doc.data() } as Order);
+            });
+            setOrders(ordersData);
+        });
+
+        return () => unsubscribe();
+    }, []);
     
     // Effect to set search term from URL if customerId is present, giving it priority
     useEffect(() => {
@@ -304,3 +318,5 @@ export default function AdminOrdersPage() {
     </div>
   );
 }
+
+    

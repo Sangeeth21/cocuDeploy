@@ -32,8 +32,8 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import Link from "next/link";
-import type { Message, Conversation, DisplayProduct } from "@/lib/types";
-import { mockUserOrders, mockProducts } from "@/lib/mock-data";
+import type { Message, Conversation, DisplayProduct, Order } from "@/lib/types";
+import { mockProducts } from "@/lib/mock-data";
 import { useUser } from "@/context/user-context";
 import { useWishlist } from "@/context/wishlist-context";
 import { ProductCard } from "@/components/product-card";
@@ -78,13 +78,11 @@ const MOCK_USER_DATA = {
 };
 
 // Simulate tracking for chat abuse prevention
-const MAX_CHATS_WITHOUT_PURCHASE = 4;
-let hasMadePurchase = mockUserOrders.length > 0;
 let uniqueVendorChats = new Set().size; // This will be managed by real data now
 
 const MAX_PRICE = 500;
 
-function WishlistTabContent() {
+function WishlistTabContent({orders}: {orders: Order[]}) {
     const router = useRouter();
     const { wishlistItems, removeFromWishlist } = useWishlist();
     const { addToCart } = useCart();
@@ -312,17 +310,31 @@ export default function AccountPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  // Chat state
+  // Live data states
+  const [orders, setOrders] = useState<Order[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1500;
+  
+  const hasMadePurchase = orders.length > 0;
 
   useEffect(() => {
-    // Set up the real-time listener
-    const q = query(collection(db, "conversations")); // In real app, add where('userId', '==', currentUser.id)
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    // Listener for orders
+    // In a real app, you'd filter by the current user's ID
+    const ordersQuery = query(collection(db, "orders")); 
+    const unsubscribeOrders = onSnapshot(ordersQuery, (querySnapshot) => {
+        const userOrders: Order[] = [];
+        querySnapshot.forEach((doc) => {
+            userOrders.push({ id: doc.id, ...doc.data() } as Order);
+        });
+        setOrders(userOrders);
+    });
+
+    // Listener for conversations
+    const convosQuery = query(collection(db, "conversations")); // Filter by userId in real app
+    const unsubscribeConversations = onSnapshot(convosQuery, (querySnapshot) => {
         const convos: Conversation[] = [];
         querySnapshot.forEach((doc) => {
             convos.push({ id: doc.id, ...doc.data() } as Conversation);
@@ -331,7 +343,10 @@ export default function AccountPage() {
         uniqueVendorChats = new Set(convos.map(c => c.vendorId)).size;
     });
 
-    return () => unsubscribe(); // Cleanup listener on component unmount
+    return () => {
+        unsubscribeOrders();
+        unsubscribeConversations();
+    };
   }, []);
 
 
@@ -350,6 +365,7 @@ export default function AccountPage() {
           userMessageCount: 0,
           awaitingVendorDecision: false,
           status: 'active',
+          customerId: 'current_user_id', // placeholder
         };
         
         if (!new Set(conversations.map(c => c.vendorId)).has(vendorId)) {
@@ -757,7 +773,7 @@ export default function AccountPage() {
               <CardDescription>Your saved products for future purchases.</CardDescription>
             </CardHeader>
             <CardContent>
-                <WishlistTabContent />
+                <WishlistTabContent orders={orders} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -929,7 +945,7 @@ export default function AccountPage() {
               <CardDescription>View your past purchases and their status.</CardDescription>
             </CardHeader>
             <CardContent>
-                {mockUserOrders.length > 0 ? (
+                {orders.length > 0 ? (
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -941,7 +957,7 @@ export default function AccountPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {mockUserOrders.map((order) => (
+                        {orders.map((order) => (
                             <TableRow key={order.id}>
                                 <TableCell className="font-medium">{order.id}</TableCell>
                                 <TableCell>{order.date}</TableCell>
@@ -1221,3 +1237,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    
