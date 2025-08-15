@@ -1,8 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
-import { mockOrderedCombos, mockWishlistedCombos } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -12,7 +11,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { Plus, ShoppingCart, Heart, Users, ExternalLink } from "lucide-react";
 import Link from "next/link";
-import type { OrderedCombo, WishlistedCombo } from "@/lib/types";
+import type { OrderedCombo, WishlistedCombo, Order, User, DisplayProduct } from "@/lib/types";
+import { collection, onSnapshot, query, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 function ComboCard({
@@ -86,8 +87,7 @@ function ComboDetailsDialog({ type, details, products }: { type: 'ordered' | 'wi
                         <TableRow>
                             <TableHead>Customer</TableHead>
                             {type === 'ordered' && <TableHead>Order ID</TableHead>}
-                            <TableHead>Vendor</TableHead>
-                            <TableHead className="text-right">Date</TableHead>
+                            {type === 'wishlisted' && <TableHead>Date Added</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -103,8 +103,7 @@ function ComboDetailsDialog({ type, details, products }: { type: 'ordered' | 'wi
                                     </div>
                                 </TableCell>
                                 {type === 'ordered' && <TableCell><Link href={`/admin/orders?search=${item.orderId}`} className="text-primary hover:underline">{item.orderId}</Link></TableCell>}
-                                <TableCell>{item.vendorId}</TableCell>
-                                <TableCell className="text-right">{item.date}</TableCell>
+                                {type === 'wishlisted' && <TableCell>{item.date}</TableCell>}
                             </TableRow>
                         ))}
                     </TableBody>
@@ -114,9 +113,79 @@ function ComboDetailsDialog({ type, details, products }: { type: 'ordered' | 'wi
     )
 }
 
+const processCombos = <T extends Order | User>(items: T[], getProductIds: (item: T) => string[]) => {
+    const comboCounts: { [key: string]: { products: string[], count: number, details: any[] } } = {};
+
+    for (const item of items) {
+        const productIds = getProductIds(item);
+        if (productIds.length < 2) continue;
+
+        productIds.sort();
+
+        for (let i = 0; i < productIds.length; i++) {
+            for (let j = i + 1; j < productIds.length; j++) {
+                const comboKey = `${productIds[i]}-${productIds[j]}`;
+                 if (!comboCounts[comboKey]) {
+                    comboCounts[comboKey] = { products: [productIds[i], productIds[j]], count: 0, details: [] };
+                }
+                comboCounts[comboKey].count++;
+                if ('id' in item) { // It's an order
+                     comboCounts[comboKey].details.push({ orderId: (item as Order).id, customer: (item as Order).customer, date: new Date((item as Order).date.toDate()).toLocaleDateString() });
+                } else { // It's a user with a wishlist
+                     comboCounts[comboKey].details.push({ customer: item as User, date: new Date().toLocaleDateString() }); // Date placeholder
+                }
+            }
+        }
+    }
+    return Object.values(comboCounts).sort((a,b) => b.count - a.count).slice(0, 10);
+}
+
+
 export default function ProductCombosPage() {
-  const [orderedCombos] = useState<OrderedCombo[]>(mockOrderedCombos);
-  const [wishlistedCombos] = useState<WishlistedCombo[]>(mockWishlistedCombos);
+    const [orderedCombos, setOrderedCombos] = useState<any[]>([]);
+    const [wishlistedCombos, setWishlistedCombos] = useState<any[]>([]);
+    const [allProducts, setAllProducts] = useState<DisplayProduct[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAllData = async () => {
+            setLoading(true);
+            
+            // Fetch all products first to map IDs to full product info
+            const productsSnapshot = await getDocs(collection(db, "products"));
+            const productsMap = new Map<string, DisplayProduct>();
+            productsSnapshot.forEach(doc => productsMap.set(doc.id, { id: doc.id, ...doc.data() } as DisplayProduct));
+            setAllProducts(Array.from(productsMap.values()));
+            
+            // Fetch all orders
+            const ordersSnapshot = await getDocs(collection(db, "orders"));
+            const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Order));
+            const processedOrdered = processCombos(orders, (order) => order.items.map(item => item.productId));
+            const resolvedOrdered = processedOrdered.map(combo => ({...combo, products: combo.products.map(id => productsMap.get(id)).filter(Boolean) as DisplayProduct[]}));
+            setOrderedCombos(resolvedOrdered);
+
+            // Fetch all users to check wishlists
+            const usersSnapshot = await getDocs(collection(db, "users"));
+            const usersWithWishlists = usersSnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() } as User))
+                .filter(user => user.wishlist && user.wishlist.length > 1);
+
+            const allWishlistItems: User[] = [];
+             usersWithWishlists.forEach(user => {
+                if (user.wishlist) {
+                    allWishlistItems.push(user);
+                }
+            });
+
+            const processedWishlisted = processCombos(allWishlistItems, (user) => user.wishlist!.map(item => item.id));
+            const resolvedWishlisted = processedWishlisted.map(combo => ({...combo, products: combo.products.map(id => productsMap.get(id)).filter(Boolean) as DisplayProduct[]}));
+            setWishlistedCombos(resolvedWishlisted);
+
+            setLoading(false);
+        };
+
+        fetchAllData();
+    }, []);
 
   return (
     <div>
@@ -133,26 +202,26 @@ export default function ProductCombosPage() {
         </TabsList>
         <TabsContent value="ordered">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-            {orderedCombos.map((combo) => (
+            {loading ? <p>Loading...</p> : orderedCombos.map((combo, i) => (
               <ComboCard
-                key={combo.id}
+                key={i}
                 products={combo.products}
-                count={combo.orderCount}
+                count={combo.count}
                 type="ordered"
-                details={combo.orders}
+                details={combo.details}
               />
             ))}
           </div>
         </TabsContent>
         <TabsContent value="wishlisted">
            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-            {wishlistedCombos.map((combo) => (
+             {loading ? <p>Loading...</p> : wishlistedCombos.map((combo, i) => (
               <ComboCard
-                key={combo.id}
+                key={i}
                 products={combo.products}
-                count={combo.wishlistCount}
+                count={combo.count}
                 type="wishlisted"
-                details={combo.customers}
+                details={combo.details}
               />
             ))}
           </div>

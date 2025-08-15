@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,12 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { mockCategories, mockUsers, mockProducts } from "@/lib/mock-data";
 import { DollarSign, Percent, Edit, Search, Trash2 } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { User, DisplayProduct } from "@/lib/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
+import { collection, doc, onSnapshot, query, updateDoc, writeBatch, getDocs, addDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { mockCategories } from "@/lib/mock-data";
+
 
 type CommissionRule = {
     commission: number; // percentage
@@ -29,26 +32,26 @@ type CategoryCommissions = {
 };
 
 type VendorCommissionOverride = {
-    vendor: User;
+    id: string; // Firestore document ID
+    vendorId: string;
+    vendorName: string;
+    vendorAvatar: string;
     rule: CommissionRule;
 };
 
 type ProductCommissionOverride = {
-    product: DisplayProduct;
+    id: string; // Firestore document ID
+    productId: string;
+    productName: string;
+    productImageUrl: string;
     rule: CommissionRule;
 }
-
-const initialCommissions: CategoryCommissions = mockCategories.reduce((acc, category) => {
-    acc[category.name] = { commission: 15, buffer: { type: 'fixed', value: 2.00 } };
-    return acc;
-}, {} as CategoryCommissions);
-
 
 export default function CommissionEnginePage() {
     const { toast } = useToast();
     
     // State for commissions
-    const [categoryCommissions, setCategoryCommissions] = useState<CategoryCommissions>(initialCommissions);
+    const [categoryCommissions, setCategoryCommissions] = useState<CategoryCommissions>({});
     const [vendorOverrides, setVendorOverrides] = useState<VendorCommissionOverride[]>([]);
     const [productOverrides, setProductOverrides] = useState<ProductCommissionOverride[]>([]);
 
@@ -61,16 +64,66 @@ export default function CommissionEnginePage() {
     // State for searching
     const [vendorSearch, setVendorSearch] = useState("");
     const [productSearch, setProductSearch] = useState("");
+    
+    // Data fetching from Firestore
+    useEffect(() => {
+        // Fetch Category Commissions (assuming one document holds all)
+        const catComRef = doc(db, 'commissions', 'categories');
+        const unsubCat = onSnapshot(catComRef, (doc) => {
+            if (doc.exists()) {
+                setCategoryCommissions(doc.data() as CategoryCommissions);
+            }
+        });
+
+        // Fetch Vendor Overrides
+        const vendorQuery = query(collection(db, "vendorCommissionOverrides"));
+        const unsubVendor = onSnapshot(vendorQuery, (snapshot) => {
+            const overrides: VendorCommissionOverride[] = [];
+            snapshot.forEach(doc => overrides.push({ id: doc.id, ...doc.data() } as VendorCommissionOverride));
+            setVendorOverrides(overrides);
+        });
+        
+        // Fetch Product Overrides
+        const productQuery = query(collection(db, "productCommissionOverrides"));
+        const unsubProduct = onSnapshot(productQuery, (snapshot) => {
+            const overrides: ProductCommissionOverride[] = [];
+            snapshot.forEach(doc => overrides.push({ id: doc.id, ...doc.data() } as ProductCommissionOverride));
+            setProductOverrides(overrides);
+        });
+
+        return () => {
+            unsubCat();
+            unsubVendor();
+            unsubProduct();
+        }
+    }, []);
+
+    const [allUsers, setAllUsers] = useState<User[]>([]);
+    const [allProducts, setAllProducts] = useState<DisplayProduct[]>([]);
+
+    useEffect(() => {
+        const fetchUsers = onSnapshot(query(collection(db, "users"), where("role", "==", "Vendor")), (snapshot) => {
+            setAllUsers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as User)));
+        });
+        const fetchProducts = onSnapshot(query(collection(db, "products")), (snapshot) => {
+            setAllProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
+        });
+        return () => {
+            fetchUsers();
+            fetchProducts();
+        }
+    }, []);
+
 
     const filteredVendors = useMemo(() => {
         if (!vendorSearch) return [];
-        return mockUsers.filter(u => u.role === 'Vendor' && u.name.toLowerCase().includes(vendorSearch.toLowerCase()));
-    }, [vendorSearch]);
+        return allUsers.filter(u => u.name.toLowerCase().includes(vendorSearch.toLowerCase()));
+    }, [vendorSearch, allUsers]);
 
     const filteredProducts = useMemo(() => {
         if (!productSearch) return [];
-        return mockProducts.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()));
-    }, [productSearch]);
+        return allProducts.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()));
+    }, [productSearch, allProducts]);
 
 
     const handleEditClick = (type: 'category' | 'vendor' | 'product', id: string, name: string) => {
@@ -79,9 +132,9 @@ export default function CommissionEnginePage() {
         if (type === 'category') {
             rule = categoryCommissions[id];
         } else if (type === 'vendor') {
-            rule = vendorOverrides.find(v => v.vendor.id === id)?.rule;
+            rule = vendorOverrides.find(v => v.id === id)?.rule;
         } else { // product
-            rule = productOverrides.find(p => p.product.id === id)?.rule;
+            rule = productOverrides.find(p => p.id === id)?.rule;
         }
         
         if (rule) {
@@ -95,54 +148,79 @@ export default function CommissionEnginePage() {
         setIsDialogOpen(true);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!editContext) return;
         
-        const newRule = { commission: currentCommission, buffer: currentBuffer };
+        const newRule: CommissionRule = { commission: currentCommission, buffer: currentBuffer };
 
-        if (editContext.type === 'category') {
-            setCategoryCommissions(prev => ({ ...prev, [editContext.id]: newRule }));
-        } else if (editContext.type === 'vendor') {
-            setVendorOverrides(prev => prev.map(v => v.vendor.id === editContext.id ? { ...v, rule: newRule } : v));
-        } else { // product
-            setProductOverrides(prev => prev.map(p => p.product.id === editContext.id ? { ...p, rule: newRule } : p));
+        try {
+            if (editContext.type === 'category') {
+                const catComRef = doc(db, 'commissions', 'categories');
+                await updateDoc(catComRef, { [editContext.id]: newRule });
+            } else if (editContext.type === 'vendor') {
+                 const vendorDocRef = doc(db, 'vendorCommissionOverrides', editContext.id);
+                 await updateDoc(vendorDocRef, { rule: newRule });
+            } else { // product
+                const productDocRef = doc(db, 'productCommissionOverrides', editContext.id);
+                await updateDoc(productDocRef, { rule: newRule });
+            }
+
+            toast({
+                title: "Commission Updated",
+                description: `The commission for ${editContext.name} has been updated.`,
+            });
+            setIsDialogOpen(false);
+            setEditContext(null);
+        } catch(error) {
+             toast({ variant: 'destructive', title: 'Failed to save commission.' });
+             console.error("Error saving commission: ", error);
         }
-
-        toast({
-            title: "Commission Updated",
-            description: `The commission for ${editContext.name} has been updated.`,
-        });
-        setIsDialogOpen(false);
-        setEditContext(null);
     };
 
-    const handleAddVendorOverride = (vendor: User) => {
-        if (vendorOverrides.some(v => v.vendor.id === vendor.id)) {
+    const handleAddVendorOverride = async (vendor: User) => {
+        if (vendorOverrides.some(v => v.vendorId === vendor.id)) {
             toast({ variant: 'destructive', title: 'Vendor override already exists.'});
             return;
         }
-        setVendorOverrides(prev => [...prev, { vendor, rule: { commission: 10, buffer: { type: 'fixed', value: 1.00 } } }]);
+        
+        const newOverride = {
+            vendorId: vendor.id,
+            vendorName: vendor.name,
+            vendorAvatar: vendor.avatar,
+            rule: { commission: 10, buffer: { type: 'fixed', value: 1.00 } }
+        };
+        const docRef = await addDoc(collection(db, 'vendorCommissionOverrides'), newOverride);
         setVendorSearch("");
-        handleEditClick('vendor', vendor.id, vendor.name);
+        handleEditClick('vendor', docRef.id, vendor.name);
     }
     
-    const handleAddProductOverride = (product: DisplayProduct) => {
-        if (productOverrides.some(p => p.product.id === product.id)) {
+    const handleAddProductOverride = async (product: DisplayProduct) => {
+        if (productOverrides.some(p => p.productId === product.id)) {
             toast({ variant: 'destructive', title: 'Product override already exists.'});
             return;
         }
-        setProductOverrides(prev => [...prev, { product, rule: { commission: 10, buffer: { type: 'fixed', value: 1.00 } } }]);
+        const newOverride = {
+            productId: product.id,
+            productName: product.name,
+            productImageUrl: product.imageUrl,
+            rule: { commission: 10, buffer: { type: 'fixed', value: 1.00 } }
+        };
+        const docRef = await addDoc(collection(db, 'productCommissionOverrides'), newOverride);
         setProductSearch("");
-        handleEditClick('product', product.id, product.name);
+        handleEditClick('product', docRef.id, product.name);
     }
     
-    const handleRemoveOverride = (type: 'vendor' | 'product', id: string) => {
-        if (type === 'vendor') {
-            setVendorOverrides(prev => prev.filter(v => v.vendor.id !== id));
-        } else {
-            setProductOverrides(prev => prev.filter(p => p.product.id !== id));
+    const handleRemoveOverride = async (type: 'vendor' | 'product', id: string) => {
+        try {
+            if (type === 'vendor') {
+                await deleteDoc(doc(db, 'vendorCommissionOverrides', id));
+            } else {
+                await deleteDoc(doc(db, 'productCommissionOverrides', id));
+            }
+            toast({ title: 'Override Removed' });
+        } catch(error) {
+            toast({ variant: 'destructive', title: 'Failed to remove override.' });
         }
-        toast({ title: 'Override Removed' });
     }
 
     const formatBuffer = (buffer: CommissionRule['buffer']) => {
@@ -220,14 +298,14 @@ export default function CommissionEnginePage() {
                             {vendorOverrides.length > 0 && (
                                 <Table>
                                     <TableBody>
-                                        {vendorOverrides.map(({vendor, rule}) => (
-                                            <TableRow key={vendor.id}>
-                                                <TableCell className="font-medium p-2">{vendor.name}</TableCell>
+                                        {vendorOverrides.map(({id, vendorName, rule}) => (
+                                            <TableRow key={id}>
+                                                <TableCell className="font-medium p-2">{vendorName}</TableCell>
                                                 <TableCell className="p-2">{rule.commission}%</TableCell>
                                                 <TableCell className="p-2">{formatBuffer(rule.buffer)}</TableCell>
                                                 <TableCell className="p-2 text-right">
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditClick('vendor', vendor.id, vendor.name)}><Edit className="h-3 w-3"/></Button>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveOverride('vendor', vendor.id)}><Trash2 className="h-3 w-3 text-destructive"/></Button>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditClick('vendor', id, vendorName)}><Edit className="h-3 w-3"/></Button>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveOverride('vendor', id)}><Trash2 className="h-3 w-3 text-destructive"/></Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -259,14 +337,14 @@ export default function CommissionEnginePage() {
                              {productOverrides.length > 0 && (
                                 <Table>
                                     <TableBody>
-                                        {productOverrides.map(({product, rule}) => (
-                                            <TableRow key={product.id}>
-                                                <TableCell className="font-medium p-2 truncate">{product.name}</TableCell>
+                                        {productOverrides.map(({id, productName, rule}) => (
+                                            <TableRow key={id}>
+                                                <TableCell className="font-medium p-2 truncate">{productName}</TableCell>
                                                 <TableCell className="p-2">{rule.commission}%</TableCell>
                                                 <TableCell className="p-2">{formatBuffer(rule.buffer)}</TableCell>
                                                 <TableCell className="p-2 text-right">
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditClick('product', product.id, product.name)}><Edit className="h-3 w-3"/></Button>
-                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveOverride('product', product.id)}><Trash2 className="h-3 w-3 text-destructive"/></Button>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEditClick('product', id, productName)}><Edit className="h-3 w-3"/></Button>
+                                                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleRemoveOverride('product', id)}><Trash2 className="h-3 w-3 text-destructive"/></Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))}

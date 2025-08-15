@@ -8,20 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { mockUsers } from "@/lib/mock-data";
 import { MoreHorizontal, PlusCircle, Loader2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from "@/components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { User } from "@/lib/types";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 const MOCK_EMAIL_OTP = "123456";
 const MOCK_PHONE_OTP = "654321";
 
-function NewCustomerDialog({ onSave }: { onSave: (customer: User) => void }) {
+function NewCustomerDialog({ onSave }: { onSave: (customer: Omit<User, 'id' | 'role' | 'status' | 'joinedDate' | 'avatar'>) => void }) {
     const { toast } = useToast();
     const [open, setOpen] = useState(false);
     const [step, setStep] = useState<'details' | 'verify'>('details');
@@ -54,6 +55,7 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: User) => void }) {
     const handleDetailsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        // Simulate sending OTPs
         setTimeout(() => {
             toast({
                 title: "Verification Required",
@@ -76,17 +78,7 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: User) => void }) {
             return;
         }
         
-        const newCustomer: User = {
-            id: `USR${(mockUsers.filter(u => u.role === 'Customer').length + 10).toString().padStart(3, '0')}`,
-            name,
-            email,
-            role: 'Customer',
-            status: 'Active',
-            joinedDate: new Date().toISOString().split('T')[0],
-            avatar: 'https://placehold.co/40x40.png'
-        };
-
-        onSave(newCustomer);
+        onSave({ name, email });
         handleOpenChange(false);
     }
 
@@ -103,7 +95,7 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: User) => void }) {
                     <DialogDescription>
                         {step === 'details' 
                             ? 'Enter the customer details below.' 
-                            : 'Enter the codes sent to their email and phone.'}
+                            : 'Enter the codes sent to the customer\'s email and phone.'}
                     </DialogDescription>
                 </DialogHeader>
                 {step === 'details' ? (
@@ -116,17 +108,17 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: User) => void }) {
                             <Label htmlFor="new-customer-email">Email</Label>
                             <Input id="new-customer-email" type="email" value={email} onChange={e => setEmail(e.target.value)} required />
                         </div>
-                        <div className="space-y-2">
+                         <div className="space-y-2">
                             <Label htmlFor="new-customer-phone">Phone</Label>
                             <Input id="new-customer-phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} required />
                         </div>
                         <Button type="submit" className="w-full" disabled={isLoading}>
-                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Send Verification Codes
                         </Button>
                     </form>
                 ) : (
-                    <form onSubmit={handleVerificationSubmit} className="space-y-4 py-2">
+                     <form onSubmit={handleVerificationSubmit} className="space-y-4 py-2">
                         <div className="space-y-2">
                             <Label htmlFor="email-otp">Email Verification Code</Label>
                             <Input id="email-otp" value={emailOtp} onChange={e => setEmailOtp(e.target.value)} required />
@@ -147,23 +139,35 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: User) => void }) {
 }
 
 
-export default function AdminCustomersPage() {
-    const [customers, setCustomers] = useState(mockUsers.filter(u => u.role === 'Customer'));
-     const { toast } = useToast();
+export default function AdminUsersPage() {
+    const [users, setUsers] = useState<User[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const handleAddCustomer = (newCustomer: User) => {
-        setCustomers(prev => [newCustomer, ...prev]);
-        toast({
-            title: "Customer Added",
-            description: `${newCustomer.name} has been added and verified.`
+    useEffect(() => {
+        setLoading(true);
+        const q = query(collection(db, "users"), where("role", "==", "Customer"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const usersData: User[] = [];
+            querySnapshot.forEach((doc) => {
+                usersData.push({ id: doc.id, ...doc.data() } as User);
+            });
+            setUsers(usersData);
+            setLoading(false);
         });
+
+        return () => unsubscribe();
+    }, []);
+
+    const handleAddCustomer = (newCustomer: Omit<User, 'id' | 'role' | 'status' | 'joinedDate' | 'avatar'>) => {
+        // This would be an API call in a real app.
+        console.log("Adding new customer:", newCustomer);
     }
 
     return (
         <div>
             <div className="flex items-center justify-between mb-8">
                 <div>
-                    <h1 className="text-3xl font-bold font-headline">Customers</h1>
+                    <h1 className="text-3xl font-bold font-headline">Users</h1>
                     <p className="text-muted-foreground">Manage all customers on the platform.</p>
                 </div>
                 <NewCustomerDialog onSave={handleAddCustomer} />
@@ -182,7 +186,11 @@ export default function AdminCustomersPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {customers.map(user => (
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Loading users...</TableCell>
+                                </TableRow>
+                            ) : users.map(user => (
                                 <TableRow key={user.id}>
                                     <TableCell>
                                         <div className="flex items-center gap-4">

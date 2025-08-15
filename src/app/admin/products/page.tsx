@@ -17,6 +17,7 @@ import { db } from "@/lib/firebase";
 
 export default function AdminProductsPage() {
     const [products, setProducts] = useState<DisplayProduct[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const q = query(collection(db, "products"));
@@ -26,6 +27,7 @@ export default function AdminProductsPage() {
                 productsData.push({ id: doc.id, ...doc.data() } as DisplayProduct);
             });
             setProducts(productsData);
+            setLoading(false);
         });
 
         return () => unsubscribe();
@@ -62,7 +64,11 @@ export default function AdminProductsPage() {
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                   {products.map(product => (
+                   {loading ? (
+                       <TableRow>
+                           <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading products...</TableCell>
+                       </TableRow>
+                   ) : products.map(product => (
                      <TableRow key={product.id}>
                         <TableCell className="hidden sm:table-cell p-2">
                              <div className="relative w-16 h-16 rounded-md overflow-hidden">
