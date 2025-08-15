@@ -53,33 +53,6 @@ type Attachment = {
 
 const FORBIDDEN_KEYWORDS = ['phone', 'email', 'contact', '@', '.com', 'number', 'cash', 'paypal', 'venmo'];
 
-const initialConversations: Conversation[] = [
-  {
-    id: "1",
-    vendorId: "VDR001",
-    avatar: "https://placehold.co/40x40.png",
-    messages: [
-      { id: 'msg1', sender: "customer", text: "Hi! I'm interested in the Classic Leather Watch. Is it available in black?", timestamp: new Date() },
-      { id: 'msg2', sender: "vendor", text: "Hello! Yes, the Classic Leather Watch is available with a black strap. I can update the listing if you'd like to purchase it.", timestamp: new Date() },
-      { id: 'msg3', sender: "customer", text: "That would be great, thank you!", attachments: [{name: 'watch_photo.jpg', type: 'image', url: 'https://placehold.co/300x200.png'}], timestamp: new Date() },
-    ],
-    unread: true,
-    userMessageCount: 3,
-    awaitingVendorDecision: false,
-    status: 'active',
-  },
-  {
-    id: "2",
-    vendorId: "VDR002",
-    avatar: "https://placehold.co/40x40.png",
-    messages: [{ id: 'msg4', sender: "customer", text: "Can you ship to Canada?", attachments: [{name: 'shipping_question.pdf', type: 'file', url: '#'}], timestamp: new Date() }],
-    unread: false,
-    userMessageCount: 1,
-    awaitingVendorDecision: false,
-    status: 'active',
-  },
-];
-
 
 const mockAddresses = [
     { id: 1, type: "Home", recipient: "John Doe", line1: "123 Main St", city: "Anytown", zip: "12345", isDefault: true, phone: "+1 (555) 111-2222" },
@@ -107,7 +80,7 @@ const MOCK_USER_DATA = {
 // Simulate tracking for chat abuse prevention
 const MAX_CHATS_WITHOUT_PURCHASE = 4;
 let hasMadePurchase = mockUserOrders.length > 0;
-let uniqueVendorChats = new Set(initialConversations.map(c => c.vendorId)).size;
+let uniqueVendorChats = new Set().size; // This will be managed by real data now
 
 const MAX_PRICE = 500;
 
@@ -346,6 +319,22 @@ export default function AccountPage() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const MAX_MESSAGE_LENGTH = 1500;
 
+  useEffect(() => {
+    // Set up the real-time listener
+    const q = query(collection(db, "conversations")); // In real app, add where('userId', '==', currentUser.id)
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        const convos: Conversation[] = [];
+        querySnapshot.forEach((doc) => {
+            convos.push({ id: doc.id, ...doc.data() } as Conversation);
+        });
+        setConversations(convos);
+        uniqueVendorChats = new Set(convos.map(c => c.vendorId)).size;
+    });
+
+    return () => unsubscribe(); // Cleanup listener on component unmount
+  }, []);
+
+
   // Handle navigation from product page
   useEffect(() => {
     const vendorId = searchParams.get('vendorId');
@@ -474,28 +463,30 @@ export default function AccountPage() {
     }
 
     const newMessageObj = { 
-        id: `cust-${Date.now()}`,
         sender: "customer", 
         text: newMessage,
-        timestamp: serverTimestamp(), // Use server-side timestamp
+        timestamp: serverTimestamp(),
     };
 
-    const newCount = selectedConversation.userMessageCount + 1;
-    let updatedConvo: Conversation = {
-        ...selectedConversation,
-        messages: [...selectedConversation.messages, newMessageObj],
-        userMessageCount: newCount,
-    };
-     if (newCount >= 4) {
-        updatedConvo.status = 'locked';
+    try {
+        const conversationRef = collection(db, "conversations", selectedConversation.id, "messages");
+        await addDoc(conversationRef, newMessageObj);
+
+        // Here you would also update the parent conversation document's `lastMessage` and `timestamp` fields.
+        // For simplicity, we'll rely on the onSnapshot listener to update the view.
+
+        setNewMessage("");
+        setAttachments([]);
+    } catch (error) {
+        console.error("Error sending message:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not send message. Please try again.",
+        });
     }
 
-    setConversations(prev => prev.map(c => c.id === updatedConvo.id ? updatedConvo : c));
-    setSelectedConversation(updatedConvo);
-
-    setNewMessage("");
-    setAttachments([]);
-  }, [attachments, newMessage, selectedConversation, toast, conversations]);
+  }, [attachments, newMessage, selectedConversation, toast]);
 
   const handleSelectConversation = useCallback((id: string) => {
     const convo = conversations.find(c => c.id === id);
