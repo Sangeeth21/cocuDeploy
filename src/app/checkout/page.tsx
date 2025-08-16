@@ -105,6 +105,7 @@ export default function CheckoutPage() {
                 productId: item.product.id,
                 productName: item.product.name,
                 productImage: item.product.imageUrl,
+                vendorId: item.product.vendorId,
                 quantity: item.quantity,
                 price: item.product.price,
                 // Include customizations if they exist
@@ -280,6 +281,7 @@ export default function CheckoutPage() {
                                                 <div>
                                                     <p className="font-semibold">{item.product.name}</p>
                                                     <p className="text-sm text-muted-foreground">Qty: {item.quantity}</p>
+                                                     <p className="text-xs text-muted-foreground">Sold by: {item.product.vendorName}</p>
                                                 </div>
                                             </div>
                                             <p className="font-semibold">${(item.product.price * item.quantity).toFixed(2)}</p>

@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Star, Heart, Info } from "lucide-react";
+import { Star, Heart, Info, Store } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,8 +17,9 @@ import { useAuthDialog } from "@/context/auth-dialog-context";
 import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { DisplayProduct, CommissionRule } from "@/lib/types";
+import type { DisplayProduct, CommissionRule, User } from "@/lib/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -43,15 +44,29 @@ const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').the
     loading: () => <Skeleton className="h-[300px] w-full rounded-xl" />
 });
 
+function VendorInfoDialog({ vendor }: { vendor: User }) {
+    return (
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>{vendor.name}</DialogTitle>
+                <DialogDescription>
+                    {vendor.bio || "This vendor hasn't added a bio yet."}
+                </DialogDescription>
+            </DialogHeader>
+        </DialogContent>
+    );
+}
 
 export default function ProductDetailPage() {
   const { toast } = useToast();
   const params = useParams();
   const id = params.id as string;
   const [product, setProduct] = useState<DisplayProduct | null>(null);
+  const [vendor, setVendor] = useState<User | null>(null);
   const [similarProducts, setSimilarProducts] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [commissionRule, setCommissionRule] = useState<CommissionRule | null>(null);
+  const [isVendorInfoOpen, setIsVendorInfoOpen] = useState(false);
 
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isLoggedIn } = useUser();
@@ -69,20 +84,25 @@ export default function ProductDetailPage() {
             const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
             setProduct(productData);
 
+            if (productData.vendorId) {
+                const vendorRef = doc(db, "users", productData.vendorId);
+                const vendorSnap = await getDoc(vendorRef);
+                if (vendorSnap.exists()) {
+                    setVendor({ id: vendorSnap.id, ...vendorSnap.data() } as User);
+                }
+            }
+
             // Fetch commission rule hierarchy
-            // 1. Product-specific override
             const productCommissionRef = doc(db, "productCommissionOverrides", id);
             const productCommissionSnap = await getDoc(productCommissionRef);
             if (productCommissionSnap.exists()) {
                 setCommissionRule(productCommissionSnap.data().rule as CommissionRule);
             } else {
-                // 2. Vendor-specific override
                 const vendorCommissionQuery = query(collection(db, "vendorCommissionOverrides"), where("vendorId", "==", productData.vendorId), limit(1));
                 const vendorCommissionSnap = await getDocs(vendorCommissionQuery);
                 if (!vendorCommissionSnap.empty) {
                     setCommissionRule(vendorCommissionSnap.docs[0].data().rule as CommissionRule);
                 } else {
-                    // 3. Category rule
                     const categoryCommissionRef = doc(db, "commissions", "categories");
                     const categoryCommissionSnap = await getDoc(categoryCommissionRef);
                     if (categoryCommissionSnap.exists()) {
@@ -178,6 +198,7 @@ export default function ProductDetailPage() {
   }
 
   return (
+    <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12 items-start">
         <div>
@@ -197,13 +218,21 @@ export default function ProductDetailPage() {
         <div className="space-y-6">
           <p className="text-sm font-medium text-primary">{product.category}</p>
           <h1 className="text-4xl font-bold font-headline">{product.name}</h1>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className={cn('h-5 w-5', i < Math.round(product.rating) ? 'text-accent fill-accent' : 'text-muted-foreground/30')} />
-              ))}
+          
+          {vendor && (
+              <DialogTrigger asChild>
+                <button className="text-sm text-muted-foreground hover:text-primary">
+                    Sold by <span className="font-semibold underline">{vendor.name}</span>
+                </button>
+              </DialogTrigger>
+          )}
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1">
+              <Star className='h-5 w-5 text-accent fill-accent' />
+              <span className="font-semibold">{product.rating}</span>
+              <span className="text-muted-foreground text-sm">({product.reviewCount} reviews)</span>
             </div>
-            <span className="text-muted-foreground">({product.reviewCount} reviews)</span>
           </div>
            <div className="flex items-center gap-2">
             <p className="text-3xl font-bold font-body">${finalPrice.toFixed(2)}</p>
@@ -245,5 +274,7 @@ export default function ProductDetailPage() {
         </div>
       </div>
     </div>
+    {vendor && <VendorInfoDialog vendor={vendor} />}
+    </Dialog>
   );
 }

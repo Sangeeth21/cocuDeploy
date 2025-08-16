@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import Link from "next/link";
-import type { Message, Conversation, DisplayProduct, Order, User } from "@/lib/types";
+import type { Message, Conversation, DisplayProduct, Order, User, OrderItem } from "@/lib/types";
 import { useUser } from "@/context/user-context";
 import { useWishlist } from "@/context/wishlist-context";
 import { ProductCard } from "@/components/product-card";
@@ -40,7 +40,7 @@ import { useCart } from "@/context/cart-context";
 import { Progress } from "@/components/ui/progress";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, updateDoc, orderBy, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, updateDoc, orderBy, getDocs, limit } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -72,6 +72,64 @@ type PaymentMethod = {
 const FORBIDDEN_KEYWORDS = ['phone', 'email', 'contact', '@', '.com', 'number', 'cash', 'paypal', 'venmo'];
 
 const MAX_PRICE = 500;
+
+function OrderDetailsDialog({ order }: { order: Order }) {
+    return (
+         <DialogContent className="sm:max-w-3xl">
+            <DialogHeader>
+                <DialogTitle>Order Details: {order.id}</DialogTitle>
+                <DialogDescription>{new Date(order.date.toDate()).toLocaleString()}</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Product</TableHead>
+                            <TableHead>Quantity</TableHead>
+                            <TableHead className="text-right">Price</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {order.items.map(item => (
+                            <TableRow key={item.productId}>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative h-12 w-12 rounded-md overflow-hidden">
+                                            <Image src={item.productImage} alt={item.productName} fill className="object-cover" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium">{item.productName}</p>
+                                            <p className="text-xs text-muted-foreground">Sold by: {item.vendorId}</p>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell>x{item.quantity}</TableCell>
+                                <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+                <div className="flex justify-end">
+                    <div className="w-full max-w-sm space-y-2">
+                        <div className="flex justify-between">
+                            <span>Subtotal</span>
+                            <span>${order.subtotal.toFixed(2)}</span>
+                        </div>
+                         <div className="flex justify-between text-muted-foreground text-sm">
+                            <span>Shipping</span>
+                            <span>${order.shipping.toFixed(2)}</span>
+                        </div>
+                        <Separator/>
+                        <div className="flex justify-between font-bold">
+                            <span>Total</span>
+                            <span>${order.total.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </DialogContent>
+    )
+}
 
 function WishlistTabContent({orders}: {orders: Order[]}) {
     const router = useRouter();
@@ -989,7 +1047,8 @@ export default function AccountPage() {
                     </TableHeader>
                     <TableBody>
                         {orders.map((order) => (
-                            <TableRow key={order.id}>
+                           <Dialog key={order.id}>
+                            <TableRow>
                                 <TableCell className="font-medium">{order.id}</TableCell>
                                 <TableCell>{order.date ? new Date(order.date.toDate()).toLocaleDateString() : 'N/A'}</TableCell>
                                 <TableCell>
@@ -997,9 +1056,13 @@ export default function AccountPage() {
                                 </TableCell>
                                 <TableCell className="text-right">${order.total.toFixed(2)}</TableCell>
                                 <TableCell className="text-right">
-                                    <Button variant="outline" size="sm">View Details</Button>
+                                   <DialogTrigger asChild>
+                                        <Button variant="outline" size="sm">View Details</Button>
+                                   </DialogTrigger>
                                 </TableCell>
                             </TableRow>
+                            <OrderDetailsDialog order={order} />
+                           </Dialog>
                         ))}
                     </TableBody>
                 </Table>

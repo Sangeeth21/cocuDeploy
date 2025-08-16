@@ -44,6 +44,8 @@ export type DisplayProduct = {
   rating: number;
   reviewCount: number;
   vendorId: string;
+  vendorName: string;
+  vendorDescription?: string;
   tags?: string[];
   images?: string[];
   sku?: string;
@@ -182,6 +184,7 @@ export type OrderItem = {
     productId: string;
     productName: string;
     productImage: string;
+    vendorId: string;
     quantity: number;
     price: number;
     customizations?: { [key: string]: Partial<CustomizationValue> };
