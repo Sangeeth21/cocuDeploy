@@ -630,6 +630,7 @@ export default function NewProductPage() {
     
     const [productName, setProductName] = useState("");
     const [productDescription, setProductDescription] = useState("");
+    const [price, setPrice] = useState<number | string>("");
     const [selectedCategory, setSelectedCategory] = useState<string>("");
     
     const [b2bEnabled, setB2bEnabled] = useState(vendorType === 'corporate' || vendorType === 'both');
@@ -664,6 +665,7 @@ export default function NewProductPage() {
                     setProductName(data.name);
                     setProductDescription(data.description);
                     setSelectedCategory(data.category);
+                    setPrice(data.price);
                     setImages(prev => {
                         const newImages: ProductImages = {};
                         (data.images || [data.imageUrl]).forEach((src, index) => {
@@ -700,7 +702,7 @@ export default function NewProductPage() {
         }
     }, []);
     
-    const canSave = productName && packageWeight && packageLength && packageWidth && packageHeight;
+    const canSave = productName && packageWeight && packageLength && packageWidth && packageHeight && price;
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, side: ImageSide) => {
         if (event.target.files && event.target.files[0]) {
@@ -788,6 +790,7 @@ export default function NewProductPage() {
                 name: productName,
                 description: productDescription,
                 category: selectedCategory,
+                price: Number(price),
                 imageUrl: mainImageUrl,
                 images: allImagesArray,
                 galleryImages: galleryImageUrls,
@@ -1114,10 +1117,10 @@ export default function NewProductPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-2">
-                        <Label htmlFor="price">Price</Label>
+                        <Label htmlFor="price">Price <span className="text-destructive">*</span></Label>
                         <div className="relative">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
-                            <Input id="price" type="number" placeholder="19.99" className="pl-6"/>
+                            <Input id="price" type="number" placeholder="19.99" className="pl-6" value={price} onChange={e => setPrice(e.target.value)} required/>
                         </div>
                     </div>
                 </CardContent>
