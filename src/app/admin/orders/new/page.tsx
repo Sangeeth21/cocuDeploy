@@ -595,4 +595,3 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: Omit<User, 'id' | 'r
         </Dialog>
     );
 }
-

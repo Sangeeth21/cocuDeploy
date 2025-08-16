@@ -18,7 +18,7 @@ export async function getShippingCost(params: ShiprocketRateRequest): Promise<{ 
     const SHIPROCKET_API_TOKEN = process.env.SHIPROCKET_API_TOKEN;
 
     if (!SHIPROCKET_API_TOKEN) {
-        console.error("Shiprocket API token is not configured in .env file.");
+        console.warn("Shiprocket API token is not configured. Returning a simulated cost.");
         // Return a simulated cost for demonstration purposes
         return { cost: Math.floor(Math.random() * 20) + 5 };
     }
