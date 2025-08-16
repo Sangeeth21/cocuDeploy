@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from "next/image";
@@ -73,6 +72,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<DisplayProduct | null>(null);
   const [vendor, setVendor] = useState<User | null>(null);
   const [similarProducts, setSimilarProducts] = useState<DisplayProduct[]>([]);
+  const [vendorProducts, setVendorProducts] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [commissionRule, setCommissionRule] = useState<CommissionRule | null>(null);
   const [isVendorInfoOpen, setIsVendorInfoOpen] = useState(false);
@@ -93,7 +93,7 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (!id) return;
 
-    const fetchProductAndCommission = async () => {
+    const fetchProductAndRelations = async () => {
         setLoading(true);
         const productRef = doc(db, "products", id);
         const productSnap = await getDoc(productRef);
@@ -101,77 +101,52 @@ export default function ProductDetailPage() {
         if (productSnap.exists()) {
             const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
             setProduct(productData);
-            setActiveMedia({ type: 'image', src: productData.imageUrl }); // Set initial active image
+            setActiveMedia({ type: 'image', src: productData.imageUrl });
 
+            // Fetch Vendor
             if (productData.vendorId) {
                 const vendorRef = doc(db, "users", productData.vendorId);
                 const vendorSnap = await getDoc(vendorRef);
                 if (vendorSnap.exists()) {
                     setVendor({ id: vendorSnap.id, ...vendorSnap.data() } as User);
                 }
+                
+                // Fetch other products from the same vendor
+                const vendorProductsQuery = query(
+                    collection(db, "products"),
+                    where("vendorId", "==", productData.vendorId),
+                    where("__name__", "!=", id),
+                    limit(4)
+                );
+                const vendorProductsSnap = await getDocs(vendorProductsQuery);
+                setVendorProducts(vendorProductsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
             }
             
-            // In a real app, we'd fetch the template associated with this product
-            // and set the thumbnailPosition from its layout properties.
-            // For now, it's hardcoded above.
-
-            // Fetch commission rule hierarchy
-            const productCommissionRef = doc(db, "productCommissionOverrides", id);
-            const productCommissionSnap = await getDoc(productCommissionRef);
-            if (productCommissionSnap.exists()) {
-                setCommissionRule(productCommissionSnap.data().rule as CommissionRule);
-            } else {
-                const vendorCommissionQuery = query(collection(db, "vendorCommissionOverrides"), where("vendorId", "==", productData.vendorId), limit(1));
-                const vendorCommissionSnap = await getDocs(vendorCommissionQuery);
-                if (!vendorCommissionSnap.empty) {
-                    setCommissionRule(vendorCommissionSnap.docs[0].data().rule as CommissionRule);
-                } else {
-                    const categoryCommissionRef = doc(db, "commissions", "categories");
-                    const categoryCommissionSnap = await getDoc(categoryCommissionRef);
-                    if (categoryCommissionSnap.exists()) {
-                        const allRules = categoryCommissionSnap.data();
-                        setCommissionRule(allRules[productData.category] || null);
-                    }
-                }
-            }
-
-
-            // Fetch similar products
+            // Fetch similar products by category
             if(productData.category) {
-                const q = query(
+                const similarQuery = query(
                     collection(db, "products"), 
                     where("category", "==", productData.category),
                     where("__name__", "!=", id),
                     limit(4)
                 );
-                const querySnapshot = await getDocs(q);
-                const fetchedSimilar: DisplayProduct[] = [];
-                querySnapshot.forEach((doc) => {
-                    fetchedSimilar.push({ id: doc.id, ...doc.data() } as DisplayProduct);
-                });
-                setSimilarProducts(fetchedSimilar);
+                const similarSnap = await getDocs(similarQuery);
+                setSimilarProducts(similarSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
             }
         } else {
-            console.log("No such document!");
+            console.log("No such product document!");
         }
         setLoading(false);
     };
 
-    fetchProductAndCommission();
+    fetchProductAndRelations();
   }, [id]);
 
   const finalPrice = useMemo(() => {
     if (!product) return 0;
-    let price = product.price;
-    if (commissionRule?.buffer) {
-        if (commissionRule.buffer.type === 'fixed') {
-            price += commissionRule.buffer.value;
-        } else {
-            price *= (1 + commissionRule.buffer.value / 100);
-        }
-    }
-    return price;
-  }, [product, commissionRule]);
+    // Commission logic can be added back here if needed. For now, it's direct price.
+    return product.price;
+  }, [product]);
 
   const isCustomizable = useMemo(() => {
     if (!product) return false;
@@ -179,7 +154,7 @@ export default function ProductDetailPage() {
   }, [product]);
 
   const handleWishlistClick = (e: React.MouseEvent) => {
-      e.preventDefault(); // prevent navigation when clicking the heart
+      e.preventDefault();
       e.stopPropagation();
       if (!isLoggedIn) {
           openDialog('login');
@@ -213,7 +188,6 @@ export default function ProductDetailPage() {
     const media: MediaItem[] = [];
     const imageUrls = new Set<string>();
 
-    // Add main image and other side images, ensuring no duplicates
     [product.imageUrl, ...(product.images || [])].forEach(url => {
         if (url && !imageUrls.has(url)) {
             media.push({ type: 'image', src: url });
@@ -221,7 +195,6 @@ export default function ProductDetailPage() {
         }
     });
 
-    // Add gallery images, ensuring no duplicates
     (product.galleryImages || []).forEach(url => {
         if (url && !imageUrls.has(url)) {
             media.push({ type: 'image', src: url });
@@ -229,7 +202,6 @@ export default function ProductDetailPage() {
         }
     });
 
-    // Add video
     if (product.videoUrl) {
         media.push({ type: 'video', src: product.videoUrl });
     }
@@ -395,8 +367,8 @@ export default function ProductDetailPage() {
             </div>
 
            <ProductInteractions product={product} isCustomizable={isCustomizable} quantity={quantity} />
-
-             <div className="border rounded-lg p-3 space-y-2">
+           
+            <div className="border rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2">
                     <Truck className="h-5 w-5 text-muted-foreground" />
                     <Label htmlFor="pincode-check" className="font-semibold">Check Delivery Options</Label>
@@ -428,14 +400,13 @@ export default function ProductDetailPage() {
       </div>
       
       <Separator className="my-12" />
+      <FrequentlyBoughtTogetherPreview currentProduct={product} />
+
+      <Separator className="my-12" />
 
       <div className="grid md:grid-cols-3 gap-12">
         <div className="md:col-span-2">
           <ReviewsPreview productId={product.id} />
-        </div>
-        
-        <div className="space-y-8">
-            <FrequentlyBoughtTogetherPreview currentProduct={product} />
         </div>
       </div>
 
@@ -445,6 +416,19 @@ export default function ProductDetailPage() {
         <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
+        </div>
+      </div>
+
+      <Separator className="my-12" />
+        
+       <div>
+        <h2 className="text-2xl font-bold font-headline mb-6">More from {vendor?.name || 'this Vendor'}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {vendorProducts.length > 0 ? (
+              vendorProducts.map(p => <ProductCard key={p.id} product={p} />)
+          ) : (
+             <p className="text-muted-foreground col-span-full">No other products found from this vendor.</p>
+          )}
         </div>
       </div>
     </div>
