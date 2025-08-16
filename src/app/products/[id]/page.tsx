@@ -108,7 +108,7 @@ export default function ProductDetailPage() {
                 const vendorRef = doc(db, "users", productData.vendorId);
                 const vendorSnap = await getDoc(vendorRef);
                 if (vendorSnap.exists()) {
-                    setVendor({ id: vendorSnap.id, ...vendorSnap.data() } as User);
+                    setVendor({ id: vendorSnap.id, ...docSnap.data() } as User);
                 }
                 
                 // Fetch other products from the same vendor
@@ -411,24 +411,24 @@ export default function ProductDetailPage() {
       </div>
 
       <Separator className="my-12" />
-
-      <div>
-        <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
-        </div>
-      </div>
-
-      <Separator className="my-12" />
         
        <div>
-        <h2 className="text-2xl font-bold font-headline mb-6">More from {vendor?.name || 'this Vendor'}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <h2 className="text-2xl font-bold font-headline mb-6">More from this Vendor</h2>
+         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           {vendorProducts.length > 0 ? (
               vendorProducts.map(p => <ProductCard key={p.id} product={p} />)
           ) : (
              <p className="text-muted-foreground col-span-full">No other products found from this vendor.</p>
           )}
+        </div>
+      </div>
+      
+       <Separator className="my-12" />
+
+      <div>
+        <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
         </div>
       </div>
     </div>
