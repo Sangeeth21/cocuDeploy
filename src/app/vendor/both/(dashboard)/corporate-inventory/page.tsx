@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,11 +9,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { mockProducts } from "@/lib/mock-data";
 import type { DisplayProduct } from "@/lib/types";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Edit } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 function getStockStatus(stock: number): { text: string; variant: "default" | "secondary" | "destructive" } {
     if (stock === 0) return { text: "Out of Stock", variant: "destructive" };
@@ -23,8 +24,28 @@ function getStockStatus(stock: number): { text: string; variant: "default" | "se
 
 export default function CorporateInventoryPage() {
     const { toast } = useToast();
-    const [products, setProducts] = useState<DisplayProduct[]>(mockProducts.filter(p => p.b2bEnabled));
+    const [products, setProducts] = useState<DisplayProduct[]>([]);
     const [editingQuantities, setEditingQuantities] = useState<{ [key: string]: string }>({});
+    const [loading, setLoading] = useState(true);
+    const vendorId = "VDR001"; // Placeholder
+
+    useEffect(() => {
+        const q = query(
+            collection(db, "products"),
+            where("vendorId", "==", vendorId),
+            where("b2bEnabled", "==", true)
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedProducts: DisplayProduct[] = [];
+            snapshot.forEach(doc => {
+                fetchedProducts.push({ id: doc.id, ...doc.data() } as DisplayProduct);
+            });
+            setProducts(fetchedProducts);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [vendorId]);
+
 
     const handleQuantityChange = (productId: string, value: string) => {
         setEditingQuantities(prev => ({ ...prev, [productId]: value }));
@@ -77,55 +98,64 @@ export default function CorporateInventoryPage() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {products.map(product => {
-                                const status = getStockStatus(product.stock ?? 0);
-                                const isEditing = editingQuantities[product.id] !== undefined;
+                            {loading ? (
+                                <TableRow>
+                                    <TableCell colSpan={6} className="text-center text-muted-foreground">Loading inventory...</TableCell>
+                                </TableRow>
+                            ) : (
+                                products.map(product => {
+                                    const status = getStockStatus(product.stock ?? 0);
+                                    const isEditing = editingQuantities[product.id] !== undefined;
 
-                                return (
-                                    <TableRow key={product.id}>
-                                        <TableCell className="hidden sm:table-cell p-2">
-                                            <div className="relative w-16 h-16 rounded-md overflow-hidden">
-                                                <Image
-                                                    src={product.imageUrl}
-                                                    alt={product.name}
-                                                    fill
-                                                    className="object-cover"
+                                    return (
+                                        <TableRow key={product.id}>
+                                            <TableCell className="hidden sm:table-cell p-2">
+                                                <div className="relative w-16 h-16 rounded-md overflow-hidden">
+                                                    <Image
+                                                        src={product.imageUrl}
+                                                        alt={product.name}
+                                                        fill
+                                                        className="object-cover"
+                                                    />
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="font-medium">{product.name}</TableCell>
+                                            <TableCell className="text-muted-foreground">{product.sku ?? 'N/A'}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={status.variant}>{status.text}</Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Input
+                                                    type="number"
+                                                    value={editingQuantities[product.id] ?? product.stock ?? 0}
+                                                    onChange={(e) => handleQuantityChange(product.id, e.target.value)}
+                                                    className="h-9"
+                                                    min="0"
                                                 />
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="font-medium">{product.name}</TableCell>
-                                        <TableCell className="text-muted-foreground">{product.sku ?? 'N/A'}</TableCell>
-                                        <TableCell>
-                                            <Badge variant={status.variant}>{status.text}</Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Input
-                                                type="number"
-                                                value={editingQuantities[product.id] ?? product.stock ?? 0}
-                                                onChange={(e) => handleQuantityChange(product.id, e.target.value)}
-                                                className="h-9"
-                                                min="0"
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" size="icon">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                        <span className="sr-only">Actions</span>
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent>
-                                                    {isEditing && <DropdownMenuItem onSelect={() => handleSaveQuantity(product.id)}>Save Quantity</DropdownMenuItem>}
-                                                    <DropdownMenuItem asChild>
-                                                        <Link href={`/products/${product.id}`} target="_blank">View Product</Link>
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" size="icon">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                            <span className="sr-only">Actions</span>
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        {isEditing && <DropdownMenuItem onSelect={() => handleSaveQuantity(product.id)}>Save Quantity</DropdownMenuItem>}
+                                                        <DropdownMenuItem asChild>
+                                                            <Link href={`/vendor/both/products/new?id=${product.id}`}>
+                                                                <Edit className="mr-2 h-4 w-4" />
+                                                                Edit Product
+                                                            </Link>
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            )}
                         </TableBody>
                     </Table>
                 </CardContent>
