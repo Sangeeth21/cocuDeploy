@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const AiSearchAssistantInputSchema = z.object({
   searchQuery: z.string().describe('The original search query entered by the user.'),

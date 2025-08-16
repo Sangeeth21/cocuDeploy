@@ -10,7 +10,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const GenerateImageWithStyleInputSchema = z.object({
   prompt: z.string().describe('The user\'s description of the image they want.'),

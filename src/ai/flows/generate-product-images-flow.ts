@@ -10,7 +10,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const GenerateProductImagesInputSchema = z.object({
   productName: z.string().describe('The name of the product.'),
@@ -68,5 +68,4 @@ export const generateProductImagesFlow = ai.defineFlow(
     };
   }
 );
-
     

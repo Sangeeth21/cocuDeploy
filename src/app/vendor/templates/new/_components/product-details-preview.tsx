@@ -4,23 +4,65 @@
 import { Button } from "@/components/ui/button";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import { Star } from "lucide-react";
+import { Star, Video } from "lucide-react";
 import Image from "next/image";
+import { useState } from "react";
 
-export function ProductDetailsPreview({ layout }: { layout: string }) {
+export function ProductDetailsPreview({ layout, thumbnailPosition = 'bottom' }: { layout: string, thumbnailPosition: 'left' | 'right' | 'bottom' }) {
     const product = mockProducts[0];
+    const allImages = [product.imageUrl, ...(product.images || [])].filter((img, index, self) => img && self.indexOf(img) === index).slice(0, 5);
+    const [activeImage, setActiveImage] = useState(allImages[0]);
 
     const isFullWidth = layout === 'full-width-image';
+
+    const galleryLayoutClasses = {
+        bottom: 'flex-col',
+        left: 'flex-row-reverse',
+        right: 'flex-row',
+    };
+    
+    const thumbnailLayoutClasses = {
+        bottom: 'flex-row w-full overflow-x-auto pt-4',
+        left: 'flex-col h-full overflow-y-auto pr-4',
+        right: 'flex-col h-full overflow-y-auto pl-4',
+    }
+
+    const mainImageOrderClasses = {
+        bottom: 'order-1',
+        left: 'order-1',
+        right: 'order-2',
+    }
+
+    const thumbnailOrderClasses = {
+        bottom: 'order-2',
+        left: 'order-2',
+        right: 'order-1',
+    }
 
     return (
         <div className={cn(
             "grid items-start gap-12",
             isFullWidth ? "grid-cols-1" : "md:grid-cols-2"
         )}>
-            <div>
-              <div className="aspect-square relative w-full overflow-hidden rounded-lg shadow-lg">
-                <Image src={product.imageUrl} alt={product.name} fill className="object-cover" data-ai-hint="product image" />
-              </div>
+            <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition])}>
+                 <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition])}>
+                    {activeImage && <Image src={activeImage} alt={product.name} fill className="object-cover" data-ai-hint="product image" />}
+                </div>
+                 <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition], thumbnailOrderClasses[thumbnailPosition])}>
+                    {allImages.map((img, index) => (
+                         <button
+                            key={index}
+                            onClick={() => setActiveImage(img)}
+                            className={cn(
+                                "relative aspect-square rounded-md overflow-hidden transition-all flex-shrink-0",
+                                activeImage === img ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
+                                thumbnailPosition === 'bottom' ? 'w-20' : 'w-16'
+                            )}
+                         >
+                            <Image src={img} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
+                         </button>
+                    ))}
+                </div>
             </div>
             <div className={cn("space-y-6", isFullWidth && "text-center")}>
               <p className="text-sm font-medium text-primary">{product.category}</p>

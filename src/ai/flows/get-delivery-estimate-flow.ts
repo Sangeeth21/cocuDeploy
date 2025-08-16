@@ -9,7 +9,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 import { getShippingCost } from '@/app/admin/orders/new/shipping-actions';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';

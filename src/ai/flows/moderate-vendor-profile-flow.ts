@@ -9,7 +9,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 export const ModerateVendorProfileInputSchema = z.object({
   profileText: z.string().describe('The vendor profile text (e.g., bio, description) to be moderated.'),
