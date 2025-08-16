@@ -1,6 +1,7 @@
 
 "use client";
 
+import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar } from "@/components/ui/sidebar";
@@ -12,7 +13,6 @@ import { useVerification } from "@/context/vendor-verification-context";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockVendorActivity } from "@/lib/mock-data";
-import React, { useState, useEffect } from "react";
 
 const navLinks = [
   { href: "/vendor/both/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -70,7 +70,7 @@ function CustomSidebarTrigger() {
     )
 }
 
-export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number }) {
+function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number }) {
     const pathname = usePathname();
     const { isVerified } = useVerification();
     const { open: isSidebarOpen } = useSidebar();
@@ -87,7 +87,6 @@ export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children
 
     return (
         <div className="flex min-h-screen">
-        <SidebarProvider>
             <Sidebar collapsible="icon" className="border-r hidden md:flex">
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -212,7 +211,17 @@ export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children
                     {children}
                 </main>
             </div>
-        </SidebarProvider>
         </div>
     );
+}
+
+
+export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number }) {
+    return (
+        <SidebarProvider>
+            <VendorSidebarLayoutContent unreadMessages={unreadMessages}>
+                {children}
+            </VendorSidebarLayoutContent>
+        </SidebarProvider>
+    )
 }
