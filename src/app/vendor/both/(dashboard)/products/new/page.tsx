@@ -845,8 +845,8 @@ export default function NewProductPage() {
                         <Input id="name" placeholder="e.g. Classic Leather Watch" value={productName} onChange={e => setProductName(e.target.value)} />
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="description">Description</Label>
-                        <Textarea id="description" placeholder="Describe your product in detail..." rows={6} value={productDescription} onChange={e => setProductDescription(e.target.value)} />
+                        <Label htmlFor="description">Description <span className="text-destructive">*</span></Label>
+                        <Textarea id="description" placeholder="Describe your product in detail..." rows={6} value={productDescription} onChange={e => setProductDescription(e.target.value)} required />
                     </div>
                 </CardContent>
             </Card>
