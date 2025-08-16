@@ -1,10 +1,11 @@
 
+
 "use client";
 
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Star, Heart, Info, Store, Loader2, MapPin, CheckCircle, Truck, Video } from "lucide-react";
+import { Star, Heart, Info, Store, Loader2, MapPin, CheckCircle, Truck, Video, Minus, Plus, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -79,6 +80,7 @@ export default function ProductDetailPage() {
   const [pincode, setPincode] = useState("");
   const [isCheckingPincode, setIsCheckingPincode] = useState(false);
   const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
+  const [quantity, setQuantity] = useState(1);
   
   const [activeMedia, setActiveMedia] = useState<MediaItem | null>(null);
   // This would be fetched from the vendor's template settings
@@ -375,7 +377,29 @@ export default function ProductDetailPage() {
           </div>
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           
-           <ProductInteractions product={product} isCustomizable={isCustomizable} />
+           <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <div className="flex items-center gap-2 max-w-[150px]">
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(q => Math.max(1, q - 1))}>
+                        <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input id="quantity" type="number" value={quantity} onChange={(e) => setQuantity(parseInt(e.target.value, 10) || 1)} className="h-9 text-center" />
+                    <Button variant="outline" size="icon" className="h-9 w-9" onClick={() => setQuantity(q => q + 1)}>
+                        <Plus className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+
+            <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
+                <p className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> 10% off on your first order</p>
+                 <div className="flex items-center gap-2">
+                    <Input placeholder="Enter coupon code" className="h-9" />
+                    <Button variant="secondary" className="h-9">Apply</Button>
+                </div>
+            </div>
+
+           <ProductInteractions product={product} isCustomizable={isCustomizable} quantity={quantity} />
 
             <div className="border rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2">

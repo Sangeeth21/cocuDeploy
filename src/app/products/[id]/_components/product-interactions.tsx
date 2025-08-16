@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -13,6 +14,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
+import { mockUserOrders } from "@/lib/mock-data";
 import { useCart } from "@/context/cart-context";
 import { useUser } from "@/context/user-context";
 import { useAuthDialog } from "@/context/auth-dialog-context";
@@ -25,7 +27,7 @@ type Attachment = {
     url: string;
 }
 
-export function ProductInteractions({ product, isCustomizable }: { product: DisplayProduct, isCustomizable: boolean }) {
+export function ProductInteractions({ product, isCustomizable, quantity }: { product: DisplayProduct, isCustomizable: boolean, quantity: number }) {
   const { toast } = useToast();
   const router = useRouter();
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -187,10 +189,10 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
             });
             return;
         }
-        addToCart({product, customizations: {}});
+        addToCart({product, customizations: {}, quantity});
         toast({
           title: "Added to cart!",
-          description: `${product.name} has been added to your cart.`,
+          description: `${quantity} x ${product.name} has been added to your cart.`,
         });
     };
 
@@ -199,7 +201,7 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
             openDialog('login');
             return;
         }
-        addToCart({product, customizations: {}});
+        addToCart({product, customizations: {}, quantity});
         router.push('/checkout');
     }
 
