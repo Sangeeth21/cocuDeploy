@@ -399,36 +399,24 @@ export default function ProductDetailPage() {
         </div>
       </div>
       
-      <Separator className="my-12" />
-
-      <div className="grid md:grid-cols-3 gap-12">
-          <div className="md:col-span-3 lg:col-span-2">
-             <ReviewsPreview productId={product.id} />
+      <div className="my-12 space-y-12">
+        <ReviewsPreview productId={product.id} />
+        <FrequentlyBoughtTogetherPreview currentProduct={product} />
+        <div>
+          <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
           </div>
-          <div className="md:col-span-3 lg:col-span-1">
-             <FrequentlyBoughtTogetherPreview currentProduct={product} />
-          </div>
-      </div>
-
-      <Separator className="my-12" />
-        
-       <div>
-        <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
         </div>
-      </div>
-
-      <Separator className="my-12" />
-        
-       <div>
-        <h2 className="text-2xl font-bold font-headline mb-6">More from this Vendor</h2>
-         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-          {vendorProducts.length > 0 ? (
-              vendorProducts.map(p => <ProductCard key={p.id} product={p} />)
-          ) : (
-             <p className="text-muted-foreground col-span-full">No other products found from this vendor.</p>
-          )}
+        <div>
+          <h2 className="text-2xl font-bold font-headline mb-6">More from this Vendor</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            {vendorProducts.length > 0 ? (
+                vendorProducts.map(p => <ProductCard key={p.id} product={p} />)
+            ) : (
+               <p className="text-muted-foreground col-span-full">No other products found from this vendor.</p>
+            )}
+          </div>
         </div>
       </div>
       
