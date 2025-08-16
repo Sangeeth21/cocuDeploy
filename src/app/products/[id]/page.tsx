@@ -410,6 +410,15 @@ export default function ProductDetailPage() {
         </div>
       </div>
 
+       <Separator className="my-12" />
+
+      <div>
+        <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
+        </div>
+      </div>
+
       <Separator className="my-12" />
         
        <div>
@@ -423,18 +432,8 @@ export default function ProductDetailPage() {
         </div>
       </div>
       
-       <Separator className="my-12" />
-
-      <div>
-        <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
-        </div>
-      </div>
     </div>
     {vendor && <VendorInfoDialog vendor={vendor} />}
     </Dialog>
   );
 }
-
-    
