@@ -393,10 +393,6 @@ export default function ProductDetailPage() {
             <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
                 <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
                 <p className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> 10% off on your first order</p>
-                 <div className="flex items-center gap-2">
-                    <Input placeholder="Enter coupon code" className="h-9" />
-                    <Button variant="secondary" className="h-9">Apply</Button>
-                </div>
             </div>
 
            <ProductInteractions product={product} isCustomizable={isCustomizable} quantity={quantity} />
