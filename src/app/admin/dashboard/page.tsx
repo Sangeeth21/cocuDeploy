@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowUpRight, DollarSign, Users, CreditCard, Activity, BellRing, Check, X, ShieldAlert, Package, User, Megaphone, Building, Database } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { collection, query, orderBy, limit, onSnapshot, where, getDocs, getCountFromServer } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, where, getDocs, getCountFromServer, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Order, User as UserType, MarketingCampaign } from "@/lib/types";
 import { seedDatabase } from '../actions';
@@ -20,6 +20,7 @@ export default function AdminDashboardPage() {
     const { toast } = useToast();
     const [stats, setStats] = useState({
         revenue: 0,
+        revenueChange: 0,
         signups: 0,
         orders: 0,
         vendors: 0,
@@ -34,6 +35,25 @@ export default function AdminDashboardPage() {
     useEffect(() => {
         // Fetch stats
         const fetchStats = async () => {
+            // --- Revenue Calculation ---
+            const now = new Date();
+            const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+            const currentMonthOrdersQuery = query(collection(db, "orders"), where("date", ">=", Timestamp.fromDate(startOfCurrentMonth)));
+            const lastMonthOrdersQuery = query(collection(db, "orders"), where("date", ">=", Timestamp.fromDate(startOfLastMonth)), where("date", "<", Timestamp.fromDate(startOfCurrentMonth)));
+
+            const currentMonthSnapshot = await getDocs(currentMonthOrdersQuery);
+            const lastMonthSnapshot = await getDocs(lastMonthOrdersQuery);
+
+            const currentMonthRevenue = currentMonthSnapshot.docs.reduce((acc, doc) => acc + doc.data().total, 0);
+            const lastMonthRevenue = lastMonthSnapshot.docs.reduce((acc, doc) => acc + doc.data().total, 0);
+            
+            const revenueChange = lastMonthRevenue > 0 
+                ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+                : currentMonthRevenue > 0 ? 100 : 0;
+
+            // --- Other Stats ---
             const ordersQuery = query(collection(db, "orders"), where("status", "!=", "Cancelled"));
             const usersQuery = query(collection(db, "users"), where("role", "==", "Customer"));
             const vendorsQuery = query(collection(db, "users"), where("role", "==", "Vendor"));
@@ -46,6 +66,7 @@ export default function AdminDashboardPage() {
             
             setStats({
                 revenue: totalRevenue,
+                revenueChange,
                 signups: usersSnapshot.data().count,
                 orders: ordersSnapshot.size,
                 vendors: vendorsSnapshot.data().count
@@ -131,7 +152,7 @@ export default function AdminDashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">${stats.revenue.toFixed(2)}</div>
             <p className="text-xs text-muted-foreground">
-              +20.1% from last month
+                {stats.revenueChange >= 0 ? '+' : ''}{stats.revenueChange.toFixed(1)}% from last month
             </p>
           </CardContent>
         </Card>

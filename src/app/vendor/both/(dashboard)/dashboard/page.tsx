@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign, Check, X } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { collection, onSnapshot, query, where, orderBy, limit, getDocs, getCountFromServer } from "firebase/firestore";
+import { collection, onSnapshot, query, where, orderBy, limit, getDocs, getCountFromServer, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useState, useEffect } from "react";
 import type { Order, Conversation } from "@/lib/types";
@@ -16,6 +16,7 @@ export default function BothVendorDashboardPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
   const [stats, setStats] = useState({
     revenue: 0,
+    revenueChange: 0,
     activeOrders: 0,
     newMessages: 0,
     activeListings: 0,
@@ -32,25 +33,42 @@ export default function BothVendorDashboardPage() {
 
         let totalRevenue = 0;
         let activeOrdersCount = 0;
+        let currentMonthRevenue = 0;
+        let lastMonthRevenue = 0;
+        
+        const now = new Date();
+        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
         if (vendorProductIds.length > 0) {
-            // Firestore doesn't support 'in' with 'array-contains-any', so we fetch all orders and filter.
             // This is not scalable for huge datasets, but works for this scenario.
             const ordersQuery = query(collection(db, "orders"));
             const ordersSnapshot = await getDocs(ordersQuery);
             
             ordersSnapshot.forEach(doc => {
                 const order = doc.data() as Order;
+                const orderDate = order.date.toDate();
                 const vendorItemsInOrder = order.items.filter(item => vendorProductIds.includes(item.productId));
-                
-                if (vendorItemsInOrder.length > 0) {
+                const orderRevenueFromVendor = vendorItemsInOrder.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+                if (orderRevenueFromVendor > 0) {
+                    totalRevenue += orderRevenueFromVendor;
                     if (order.status !== 'Cancelled' && order.status !== 'Delivered') {
                         activeOrdersCount++;
                     }
-                    totalRevenue += vendorItemsInOrder.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+                    if (orderDate >= startOfCurrentMonth) {
+                        currentMonthRevenue += orderRevenueFromVendor;
+                    } else if (orderDate >= startOfLastMonth) {
+                        lastMonthRevenue += orderRevenueFromVendor;
+                    }
                 }
             });
         }
+
+         const revenueChange = lastMonthRevenue > 0 
+            ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+            : currentMonthRevenue > 0 ? 100 : 0;
         
         // Get listings count
         const listingsQuery = query(collection(db, "products"), where("vendorId", "==", vendorId), where("status", "==", "Live"));
@@ -62,6 +80,7 @@ export default function BothVendorDashboardPage() {
 
         setStats({
             revenue: totalRevenue,
+            revenueChange,
             activeOrders: activeOrdersCount,
             newMessages: messagesSnapshot.data().count,
             activeListings: listingsSnapshot.data().count,
@@ -102,7 +121,9 @@ export default function BothVendorDashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">${stats.revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+             <p className="text-xs text-muted-foreground">
+                {stats.revenueChange >= 0 ? '+' : ''}{stats.revenueChange.toFixed(1)}% from last month
+            </p>
           </CardContent>
         </Card>
         <Card>
