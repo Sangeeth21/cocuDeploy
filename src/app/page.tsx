@@ -80,10 +80,12 @@ export default function Home() {
         });
 
         // Fetch Products
-        const productsQuery = query(collection(db, "products"), where("status", "==", "Live"), orderBy("rating", "desc"), limit(8));
+        const productsQuery = query(collection(db, "products"), where("status", "==", "Live"), limit(8));
         const unsubProducts = onSnapshot(productsQuery, (snapshot) => {
             const products: DisplayProduct[] = [];
             snapshot.forEach(doc => products.push({ id: doc.id, ...doc.data() } as DisplayProduct));
+            // Client-side sort
+            products.sort((a, b) => b.rating - a.rating);
             setFeaturedProducts(products.slice(0, 4));
             setNewArrivals(products.slice(4, 8));
         });
