@@ -22,9 +22,9 @@ export function ProductDetailsPreview({ layout, thumbnailPosition = 'bottom' }: 
     };
     
     const thumbnailLayoutClasses = {
-        bottom: 'flex-row w-full',
-        left: 'flex-col h-full',
-        right: 'flex-col h-full',
+        bottom: 'flex-row w-full overflow-x-auto',
+        left: 'flex-col h-full overflow-y-auto',
+        right: 'flex-col h-full overflow-y-auto',
     }
 
     return (
