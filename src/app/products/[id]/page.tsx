@@ -296,7 +296,7 @@ export default function ProductDetailPage() {
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12 items-start">
-        <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
+        <div className={cn("md:sticky md:top-24 flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
            <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
                 {activeMedia?.type === 'image' && (
                     <Image src={activeMedia.src} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
@@ -396,7 +396,7 @@ export default function ProductDetailPage() {
 
            <ProductInteractions product={product} isCustomizable={isCustomizable} quantity={quantity} />
 
-            <div className="border rounded-lg p-3 space-y-2">
+             <div className="border rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2">
                     <Truck className="h-5 w-5 text-muted-foreground" />
                     <Label htmlFor="pincode-check" className="font-semibold">Check Delivery Options</Label>
