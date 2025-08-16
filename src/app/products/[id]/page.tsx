@@ -235,17 +235,42 @@ export default function ProductDetailPage() {
   };
   
   const thumbnailLayoutClasses = {
-      bottom: 'flex-row w-full',
-      left: 'flex-col h-full',
-      right: 'flex-col h-full',
+      bottom: 'flex-row w-full overflow-x-auto pt-4',
+      left: 'flex-col h-full overflow-y-auto pr-4',
+      right: 'flex-col h-full overflow-y-auto pl-4',
   }
+
+  const mainImageOrderClasses = {
+      bottom: 'order-1',
+      left: 'order-1',
+      right: 'order-2',
+  }
+
+  const thumbnailOrderClasses = {
+      bottom: 'order-2',
+      left: 'order-2',
+      right: 'order-1',
+  }
+
 
   return (
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12 items-start">
         <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
-          <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition as keyof typeof thumbnailLayoutClasses])}>
+           <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
+                {activeImage && <Image src={activeImage} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />}
+                 <Button 
+                    size="icon" 
+                    variant="secondary" 
+                    className="absolute top-4 right-4 rounded-full h-10 w-10"
+                    onClick={handleWishlistClick}
+                  >
+                    <Heart className={cn("h-5 w-5", isWishlisted(product.id) && "fill-destructive text-destructive")} />
+                </Button>
+              </div>
+          {allImages.length > 1 && (
+            <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition as keyof typeof thumbnailLayoutClasses], thumbnailOrderClasses[thumbnailPosition as keyof typeof thumbnailOrderClasses])}>
              {allImages.map((img, index) => (
                  <button
                     key={index}
@@ -259,18 +284,8 @@ export default function ProductDetailPage() {
                     <Image src={img} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
                  </button>
               ))}
-          </div>
-          <div className="relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg">
-            {activeImage && <Image src={activeImage} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />}
-             <Button 
-                size="icon" 
-                variant="secondary" 
-                className="absolute top-4 right-4 rounded-full h-10 w-10"
-                onClick={handleWishlistClick}
-              >
-                <Heart className={cn("h-5 w-5", isWishlisted(product.id) && "fill-destructive text-destructive")} />
-            </Button>
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">

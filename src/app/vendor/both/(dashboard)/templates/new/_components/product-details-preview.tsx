@@ -22,9 +22,21 @@ export function ProductDetailsPreview({ layout, thumbnailPosition = 'bottom' }: 
     };
     
     const thumbnailLayoutClasses = {
-        bottom: 'flex-row w-full overflow-x-auto',
-        left: 'flex-col h-full overflow-y-auto',
-        right: 'flex-col h-full overflow-y-auto',
+        bottom: 'flex-row w-full overflow-x-auto pt-4',
+        left: 'flex-col h-full overflow-y-auto pr-4',
+        right: 'flex-col h-full overflow-y-auto pl-4',
+    }
+
+    const mainImageOrderClasses = {
+        bottom: 'order-1',
+        left: 'order-1',
+        right: 'order-2',
+    }
+
+    const thumbnailOrderClasses = {
+        bottom: 'order-2',
+        left: 'order-2',
+        right: 'order-1',
     }
 
     return (
@@ -33,7 +45,10 @@ export function ProductDetailsPreview({ layout, thumbnailPosition = 'bottom' }: 
             isFullWidth ? "grid-cols-1" : "md:grid-cols-2"
         )}>
             <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition])}>
-                <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition])}>
+                 <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition])}>
+                    {activeImage && <Image src={activeImage} alt={product.name} fill className="object-cover" data-ai-hint="product image" />}
+                </div>
+                 <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition], thumbnailOrderClasses[thumbnailPosition])}>
                     {allImages.map((img, index) => (
                          <button
                             key={index}
@@ -47,9 +62,6 @@ export function ProductDetailsPreview({ layout, thumbnailPosition = 'bottom' }: 
                             <Image src={img} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
                          </button>
                     ))}
-                </div>
-                <div className="relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg">
-                    {activeImage && <Image src={activeImage} alt={product.name} fill className="object-cover" data-ai-hint="product image" />}
                 </div>
             </div>
             <div className={cn("space-y-6", isFullWidth && "text-center")}>
