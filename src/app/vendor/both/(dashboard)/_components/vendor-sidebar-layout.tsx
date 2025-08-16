@@ -70,7 +70,7 @@ function CustomSidebarTrigger() {
     )
 }
 
-function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number }) {
+export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number }) {
     const pathname = usePathname();
     const { isVerified } = useVerification();
     const { open: isSidebarOpen } = useSidebar();
@@ -86,7 +86,8 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
     }, [isSidebarOpen]);
 
     return (
-        <>
+        <div className="flex min-h-screen">
+        <SidebarProvider>
             <Sidebar collapsible="icon" className="border-r hidden md:flex">
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -115,7 +116,7 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
                                     >
                                         <Link href="/vendor/verify">
                                             <ShieldAlert className="h-5 w-5 stroke-[1.5]" />
-                                            <span>Verify Account</span>
+                                            <span className="group-data-[state=collapsed]:hidden">Verify Account</span>
                                         </Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
@@ -150,7 +151,7 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
                                                             >
                                                                 <Link href={subLink.href}>
                                                                     <subLink.icon className="h-5 w-5 stroke-[1.5]" />
-                                                                    <span>{subLink.label}</span>
+                                                                    <span className="group-data-[state=collapsed]:hidden">{subLink.label}</span>
                                                                 </Link>
                                                             </SidebarMenuButton>
                                                         </SidebarMenuItem>
@@ -211,19 +212,7 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
                     {children}
                 </main>
             </div>
-        </>
-    );
-}
-
-
-export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number; }) {
-    return (
-        <div className="flex min-h-screen">
-            <SidebarProvider>
-                <VendorSidebarLayoutContent unreadMessages={unreadMessages}>
-                    {children}
-                </VendorSidebarLayoutContent>
-            </SidebarProvider>
+        </SidebarProvider>
         </div>
     );
 }
