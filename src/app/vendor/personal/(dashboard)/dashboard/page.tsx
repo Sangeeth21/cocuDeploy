@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,9 +6,105 @@ import { Button } from "@/components/ui/button";
 import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign, Check, X } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { mockVendorActivity } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
+import { collection, onSnapshot, query, where, orderBy, limit, getDocs, getCountFromServer, Timestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { Order, Conversation } from "@/lib/types";
+
 
 export default function PersonalVendorDashboardPage() {
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    revenue: 0,
+    revenueChange: 0,
+    activeOrders: 0,
+    newMessages: 0,
+    activeListings: 0,
+  });
+  const vendorId = "VDR001"; // Placeholder
+
+  useEffect(() => {
+    // --- Fetch card stats ---
+    const fetchStats = async () => {
+        // Get all products for the vendor to identify their orders
+        const productsQuery = query(collection(db, "products"), where("vendorId", "==", vendorId));
+        const productsSnapshot = await getDocs(productsQuery);
+        const vendorProductIds = productsSnapshot.docs.map(doc => doc.id);
+
+        let totalRevenue = 0;
+        let activeOrdersCount = 0;
+        let currentMonthRevenue = 0;
+        let lastMonthRevenue = 0;
+        
+        const now = new Date();
+        const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+        if (vendorProductIds.length > 0) {
+            // This is not scalable for huge datasets, but works for this scenario.
+            const ordersQuery = query(collection(db, "orders"));
+            const ordersSnapshot = await getDocs(ordersQuery);
+            
+            ordersSnapshot.forEach(doc => {
+                const order = doc.data() as Order;
+                const orderDate = order.date.toDate();
+                const vendorItemsInOrder = order.items.filter(item => vendorProductIds.includes(item.productId));
+                const orderRevenueFromVendor = vendorItemsInOrder.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+
+                if (orderRevenueFromVendor > 0) {
+                    totalRevenue += orderRevenueFromVendor;
+                    if (order.status !== 'Cancelled' && order.status !== 'Delivered') {
+                        activeOrdersCount++;
+                    }
+
+                    if (orderDate >= startOfCurrentMonth) {
+                        currentMonthRevenue += orderRevenueFromVendor;
+                    } else if (orderDate >= startOfLastMonth) {
+                        lastMonthRevenue += orderRevenueFromVendor;
+                    }
+                }
+            });
+        }
+
+         const revenueChange = lastMonthRevenue > 0 
+            ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
+            : currentMonthRevenue > 0 ? 100 : 0;
+        
+        // Get listings count
+        const listingsQuery = query(collection(db, "products"), where("vendorId", "==", vendorId), where("status", "==", "Live"));
+        const listingsSnapshot = await getCountFromServer(listingsQuery);
+
+        // Get unread messages count
+        const messagesQuery = query(collection(db, "conversations"), where("vendorId", "==", vendorId), where("unread", "==", true));
+        const messagesSnapshot = await getCountFromServer(messagesQuery);
+
+        setStats({
+            revenue: totalRevenue,
+            revenueChange,
+            activeOrders: activeOrdersCount,
+            newMessages: messagesSnapshot.data().count,
+            activeListings: listingsSnapshot.data().count,
+        });
+    }
+
+    fetchStats();
+    
+    // --- Fetch notifications ---
+    const q = query(
+        collection(db, "notifications"), 
+        where("vendorId", "==", vendorId),
+        orderBy("timestamp", "desc"),
+        limit(5)
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setNotifications(notifs);
+    });
+    
+    return () => unsubscribe();
+  }, [vendorId]);
+
+
   return (
       <div>
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
@@ -26,8 +121,10 @@ export default function PersonalVendorDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+            <div className="text-2xl font-bold">${stats.revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+             <p className="text-xs text-muted-foreground">
+                {stats.revenueChange >= 0 ? '+' : ''}{stats.revenueChange.toFixed(1)}% from last month
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -36,7 +133,7 @@ export default function PersonalVendorDashboardPage() {
             <ListChecks className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+23</div>
+            <div className="text-2xl font-bold">+{stats.activeOrders}</div>
             <p className="text-xs text-muted-foreground">Ready to be fulfilled</p>
           </CardContent>
         </Card>
@@ -45,11 +142,11 @@ export default function PersonalVendorDashboardPage() {
             <CardTitle className="text-sm font-medium">New Messages</CardTitle>
             <div className="relative">
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                <Badge className="absolute -top-2 -right-2 h-4 w-4 justify-center p-0">5</Badge>
+                {stats.newMessages > 0 && <Badge className="absolute -top-2 -right-2 h-4 w-4 justify-center p-0">{stats.newMessages}</Badge>}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">+5</div>
+            <div className="text-2xl font-bold">+{stats.newMessages}</div>
             <p className="text-xs text-muted-foreground">From interested customers</p>
           </CardContent>
         </Card>
@@ -59,7 +156,7 @@ export default function PersonalVendorDashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">125</div>
+            <div className="text-2xl font-bold">{stats.activeListings}</div>
             <p className="text-xs text-muted-foreground">Products currently for sale</p>
           </CardContent>
         </Card>
@@ -71,8 +168,9 @@ export default function PersonalVendorDashboardPage() {
             <CardTitle className="font-headline">Recent Activity</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {mockVendorActivity.map(item => {
+            {notifications.length > 0 ? notifications.map(item => {
                 const Icon = item.type === 'stock' ? Package : item.type === 'message' ? MessageSquare : item.type === 'confirmation' ? Bell : ListChecks;
+                 const timestamp = item.timestamp?.toDate ? new Date(item.timestamp.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now';
                 return (
                      <div key={item.id} className="flex items-start gap-4">
                         <div className="p-2 bg-primary/10 rounded-full">
@@ -80,8 +178,8 @@ export default function PersonalVendorDashboardPage() {
                         </div>
                         <div className="flex-1 space-y-2">
                             <div className="grid gap-1">
-                                <p className="text-sm"><Link href={item.href} className="font-semibold hover:underline">{item.text}</Link></p>
-                                <p className="text-xs text-muted-foreground">{item.time}</p>
+                                <p className="text-sm"><Link href={item.href || '#'} className="font-semibold hover:underline">{item.text}</Link></p>
+                                <p className="text-xs text-muted-foreground">{timestamp}</p>
                             </div>
                             {item.type === 'confirmation' && (
                                 <div className="flex gap-2">
@@ -91,7 +189,7 @@ export default function PersonalVendorDashboardPage() {
                             )}
                              {item.type === 'message' && (
                                 <Button size="sm" variant="outline" asChild>
-                                    <Link href={item.href}>
+                                    <Link href={item.href || '#'}>
                                         Reply <ArrowRight className="ml-2 h-4 w-4"/>
                                     </Link>
                                 </Button>
@@ -99,7 +197,7 @@ export default function PersonalVendorDashboardPage() {
                         </div>
                     </div>
                 )
-            })}
+            }) : <p className="text-sm text-muted-foreground text-center">No new activity.</p>}
           </CardContent>
         </Card>
         <Card>
@@ -122,4 +220,3 @@ export default function PersonalVendorDashboardPage() {
       </div>
   );
 }
-
