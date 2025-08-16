@@ -40,7 +40,7 @@ import { useCart } from "@/context/cart-context";
 import { Progress } from "@/components/ui/progress";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
-import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, updateDoc } from "firebase/firestore";
+import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, updateDoc, orderBy, getDocs } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
@@ -306,8 +306,50 @@ export default function AccountPage() {
   
   const MAX_MESSAGE_LENGTH = 1500;
   
-  const hasMadePurchase = orders.length > 0;
-  const currentUserId = user?.id || "USR001"; // Placeholder for logged-in user
+  const currentUserId = user?.id;
+
+  // Real-time listener for user's conversations and their messages
+  useEffect(() => {
+    if (!currentUserId) {
+        setConversations([]);
+        return;
+    };
+
+    const convosQuery = query(collection(db, "conversations"), where("customerId", "==", currentUserId));
+    const unsubscribeConversations = onSnapshot(convosQuery, (querySnapshot) => {
+        const convos: Conversation[] = [];
+        querySnapshot.forEach((doc) => {
+            convos.push({ id: doc.id, ...doc.data() } as Conversation);
+        });
+
+        const sortedConvos = convos.sort((a,b) => {
+            const lastMsgA = a.messages[a.messages.length - 1]?.timestamp?.toMillis() || 0;
+            const lastMsgB = b.messages[b.messages.length - 1]?.timestamp?.toMillis() || 0;
+            return lastMsgB - lastMsgA;
+        });
+
+        setConversations(sortedConvos);
+    });
+
+    return () => unsubscribeConversations();
+  }, [currentUserId]);
+
+  // Listener for messages within the selected conversation
+  useEffect(() => {
+    if (!selectedConversation) return;
+
+    const messagesQuery = query(collection(db, "conversations", selectedConversation.id as string, "messages"), orderBy("timestamp"));
+    const unsubscribeMessages = onSnapshot(messagesQuery, (querySnapshot) => {
+        const msgs: Message[] = [];
+        querySnapshot.forEach((doc) => {
+            msgs.push({ id: doc.id, ...doc.data() } as Message);
+        });
+        setSelectedConversation(prev => prev ? { ...prev, messages: msgs } : null);
+    });
+
+    return () => unsubscribeMessages();
+  }, [selectedConversation?.id]);
+
 
   useEffect(() => {
     if (!isLoggedIn || !currentUserId) return;
@@ -345,60 +387,61 @@ export default function AccountPage() {
         setOrders(userOrders);
     });
 
-    const convosQuery = query(collection(db, "conversations"), where("customerId", "==", currentUserId));
-    const unsubscribeConversations = onSnapshot(convosQuery, (querySnapshot) => {
-        const convos: Conversation[] = [];
-        querySnapshot.forEach((doc) => {
-            convos.push({ id: doc.id, ...doc.data() } as Conversation);
-        });
-        setConversations(convos);
-    });
-
     return () => {
         unsubscribeUser();
         unsubscribeAddresses();
         unsubscribePayments();
         unsubscribeOrders();
-        unsubscribeConversations();
     };
   }, [isLoggedIn, currentUserId, setUser]);
 
 
-  // Handle navigation from product page
+  // Handle navigation from product page to start a chat
   useEffect(() => {
     const vendorId = searchParams.get('vendorId');
     const productName = searchParams.get('productName');
-    if (vendorId) {
-      let convo = conversations.find(c => c.vendorId === vendorId);
-      if (!convo) {
-        // In a real app, this would be an `addDoc` call, but for now we just manage local state
-        const newConvo: Conversation = {
-          id: (conversations.length + 1).toString(),
-          vendorId: vendorId,
-          avatar: "https://placehold.co/40x40.png",
-          messages: [],
-          userMessageCount: 0,
-          awaitingVendorDecision: false,
-          status: 'active',
-          customerId: currentUserId,
-        };
-        setConversations(prev => [...prev, newConvo]);
-        convo = newConvo;
+    
+    if (vendorId && user) {
+      const findOrCreateConversation = async () => {
+        const convosRef = collection(db, "conversations");
+        const q = query(convosRef, where("vendorId", "==", vendorId), where("customerId", "==", user.id), limit(1));
+        const existingConvos = await getDocs(q);
+        
+        let convoToSelect: Conversation;
+
+        if (!existingConvos.empty) {
+          convoToSelect = { id: existingConvos.docs[0].id, ...existingConvos.docs[0].data() } as Conversation;
+        } else {
+          // Create new conversation
+          const newConvoData = {
+            vendorId: vendorId,
+            customerId: user.id,
+            avatar: "https://placehold.co/40x40.png", // This should be fetched from vendor profile
+            messages: [],
+            userMessageCount: 0,
+            awaitingVendorDecision: false,
+            status: 'active' as const,
+          };
+          const docRef = await addDoc(collection(db, "conversations"), newConvoData);
+          convoToSelect = { id: docRef.id, ...newConvoData };
+        }
+        
+        setSelectedConversation(convoToSelect);
+        if (productName) {
+            setNewMessage(`Hi, I have a question about the "${productName}"...`);
+        }
+        
+        window.history.replaceState(null, '', '/account?tab=messages');
+        setTab('messages');
       }
-      setSelectedConversation(convo);
-      
-      if (productName) {
-        setNewMessage(`Hi, I have a question about the "${productName}"...`);
-      }
-      
-      window.history.replaceState(null, '', '/account?tab=messages');
-      setTab('messages');
+
+      findOrCreateConversation();
     } else {
         if (conversations.length > 0 && !selectedConversation) {
             setSelectedConversation(conversations[0]);
         }
     }
-  }, [searchParams, conversations, selectedConversation, currentUserId]);
+  }, [searchParams, conversations, selectedConversation, user]);
 
   const handleSaveChanges = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -503,7 +546,7 @@ export default function AccountPage() {
     }
 
     const newMessageObj = { 
-        sender: "customer", 
+        sender: "customer" as const, 
         text: newMessage,
         timestamp: serverTimestamp(),
     };
@@ -541,7 +584,7 @@ export default function AccountPage() {
 
   const getLastMessage = (messages: Message[]) => {
       if (!messages || messages.length === 0) return "No messages yet.";
-      const lastMsg = messages.filter(m => m.sender !== 'system').pop();
+      const lastMsg = [...messages].filter(m => m.sender !== 'system').pop();
       if (!lastMsg) return "No messages yet.";
       
       const prefix = lastMsg.sender === 'customer' ? 'You: ' : '';
@@ -572,7 +615,7 @@ export default function AccountPage() {
         if (messagesContainerRef.current) {
             messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
         }
-    }, [selectedConversation?.messages.length]);
+    }, [selectedConversation?.messages]);
 
     const loyaltyProgress = ((user?.loyalty?.totalOrdersForReward ?? 3) - (user?.loyalty?.ordersToNextReward ?? 1)) / (user?.loyalty?.totalOrdersForReward ?? 3) * 100;
     const referralsProgress = (user?.loyalty?.referrals ?? 0) / (user?.loyalty?.referralsForNextTier ?? 5) * 100;
@@ -621,7 +664,7 @@ export default function AccountPage() {
           <p className="text-muted-foreground">Manage your profile, orders, and settings.</p>
         </div>
       </div>
-      <Tabs value={tab} onValueChange={(value) => window.history.pushState(null, '', `?tab=${value}`)} className="w-full">
+      <Tabs value={tab} onValueChange={(value) => setTab(value)} className="w-full">
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
@@ -792,7 +835,7 @@ export default function AccountPage() {
                                 </Avatar>
                                 <div className="flex-1 overflow-hidden">
                                   <div className="flex justify-between items-center">
-                                    <p className="font-semibold">{`Chat #${convo.id.toString().padStart(6, '0')}`}</p>
+                                    <p className="font-semibold">{`Chat #${(convo.id as string).substring(0,6)}`}</p>
                                     <div className="flex items-center gap-2">
                                         {convo.status === 'flagged' && <AlertTriangle className="w-4 h-4 text-destructive" />}
                                         {convo.unread && <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>}
@@ -823,7 +866,7 @@ export default function AccountPage() {
                               <AvatarImage src={selectedConversation.avatar} alt={selectedConversation.vendorId} data-ai-hint="company logo" />
                               <AvatarFallback>{selectedConversation.vendorId.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <h2 className="text-lg font-semibold">{`Chat #${selectedConversation.id.toString().padStart(6, '0')}`}</h2>
+                            <h2 className="text-lg font-semibold">{`Chat #${(selectedConversation.id as string).substring(0,6)}`}</h2>
                         </div>
                          <div className="flex items-center gap-4">
                              <Button variant="ghost" size="icon" onClick={() => handleReportConversation(selectedConversation.id as string)}>
@@ -910,7 +953,7 @@ export default function AccountPage() {
                                         <label htmlFor="customer-file-upload"><Paperclip className="h-5 w-5" /></label>
                                     </Button>
                                     <input id="customer-file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} disabled={isLocked} />
-                                    <Button type="submit" size="icon" disabled={isLocked}><Send className="h-4 w-4" /></Button>
+                                    <Button type="submit" size="icon" disabled={isLocked || (!newMessage.trim() && attachments.length === 0)}><Send className="h-4 w-4" /></Button>
                                 </div>
                             </form>
                           </div>
@@ -948,7 +991,7 @@ export default function AccountPage() {
                         {orders.map((order) => (
                             <TableRow key={order.id}>
                                 <TableCell className="font-medium">{order.id}</TableCell>
-                                <TableCell>{order.date}</TableCell>
+                                <TableCell>{order.date ? new Date(order.date.toDate()).toLocaleDateString() : 'N/A'}</TableCell>
                                 <TableCell>
                                     <Badge variant={order.status === 'Delivered' ? 'default' : 'secondary'}>{order.status}</Badge>
                                 </TableCell>

@@ -13,10 +13,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
-import { mockUserOrders } from "@/lib/mock-data";
 import { useCart } from "@/context/cart-context";
 import { useUser } from "@/context/user-context";
 import { useAuthDialog } from "@/context/auth-dialog-context";
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, getDocs, limit, doc } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 type Attachment = {
     name: string;
@@ -24,73 +25,187 @@ type Attachment = {
     url: string;
 }
 
-// Simulate tracking for chat abuse prevention
-// In a real app, this would come from a user context or API call
-const MAX_CHATS_WITHOUT_PURCHASE = 4;
-let hasMadePurchase = mockUserOrders.length > 0;
-let uniqueVendorChats = 2; // Starting with 2 from the initial mock data in account page
-
-// localStorage keys
-const VIEWED_WARNINGS_KEY = 'shopsphere_viewed_chat_warnings';
-const WARNING_COUNT_KEY = 'shopsphere_chat_warning_count';
-const MAX_WARNING_COUNT = 5;
-
 export function ProductInteractions({ product, isCustomizable }: { product: DisplayProduct, isCustomizable: boolean }) {
   const { toast } = useToast();
   const router = useRouter();
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [isChatDisabledOpen, setIsChatDisabledOpen] = useState(false);
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false);
   
   const { addToCart } = useCart();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, user } = useUser();
   const { openDialog } = useAuthDialog();
 
-  const isChatDisabled = !hasMadePurchase && uniqueVendorChats >= MAX_CHATS_WITHOUT_PURCHASE;
+  const [conversation, setConversation] = useState<Conversation | null>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleAddToCart = () => {
-    if (product.requiresConfirmation) {
-        setIsConfirmationOpen(true);
-        // Here you would also trigger a backend notification to the vendor
-        toast({
-            title: "Vendor Notified",
-            description: "The vendor will confirm availability within 5 hours.",
+  const MAX_MESSAGE_LENGTH = 1500;
+  
+  // Effect to fetch or create a conversation when chat dialog opens
+  useEffect(() => {
+    if (!isChatOpen || !isLoggedIn || !user) {
+        setConversation(null); // Clear conversation when dialog closes or user logs out
+        return;
+    };
+
+    const fetchConversation = async () => {
+        const convosRef = collection(db, "conversations");
+        const q = query(convosRef, 
+            where("vendorId", "==", product.vendorId),
+            where("customerId", "==", user.id),
+            limit(1)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+            const convoDoc = querySnapshot.docs[0];
+            const convoData = { id: convoDoc.id, ...convoDoc.data() } as Conversation;
+            setConversation(convoData);
+        } else {
+            // No existing conversation, create a placeholder in state
+            // It will be created in Firestore upon sending the first message.
+            const newConvo: Conversation = {
+                id: `TEMP-${Date.now()}`,
+                vendorId: product.vendorId,
+                customerId: user.id,
+                avatar: product.vendorImageUrl || 'https://placehold.co/40x40.png',
+                messages: [],
+                userMessageCount: 0,
+                awaitingVendorDecision: false,
+                status: 'active',
+            };
+            setConversation(newConvo);
+        }
+    };
+    
+    fetchConversation();
+
+  }, [isChatOpen, isLoggedIn, user, product.vendorId, product.vendorImageUrl]);
+
+
+  // Effect to listen for new messages in the selected conversation
+   useEffect(() => {
+    if (!conversation || conversation.id.startsWith('TEMP-')) return;
+    
+    const messagesQuery = query(collection(db, "conversations", conversation.id as string, "messages"), orderBy("timestamp"));
+    const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
+        const msgs: Message[] = [];
+        querySnapshot.forEach((doc) => {
+            msgs.push({ id: doc.id, ...doc.data() } as Message);
         });
-        return;
-    }
-    addToCart({product, customizations: {}});
-    toast({
-      title: "Added to cart!",
-      description: `${product.name} has been added to your cart.`,
+        setConversation(prev => prev ? {...prev, messages: msgs} : null);
     });
-  };
 
-  const handleBuyNow = () => {
-    if (!isLoggedIn) {
-        openDialog('login');
-        return;
-    }
-    addToCart({product, customizations: {}});
-    router.push('/checkout');
-  }
+    return () => unsubscribe();
+  }, [conversation?.id]);
 
-  const handleCustomize = () => {
-    router.push(`/customize/${product.id}`);
-  }
 
   const handleMessageVendorClick = () => {
     if (!isLoggedIn) {
         openDialog('login');
         return;
     }
-      
-    if (isChatDisabled) {
-        setIsChatDisabledOpen(true);
-        return;
+    setIsChatOpen(true);
+  }
+  
+  const handleRequestSample = () => {
+    toast({
+        title: "Sample Requested (Simulated)",
+        description: `Your request for a sample of "${product.name}" has been sent to the vendor.`,
+    });
+  }
+
+  const handleSendMessage = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    if ((!newMessage.trim() && attachments.length === 0) || !user) return;
+
+    let currentConversationId = conversation?.id;
+
+    // If it's a new conversation, create it first
+    if (conversation && conversation.id.startsWith('TEMP-')) {
+        const { id, ...convoData } = conversation;
+        const convoRef = await addDoc(collection(db, "conversations"), convoData);
+        currentConversationId = convoRef.id;
+        setConversation(prev => prev ? {...prev, id: currentConversationId as string } : null);
     }
     
-    // Redirect to the centralized messaging page
-    router.push(`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`);
-  }
+    if (!currentConversationId) return;
+
+    const conversationRef = collection(db, "conversations", currentConversationId as string, "messages");
+    await addDoc(conversationRef, { 
+        sender: "customer", 
+        text: newMessage,
+        timestamp: serverTimestamp(),
+    });
+
+    setNewMessage("");
+    setAttachments([]);
+  }, [attachments, newMessage, conversation, user]);
+  
+   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+        const newFiles = Array.from(e.target.files);
+        if (attachments.length + newFiles.length > 5) {
+             toast({
+                variant: "destructive",
+                title: "Attachment Limit Exceeded",
+                description: "You can only attach up to 5 files.",
+            });
+            return;
+        }
+        setAttachments(prev => [...prev, ...newFiles]);
+    }
+  }, [attachments.length, toast]);
+
+  const removeAttachment = useCallback((fileToRemove: File) => {
+    setAttachments(prev => prev.filter(file => file !== fileToRemove));
+  }, []);
+  
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [newMessage]);
+
+    useEffect(() => {
+        if (messagesContainerRef.current) {
+            messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+    }, [conversation?.messages.length]);
+
+    const handleAddToCart = () => {
+        if (product.requiresConfirmation) {
+            setIsConfirmationOpen(true);
+            toast({
+                title: "Vendor Notified",
+                description: "The vendor will confirm availability within 5 hours.",
+            });
+            return;
+        }
+        addToCart({product, customizations: {}});
+        toast({
+          title: "Added to cart!",
+          description: `${product.name} has been added to your cart.`,
+        });
+    };
+
+    const handleBuyNow = () => {
+        if (!isLoggedIn) {
+            openDialog('login');
+            return;
+        }
+        addToCart({product, customizations: {}});
+        router.push('/checkout');
+    }
+
+    const handleCustomize = () => {
+        router.push(`/customize/${product.id}`);
+    }
   
   return (
     <>
@@ -120,6 +235,66 @@ export function ProductInteractions({ product, isCustomizable }: { product: Disp
             Message Vendor
         </Button>
       </div>
+
+       <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
+            <DialogContent className="max-w-xl h-[80vh] flex flex-col p-0 gap-0">
+                {conversation && user ? (
+                    <>
+                    <DialogHeader className="p-4 border-b">
+                         <div className="flex items-center gap-4">
+                            <Avatar>
+                              <AvatarImage src={conversation.avatar} alt={conversation.vendorId} data-ai-hint="company logo" />
+                              <AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <DialogTitle>{`Chat with ${conversation.vendorId}`}</DialogTitle>
+                        </div>
+                    </DialogHeader>
+                    <div className="flex-1 flex flex-col min-h-0 bg-card">
+                         <ScrollArea className="flex-1 bg-muted/20">
+                            <div className="p-4 space-y-4" ref={messagesContainerRef}>
+                            {(conversation.messages || []).map((msg, index) => (
+                                msg.sender === 'system' ? (
+                                    <div key={index} className="text-center text-xs text-muted-foreground py-2">{msg.text}</div>
+                                ) : (
+                                <div key={index} className={cn("flex items-end gap-2", msg.sender === 'customer' ? 'justify-end' : 'justify-start')}>
+                                {msg.sender === 'vendor' && <Avatar className="h-8 w-8"><AvatarImage src={conversation.avatar} alt={conversation.vendorId} /><AvatarFallback>{conversation.vendorId.charAt(0)}</AvatarFallback></Avatar>}
+                                <div className={cn("max-w-xs md:max-w-md lg:max-w-lg rounded-lg p-3 text-sm space-y-2", msg.sender === 'customer' ? 'bg-primary text-primary-foreground' : 'bg-background shadow-sm')}>
+                                    {msg.text && <p className="whitespace-pre-wrap">{msg.text}</p>}
+                                </div>
+                                {msg.sender === 'customer' && <Avatar className="h-8 w-8"><AvatarImage src={user.avatar} alt="You" /><AvatarFallback>Y</AvatarFallback></Avatar>}
+                                </div>
+                                )
+                            ))}
+                            </div>
+                        </ScrollArea>
+                        <form onSubmit={handleSendMessage} className="p-4 border-t mt-auto space-y-2 flex-shrink-0">
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex-1">
+                                    <Textarea
+                                        ref={textareaRef}
+                                        placeholder="Type your message..."
+                                        className="pr-12 resize-none max-h-48"
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        rows={1}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSendMessage(e);
+                                            }
+                                        }}
+                                    />
+                                </div>
+                                <Button type="submit" size="icon" disabled={!newMessage.trim()}><Send className="h-4 w-4" /></Button>
+                            </div>
+                        </form>
+                    </div>
+                    </>
+                ) : (
+                    <div className="p-6">Loading conversation...</div>
+                )}
+            </DialogContent>
+        </Dialog>
 
         <Dialog open={isChatDisabledOpen} onOpenChange={setIsChatDisabledOpen}>
              <DialogContent>
