@@ -86,23 +86,25 @@ function AnalyticsView({ type }: { type: 'personalized' | 'corporate' }) {
 
 export default function BothVendorAnalyticsPage() {
     return (
-        <div>
+        <div className="flex-1 flex flex-col min-h-0">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold font-headline">Analytics</h1>
                 <p className="text-muted-foreground">Track your store's performance across all sales channels.</p>
             </div>
-                <Tabs defaultValue="personalized">
+                <Tabs defaultValue="personalized" className="flex-1 flex flex-col">
                 <TabsList>
                     <TabsTrigger value="personalized">Personalized Retail</TabsTrigger>
                     <TabsTrigger value="corporate">Corporate & Bulk</TabsTrigger>
                 </TabsList>
-                <TabsContent value="personalized">
+                <TabsContent value="personalized" className="mt-4">
                     <AnalyticsView type="personalized" />
                 </TabsContent>
-                <TabsContent value="corporate">
+                <TabsContent value="corporate" className="mt-4">
                         <AnalyticsView type="corporate" />
                 </TabsContent>
             </Tabs>
         </div>
     );
 }
+
+    

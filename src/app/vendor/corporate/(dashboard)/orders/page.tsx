@@ -4,12 +4,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function RedirectToProducts() {
+export default function RedirectToCorpOrders() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to the unified products page.
-    router.replace("/vendor/both/products");
+    router.replace("/vendor/both/orders?tab=corporate");
   }, [router]);
 
   return null;

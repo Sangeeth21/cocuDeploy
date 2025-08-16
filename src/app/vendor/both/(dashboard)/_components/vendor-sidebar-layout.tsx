@@ -16,33 +16,9 @@ import { mockVendorActivity } from "@/lib/mock-data";
 
 const navLinks = [
   { href: "/vendor/both/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { 
-    id: "products", 
-    label: "Products", 
-    icon: Package,
-    subLinks: [
-        { href: "/vendor/both/products", label: "Personalized", icon: User },
-        { href: "/vendor/both/corporate-products", label: "Corporate", icon: Building },
-    ]
-  },
-   { 
-    id: "inventory", 
-    label: "Inventory", 
-    icon: Warehouse,
-    subLinks: [
-        { href: "/vendor/both/inventory", label: "Personalized", icon: User },
-        { href: "/vendor/both/corporate-inventory", label: "Corporate", icon: Building },
-    ]
-  },
-  { 
-    id: "orders", 
-    label: "Orders", 
-    icon: ListChecks,
-    subLinks: [
-        { href: "/vendor/both/orders", label: "Personalized", icon: User },
-        { href: "/vendor/both/corporate-orders", label: "Corporate", icon: Building },
-    ]
-  },
+  { href: "/vendor/both/products", label: "Products", icon: Package },
+  { href: "/vendor/both/inventory", label: "Inventory", icon: Warehouse },
+  { href: "/vendor/both/orders", label: "Orders", icon: ListChecks },
   { href: "/vendor/both/bids", label: "Bidding", icon: Gavel },
   { href: "/vendor/templates", label: "Templates", icon: Wand2 },
   { href: "/vendor/both/analytics", label: "Analytics", icon: LineChart },
@@ -74,37 +50,27 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
     const pathname = usePathname();
     const { isVerified } = useVerification();
     const { open: isSidebarOpen } = useSidebar();
-    const [accordionValue, setAccordionValue] = useState<string[]>(['products', 'inventory', 'orders']);
-
-    // Collapse accordions when sidebar collapses
-    useEffect(() => {
-        if (!isSidebarOpen) {
-            setAccordionValue([]);
-        } else {
-             setAccordionValue(['products', 'inventory', 'orders']);
-        }
-    }, [isSidebarOpen]);
 
     return (
         <div className="flex min-h-screen">
-            <Sidebar collapsible="icon" className="border-r hidden md:flex">
-                <SidebarHeader>
-                    <div className="flex items-center justify-between p-2">
-                        <div className="flex items-center gap-2">
-                           <Avatar className="h-10 w-10">
-                                <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
-                                <AvatarFallback>V</AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
-                                <span className="text-lg font-semibold">Hybrid Vendor,</span>
-                                <span className="text-lg font-bold -mt-1">Timeless Co.</span>
+            <SidebarProvider>
+                <Sidebar collapsible="icon" className="border-r hidden md:flex">
+                    <SidebarHeader>
+                        <div className="flex items-center justify-between p-2">
+                            <div className="flex items-center gap-2">
+                               <Avatar className="h-10 w-10">
+                                    <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
+                                    <AvatarFallback>V</AvatarFallback>
+                                </Avatar>
+                                <div className="flex flex-col group-data-[state=collapsed]:hidden">
+                                    <span className="text-lg font-semibold">Hybrid Vendor,</span>
+                                    <span className="text-lg font-bold -mt-1">Timeless Co.</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </SidebarHeader>
-                <SidebarContent className="p-2">
-                    <Accordion type="multiple" className="w-full" value={accordionValue} onValueChange={setAccordionValue}>
-                         <SidebarMenu>
+                    </SidebarHeader>
+                    <SidebarContent className="p-2">
+                        <SidebarMenu>
                             {!isVerified && (
                                 <SidebarMenuItem>
                                     <SidebarMenuButton 
@@ -122,106 +88,70 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
                             )}
                             {navLinks.map((link) => {
                                 const showBadge = link.id === 'messages' && unreadMessages > 0;
+                                const isActive = pathname.startsWith(link.href);
                                 return (
-                                <SidebarMenuItem key={link.id || link.href}>
-                                    {link.subLinks ? (
-                                        <AccordionItem value={link.id!} className="border-b-0">
-                                            <AccordionTrigger asChild>
-                                                <SidebarMenuButton
-                                                    isActive={pathname.startsWith(link.href || `/vendor/both/${link.id}`)}
-                                                    tooltip={{children: link.label}}
-                                                    className="w-full justify-start [&>svg:last-child]:hidden"
-                                                >
-                                                    <div className="flex items-center gap-2">
-                                                        <link.icon className="h-5 w-5 stroke-[1.5]" />
-                                                        <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
-                                                    </div>
-                                                </SidebarMenuButton>
-                                            </AccordionTrigger>
-                                            <AccordionContent className="pb-0 pl-4 group-data-[state=collapsed]:hidden">
-                                                <SidebarMenu>
-                                                    {link.subLinks.map(subLink => (
-                                                         <SidebarMenuItem key={subLink.href}>
-                                                            <SidebarMenuButton
-                                                                asChild
-                                                                size="sm"
-                                                                isActive={pathname === subLink.href}
-                                                                tooltip={{children: subLink.label}}
-                                                            >
-                                                                <Link href={subLink.href}>
-                                                                    <subLink.icon className="h-5 w-5 stroke-[1.5]" />
-                                                                    <span className="group-data-[state=collapsed]:hidden">{subLink.label}</span>
-                                                                </Link>
-                                                            </SidebarMenuButton>
-                                                        </SidebarMenuItem>
-                                                    ))}
-                                                </SidebarMenu>
-                                            </AccordionContent>
-                                        </AccordionItem>
-                                    ) : (
-                                        <SidebarMenuButton 
-                                            asChild
-                                            isActive={pathname === link.href}
-                                            tooltip={{children: link.label}}
-                                        >
-                                            <Link href={link.href}>
-                                                <link.icon className="h-5 w-5 stroke-[1.5]" />
-                                                <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
-                                                 {showBadge && <SidebarMenuBadge>{unreadMessages}</SidebarMenuBadge>}
-                                            </Link>
-                                        </SidebarMenuButton>
-                                    )}
+                                <SidebarMenuItem key={link.href}>
+                                    <SidebarMenuButton 
+                                        asChild
+                                        isActive={isActive}
+                                        tooltip={{children: link.label}}
+                                    >
+                                        <Link href={link.href}>
+                                            <link.icon className="h-5 w-5 stroke-[1.5]" />
+                                            <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
+                                             {showBadge && <SidebarMenuBadge>{unreadMessages}</SidebarMenuBadge>}
+                                        </Link>
+                                    </SidebarMenuButton>
                                 </SidebarMenuItem>
                             )})}
                         </SidebarMenu>
-                    </Accordion>
-                </SidebarContent>
-                <SidebarFooter>
-                    <SidebarMenu>
-                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
-                                <Link href="/">
-                                    <Store className="h-5 w-5 stroke-[1.5]" />
-                                    <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
-                                <Link href="/vendor/login">
-                                    <LogOut className="h-5 w-5 stroke-[1.5]" />
-                                    <span className="group-data-[state=collapsed]:hidden">Log Out</span>
-                                </Link>
-                            </SidebarMenuButton>
-                        </SidebarMenuItem>
-                    </SidebarMenu>
-                </SidebarFooter>
-                <CustomSidebarTrigger />
-            </Sidebar>
-            <div className="flex flex-col flex-1">
-                 <header className="flex h-16 items-center justify-between p-4 border-b md:justify-end bg-card">
-                    <div className="flex items-center gap-4">
-                        <span className="font-bold hidden max-md:inline-block">Vendor Portal</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <NotificationPopover notifications={mockVendorActivity} />
-                    </div>
-                 </header>
-                 <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-y-auto">
-                    {children}
-                </main>
-            </div>
+                    </SidebarContent>
+                    <SidebarFooter>
+                        <SidebarMenu>
+                             <SidebarMenuItem>
+                                <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
+                                    <Link href="/">
+                                        <Store className="h-5 w-5 stroke-[1.5]" />
+                                        <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                             <SidebarMenuItem>
+                                <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
+                                    <Link href="/vendor/login">
+                                        <LogOut className="h-5 w-5 stroke-[1.5]" />
+                                        <span className="group-data-[state=collapsed]:hidden">Log Out</span>
+                                    </Link>
+                                </SidebarMenuButton>
+                            </SidebarMenuItem>
+                        </SidebarMenu>
+                    </SidebarFooter>
+                    <CustomSidebarTrigger />
+                </Sidebar>
+                <div className="flex flex-col flex-1">
+                     <header className="flex h-16 items-center justify-between p-4 border-b md:justify-end bg-card">
+                        <div className="flex items-center gap-4">
+                            <span className="font-bold hidden max-md:inline-block">Vendor Portal</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <NotificationPopover notifications={mockVendorActivity} />
+                        </div>
+                     </header>
+                     <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-y-auto">
+                        {children}
+                    </main>
+                </div>
+            </SidebarProvider>
         </div>
     );
 }
 
-
 export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number }) {
     return (
-        <SidebarProvider>
-            <VendorSidebarLayoutContent unreadMessages={unreadMessages}>
-                {children}
-            </VendorSidebarLayoutContent>
-        </SidebarProvider>
+        <VendorSidebarLayoutContent unreadMessages={unreadMessages}>
+            {children}
+        </VendorSidebarLayoutContent>
     )
 }
+
+    
