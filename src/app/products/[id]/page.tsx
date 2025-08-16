@@ -75,6 +75,10 @@ export default function ProductDetailPage() {
   const [isCheckingPincode, setIsCheckingPincode] = useState(false);
   const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
 
+  const [activeImage, setActiveImage] = useState<string | null>(null);
+  // This would be fetched from the vendor's template settings
+  const thumbnailPosition = "bottom"; 
+
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isLoggedIn } = useUser();
   const { openDialog } = useAuthDialog();
@@ -90,6 +94,7 @@ export default function ProductDetailPage() {
         if (productSnap.exists()) {
             const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
             setProduct(productData);
+            setActiveImage(productData.imageUrl); // Set initial active image
 
             if (productData.vendorId) {
                 const vendorRef = doc(db, "users", productData.vendorId);
@@ -221,13 +226,42 @@ export default function ProductDetailPage() {
     notFound();
   }
 
+  const allImages = [product.imageUrl, ...(product.images || [])].filter((img, index, self) => img && self.indexOf(img) === index);
+
+  const galleryLayoutClasses = {
+      bottom: 'flex-col',
+      left: 'flex-row-reverse',
+      right: 'flex-row',
+  };
+  
+  const thumbnailLayoutClasses = {
+      bottom: 'flex-row w-full',
+      left: 'flex-col h-full',
+      right: 'flex-col h-full',
+  }
+
   return (
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12 items-start">
-        <div>
-          <div className="aspect-square relative w-full overflow-hidden rounded-lg shadow-lg">
-            <Image src={product.imageUrl} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+        <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
+          <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition as keyof typeof thumbnailLayoutClasses])}>
+             {allImages.map((img, index) => (
+                 <button
+                    key={index}
+                    onClick={() => setActiveImage(img)}
+                    className={cn(
+                        "relative aspect-square rounded-md overflow-hidden transition-all flex-shrink-0",
+                        activeImage === img ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
+                        thumbnailPosition === 'bottom' ? 'w-20' : 'w-16'
+                    )}
+                 >
+                    <Image src={img} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
+                 </button>
+              ))}
+          </div>
+          <div className="relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg">
+            {activeImage && <Image src={activeImage} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />}
              <Button 
                 size="icon" 
                 variant="secondary" 

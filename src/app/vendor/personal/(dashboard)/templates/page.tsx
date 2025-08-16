@@ -9,7 +9,7 @@ export default function RedirectToTemplates() {
 
   useEffect(() => {
     // Redirect to the unified templates page.
-    router.replace("/vendor/templates");
+    router.replace("/vendor/both/templates");
   }, [router]);
 
   return null;
