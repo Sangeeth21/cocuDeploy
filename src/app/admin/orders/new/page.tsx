@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { DisplayProduct, User } from "@/lib/types";
-import { ArrowLeft, Search, X, User as UserIcon, Package, DollarSign, Save, Trash2, CheckCircle, PlusCircle, Link as LinkIcon, Truck, Building, Copy, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, X, User as UserIcon, Package, DollarSign, Save, Trash2, CheckCircle, PlusCircle, Link as LinkIcon, Truck, Building, Copy, Loader2, Box } from "lucide-react";
 import Image from "next/image";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +18,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { getShippingCost } from "./shipping-actions";
+import { Alert, AlertTitle, AlertDescription as AlertDesc } from "@/components/ui/alert";
 
 
 type OrderItem = DisplayProduct & { quantity: number };
@@ -35,6 +37,14 @@ export default function NewOrderPage() {
     const [isFetchingShipping, setIsFetchingShipping] = useState(false);
     const [isSameAsShipping, setIsSameAsShipping] = useState(true);
     const [referralCommission, setReferralCommission] = useState<number | string>(0);
+    
+    // Shipping details state
+    const [pickupPincode, setPickupPincode] = useState("");
+    const [deliveryPincode, setDeliveryPincode] = useState("");
+    const [packageWeight, setPackageWeight] = useState(0); // in kg
+    const [packageLength, setPackageLength] = useState(0); // in cm
+    const [packageWidth, setPackageWidth] = useState(0); // in cm
+    const [packageHeight, setPackageHeight] = useState(0); // in cm
     
     // Data fetching
     const [allUsers, setAllUsers] = useState<User[]>([]);
@@ -145,15 +155,37 @@ export default function NewOrderPage() {
         setOrderItems(prev => prev.filter(item => item.id !== productId));
     };
 
-    const handleEstimateShipping = () => {
+    const handleEstimateShipping = async () => {
+        const requiredFields = [pickupPincode, deliveryPincode, packageWeight, packageLength, packageWidth, packageHeight];
+        if (requiredFields.some(field => !field || field <= 0)) {
+            toast({
+                variant: "destructive",
+                title: "Missing Shipping Details",
+                description: "Please fill in all pincode and package dimension fields.",
+            });
+            return;
+        }
+
         setIsFetchingShipping(true);
-        // Simulate API call to Shiprocket/Borzo
-        setTimeout(() => {
-            const randomCost = Math.floor(Math.random() * 20) + 5;
-            setShippingCost(randomCost);
-            setIsFetchingShipping(false);
-            toast({ title: 'Shipping Cost Estimated', description: `Logistics cost is $${randomCost.toFixed(2)}.`});
-        }, 1500);
+        const result = await getShippingCost({
+            pickup_postcode: pickupPincode,
+            delivery_postcode: deliveryPincode,
+            cod: 1, // Assuming COD for now, this could be a form field
+            weight: packageWeight,
+            length: packageLength,
+            breadth: packageWidth,
+            height: packageHeight,
+        });
+        
+        if (result.error) {
+            toast({ variant: 'destructive', title: 'Shipping Estimate Failed', description: result.error });
+            setShippingCost(0);
+        } else {
+            setShippingCost(result.cost || 0);
+            toast({ title: 'Shipping Cost Estimated', description: `Logistics cost is $${result.cost?.toFixed(2)}.` });
+        }
+        
+        setIsFetchingShipping(false);
     }
     
     const handleGeneratePaymentLink = () => {
@@ -279,13 +311,44 @@ export default function NewOrderPage() {
                                         <Input placeholder="City"/>
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>ZIP Code</Label>
-                                        <Input placeholder="ZIP Code"/>
+                                        <Label>Delivery ZIP Code</Label>
+                                        <Input placeholder="Delivery ZIP Code" value={deliveryPincode} onChange={e => setDeliveryPincode(e.target.value)} />
                                     </div>
                                 </div>
+                            </div>
+                             <div className="p-4 border rounded-lg space-y-4">
+                                <div className="flex items-center gap-2">
+                                    <Box className="h-5 w-5 text-muted-foreground" />
+                                    <h3 className="font-semibold">Package Details</h3>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label>Pickup ZIP Code</Label>
+                                    <Input placeholder="Vendor Pickup ZIP Code" value={pickupPincode} onChange={e => setPickupPincode(e.target.value)} />
+                                </div>
+                                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="space-y-2">
+                                        <Label>Weight (kg)</Label>
+                                        <Input type="number" placeholder="0.5" value={packageWeight} onChange={e => setPackageWeight(Number(e.target.value))} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Length (cm)</Label>
+                                        <Input type="number" placeholder="10" value={packageLength} onChange={e => setPackageLength(Number(e.target.value))} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Width (cm)</Label>
+                                        <Input type="number" placeholder="10" value={packageWidth} onChange={e => setPackageWidth(Number(e.target.value))} />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>Height (cm)</Label>
+                                        <Input type="number" placeholder="10" value={packageHeight} onChange={e => setPackageHeight(Number(e.target.value))} />
+                                    </div>
+                                </div>
+                                 <Alert>
+                                    <AlertDesc>Accurate package details are required for precise shipping cost estimation.</AlertDesc>
+                                </Alert>
                                 <Button size="sm" variant="secondary" className="w-full" onClick={handleEstimateShipping} disabled={isFetchingShipping}>
                                     {isFetchingShipping ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Truck className="mr-2 h-4 w-4" />}
-                                    {isFetchingShipping ? 'Estimating...' : 'Estimate Shipping Cost (Borzo/Shiprocket)'}
+                                    {isFetchingShipping ? 'Estimating...' : 'Estimate Shipping Cost (Shiprocket)'}
                                 </Button>
                             </div>
                             <div className="p-4 border rounded-lg space-y-4">
@@ -532,3 +595,4 @@ function NewCustomerDialog({ onSave }: { onSave: (customer: Omit<User, 'id' | 'r
         </Dialog>
     );
 }
+
