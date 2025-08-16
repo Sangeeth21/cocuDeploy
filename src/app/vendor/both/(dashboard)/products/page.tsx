@@ -1,7 +1,7 @@
 
 "use client";
 
-import { MoreHorizontal, PlusCircle, ExternalLink, Copy, Archive } from "lucide-react";
+import { MoreHorizontal, PlusCircle, ExternalLink, Copy, Archive, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,23 +94,27 @@ export default function VendorProductsPage() {
                                     <DropdownMenuContent align="end">
                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                         <DropdownMenuItem>Edit</DropdownMenuItem>
-                                        <DropdownMenuItem asChild>
-                                            <Link href={`/products/${product.id}`} target="_blank">
-                                                View Live Page <ExternalLink className="ml-auto h-3 w-3" />
-                                            </Link>
-                                        </DropdownMenuItem>
                                         <DropdownMenuItem>
                                             <Copy className="mr-2 h-4 w-4" /> Duplicate
                                         </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/products/${product.id}`} target="_blank">
+                                                View Live Page <ExternalLink className="ml-auto h-3 w-3"/>
+                                            </Link>
+                                        </DropdownMenuItem>
                                         <DropdownMenuSeparator />
-                                        {product.status === 'Draft' ? (
+                                        {product.status === 'Draft' || product.status === 'Archived' ? (
+                                            <>
+                                            <DropdownMenuItem>Publish</DropdownMenuItem>
+                                            <DropdownMenuItem className="text-destructive" onClick={() => console.log('delete')}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                            </DropdownMenuItem>
+                                            </>
+                                        ) : (
                                             <DropdownMenuItem>
                                                 <Archive className="mr-2 h-4 w-4" /> Archive
                                             </DropdownMenuItem>
-                                        ) : (
-                                            <DropdownMenuItem>Publish</DropdownMenuItem>
                                         )}
-                                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
