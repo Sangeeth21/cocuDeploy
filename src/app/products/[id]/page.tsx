@@ -274,31 +274,32 @@ export default function ProductDetailPage() {
           
           <ProductInteractions product={product} isCustomizable={isCustomizable} />
           
-          <div className="border rounded-lg p-4 space-y-3">
-              <div className="flex items-center gap-2 font-semibold">
-                <Truck className="h-5 w-5"/>
-                <span>Delivery Options</span>
-              </div>
-              <div className="flex items-center gap-2">
+          <div className="pt-2">
+            <div className="flex items-center gap-2">
+                <Truck className="h-5 w-5 text-muted-foreground" />
+                <Label htmlFor="pincode-check" className="font-semibold">Delivery Options</Label>
+            </div>
+            <div className="flex items-center gap-2 mt-2">
                 <MapPin className="h-4 w-4 text-muted-foreground"/>
                 <Input 
+                    id="pincode-check"
                     placeholder="Enter pincode" 
                     className="h-9" 
                     value={pincode}
                     onChange={(e) => setPincode(e.target.value)}
                     maxLength={6}
                 />
-                <Button variant="outline" size="sm" onClick={handleCheckDelivery} disabled={isCheckingPincode}>
+                <Button variant="outline" size="sm" className="h-9" onClick={handleCheckDelivery} disabled={isCheckingPincode}>
                     {isCheckingPincode ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Check'}
                 </Button>
-              </div>
-              {deliveryEstimate && (
-                <div className="text-sm flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600"/>
-                    <span className="text-muted-foreground">{deliveryEstimate}</span>
-                </div>
-              )}
             </div>
+            {deliveryEstimate && (
+            <div className="text-sm flex items-center gap-2 mt-2 text-muted-foreground">
+                <CheckCircle className="h-4 w-4 text-green-600"/>
+                <span>{deliveryEstimate}</span>
+            </div>
+            )}
+          </div>
         </div>
       </div>
       
