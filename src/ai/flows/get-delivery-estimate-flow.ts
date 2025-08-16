@@ -67,10 +67,18 @@ const deliveryEstimatePrompt = ai.definePrompt({
     input: { schema: z.object({ productCategory: z.string(), vendorId: z.string() }) },
     output: { schema: z.object({ fulfillmentDays: z.number() }) },
     tools: [getTransitTimeTool],
-    prompt: `Based on the product category "{{productCategory}}", estimate a realistic fulfillment time in business days for the vendor.
-    Consider that electronics might ship faster than handcrafted items.
-    Default to 2-3 days if unsure.
-    The response must be a number of days.`,
+    prompt: `You are a fulfillment logistics expert for an e-commerce platform.
+    Your task is to estimate a realistic fulfillment time in business days for a vendor to prepare and ship an order.
+    
+    Consider the following information:
+    - Product Category: "{{productCategory}}"
+    - Vendor ID: "{{vendorId}}"
+    
+    Base your estimate on the product category. For example, handcrafted items or custom apparel might take longer to prepare (3-4 days) than pre-packaged electronics (1-2 days).
+    
+    If you are unsure, default to a standard fulfillment time of 2 business days.
+    
+    Your response must only be the estimated number of fulfillment days.`,
 });
 
 
