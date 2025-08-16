@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Star, Heart, Info, Store } from "lucide-react";
+import { Star, Heart, Info, Store, Loader2, MapPin, CheckCircle, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,8 +18,10 @@ import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { DisplayProduct, CommissionRule, User } from "@/lib/types";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { getEstimatedDelivery } from "@/app/actions";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -67,6 +69,10 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [commissionRule, setCommissionRule] = useState<CommissionRule | null>(null);
   const [isVendorInfoOpen, setIsVendorInfoOpen] = useState(false);
+  
+  const [pincode, setPincode] = useState("");
+  const [isCheckingPincode, setIsCheckingPincode] = useState(false);
+  const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
 
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isLoggedIn } = useUser();
@@ -167,6 +173,23 @@ export default function ProductDetailPage() {
       }
   }
 
+  const handleCheckDelivery = async () => {
+    if (!pincode || pincode.length !== 6 || !/^\d+$/.test(pincode)) {
+        toast({ variant: 'destructive', title: 'Invalid Pincode', description: 'Please enter a valid 6-digit pincode.'});
+        return;
+    }
+    setIsCheckingPincode(true);
+    setDeliveryEstimate(null);
+    const result = await getEstimatedDelivery(id, pincode);
+    if(result.error) {
+        toast({ variant: 'destructive', title: 'Delivery Check Failed', description: result.error });
+        setDeliveryEstimate('Currently not deliverable to this pincode.');
+    } else {
+        setDeliveryEstimate(result.estimate || 'Could not determine delivery date.');
+    }
+    setIsCheckingPincode(false);
+  }
+
   if (loading) {
       return (
           <div className="container py-12">
@@ -249,6 +272,32 @@ export default function ProductDetailPage() {
           </div>
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           
+           <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2 font-semibold">
+                <Truck className="h-5 w-5"/>
+                <span>Delivery Options</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground"/>
+                <Input 
+                    placeholder="Enter pincode" 
+                    className="h-9" 
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value)}
+                    maxLength={6}
+                />
+                <Button variant="outline" size="sm" onClick={handleCheckDelivery} disabled={isCheckingPincode}>
+                    {isCheckingPincode ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Check'}
+                </Button>
+              </div>
+              {deliveryEstimate && (
+                <div className="text-sm flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-600"/>
+                    <span className="text-muted-foreground">{deliveryEstimate}</span>
+                </div>
+              )}
+            </div>
+
           <ProductInteractions product={product} isCustomizable={isCustomizable} />
         </div>
       </div>

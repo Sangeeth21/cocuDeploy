@@ -46,6 +46,7 @@ export type DisplayProduct = {
   vendorId: string;
   vendorName: string;
   vendorDescription?: string;
+  vendorImageUrl?: string;
   tags?: string[];
   images?: string[];
   sku?: string;
@@ -123,6 +124,7 @@ export type VendorDetails = {
     primaryContact?: string;
     address?: {
         fullAddress: string;
+        pincode: string;
         deliverability: 'DELIVERABLE' | 'UNDELIVERABLE' | 'UNKNOWN';
     };
     govtIdUrl?: string;

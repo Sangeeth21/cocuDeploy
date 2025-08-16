@@ -11,6 +11,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function AddressStep({ onComplete }: { onComplete: () => void }) {
     const [address, setAddress] = useState("");
+    const [pincode, setPincode] = useState("");
     const [isValidating, setIsValidating] = useState(false);
     const [validationResult, setValidationResult] = useState<"DELIVERABLE" | "UNDELIVERABLE" | null>(null);
     const { toast } = useToast();
@@ -20,8 +21,8 @@ export function AddressStep({ onComplete }: { onComplete: () => void }) {
     // and its `Autocomplete` component.
 
     const handleValidateAddress = () => {
-        if (!address) {
-            toast({ variant: "destructive", title: "Please enter an address." });
+        if (!address || !pincode) {
+            toast({ variant: "destructive", title: "Please enter a full address and pincode." });
             return;
         }
         setIsValidating(true);
@@ -51,9 +52,19 @@ export function AddressStep({ onComplete }: { onComplete: () => void }) {
                         onChange={(e) => setAddress(e.target.value)}
                     />
                 </div>
-                <p className="text-xs text-muted-foreground">
+                 <p className="text-xs text-muted-foreground">
                     We recommend using an address suggested by Google for best accuracy.
                 </p>
+            </div>
+             <div className="space-y-2">
+                <Label htmlFor="pincode">Pincode</Label>
+                 <Input 
+                    id="pincode" 
+                    placeholder="e.g. 110001" 
+                    value={pincode}
+                    onChange={(e) => setPincode(e.target.value)}
+                    maxLength={6}
+                />
             </div>
             
             <Button onClick={handleValidateAddress} disabled={isValidating}>
