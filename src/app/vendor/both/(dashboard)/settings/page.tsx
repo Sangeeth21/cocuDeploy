@@ -11,15 +11,47 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useVerification } from "@/context/vendor-verification-context";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useState } from "react";
+import { useUser } from "@/context/user-context";
+import { updateVendorProfile } from "../../../actions";
+import { Loader2 } from "lucide-react";
 
 export default function VendorSettingsPage() {
     const { toast } = useToast();
     const { vendorType } = useVerification();
+    const { user } = useUser(); // Assuming this provides the logged-in vendor's info
 
-    const handleSaveChanges = () => {
+    const [storeName, setStoreName] = useState(user?.name || "Timeless Co.");
+    const [storeBio, setStoreBio] = useState(user?.bio || "Specializing in handcrafted leather goods and timeless accessories. Committed to quality and craftsmanship.");
+    const [isSaving, setIsSaving] = useState(false);
+
+    const handleSaveChanges = async () => {
+        if (!user) {
+            toast({ variant: "destructive", title: "You must be logged in." });
+            return;
+        }
+        setIsSaving(true);
+        const result = await updateVendorProfile(user.id, { name: storeName, bio: storeBio });
+        
+        if (result.success) {
+            toast({
+                title: "Settings Saved",
+                description: "Your changes have been saved successfully.",
+            });
+        } else {
+             toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: result.message,
+            });
+        }
+        setIsSaving(false);
+    }
+    
+    const handleSaveAutoReply = () => {
          toast({
             title: "Settings Saved",
-            description: "Your changes have been saved successfully.",
+            description: "Your auto-reply settings have been updated.",
         });
     }
 
@@ -33,18 +65,21 @@ export default function VendorSettingsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Store Profile</CardTitle>
-                        <CardDescription>Update your store's public information.</CardDescription>
+                        <CardDescription>Update your store's public information. This information is monitored to prevent sharing of contact details.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
                             <Label htmlFor="store-name">Store Name</Label>
-                            <Input id="store-name" defaultValue="Timeless Co." />
+                            <Input id="store-name" value={storeName} onChange={(e) => setStoreName(e.target.value)} />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="store-bio">Store Bio</Label>
-                            <Textarea id="store-bio" rows={4} defaultValue="Specializing in handcrafted leather goods and timeless accessories. Committed to quality and craftsmanship." />
+                            <Textarea id="store-bio" rows={4} value={storeBio} onChange={(e) => setStoreBio(e.target.value)} />
                         </div>
-                         <Button onClick={handleSaveChanges}>Save Changes</Button>
+                         <Button onClick={handleSaveChanges} disabled={isSaving}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Changes
+                         </Button>
                     </CardContent>
                 </Card>
 
@@ -88,7 +123,7 @@ export default function VendorSettingsPage() {
                             <Label htmlFor="auto-reply-message">Instant Reply Message</Label>
                             <Textarea id="auto-reply-message" rows={3} defaultValue="Thanks for your message! We'll get back to you shortly." />
                         </div>
-                        <Button onClick={handleSaveChanges}>Save Auto-Reply</Button>
+                        <Button onClick={handleSaveAutoReply}>Save Auto-Reply</Button>
                     </CardContent>
                 </Card>
 
