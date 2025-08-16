@@ -19,7 +19,7 @@ import { collection, doc, getDoc, getDocs, query, where, limit } from "firebase/
 import { db } from "@/lib/firebase";
 import type { DisplayProduct, CommissionRule, User } from "@/lib/types";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
