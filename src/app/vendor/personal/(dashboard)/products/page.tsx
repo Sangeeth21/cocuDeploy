@@ -1,7 +1,7 @@
 
 "use client";
 
-import { MoreHorizontal, PlusCircle, ExternalLink, Copy, Archive, Trash2 } from "lucide-react";
+import { MoreHorizontal, PlusCircle, ExternalLink, Copy, Archive, Trash2, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,14 +11,18 @@ import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState, useEffect } from "react";
 import type { DisplayProduct } from "@/lib/types";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
 export default function VendorProductsPage() {
     const [products, setProducts] = useState<DisplayProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const vendorId = "VDR001"; // Placeholder for logged-in vendor
+    const { toast } = useToast();
+    const [productToDelete, setProductToDelete] = useState<DisplayProduct | null>(null);
 
     useEffect(() => {
         setLoading(true);
@@ -41,11 +45,24 @@ export default function VendorProductsPage() {
 
         return () => unsubscribe();
     }, [vendorId]);
+
+    const handleDelete = async () => {
+        if (!productToDelete) return;
+
+        await deleteDoc(doc(db, "products", productToDelete.id));
+
+        toast({
+            variant: "destructive",
+            title: "Product Deleted",
+            description: `"${productToDelete.name}" has been deleted.`,
+        });
+        setProductToDelete(null);
+    }
     
     const liveProducts = useMemo(() => products.filter(p => p.status === 'Live' || p.status === 'Needs Review'), [products]);
     const draftProducts = useMemo(() => products.filter(p => p.status === 'Draft' || p.status === 'Archived'), [products]);
 
-    const renderProductTable = (products: DisplayProduct[], title: string) => (
+    const renderProductTable = (productsToRender: DisplayProduct[], title: string) => (
         <Card>
             <CardHeader>
                 <CardTitle>{title}</CardTitle>
@@ -67,7 +84,7 @@ export default function VendorProductsPage() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                   {products.map(product => (
+                   {productsToRender.map(product => (
                         <TableRow key={product.id}>
                             <TableCell className="hidden sm:table-cell p-2">
                                 <div className="relative w-16 h-16 rounded-md overflow-hidden">
@@ -95,29 +112,35 @@ export default function VendorProductsPage() {
                                     </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Copy className="mr-2 h-4 w-4" /> Duplicate
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
-                                        <Link href={`/products/${product.id}`} target="_blank">
-                                            View Live Page <ExternalLink className="ml-auto h-3 w-3"/>
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    {product.status === 'Draft' || product.status === 'Archived' ? (
-                                        <>
-                                        <DropdownMenuItem>Publish</DropdownMenuItem>
-                                        <DropdownMenuItem className="text-destructive" onClick={() => console.log('delete')}>
-                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/vendor/products/new?id=${product.id}`}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </Link>
                                         </DropdownMenuItem>
-                                        </>
-                                    ) : (
                                         <DropdownMenuItem>
-                                            <Archive className="mr-2 h-4 w-4" /> Archive
+                                            <Copy className="mr-2 h-4 w-4" /> Duplicate
                                         </DropdownMenuItem>
-                                    )}
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/products/${product.id}`} target="_blank">
+                                                View Live Page <ExternalLink className="ml-auto h-3 w-3"/>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        {product.status === 'Draft' || product.status === 'Archived' ? (
+                                            <>
+                                            <DropdownMenuItem>Publish</DropdownMenuItem>
+                                            <AlertDialogTrigger asChild>
+                                                 <DropdownMenuItem className="text-destructive" onSelect={() => setProductToDelete(product)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                            </>
+                                        ) : (
+                                            <DropdownMenuItem>
+                                                <Archive className="mr-2 h-4 w-4" /> Archive
+                                            </DropdownMenuItem>
+                                        )}
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
@@ -125,12 +148,13 @@ export default function VendorProductsPage() {
                    ))}
                     </TableBody>
                 </Table>
-                {products.length === 0 && <p className="text-center text-muted-foreground p-4">No products in this category.</p>}
+                {productsToRender.length === 0 && <p className="text-center text-muted-foreground p-4">No products in this category.</p>}
             </CardContent>
         </Card>
     );
     
     return (
+        <AlertDialog>
       <div className="space-y-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
@@ -153,5 +177,19 @@ export default function VendorProductsPage() {
             </div>
         )}
       </div>
+       <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the product
+                    "{productToDelete?.name}".
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setProductToDelete(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     );
 }

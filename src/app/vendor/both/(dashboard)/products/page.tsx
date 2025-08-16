@@ -1,7 +1,7 @@
 
 "use client";
 
-import { MoreHorizontal, PlusCircle, ExternalLink, Copy, Archive, Trash2 } from "lucide-react";
+import { MoreHorizontal, PlusCircle, ExternalLink, Copy, Archive, Trash2, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,10 +12,28 @@ import Link from "next/link";
 import Image from "next/image";
 import { useMemo, useState, useEffect } from "react";
 import type { DisplayProduct } from "@/lib/types";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 function ProductTable({ products, loading, type }: { products: DisplayProduct[], loading: boolean, type: 'Personalized' | 'Corporate' }) {
+    const { toast } = useToast();
+    const [productToDelete, setProductToDelete] = useState<DisplayProduct | null>(null);
+
+    const handleDelete = async () => {
+        if (!productToDelete) return;
+
+        await deleteDoc(doc(db, "products", productToDelete.id));
+
+        toast({
+            variant: "destructive",
+            title: "Product Deleted",
+            description: `"${productToDelete.name}" has been deleted.`,
+        });
+        setProductToDelete(null);
+    }
+    
     if (loading) {
         return <p className="text-center text-muted-foreground p-4">Loading products...</p>
     }
@@ -25,80 +43,101 @@ function ProductTable({ products, loading, type }: { products: DisplayProduct[],
     }
 
     return (
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead className="hidden w-[100px] sm:table-cell">
-                        <span className="sr-only">Image</span>
-                    </TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="hidden md:table-cell">Price</TableHead>
-                    <TableHead className="hidden md:table-cell">Inventory</TableHead>
-                    <TableHead>
-                        <span className="sr-only">Actions</span>
-                    </TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {products.map(product => (
-                    <TableRow key={product.id}>
-                        <TableCell className="hidden sm:table-cell p-2">
-                            <div className="relative w-16 h-16 rounded-md overflow-hidden">
-                                <Image
-                                src={product.imageUrl}
-                                alt={product.name}
-                                fill
-                                className="object-cover"
-                                data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`}
-                                />
-                            </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{product.name}</TableCell>
-                        <TableCell>
-                            <Badge variant={product.status === 'Needs Review' ? 'destructive' : product.status === 'Live' ? 'default' : 'secondary'}>{product.status}</Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">${product.price.toFixed(2)}</TableCell>
-                        <TableCell className="hidden md:table-cell">{product.stock} in stock</TableCell>
-                        <TableCell className="text-right">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                <Button aria-haspopup="true" size="icon" variant="ghost">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                    <span className="sr-only">Toggle menu</span>
-                                </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem asChild><Link href={`/vendor/both/products/new?id=${product.id}`}>Edit</Link></DropdownMenuItem>
-                                    <DropdownMenuItem>
-                                        <Copy className="mr-2 h-4 w-4" /> Duplicate
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
-                                        <Link href={`/products/${product.id}`} target="_blank">
-                                            View Live Page <ExternalLink className="ml-auto h-3 w-3"/>
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    {product.status === 'Draft' || product.status === 'Archived' ? (
-                                        <>
-                                        <DropdownMenuItem>Publish</DropdownMenuItem>
-                                        <DropdownMenuItem className="text-destructive" onClick={() => console.log('delete')}>
-                                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                                        </DropdownMenuItem>
-                                        </>
-                                    ) : (
-                                        <DropdownMenuItem>
-                                            <Archive className="mr-2 h-4 w-4" /> Archive
-                                        </DropdownMenuItem>
-                                    )}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        </TableCell>
+        <AlertDialog>
+             <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead className="hidden w-[100px] sm:table-cell">
+                            <span className="sr-only">Image</span>
+                        </TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="hidden md:table-cell">Price</TableHead>
+                        <TableHead className="hidden md:table-cell">Inventory</TableHead>
+                        <TableHead>
+                            <span className="sr-only">Actions</span>
+                        </TableHead>
                     </TableRow>
-                ))}
-            </TableBody>
-        </Table>
+                </TableHeader>
+                <TableBody>
+                    {products.map(product => (
+                        <TableRow key={product.id}>
+                            <TableCell className="hidden sm:table-cell p-2">
+                                <div className="relative w-16 h-16 rounded-md overflow-hidden">
+                                    <Image
+                                    src={product.imageUrl}
+                                    alt={product.name}
+                                    fill
+                                    className="object-cover"
+                                    data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`}
+                                    />
+                                </div>
+                            </TableCell>
+                            <TableCell className="font-medium">{product.name}</TableCell>
+                            <TableCell>
+                                <Badge variant={product.status === 'Needs Review' ? 'destructive' : product.status === 'Live' ? 'default' : 'secondary'}>{product.status}</Badge>
+                            </TableCell>
+                            <TableCell className="hidden md:table-cell">${product.price.toFixed(2)}</TableCell>
+                            <TableCell className="hidden md:table-cell">{product.stock} in stock</TableCell>
+                            <TableCell className="text-right">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                    <Button aria-haspopup="true" size="icon" variant="ghost">
+                                        <MoreHorizontal className="h-4 w-4" />
+                                        <span className="sr-only">Toggle menu</span>
+                                    </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/vendor/both/products/new?id=${product.id}`}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem>
+                                            <Copy className="mr-2 h-4 w-4" /> Duplicate
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/products/${product.id}`} target="_blank">
+                                                View Live Page <ExternalLink className="ml-auto h-3 w-3"/>
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        {product.status === 'Draft' || product.status === 'Archived' ? (
+                                            <>
+                                            <DropdownMenuItem>Publish</DropdownMenuItem>
+                                            <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem className="text-destructive" onSelect={() => setProductToDelete(product)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                            </>
+                                        ) : (
+                                            <DropdownMenuItem>
+                                                <Archive className="mr-2 h-4 w-4" /> Archive
+                                            </DropdownMenuItem>
+                                        )}
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the product
+                        "{productToDelete?.name}".
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setProductToDelete(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
     );
 }
 
@@ -163,5 +202,3 @@ export default function VendorProductsPage() {
       </div>
     );
 }
-
-    
