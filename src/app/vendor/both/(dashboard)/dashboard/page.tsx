@@ -6,15 +6,71 @@ import { Button } from "@/components/ui/button";
 import { ListChecks, LineChart, Package, MessageSquare, ArrowRight, Bell, DollarSign, Check, X } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
-import { collection, onSnapshot, query, where, orderBy, limit } from "firebase/firestore";
+import { collection, onSnapshot, query, where, orderBy, limit, getDocs, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useState, useEffect } from "react";
+import type { Order, Conversation } from "@/lib/types";
+
 
 export default function BothVendorDashboardPage() {
   const [notifications, setNotifications] = useState<any[]>([]);
+  const [stats, setStats] = useState({
+    revenue: 0,
+    activeOrders: 0,
+    newMessages: 0,
+    activeListings: 0,
+  });
+  const vendorId = "VDR001"; // Placeholder
 
   useEffect(() => {
-    const vendorId = "VDR001"; // Placeholder
+    // --- Fetch card stats ---
+    const fetchStats = async () => {
+        // Get all products for the vendor to identify their orders
+        const productsQuery = query(collection(db, "products"), where("vendorId", "==", vendorId));
+        const productsSnapshot = await getDocs(productsQuery);
+        const vendorProductIds = productsSnapshot.docs.map(doc => doc.id);
+
+        let totalRevenue = 0;
+        let activeOrdersCount = 0;
+
+        if (vendorProductIds.length > 0) {
+            // Firestore doesn't support 'in' with 'array-contains-any', so we fetch all orders and filter.
+            // This is not scalable for huge datasets, but works for this scenario.
+            const ordersQuery = query(collection(db, "orders"));
+            const ordersSnapshot = await getDocs(ordersQuery);
+            
+            ordersSnapshot.forEach(doc => {
+                const order = doc.data() as Order;
+                const vendorItemsInOrder = order.items.filter(item => vendorProductIds.includes(item.productId));
+                
+                if (vendorItemsInOrder.length > 0) {
+                    if (order.status !== 'Cancelled' && order.status !== 'Delivered') {
+                        activeOrdersCount++;
+                    }
+                    totalRevenue += vendorItemsInOrder.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+                }
+            });
+        }
+        
+        // Get listings count
+        const listingsQuery = query(collection(db, "products"), where("vendorId", "==", vendorId), where("status", "==", "Live"));
+        const listingsSnapshot = await getCountFromServer(listingsQuery);
+
+        // Get unread messages count
+        const messagesQuery = query(collection(db, "conversations"), where("vendorId", "==", vendorId), where("unread", "==", true));
+        const messagesSnapshot = await getCountFromServer(messagesQuery);
+
+        setStats({
+            revenue: totalRevenue,
+            activeOrders: activeOrdersCount,
+            newMessages: messagesSnapshot.data().count,
+            activeListings: listingsSnapshot.data().count,
+        });
+    }
+
+    fetchStats();
+    
+    // --- Fetch notifications ---
     const q = query(
         collection(db, "notifications"), 
         where("vendorId", "==", vendorId),
@@ -25,14 +81,9 @@ export default function BothVendorDashboardPage() {
         const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setNotifications(notifs);
     });
+    
     return () => unsubscribe();
-  }, []);
-  
-  const revenue = "$45,231.89";
-  const revenueChange = "+20.1% from last month";
-  const activeOrders = "+23";
-  const newMessages = "+5";
-  const activeListings = "125";
+  }, [vendorId]);
 
   return (
       <div>
@@ -50,8 +101,8 @@ export default function BothVendorDashboardPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{revenue}</div>
-            <p className="text-xs text-muted-foreground">{revenueChange}</p>
+            <div className="text-2xl font-bold">${stats.revenue.toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
+            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
           </CardContent>
         </Card>
         <Card>
@@ -60,7 +111,7 @@ export default function BothVendorDashboardPage() {
             <ListChecks className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeOrders}</div>
+            <div className="text-2xl font-bold">+{stats.activeOrders}</div>
             <p className="text-xs text-muted-foreground">Ready to be fulfilled</p>
           </CardContent>
         </Card>
@@ -69,11 +120,11 @@ export default function BothVendorDashboardPage() {
             <CardTitle className="text-sm font-medium">New Messages</CardTitle>
             <div className="relative">
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                <Badge className="absolute -top-2 -right-2 h-4 w-4 justify-center p-0">{newMessages.replace('+', '')}</Badge>
+                {stats.newMessages > 0 && <Badge className="absolute -top-2 -right-2 h-4 w-4 justify-center p-0">{stats.newMessages}</Badge>}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{newMessages}</div>
+            <div className="text-2xl font-bold">+{stats.newMessages}</div>
             <p className="text-xs text-muted-foreground">From interested customers</p>
           </CardContent>
         </Card>
@@ -83,7 +134,7 @@ export default function BothVendorDashboardPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeListings}</div>
+            <div className="text-2xl font-bold">{stats.activeListings}</div>
             <p className="text-xs text-muted-foreground">Products currently for sale</p>
           </CardContent>
         </Card>
