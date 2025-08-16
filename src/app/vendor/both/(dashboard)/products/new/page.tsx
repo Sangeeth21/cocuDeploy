@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -9,7 +8,6 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
-import { mockCategories, customizationOptions, categoryCustomizationMap } from "@/lib/mock-data"
 import { Upload, X, PackageCheck, Rotate3d, CheckCircle, Wand2, Loader2, BellRing, ShieldCheck, Image as ImageIcon, Video, Square, Circle as CircleIcon, Info, Bold, Italic, Undo2, Redo2, Trash2, PlusCircle, PilcrowLeft, PilcrowRight, Pilcrow, Type, Truck, Box, AlertTriangle, Percent } from "lucide-react"
 import Image from "next/image"
 import { useState, useMemo, useRef, useEffect, useCallback } from "react"
@@ -29,10 +27,11 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Alert, AlertTitle, AlertDescription as AlertDesc } from "@/components/ui/alert";
-import { collection, onSnapshot, query, orderBy, addDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, addDoc, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Category } from '@/lib/types';
+import { useRouter, useSearchParams } from "next/navigation";
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
@@ -613,6 +612,9 @@ const getYoutubeEmbedUrl = (url: string) => {
 
 export default function NewProductPage() {
     const { toast } = useToast();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const productId = searchParams.get('id');
     const { isVerified, addDraftProduct, vendorType } = useVerification();
     
     const [images, setImages] = useState<ProductImages>({});
@@ -645,7 +647,41 @@ export default function NewProductPage() {
     const [packageWidth, setPackageWidth] = useState("");
     const [packageHeight, setPackageHeight] = useState("");
     const [commissionRates, setCommissionRates] = useState<{ [key: string]: { commission: number } }>({});
+    const [categories, setCategories] = useState<Category[]>([]);
 
+    const pageTitle = productId ? "Edit Product" : "Add New Product";
+    const pageDescription = productId 
+        ? "Update the details for your existing product." 
+        : "Fill out the details below to list a new item.";
+
+    // Fetch existing product data if editing
+    useEffect(() => {
+        if (productId) {
+            const docRef = doc(db, 'products', productId);
+            getDoc(docRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data() as DisplayProduct;
+                    setProductName(data.name);
+                    setProductDescription(data.description);
+                    setSelectedCategory(data.category);
+                    setImages(prev => {
+                        const newImages: ProductImages = {};
+                        (data.images || [data.imageUrl]).forEach((src, index) => {
+                            if (src) {
+                               const side = imageSides[index]?.key;
+                               if(side) newImages[side] = { src };
+                            }
+                        })
+                        return newImages;
+                    });
+                    setB2bEnabled(data.b2bEnabled || false);
+                    setMoq(data.moq || 50);
+                    setTierPrices(data.tierPrices || []);
+                }
+            })
+        }
+    }, [productId]);
+    
     useEffect(() => {
         const commissionRef = doc(db, 'commissions', 'categories');
         const unsubscribe = onSnapshot(commissionRef, (docSnap) => {
@@ -653,7 +689,15 @@ export default function NewProductPage() {
                 setCommissionRates(docSnap.data());
             }
         });
-        return () => unsubscribe();
+        const categoriesQuery = query(collection(db, "categories"), orderBy("name"));
+        const unsubCategories = onSnapshot(categoriesQuery, (snapshot) => {
+            setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+        });
+
+        return () => {
+            unsubscribe();
+            unsubCategories();
+        }
     }, []);
     
     const canSave = productName && packageWeight && packageLength && packageWidth && packageHeight;
@@ -713,8 +757,66 @@ export default function NewProductPage() {
         }
     };
     
-    const handlePublish = () => {
-        toast({ title: "Product Submitted!", description: "Your product has been submitted for admin review." });
+    const handlePublish = async () => {
+        toast({ title: 'Publishing product...', description: 'Uploading images and saving data.' });
+        setIsGenerating(true);
+
+        try {
+            const mainImageUrl = images.front?.src || '';
+            
+            const allImagesArray = await Promise.all(
+                imageSides.map(async (side) => {
+                    const img = images[side.key];
+                    if (img?.file) {
+                        const storageRef = ref(storage, `product_images/${Date.now()}_${img.file.name}`);
+                        const snapshot = await uploadBytes(storageRef, img.file);
+                        return getDownloadURL(snapshot.ref);
+                    }
+                    return img?.src || null;
+                })
+            ).then(urls => urls.filter((url): url is string => url !== null));
+
+             const galleryImageUrls = await Promise.all(
+                galleryImages.map(async (img) => {
+                    const storageRef = ref(storage, `product_images/${Date.now()}_${img.file.name}`);
+                    const snapshot = await uploadBytes(storageRef, img.file);
+                    return getDownloadURL(snapshot.ref);
+                })
+            );
+
+            const productData = {
+                name: productName,
+                description: productDescription,
+                category: selectedCategory,
+                imageUrl: mainImageUrl,
+                images: allImagesArray,
+                galleryImages: galleryImageUrls,
+                videoUrl: videoEmbedUrl,
+                status: 'Live',
+                b2bEnabled,
+                moq,
+                tierPrices,
+                customizationAreas: Object.fromEntries(
+                    Object.entries(images).map(([side, img]) => [side, img.customAreas || []])
+                ),
+                // Add other fields from your state
+            };
+
+            if (productId) {
+                 await updateDoc(doc(db, "products", productId), productData);
+                 toast({ title: 'Product Updated!', description: `${productName} has been updated.` });
+            } else {
+                 await addDoc(collection(db, "products"), productData);
+                 toast({ title: 'Product Published!', description: `${productName} is now live.` });
+            }
+             router.push('/vendor/both/products');
+
+        } catch (error) {
+            console.error("Error publishing product: ", error);
+            toast({ variant: 'destructive', title: 'Failed to publish product.' });
+        } finally {
+            setIsGenerating(false);
+        }
     }
     
     const handleSaveCustomArea = (areas: CustomizationArea[]) => {
@@ -827,8 +929,8 @@ export default function NewProductPage() {
     <div className="container py-12">
       <div className="flex justify-between items-center mb-8">
         <div>
-            <h1 className="text-4xl font-bold font-headline">Add New Product</h1>
-            <p className="text-muted-foreground mt-2">Fill out the details below to list a new item.</p>
+            <h1 className="text-4xl font-bold font-headline">{pageTitle}</h1>
+            <p className="text-muted-foreground mt-2">{pageDescription}</p>
         </div>
       </div>
 
@@ -1059,8 +1161,8 @@ export default function NewProductPage() {
                                 <SelectValue placeholder="Select a category" />
                             </SelectTrigger>
                             <SelectContent>
-                                {mockCategories.map(category => (
-                                    <SelectItem key={category.name} value={category.name}>{category.name}</SelectItem>
+                                {categories.map(category => (
+                                    <SelectItem key={category.id} value={category.name}>{category.name}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -1151,7 +1253,7 @@ export default function NewProductPage() {
             Save as Draft
         </Button>
          <Button onClick={handlePublish} className="bg-accent text-accent-foreground hover:bg-accent/90" disabled={!isVerified || status === 'Draft' || !canSave}>
-            <CheckCircle className="mr-2 h-4 w-4"/>
+            {isGenerating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle className="mr-2 h-4 w-4"/>}
             Publish Product
         </Button>
       </div>
