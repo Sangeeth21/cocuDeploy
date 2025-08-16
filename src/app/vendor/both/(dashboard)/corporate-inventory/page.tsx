@@ -11,6 +11,9 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { mockProducts } from "@/lib/mock-data";
 import type { DisplayProduct } from "@/lib/types";
+import { MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 
 function getStockStatus(stock: number): { text: string; variant: "default" | "secondary" | "destructive" } {
     if (stock === 0) return { text: "Out of Stock", variant: "destructive" };
@@ -105,11 +108,20 @@ export default function CorporateInventoryPage() {
                                             />
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            {isEditing && (
-                                                <Button size="sm" onClick={() => handleSaveQuantity(product.id)}>
-                                                    Save
-                                                </Button>
-                                            )}
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon">
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                        <span className="sr-only">Actions</span>
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent>
+                                                    {isEditing && <DropdownMenuItem onSelect={() => handleSaveQuantity(product.id)}>Save Quantity</DropdownMenuItem>}
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/products/${product.id}`} target="_blank">View Product</Link>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 );
