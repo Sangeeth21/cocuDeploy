@@ -1,11 +1,11 @@
 
 "use client";
 
-import { MoreHorizontal, PlusCircle } from "lucide-react";
+import { MoreHorizontal, PlusCircle, ExternalLink, Copy, Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import Link from "next/link";
 import Image from "next/image";
@@ -16,6 +16,7 @@ import { db } from "@/lib/firebase";
 
 
 export default function VendorProductsPage() {
+    
     const [products, setProducts] = useState<DisplayProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const vendorId = "VDR001"; // Placeholder for logged-in vendor
@@ -91,9 +92,25 @@ export default function VendorProductsPage() {
                                     </Button>
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent align="end">
-                                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                    <DropdownMenuItem>Edit</DropdownMenuItem>
-                                    <DropdownMenuItem>Delete</DropdownMenuItem>
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                                        <DropdownMenuItem asChild>
+                                            <Link href={`/products/${product.id}`} target="_blank">
+                                                View Live Page <ExternalLink className="ml-auto h-3 w-3" />
+                                            </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem>
+                                            <Copy className="mr-2 h-4 w-4" /> Duplicate
+                                        </DropdownMenuItem>
+                                        <DropdownMenuSeparator />
+                                        {product.status === 'Draft' ? (
+                                            <DropdownMenuItem>
+                                                <Archive className="mr-2 h-4 w-4" /> Archive
+                                            </DropdownMenuItem>
+                                        ) : (
+                                            <DropdownMenuItem>Publish</DropdownMenuItem>
+                                        )}
+                                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </TableCell>
