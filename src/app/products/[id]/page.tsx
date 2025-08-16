@@ -108,7 +108,7 @@ export default function ProductDetailPage() {
                 const vendorRef = doc(db, "users", productData.vendorId);
                 const vendorSnap = await getDoc(vendorRef);
                 if (vendorSnap.exists()) {
-                    setVendor({ id: vendorSnap.id, ...docSnap.data() } as User);
+                    setVendor({ id: vendorSnap.id, ...vendorSnap.data() } as User);
                 }
                 
                 // Fetch other products from the same vendor
@@ -436,3 +436,5 @@ export default function ProductDetailPage() {
     </Dialog>
   );
 }
+
+    
