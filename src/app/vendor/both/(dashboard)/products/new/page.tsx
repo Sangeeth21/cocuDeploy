@@ -29,6 +29,10 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Alert, AlertTitle, AlertDescription as AlertDesc } from "@/components/ui/alert";
+import { collection, onSnapshot, query, orderBy, addDoc, doc } from 'firebase/firestore';
+import { db, storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import type { Category } from '@/lib/types';
 
 
 type ImageSide = "front" | "back" | "left" | "right" | "top" | "bottom";
