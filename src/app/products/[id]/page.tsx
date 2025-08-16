@@ -375,7 +375,6 @@ export default function ProductDetailPage() {
                 </Tooltip>
             </TooltipProvider>
           </div>
-          <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           
            <div className="space-y-2">
                 <Label htmlFor="quantity">Quantity</Label>
@@ -423,6 +422,8 @@ export default function ProductDetailPage() {
                     </div>
                 )}
             </div>
+            
+            <p className="text-muted-foreground leading-relaxed pt-4">{product.description}</p>
         </div>
       </div>
       
