@@ -272,7 +272,9 @@ export default function ProductDetailPage() {
           </div>
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           
-           <div className="border rounded-lg p-4 space-y-3">
+          <ProductInteractions product={product} isCustomizable={isCustomizable} />
+          
+          <div className="border rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2 font-semibold">
                 <Truck className="h-5 w-5"/>
                 <span>Delivery Options</span>
@@ -297,8 +299,6 @@ export default function ProductDetailPage() {
                 </div>
               )}
             </div>
-
-          <ProductInteractions product={product} isCustomizable={isCustomizable} />
         </div>
       </div>
       
