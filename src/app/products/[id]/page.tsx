@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Star, Heart, Info, Store, Loader2, MapPin, CheckCircle, Truck } from "lucide-react";
+import { Star, Heart, Info, Store, Loader2, MapPin, CheckCircle, Truck, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -15,7 +15,7 @@ import { useWishlist } from "@/context/wishlist-context";
 import { useUser } from "@/context/user-context";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { useMemo, useState, useEffect } from "react";
-import { collection, doc, getDoc, getDocs, query, where, limit } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { DisplayProduct, CommissionRule, User } from "@/lib/types";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -60,6 +60,11 @@ function VendorInfoDialog({ vendor }: { vendor: User }) {
     );
 }
 
+type MediaItem = {
+    type: 'image' | 'video';
+    src: string;
+}
+
 export default function ProductDetailPage() {
   const { toast } = useToast();
   const params = useParams();
@@ -74,8 +79,8 @@ export default function ProductDetailPage() {
   const [pincode, setPincode] = useState("");
   const [isCheckingPincode, setIsCheckingPincode] = useState(false);
   const [deliveryEstimate, setDeliveryEstimate] = useState<string | null>(null);
-
-  const [activeImage, setActiveImage] = useState<string | null>(null);
+  
+  const [activeMedia, setActiveMedia] = useState<MediaItem | null>(null);
   // This would be fetched from the vendor's template settings
   const thumbnailPosition = "bottom"; 
 
@@ -94,7 +99,7 @@ export default function ProductDetailPage() {
         if (productSnap.exists()) {
             const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
             setProduct(productData);
-            setActiveImage(productData.imageUrl); // Set initial active image
+            setActiveMedia({ type: 'image', src: productData.imageUrl }); // Set initial active image
 
             if (productData.vendorId) {
                 const vendorRef = doc(db, "users", productData.vendorId);
@@ -103,6 +108,10 @@ export default function ProductDetailPage() {
                     setVendor({ id: vendorSnap.id, ...vendorSnap.data() } as User);
                 }
             }
+            
+            // In a real app, we'd fetch the template associated with this product
+            // and set the thumbnailPosition from its layout properties.
+            // For now, it's hardcoded above.
 
             // Fetch commission rule hierarchy
             const productCommissionRef = doc(db, "productCommissionOverrides", id);
@@ -195,6 +204,36 @@ export default function ProductDetailPage() {
     }
     setIsCheckingPincode(false);
   }
+  
+  const allMedia = useMemo((): MediaItem[] => {
+    if (!product) return [];
+    
+    const media: MediaItem[] = [];
+    const imageUrls = new Set<string>();
+
+    // Add main image and other side images, ensuring no duplicates
+    [product.imageUrl, ...(product.images || [])].forEach(url => {
+        if (url && !imageUrls.has(url)) {
+            media.push({ type: 'image', src: url });
+            imageUrls.add(url);
+        }
+    });
+
+    // Add gallery images, ensuring no duplicates
+    (product.galleryImages || []).forEach(url => {
+        if (url && !imageUrls.has(url)) {
+            media.push({ type: 'image', src: url });
+            imageUrls.add(url);
+        }
+    });
+
+    // Add video
+    if (product.videoUrl) {
+        media.push({ type: 'video', src: product.videoUrl });
+    }
+
+    return media;
+  }, [product]);
 
   if (loading) {
       return (
@@ -225,8 +264,6 @@ export default function ProductDetailPage() {
   if (!product) {
     notFound();
   }
-
-  const allImages = [product.imageUrl, ...(product.images || [])].filter((img, index, self) => img && self.indexOf(img) === index);
 
   const galleryLayoutClasses = {
       bottom: 'flex-col',
@@ -259,7 +296,18 @@ export default function ProductDetailPage() {
       <div className="grid md:grid-cols-2 gap-12 items-start">
         <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
            <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
-                {activeImage && <Image src={activeImage} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />}
+                {activeMedia?.type === 'image' && (
+                    <Image src={activeMedia.src} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+                )}
+                {activeMedia?.type === 'video' && (
+                    <iframe
+                        src={activeMedia.src}
+                        title="Product Video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full"
+                    ></iframe>
+                )}
                  <Button 
                     size="icon" 
                     variant="secondary" 
@@ -269,19 +317,24 @@ export default function ProductDetailPage() {
                     <Heart className={cn("h-5 w-5", isWishlisted(product.id) && "fill-destructive text-destructive")} />
                 </Button>
               </div>
-          {allImages.length > 1 && (
+          {allMedia.length > 1 && (
             <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition as keyof typeof thumbnailLayoutClasses], thumbnailOrderClasses[thumbnailPosition as keyof typeof thumbnailOrderClasses])}>
-             {allImages.map((img, index) => (
+             {allMedia.map((media, index) => (
                  <button
                     key={index}
-                    onClick={() => setActiveImage(img)}
+                    onClick={() => setActiveMedia(media)}
                     className={cn(
                         "relative aspect-square rounded-md overflow-hidden transition-all flex-shrink-0",
-                        activeImage === img ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
+                        activeMedia?.src === media.src ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
                         thumbnailPosition === 'bottom' ? 'w-20' : 'w-16'
                     )}
                  >
-                    <Image src={img} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
+                    <Image src={media.type === 'video' ? product.imageUrl : media.src} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
+                    {media.type === 'video' && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Video className="h-6 w-6 text-white" />
+                        </div>
+                    )}
                  </button>
               ))}
             </div>
@@ -322,34 +375,34 @@ export default function ProductDetailPage() {
           </div>
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           
-          <ProductInteractions product={product} isCustomizable={isCustomizable} />
-          
-          <div className="pt-2">
-            <div className="flex items-center gap-2">
-                <Truck className="h-5 w-5 text-muted-foreground" />
-                <Label htmlFor="pincode-check" className="font-semibold">Delivery Options</Label>
+           <ProductInteractions product={product} isCustomizable={isCustomizable} />
+
+            <div className="border rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                    <Truck className="h-5 w-5 text-muted-foreground" />
+                    <Label htmlFor="pincode-check" className="font-semibold">Check Delivery Options</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground"/>
+                    <Input 
+                        id="pincode-check"
+                        placeholder="Enter pincode" 
+                        className="h-9" 
+                        value={pincode}
+                        onChange={(e) => setPincode(e.target.value)}
+                        maxLength={6}
+                    />
+                    <Button variant="outline" size="sm" className="h-9" onClick={handleCheckDelivery} disabled={isCheckingPincode}>
+                        {isCheckingPincode ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Check'}
+                    </Button>
+                </div>
+                 {deliveryEstimate && (
+                    <div className="text-sm flex items-center gap-2 pt-1 text-muted-foreground">
+                        <CheckCircle className="h-4 w-4 text-green-600"/>
+                        <span>{deliveryEstimate}</span>
+                    </div>
+                )}
             </div>
-            <div className="flex items-center gap-2 mt-2">
-                <MapPin className="h-4 w-4 text-muted-foreground"/>
-                <Input 
-                    id="pincode-check"
-                    placeholder="Enter pincode" 
-                    className="h-9" 
-                    value={pincode}
-                    onChange={(e) => setPincode(e.target.value)}
-                    maxLength={6}
-                />
-                <Button variant="outline" size="sm" className="h-9" onClick={handleCheckDelivery} disabled={isCheckingPincode}>
-                    {isCheckingPincode ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Check'}
-                </Button>
-            </div>
-            {deliveryEstimate && (
-            <div className="text-sm flex items-center gap-2 mt-2 text-muted-foreground">
-                <CheckCircle className="h-4 w-4 text-green-600"/>
-                <span>{deliveryEstimate}</span>
-            </div>
-            )}
-          </div>
         </div>
       </div>
       

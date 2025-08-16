@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -128,7 +127,7 @@ export default function NewTemplatePage() {
                 title: "Template Saved!",
                 description: `The "${templateName}" template has been saved successfully.`,
             });
-            router.push("/vendor/both/templates");
+            router.push("/vendor/templates");
         } catch (error) {
             console.error("Error saving template: ", error);
             toast({ variant: "destructive", title: "Failed to save template." });

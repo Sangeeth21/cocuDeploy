@@ -655,6 +655,14 @@ export default function NewProductPage() {
         ? "Update the details for your existing product." 
         : "Fill out the details below to list a new item.";
 
+    const totalImageCount = useMemo(() => {
+        const sideImageCount = Object.values(images).filter(Boolean).length;
+        const galleryImageCount = galleryImages.length;
+        return sideImageCount + galleryImageCount;
+    }, [images, galleryImages]);
+    
+    const canSave = productName && packageWeight && packageLength && packageWidth && packageHeight && price && totalImageCount >= 2;
+
     // Fetch existing product data if editing
     useEffect(() => {
         if (productId) {
@@ -702,7 +710,6 @@ export default function NewProductPage() {
         }
     }, []);
     
-    const canSave = productName && packageWeight && packageLength && packageWidth && packageHeight && price;
 
     const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>, side: ImageSide) => {
         if (event.target.files && event.target.files[0]) {
@@ -947,7 +954,7 @@ export default function NewProductPage() {
                 <CardContent className="space-y-4">
                     <div className="space-y-2">
                         <Label htmlFor="name">Product Name <span className="text-destructive">*</span></Label>
-                        <Input id="name" placeholder="e.g. Classic Leather Watch" value={productName} onChange={e => setProductName(e.target.value)} />
+                        <Input id="name" placeholder="e.g. Classic Leather Watch" value={productName} onChange={e => setProductName(e.target.value)} required/>
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="description">Description <span className="text-destructive">*</span></Label>
@@ -1080,6 +1087,11 @@ export default function NewProductPage() {
                             </label>
                             <input id="gallery-upload" type="file" multiple accept="image/*" className="sr-only" onChange={handleGalleryImageUpload} />
                         </div>
+                        {totalImageCount < 2 && (
+                            <Alert variant="destructive" className="mt-2">
+                                <AlertDesc>Please upload at least 2 images in total to be able to publish this product.</AlertDesc>
+                            </Alert>
+                        )}
                      </div>
 
                      <Separator className="my-6" />
@@ -1133,14 +1145,14 @@ export default function NewProductPage() {
                 <CardContent className="space-y-4">
                      <div className="space-y-2">
                         <Label htmlFor="weight">Weight (kg) <span className="text-destructive">*</span></Label>
-                        <Input id="weight" type="number" placeholder="0.5" value={packageWeight} onChange={e => setPackageWeight(e.target.value)} />
+                        <Input id="weight" type="number" placeholder="0.5" value={packageWeight} onChange={e => setPackageWeight(e.target.value)} required />
                     </div>
                     <div className="space-y-2">
                         <Label>Dimensions (cm) <span className="text-destructive">*</span></Label>
                         <div className="flex gap-2">
-                            <Input type="number" placeholder="L" value={packageLength} onChange={e => setPackageLength(e.target.value)} />
-                            <Input type="number" placeholder="W" value={packageWidth} onChange={e => setPackageWidth(e.target.value)} />
-                            <Input type="number" placeholder="H" value={packageHeight} onChange={e => setPackageHeight(e.target.value)} />
+                            <Input type="number" placeholder="L" value={packageLength} onChange={e => setPackageLength(e.target.value)} required />
+                            <Input type="number" placeholder="W" value={packageWidth} onChange={e => setPackageWidth(e.target.value)} required />
+                            <Input type="number" placeholder="H" value={packageHeight} onChange={e => setPackageHeight(e.target.value)} required />
                         </div>
                     </div>
                     <Alert variant="destructive">

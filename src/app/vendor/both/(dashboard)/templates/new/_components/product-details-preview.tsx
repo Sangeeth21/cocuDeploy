@@ -4,7 +4,7 @@
 import { Button } from "@/components/ui/button";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import { Star } from "lucide-react";
+import { Star, Video } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
 
