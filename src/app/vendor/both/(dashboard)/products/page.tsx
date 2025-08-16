@@ -147,13 +147,13 @@ export default function VendorProductsPage() {
                 <TabsTrigger value="personalized">Personalized Retail</TabsTrigger>
                 <TabsTrigger value="corporate">Corporate & Bulk</TabsTrigger>
             </TabsList>
-            <Card className="mt-4 flex-1">
-                <TabsContent value="personalized" className="h-full">
+            <Card className="mt-4 flex-1 flex flex-col">
+                <TabsContent value="personalized" className="flex-1">
                     <CardContent className="p-0 h-full">
                          <ProductTable products={personalProducts} loading={loading} type="Personalized" />
                     </CardContent>
                 </TabsContent>
-                <TabsContent value="corporate" className="h-full">
+                <TabsContent value="corporate" className="flex-1">
                     <CardContent className="p-0 h-full">
                         <ProductTable products={corporateProducts} loading={loading} type="Corporate" />
                     </CardContent>

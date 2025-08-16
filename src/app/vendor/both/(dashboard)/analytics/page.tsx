@@ -91,15 +91,15 @@ export default function BothVendorAnalyticsPage() {
                 <h1 className="text-3xl font-bold font-headline">Analytics</h1>
                 <p className="text-muted-foreground">Track your store's performance across all sales channels.</p>
             </div>
-                <Tabs defaultValue="personalized" className="flex-1 flex flex-col">
+                <Tabs defaultValue="personalized" className="w-full flex-1 flex flex-col">
                 <TabsList>
                     <TabsTrigger value="personalized">Personalized Retail</TabsTrigger>
                     <TabsTrigger value="corporate">Corporate & Bulk</TabsTrigger>
                 </TabsList>
-                <TabsContent value="personalized" className="mt-4">
+                <TabsContent value="personalized" className="mt-4 flex-1">
                     <AnalyticsView type="personalized" />
                 </TabsContent>
-                <TabsContent value="corporate" className="mt-4">
+                <TabsContent value="corporate" className="mt-4 flex-1">
                         <AnalyticsView type="corporate" />
                 </TabsContent>
             </Tabs>

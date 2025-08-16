@@ -190,18 +190,18 @@ export default function BothVendorInventoryPage() {
                 <p className="text-muted-foreground">Track and update your product stock levels.</p>
             </div>
             
-            <Tabs defaultValue="personalized" className="flex-1 flex flex-col">
+            <Tabs defaultValue="personalized" className="w-full flex-1 flex flex-col">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="personalized">Personalized Retail</TabsTrigger>
                     <TabsTrigger value="corporate">Corporate & Bulk</TabsTrigger>
                 </TabsList>
-                <Card className="mt-4 flex-1">
-                    <TabsContent value="personalized" className="h-full">
+                <Card className="mt-4 flex-1 flex flex-col">
+                    <TabsContent value="personalized" className="flex-1">
                         <CardContent className="p-0 h-full">
-                            <InventoryTable products={personalProducts} loading={loading} type="Personalized" />
+                             <InventoryTable products={personalProducts} loading={loading} type="Personalized" />
                         </CardContent>
                     </TabsContent>
-                    <TabsContent value="corporate" className="h-full">
+                    <TabsContent value="corporate" className="flex-1">
                        <CardContent className="p-0 h-full">
                             <InventoryTable products={corporateProducts} loading={loading} type="Corporate" />
                        </CardContent>

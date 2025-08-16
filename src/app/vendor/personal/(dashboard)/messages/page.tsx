@@ -9,7 +9,7 @@ export default function RedirectToMessages() {
 
   useEffect(() => {
     // Redirect to the unified messages page.
-    router.replace("/vendor/both/messages");
+    router.replace("/vendor/both/messages?tab=customer");
   }, [router]);
 
   return null;

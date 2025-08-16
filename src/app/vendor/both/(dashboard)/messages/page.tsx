@@ -262,7 +262,7 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
                     "flex items-center gap-4 p-4 cursor-pointer hover:bg-muted/50 border-b",
                     selectedConversation?.id === convo.id && "bg-muted"
                     )}
-                    onClick={() => handleSelectConversation(convo.id)}
+                    onClick={() => handleSelectConversation(convo.id as number)}
                 >
                     <Avatar>
                     <AvatarImage src={convo.avatar} alt={convo.customerId} data-ai-hint="person face" />
@@ -294,25 +294,25 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input placeholder="Search conversations..." className="pl-8" />
             </div>
-            <Tabs defaultValue={initialTab} className="w-full mt-2">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="customer">
-                        Customer
-                        {customerUnreadCount > 0 && <Badge className="ml-2">{customerUnreadCount}</Badge>}
-                    </TabsTrigger>
-                    <TabsTrigger value="corporate">
-                        Corporate
-                        {corporateUnreadCount > 0 && <Badge className="ml-2">{corporateUnreadCount}</Badge>}
-                    </TabsTrigger>
-                </TabsList>
-                <TabsContent value="customer" className="h-[calc(100vh-22rem)] overflow-y-auto">
-                    {renderConversationList('customer')}
-                </TabsContent>
-                <TabsContent value="corporate" className="h-[calc(100vh-22rem)] overflow-y-auto">
-                     {renderConversationList('corporate')}
-                </TabsContent>
-            </Tabs>
           </div>
+          <Tabs defaultValue={initialTab} className="w-full flex-1 flex flex-col min-h-0">
+            <TabsList className="grid w-full grid-cols-2 m-4 mb-0">
+                <TabsTrigger value="customer">
+                    Customer
+                    {customerUnreadCount > 0 && <Badge className="ml-2">{customerUnreadCount}</Badge>}
+                </TabsTrigger>
+                <TabsTrigger value="corporate">
+                    Corporate
+                    {corporateUnreadCount > 0 && <Badge className="ml-2">{corporateUnreadCount}</Badge>}
+                </TabsTrigger>
+            </TabsList>
+            <TabsContent value="customer" className="flex-1 mt-0">
+                {renderConversationList('customer')}
+            </TabsContent>
+            <TabsContent value="corporate" className="flex-1 mt-0">
+                    {renderConversationList('corporate')}
+            </TabsContent>
+          </Tabs>
         </div>
         <div className="col-span-1 md:col-span-2 xl:col-span-3 flex flex-col h-full">
           {selectedConversation ? (
@@ -329,7 +329,7 @@ export default function BothVendorMessagesPage({ conversations = [], setConversa
                    </div>
                 </div>
                  <div className="flex items-center gap-4">
-                    <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => handleReportConversation(selectedConversation.id)}>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => handleReportConversation(selectedConversation.id as number)}>
                         <AlertTriangle className="h-5 w-5 text-destructive" />
                         <span className="sr-only">Report Conversation</span>
                     </Button>
