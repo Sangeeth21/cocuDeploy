@@ -400,19 +400,19 @@ export default function ProductDetailPage() {
       </div>
       
       <Separator className="my-12" />
-      <FrequentlyBoughtTogetherPreview currentProduct={product} />
-
-      <Separator className="my-12" />
 
       <div className="grid md:grid-cols-3 gap-12">
-        <div className="md:col-span-2">
-          <ReviewsPreview productId={product.id} />
-        </div>
+          <div className="md:col-span-3 lg:col-span-2">
+             <ReviewsPreview productId={product.id} />
+          </div>
+          <div className="md:col-span-3 lg:col-span-1">
+             <FrequentlyBoughtTogetherPreview currentProduct={product} />
+          </div>
       </div>
 
-       <Separator className="my-12" />
-
-      <div>
+      <Separator className="my-12" />
+        
+       <div>
         <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
