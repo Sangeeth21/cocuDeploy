@@ -4,7 +4,7 @@
 import Image from "next/image";
 import { notFound, useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Star, Heart } from "lucide-react";
+import { Star, Heart, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +17,9 @@ import { useAuthDialog } from "@/context/auth-dialog-context";
 import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { DisplayProduct } from "@/lib/types";
+import type { DisplayProduct, CommissionRule } from "@/lib/types";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
   loading: () => <div className="flex flex-col space-y-3">
@@ -49,6 +51,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<DisplayProduct | null>(null);
   const [similarProducts, setSimilarProducts] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
+  const [commissionRule, setCommissionRule] = useState<CommissionRule | null>(null);
 
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isLoggedIn } = useUser();
@@ -57,14 +60,38 @@ export default function ProductDetailPage() {
   useEffect(() => {
     if (!id) return;
 
-    const fetchProduct = async () => {
+    const fetchProductAndCommission = async () => {
         setLoading(true);
-        const docRef = doc(db, "products", id);
-        const docSnap = await getDoc(docRef);
+        const productRef = doc(db, "products", id);
+        const productSnap = await getDoc(productRef);
 
-        if (docSnap.exists()) {
-            const productData = { id: docSnap.id, ...docSnap.data() } as DisplayProduct;
+        if (productSnap.exists()) {
+            const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
             setProduct(productData);
+
+            // Fetch commission rule hierarchy
+            // 1. Product-specific override
+            const productCommissionRef = doc(db, "productCommissionOverrides", id);
+            const productCommissionSnap = await getDoc(productCommissionRef);
+            if (productCommissionSnap.exists()) {
+                setCommissionRule(productCommissionSnap.data().rule as CommissionRule);
+            } else {
+                // 2. Vendor-specific override
+                const vendorCommissionQuery = query(collection(db, "vendorCommissionOverrides"), where("vendorId", "==", productData.vendorId), limit(1));
+                const vendorCommissionSnap = await getDocs(vendorCommissionQuery);
+                if (!vendorCommissionSnap.empty) {
+                    setCommissionRule(vendorCommissionSnap.docs[0].data().rule as CommissionRule);
+                } else {
+                    // 3. Category rule
+                    const categoryCommissionRef = doc(db, "commissions", "categories");
+                    const categoryCommissionSnap = await getDoc(categoryCommissionRef);
+                    if (categoryCommissionSnap.exists()) {
+                        const allRules = categoryCommissionSnap.data();
+                        setCommissionRule(allRules[productData.category] || null);
+                    }
+                }
+            }
+
 
             // Fetch similar products
             if(productData.category) {
@@ -87,15 +114,30 @@ export default function ProductDetailPage() {
         setLoading(false);
     };
 
-    fetchProduct();
+    fetchProductAndCommission();
   }, [id]);
+
+  const finalPrice = useMemo(() => {
+    if (!product) return 0;
+    let price = product.price;
+    if (commissionRule?.buffer) {
+        if (commissionRule.buffer.type === 'fixed') {
+            price += commissionRule.buffer.value;
+        } else {
+            price *= (1 + commissionRule.buffer.value / 100);
+        }
+    }
+    return price;
+  }, [product, commissionRule]);
 
   const isCustomizable = useMemo(() => {
     if (!product) return false;
     return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
   }, [product]);
 
-  const handleWishlistClick = () => {
+  const handleWishlistClick = (e: React.MouseEvent) => {
+      e.preventDefault(); // prevent navigation when clicking the heart
+      e.stopPropagation();
       if (!isLoggedIn) {
           openDialog('login');
           return;
@@ -163,7 +205,19 @@ export default function ProductDetailPage() {
             </div>
             <span className="text-muted-foreground">({product.reviewCount} reviews)</span>
           </div>
-          <p className="text-3xl font-bold font-body">${product.price.toFixed(2)}</p>
+           <div className="flex items-center gap-2">
+            <p className="text-3xl font-bold font-body">${finalPrice.toFixed(2)}</p>
+            <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Price includes taxes and platform fees.</p>
+                    </TooltipContent>
+                </Tooltip>
+            </TooltipProvider>
+          </div>
           <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           
           <ProductInteractions product={product} isCustomizable={isCustomizable} />
