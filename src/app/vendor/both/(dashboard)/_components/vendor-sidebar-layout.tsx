@@ -53,105 +53,103 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
 
     return (
         <div className="flex min-h-screen">
-            <SidebarProvider>
-                <Sidebar collapsible="icon" className="border-r hidden md:flex">
-                    <SidebarHeader>
-                        <div className="flex items-center justify-between p-2">
-                            <div className="flex items-center gap-2">
-                               <Avatar className="h-10 w-10">
-                                    <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
-                                    <AvatarFallback>V</AvatarFallback>
-                                </Avatar>
-                                <div className="flex flex-col group-data-[state=collapsed]:hidden">
-                                    <span className="text-lg font-semibold">Hybrid Vendor,</span>
-                                    <span className="text-lg font-bold -mt-1">Timeless Co.</span>
-                                </div>
+            <Sidebar collapsible="icon" className="border-r hidden md:flex">
+                <SidebarHeader>
+                    <div className="flex items-center justify-between p-2">
+                        <div className="flex items-center gap-2">
+                           <Avatar className="h-10 w-10">
+                                <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
+                                <AvatarFallback>V</AvatarFallback>
+                            </Avatar>
+                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
+                                <span className="text-lg font-semibold">Hybrid Vendor,</span>
+                                <span className="text-lg font-bold -mt-1">Timeless Co.</span>
                             </div>
                         </div>
-                    </SidebarHeader>
-                    <SidebarContent className="p-2">
-                        <SidebarMenu>
-                            {!isVerified && (
-                                <SidebarMenuItem>
-                                    <SidebarMenuButton 
-                                        asChild
-                                        isActive={pathname === '/vendor/verify'}
-                                        tooltip={{children: 'Complete Verification'}}
-                                        className="bg-accent text-accent-foreground hover:bg-accent/90"
-                                    >
-                                        <Link href="/vendor/verify">
-                                            <ShieldAlert className="h-5 w-5 stroke-[1.5]" />
-                                            <span className="group-data-[state=collapsed]:hidden">Verify Account</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            )}
-                            {navLinks.map((link) => {
-                                const showBadge = link.id === 'messages' && unreadMessages > 0;
-                                const isActive = pathname.startsWith(link.href);
-                                return (
-                                <SidebarMenuItem key={link.href}>
-                                    <SidebarMenuButton 
-                                        asChild
-                                        isActive={isActive}
-                                        tooltip={{children: link.label}}
-                                    >
-                                        <Link href={link.href}>
-                                            <link.icon className="h-5 w-5 stroke-[1.5]" />
-                                            <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
-                                             {showBadge && <SidebarMenuBadge>{unreadMessages}</SidebarMenuBadge>}
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            )})}
-                        </SidebarMenu>
-                    </SidebarContent>
-                    <SidebarFooter>
-                        <SidebarMenu>
-                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
-                                    <Link href="/">
-                                        <Store className="h-5 w-5 stroke-[1.5]" />
-                                        <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
+                    </div>
+                </SidebarHeader>
+                <SidebarContent className="p-2">
+                    <SidebarMenu>
+                        {!isVerified && (
+                            <SidebarMenuItem>
+                                <SidebarMenuButton 
+                                    asChild
+                                    isActive={pathname === '/vendor/verify'}
+                                    tooltip={{children: 'Complete Verification'}}
+                                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                                >
+                                    <Link href="/vendor/verify">
+                                        <ShieldAlert className="h-5 w-5 stroke-[1.5]" />
+                                        <span className="group-data-[state=collapsed]:hidden">Verify Account</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
-                             <SidebarMenuItem>
-                                <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
-                                    <Link href="/vendor/login">
-                                        <LogOut className="h-5 w-5 stroke-[1.5]" />
-                                        <span className="group-data-[state=collapsed]:hidden">Log Out</span>
+                        )}
+                        {navLinks.map((link) => {
+                            const showBadge = link.id === 'messages' && unreadMessages > 0;
+                            const isActive = pathname.startsWith(link.href);
+                            return (
+                            <SidebarMenuItem key={link.href}>
+                                <SidebarMenuButton 
+                                    asChild
+                                    isActive={isActive}
+                                    tooltip={{children: link.label}}
+                                >
+                                    <Link href={link.href}>
+                                        <link.icon className="h-5 w-5 stroke-[1.5]" />
+                                        <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
+                                         {showBadge && <SidebarMenuBadge>{unreadMessages}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
-                        </SidebarMenu>
-                    </SidebarFooter>
-                    <CustomSidebarTrigger />
-                </Sidebar>
-                <div className="flex flex-col flex-1">
-                     <header className="flex h-16 items-center justify-between p-4 border-b md:justify-end bg-card">
-                        <div className="flex items-center gap-4">
-                            <span className="font-bold hidden max-md:inline-block">Vendor Portal</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <NotificationPopover notifications={mockVendorActivity} />
-                        </div>
-                     </header>
-                     <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-y-auto">
-                        {children}
-                    </main>
-                </div>
-            </SidebarProvider>
+                        )})}
+                    </SidebarMenu>
+                </SidebarContent>
+                <SidebarFooter>
+                    <SidebarMenu>
+                         <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
+                                <Link href="/">
+                                    <Store className="h-5 w-5 stroke-[1.5]" />
+                                    <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                         <SidebarMenuItem>
+                            <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
+                                <Link href="/vendor/login">
+                                    <LogOut className="h-5 w-5 stroke-[1.5]" />
+                                    <span className="group-data-[state=collapsed]:hidden">Log Out</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarFooter>
+                <CustomSidebarTrigger />
+            </Sidebar>
+            <div className="flex flex-col flex-1">
+                 <header className="flex h-16 items-center justify-between p-4 border-b md:justify-end bg-card">
+                    <div className="flex items-center gap-4">
+                        <span className="font-bold hidden max-md:inline-block">Vendor Portal</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <NotificationPopover notifications={mockVendorActivity} />
+                    </div>
+                 </header>
+                 <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-y-auto">
+                    {children}
+                </main>
+            </div>
         </div>
     );
 }
 
 export function VendorSidebarLayout({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number }) {
     return (
-        <VendorSidebarLayoutContent unreadMessages={unreadMessages}>
-            {children}
-        </VendorSidebarLayoutContent>
+        <SidebarProvider>
+            <VendorSidebarLayoutContent unreadMessages={unreadMessages}>
+                {children}
+            </VendorSidebarLayoutContent>
+        </SidebarProvider>
     )
 }
-
-    
