@@ -369,9 +369,9 @@ const DraggableElement = ({
     } | null>(null);
 
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, type: 'drag' | 'resize') => {
-        e.preventDefault();
-        e.stopPropagation();
         onSelect(element.id);
+        e.stopPropagation();
+        e.preventDefault();
         const parentRect = ref.current?.offsetParent?.getBoundingClientRect();
         if (!parentRect) return;
 
@@ -445,22 +445,24 @@ const DraggableElement = ({
                 cursor: interactionState?.type === 'drag' ? 'grabbing' : 'grab',
             }}
         >
-            {element.type === 'image' && element.imageUrl && (
-                <Image src={element.imageUrl} alt="Uploaded art" fill className="object-contain pointer-events-none" />
-            )}
-             {element.type === 'art' && (
-                element.artType === 'emoji' ? (
-                     <div className="w-full h-full flex items-center justify-center text-6xl pointer-events-none" style={{fontSize: 'min(15vw, 15vh)'}}>{element.artContent}</div>
-                ) : (
-                    React.createElement(element.artContent as React.FC<any>, { className: "w-full h-full object-contain pointer-events-none text-foreground" })
-                )
-            )}
-             {element.type === 'qr' && element.text && (
-                 <div className="w-full h-full bg-transparent p-2 pointer-events-none">
-                    <QRCode value={element.text} style={{ width: '100%', height: '100%' }} bgColor="transparent" fgColor={element.textColor || "#000000"} level="Q" />
-                 </div>
-            )}
-            {element.type === 'text' && <TextRenderer element={element} />}
+            <div className="w-full h-full pointer-events-none">
+                {element.type === 'image' && element.imageUrl && (
+                    <Image src={element.imageUrl} alt="Uploaded art" fill className="object-contain" />
+                )}
+                 {element.type === 'art' && (
+                    element.artType === 'emoji' ? (
+                         <div className="w-full h-full flex items-center justify-center text-6xl" style={{fontSize: 'min(15vw, 15vh)'}}>{element.artContent}</div>
+                    ) : (
+                        React.createElement(element.artContent as React.FC<any>, { className: "w-full h-full object-contain text-foreground" })
+                    )
+                )}
+                 {element.type === 'qr' && element.text && (
+                     <div className="w-full h-full bg-transparent p-2">
+                        <QRCode value={element.text} style={{ width: '100%', height: '100%' }} bgColor="transparent" fgColor={element.textColor || "#000000"} level="Q" />
+                     </div>
+                )}
+                {element.type === 'text' && <TextRenderer element={element} />}
+            </div>
 
             {isSelected && (
                 <>
@@ -1176,7 +1178,7 @@ export default function CorporateCustomizePage() {
                                                             <ColorPicker value={qrColor} onChange={setQrColor} />
                                                         </div>
                                                         <Button className="w-full" onClick={addQrElement}>
-                                                            Add Transparent QR Code
+                                                            Add QR Code to Design
                                                         </Button>
                                                     </>
                                                 )}
