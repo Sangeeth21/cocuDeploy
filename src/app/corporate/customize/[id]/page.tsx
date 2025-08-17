@@ -1134,22 +1134,31 @@ export default function CorporateCustomizePage() {
                                                 <CardTitle className="text-base">QR Code Generator</CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                <div className="space-y-2">
-                                                    <Label htmlFor="qr-value">URL or Text</Label>
-                                                    <Input
-                                                        id="qr-value"
-                                                        value={qrValue}
-                                                        onChange={(e) => setQrValue(e.target.value)}
-                                                        placeholder="https://example.com"
-                                                    />
-                                                </div>
-                                                <div className="space-y-2">
-                                                    <Label>QR Code Color</Label>
-                                                    <ColorPicker value={qrColor} onChange={setQrColor} />
-                                                </div>
-                                                <Button className="w-full" onClick={addQrElement}>
-                                                    Add QR Code to Design
-                                                </Button>
+                                                {selectedElement?.type === 'qr' ? (
+                                                    <div className="space-y-2">
+                                                        <Label>QR Code Color</Label>
+                                                        <ColorPicker value={selectedElement.textColor || '#000000'} onChange={(color) => handleElementChange(selectedElementId!, { textColor: color })} />
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="space-y-2">
+                                                            <Label htmlFor="qr-value">URL or Text</Label>
+                                                            <Input
+                                                                id="qr-value"
+                                                                value={qrValue}
+                                                                onChange={(e) => setQrValue(e.target.value)}
+                                                                placeholder="https://example.com"
+                                                            />
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <Label>QR Code Color</Label>
+                                                            <ColorPicker value={qrColor} onChange={setQrColor} />
+                                                        </div>
+                                                        <Button className="w-full" onClick={addQrElement}>
+                                                            Add Transparent QR Code
+                                                        </Button>
+                                                    </>
+                                                )}
                                             </CardContent>
                                         </Card>
                                      </TabsContent>
