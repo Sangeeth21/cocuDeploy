@@ -20,6 +20,29 @@ interface ProductCardProps {
   product: DisplayProduct;
 }
 
+export function TinyProductCard({ product }: ProductCardProps) {
+    return (
+        <Card className="overflow-hidden h-full">
+            <Link href={`/products/${product.id}`} className="block group h-full flex flex-col">
+                <div className="relative aspect-square w-full overflow-hidden">
+                     <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                </div>
+                 <div className="p-2 flex-grow flex flex-col justify-between">
+                    <div>
+                        <p className="text-xs font-medium leading-tight line-clamp-2">{product.name}</p>
+                    </div>
+                    <p className="text-xs font-bold mt-1">${product.price.toFixed(2)}</p>
+                </div>
+            </Link>
+        </Card>
+    )
+}
+
 export function MiniProductCard({ product }: ProductCardProps) {
     return (
         <Card className="overflow-hidden">
