@@ -398,9 +398,21 @@ const DraggableElement = ({
                 const newTop = Math.max(0, Math.min(parentRect.height - (element.height/100 * parentRect.height), interactionState.startTop + dy));
                 onUpdate(element.id, { x: (newLeft / parentRect.width) * 100, y: (newTop / parentRect.height) * 100 });
             } else if (interactionState.type === 'resize' && interactionState.startWidth && interactionState.startHeight) {
-                const newWidth = Math.max(20, interactionState.startWidth + dx);
-                const newHeight = Math.max(20, interactionState.startHeight + dy);
-                onUpdate(element.id, { width: (newWidth / parentRect.width) * 100, height: (newHeight / parentRect.height) * 100 });
+                if (element.type === 'qr') {
+                    // For QR codes, maintain a 1:1 aspect ratio.
+                    // We can use the larger of the two dimensions' change.
+                    const maxDelta = dx > dy ? dx : dy;
+                    const newSize = Math.max(20, interactionState.startWidth + maxDelta);
+                    
+                    onUpdate(element.id, { 
+                        width: (newSize / parentRect.width) * 100, 
+                        height: (newSize / parentRect.width) * 100 // Use width's relation to parent for height to maintain aspect ratio
+                    });
+                } else {
+                    const newWidth = Math.max(20, interactionState.startWidth + dx);
+                    const newHeight = Math.max(20, interactionState.startHeight + dy);
+                    onUpdate(element.id, { width: (newWidth / parentRect.width) * 100, height: (newHeight / parentRect.height) * 100 });
+                }
             }
         };
 
@@ -414,7 +426,7 @@ const DraggableElement = ({
             window.removeEventListener('pointermove', handlePointerMove);
             window.removeEventListener('pointerup', handlePointerUp);
         };
-    }, [interactionState, element.id, element.width, element.height, onUpdate]);
+    }, [interactionState, element.id, element.type, element.width, element.height, onUpdate]);
 
     return (
         <div
