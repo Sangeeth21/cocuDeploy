@@ -51,6 +51,10 @@ export function ProductCard({ product }: ProductCardProps) {
   };
   
   const handleCustomize = () => {
+    if (!isLoggedIn) {
+        openDialog('login');
+        return;
+    }
     router.push(`/customize/${product.id}`);
   }
 

@@ -406,7 +406,11 @@ const DraggableElement = ({
     return (
         <div
             ref={ref}
-            onPointerDown={(e) => handlePointerDown(e, 'drag')}
+            onPointerDown={(e) => {
+                onSelect(element.id);
+                e.stopPropagation();
+                handlePointerDown(e, 'drag');
+            }}
             style={{
                 position: 'absolute',
                 left: `${element.x}%`,
@@ -646,23 +650,27 @@ export default function CustomizeProductPage() {
         return () => unsubscribe();
     }, [tempCustomizationId, setDesignElements]);
     
-     // Auto-save on any change to design elements
+    const saveDesign = useCallback(async () => {
+        if (!tempCustomizationId || !user?.id || !product?.id) return;
+        const docRef = doc(db, 'tempCustomizations', tempCustomizationId);
+        await setDoc(docRef, {
+            userId: user.id,
+            productId: product.id,
+            designJSON: JSON.stringify(designElements),
+            updatedAt: new Date(),
+        }, { merge: true });
+    }, [tempCustomizationId, user?.id, product?.id, designElements]);
+    
+    // Auto-save on any change to design elements
     useEffect(() => {
-        if (!tempCustomizationId || !designElements) return;
+        const handler = setTimeout(() => {
+            saveDesign();
+        }, 1000); // Autosave after 1 second of inactivity
 
-        const saveDraft = async () => {
-            const docRef = doc(db, 'tempCustomizations', tempCustomizationId);
-            await setDoc(docRef, {
-                userId: user?.id,
-                productId: product?.id,
-                designJSON: JSON.stringify(designElements),
-                updatedAt: new Date(),
-            }, { merge: true });
+        return () => {
+            clearTimeout(handler);
         };
-        
-        saveDraft();
-
-    }, [designElements, tempCustomizationId, user, product]);
+    }, [designElements, saveDesign]);
 
     
      useEffect(() => {
@@ -874,8 +882,21 @@ export default function CustomizeProductPage() {
         }
     };
     
-    if (!product) {
-        notFound();
+    useEffect(() => {
+        // Redirect if user is not logged in.
+        if (!isLoggedIn) {
+            router.push(`/products/${id}`);
+            toast({
+                title: "Login Required",
+                description: "You must be logged in to customize products.",
+                variant: "destructive"
+            });
+        }
+    }, [isLoggedIn, id, router, toast]);
+
+    if (!isLoggedIn || !product) {
+        // Render a loader or null while redirecting
+        return null;
     }
     
     const currentVendorCustomizationAreas = product.customizationAreas?.[activeSide] || [];

@@ -91,9 +91,9 @@ export function ProductInteractions({ product, isCustomizable, quantity }: { pro
 
   // Effect to listen for new messages in the selected conversation
    useEffect(() => {
-    if (!conversation || conversation.id.startsWith('TEMP-')) return;
+    if (!conversation || conversation.id.toString().startsWith('TEMP-')) return;
     
-    const messagesQuery = query(collection(db, "conversations", conversation.id as string, "messages"), orderBy("timestamp"));
+    const messagesQuery = query(collection(db, "conversations", conversation.id as string, "messages"), serverTimestamp());
     const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
         const msgs: Message[] = [];
         querySnapshot.forEach((doc) => {
@@ -128,7 +128,7 @@ export function ProductInteractions({ product, isCustomizable, quantity }: { pro
     let currentConversationId = conversation?.id;
 
     // If it's a new conversation, create it first
-    if (conversation && conversation.id.startsWith('TEMP-')) {
+    if (conversation && conversation.id.toString().startsWith('TEMP-')) {
         const { id, ...convoData } = conversation;
         const convoRef = await addDoc(collection(db, "conversations"), convoData);
         currentConversationId = convoRef.id;
@@ -206,6 +206,10 @@ export function ProductInteractions({ product, isCustomizable, quantity }: { pro
     }
 
     const handleCustomize = () => {
+        if (!isLoggedIn) {
+            openDialog('login');
+            return;
+        }
         router.push(`/customize/${product.id}`);
     }
   
