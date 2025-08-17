@@ -321,8 +321,8 @@ export const mockOrders: Order[] = [
         date: new Date("2024-06-20"),
         customer: mockUsers[0],
         items: [
-            { productId: '1', productName: 'Classic Leather Watch', productImage: mockProducts[0].imageUrl, quantity: 1, price: 199.99 },
-            { productId: '3', productName: 'Organic Cotton T-Shirt', productImage: mockProducts[2].imageUrl, quantity: 2, price: 29.99 }
+            { productId: '1', productName: 'Classic Leather Watch', productImage: mockProducts[0].imageUrl, quantity: 1, price: 199.99, vendorId: 'VDR001' },
+            { productId: '3', productName: 'Organic Cotton T-Shirt', productImage: mockProducts[2].imageUrl, quantity: 2, price: 29.99, vendorId: 'VDR003' }
         ],
         total: 259.97,
         subtotal: 259.97,
@@ -336,7 +336,7 @@ export const mockOrders: Order[] = [
         date: new Date("2024-06-18"),
         customer: mockUsers[2],
         items: [
-            { productId: '2', productName: 'Wireless Bluetooth Headphones', productImage: mockProducts[1].imageUrl, quantity: 1, price: 149.50 }
+            { productId: '2', productName: 'Wireless Bluetooth Headphones', productImage: mockProducts[1].imageUrl, quantity: 1, price: 149.50, vendorId: 'VDR002' }
         ],
         total: 149.50,
         subtotal: 149.50,
@@ -350,8 +350,8 @@ export const mockOrders: Order[] = [
         date: new Date("2024-06-15"),
         customer: mockUsers[4],
         items: [
-            { productId: '7', productName: 'Modern Minimalist Desk', productImage: mockProducts[6].imageUrl, quantity: 1, price: 349.00 },
-             { productId: '4', productName: 'Handcrafted Ceramic Mug', productImage: mockProducts[3].imageUrl, quantity: 4, price: 24.00 }
+            { productId: '7', productName: 'Modern Minimalist Desk', productImage: mockProducts[6].imageUrl, quantity: 1, price: 349.00, vendorId: 'VDR007' },
+             { productId: '4', productName: 'Handcrafted Ceramic Mug', productImage: mockProducts[3].imageUrl, quantity: 4, price: 24.00, vendorId: 'VDR004' }
         ],
         total: 445.00,
         subtotal: 445.00,
@@ -365,7 +365,7 @@ export const mockOrders: Order[] = [
         date: new Date("2024-06-12"),
         customer: mockUsers[6],
         items: [
-            { productId: '8', productName: 'All-Natural Skincare Set', productImage: mockProducts[7].imageUrl, quantity: 1, price: 89.99 }
+            { productId: '8', productName: 'All-Natural Skincare Set', productImage: mockProducts[7].imageUrl, quantity: 1, price: 89.99, vendorId: 'VDR008' }
         ],
         total: 89.99,
         subtotal: 89.99,
@@ -379,7 +379,7 @@ export const mockOrders: Order[] = [
         date: new Date("2024-06-10"),
         customer: mockUsers[0],
         items: [
-            { productId: '9', productName: 'Hand-poured Soy Candle', productImage: mockProducts[8].imageUrl, quantity: 3, price: 22.50 }
+            { productId: '9', productName: 'Hand-poured Soy Candle', productImage: mockProducts[8].imageUrl, quantity: 3, price: 22.50, vendorId: 'VDR004' }
         ],
         total: 67.50,
         subtotal: 67.50,

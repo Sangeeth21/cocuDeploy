@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
-import { collection, query, onSnapshot, addDoc, updateDoc, doc, deleteDoc, writeBatch } from "firebase/firestore";
+import { collection, query, onSnapshot, addDoc, updateDoc, doc, deleteDoc, writeBatch, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 function StyleDialog({ open, onOpenChange, style, onSave }: { open: boolean; onOpenChange: (open: boolean) => void; style?: AiImageStyle | null; onSave: (style: Omit<AiImageStyle, 'id' | 'order'>) => void; }) {

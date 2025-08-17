@@ -11,10 +11,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { mockProducts } from "@/lib/mock-data";
+import { mockProducts, mockAiImageStyles } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue, CustomizationArea, AiImageStyle, DesignElement } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Bot, QrCode, Save } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Send, Loader2, QrCode, Bot, Save } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -27,14 +27,12 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { ColorPicker } from "@/components/ui/color-picker";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import tinycolor from 'tinycolor2';
-import { generateImageWithStyle } from '@/ai/flows/generate-image-with-style-flow';
-import { Loader2 } from 'lucide-react';
 import QRCode from 'qrcode.react';
+import { generateImageWithStyle } from '@/ai/flows/generate-image-with-style-flow';
+import { useBidRequest } from "@/context/bid-request-context";
 import { useUser } from "@/context/user-context";
 import { doc, getDoc, setDoc, onSnapshot, collection, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import Link from 'next/link';
-
 
 type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
 
@@ -599,13 +597,10 @@ function TextShapeDialog({ open, onOpenChange, element, onElementChange }: { ope
 }
 
 
-export default function CustomizeProductPage() {
+export default function CorporateCustomizePage() {
     const params = useParams();
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const { addToCart } = useCart();
     const { toast } = useToast();
-    const { user, isLoggedIn } = useUser();
 
     const id = params.id as string;
     const product = useMemo(() => mockProducts.find((p) => p.id === id), [id]);
@@ -626,13 +621,13 @@ export default function CustomizeProductPage() {
     
     const [availableStyles, setAvailableStyles] = useState<AiImageStyle[]>([]);
 
-    useEffect(() => {
+     useEffect(() => {
         const q = query(collection(db, "aiImageStyles"), orderBy("order"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const styles: AiImageStyle[] = [];
             snapshot.forEach(doc => {
                 const style = { id: doc.id, ...doc.data() } as AiImageStyle;
-                if (style.target === 'personalized' || style.target === 'both') {
+                if (style.target === 'corporate' || style.target === 'both') {
                     styles.push(style);
                 }
             });
@@ -645,11 +640,16 @@ export default function CustomizeProductPage() {
         if (!product?.customizationAreas) return "front";
         return imageSides.find(side => product.customizationAreas![side]?.length) || "front";
     }, [product]);
-
-    // Firestore interaction
+    
+    // Corporate-specific state
+    const [quantity, setQuantity] = useState(product?.moq || 100);
+    const [notes, setNotes] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const { user } = useUser();
+    const { addToBid } = useBidRequest();
+    
     const tempCustomizationId = useMemo(() => {
         if (!user?.id || !product?.id) return null;
-        // In a real app, you'd use a crypto library for a proper hash
         return `${user.id}_${product.id}`;
     }, [user, product]);
     
@@ -677,7 +677,6 @@ export default function CustomizeProductPage() {
         }, { merge: true });
     }, [tempCustomizationId, user?.id, product?.id, designElements]);
     
-    // Auto-save on any change to design elements
     useEffect(() => {
         const handler = setTimeout(() => {
             saveDesign();
@@ -829,28 +828,31 @@ export default function CustomizeProductPage() {
     
     const selectedElement = useMemo(() => designElements.find(el => el.id === selectedElementId), [designElements, selectedElementId]);
 
-    const handleAddToCart = (buyNow = false) => {
+     const handleSubmitQuote = async (e: React.FormEvent) => {
+        e.preventDefault();
         if (!product) return;
-        
-        addToCart({
-            product,
-            quantity: 1,
-            customizations: {
-                // Pass the unique ID of the temporary customization workspace
-                customizationRequestId: tempCustomizationId || undefined,
-            }
-        });
-        
-        toast({
-            title: "Customized Product Added!",
-            description: `${product.name} has been added to your cart.`,
-        });
 
-        if (buyNow || searchParams.get('buyNow') === 'true') {
-            router.push('/checkout');
-        } else {
-            router.push('/cart');
+        if (quantity < product.moq!) {
+            toast({
+                variant: 'destructive',
+                title: 'Quantity Too Low',
+                description: `The minimum order quantity for this product is ${product.moq}.`,
+            });
+            return;
         }
+
+        setIsSubmitting(true);
+        await saveDesign(); // Ensure final design is saved before submitting
+        
+        setTimeout(() => {
+            setIsSubmitting(false);
+            addToBid({ ...product, customizationRequestId: tempCustomizationId });
+            toast({
+                title: 'Added to Bid Request!',
+                description: `${product.name} has been added to your current bid request.`,
+            });
+            router.push('/corporate/bids/new');
+        }, 1500);
     };
     
      const fileToDataUri = (file: File): Promise<string> => {
@@ -898,26 +900,13 @@ export default function CustomizeProductPage() {
         }
     };
     
-    useEffect(() => {
-        // Redirect if user is not logged in.
-        if (!isLoggedIn) {
-            router.push(`/products/${id}`);
-            toast({
-                title: "Login Required",
-                description: "You must be logged in to customize products.",
-                variant: "destructive"
-            });
-        }
-    }, [isLoggedIn, id, router, toast]);
-
-    if (!isLoggedIn || !product) {
-        // Render a loader or null while redirecting
-        return null;
+    if (!product) {
+        notFound();
     }
     
     const currentVendorCustomizationAreas = product.customizationAreas?.[activeSide] || [];
     const addedVendorAreaIds = designElements.filter(el => el.originalAreaId).map(el => el.originalAreaId);
-    
+
     const getElementDefaultName = (element: DesignElement) => {
         if (element.layerName) return element.layerName;
         if (element.type === 'text') return element.text || 'Untitled Text';
@@ -931,18 +920,21 @@ export default function CustomizeProductPage() {
         <div className="h-screen flex flex-col bg-muted/40">
             <header className="bg-background border-b shadow-sm flex-shrink-0">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                     <Button variant="outline" size="sm" asChild>
-                        <Link href={`/products/${id}`}>
-                           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Product
-                        </Link>
+                     <Button variant="outline" size="sm" onClick={() => router.back()}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Product
                     </Button>
                      <p className="hidden md:block text-sm font-medium">{product.name}</p>
                     <div className="flex items-center gap-2">
-                         <Button size="sm" variant="secondary" onClick={() => handleAddToCart()}>
-                            <ShoppingCart className="mr-2 h-4 w-4"/> Add to Cart
+                        <Button size="sm" variant="ghost" onClick={saveDesign}>
+                            <Save className="mr-2 h-4 w-4"/>Save Design
                         </Button>
-                        <Button size="sm" onClick={() => handleAddToCart(true)}>
-                            Buy Now
+                         <Button size="sm" variant="secondary" onClick={handleSubmitQuote} disabled={isSubmitting}>
+                            {isSubmitting ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Send className="mr-2 h-4 w-4" />
+                            )}
+                            Add to Bid Request
                         </Button>
                     </div>
                 </div>
@@ -1003,7 +995,7 @@ export default function CustomizeProductPage() {
                                 <TabsTrigger value="upload" className="flex-col h-14"><Upload className="h-5 w-5 mb-1"/>Upload</TabsTrigger>
                                 <TabsTrigger value="qr" className="flex-col h-14"><QrCode className="h-5 w-5 mb-1"/>QR</TabsTrigger>
                                 <TabsTrigger value="art" className="flex-col h-14"><Wand2 className="h-5 w-5 mb-1"/>Art</TabsTrigger>
-                                <TabsTrigger value="notes" className="flex-col h-14"><StickyNote className="h-5 w-5 mb-1"/>Notes</TabsTrigger>
+                                <TabsTrigger value="notes" className="flex-col h-14"><StickyNote className="h-5 w-5 mb-1"/>Quote</TabsTrigger>
                             </TabsList>
                             
                             <div className="flex items-center p-2 border-b">
@@ -1173,7 +1165,7 @@ export default function CustomizeProductPage() {
                                                 <CardTitle className="text-base">QR Code Generator</CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                 {selectedElement?.type === 'qr' ? (
+                                                {selectedElement?.type === 'qr' ? (
                                                      <div className="space-y-2">
                                                         <Label>QR Code Color</Label>
                                                         <ColorPicker value={selectedElement.textColor || '#000000'} onChange={(color) => handleElementChange(selectedElementId!, { textColor: color })} />
@@ -1227,17 +1219,31 @@ export default function CustomizeProductPage() {
                                             ))}
                                         </Accordion>
                                     </TabsContent>
-                                    <TabsContent value="colors" className="mt-0 text-center text-sm text-muted-foreground py-8">
-                                        Product color options coming soon!
-                                    </TabsContent>
                                     <TabsContent value="notes" className="mt-0">
                                         <Card>
                                             <CardHeader>
-                                                <CardTitle className="text-base">Design Notes</CardTitle>
-                                                <CardDescription className="text-xs">Add any special instructions for the vendor.</CardDescription>
+                                                <CardTitle className="text-base">Quote Details</CardTitle>
+                                                <CardDescription className="text-xs">Provide details for your quote request.</CardDescription>
                                             </CardHeader>
-                                            <CardContent>
-                                            <Textarea placeholder="e.g. 'Please match the text color to the main logo.'" />
+                                            <CardContent className="space-y-4">
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="quantity">Quantity</Label>
+                                                    <Input 
+                                                        id="quantity" 
+                                                        type="number" 
+                                                        value={quantity}
+                                                        onChange={(e) => setQuantity(Number(e.target.value))}
+                                                        min={product.moq}
+                                                        required
+                                                    />
+                                                    <p className="text-xs text-muted-foreground mt-2">
+                                                        Minimum Order Quantity (MOQ): {product.moq} units
+                                                    </p>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <Label htmlFor="notes">Notes for Vendor</Label>
+                                                    <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="e.g. 'Please match the text color to the main logo.'" />
+                                                </div>
                                             </CardContent>
                                         </Card>
                                     </TabsContent>
@@ -1308,5 +1314,3 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
-
-    
