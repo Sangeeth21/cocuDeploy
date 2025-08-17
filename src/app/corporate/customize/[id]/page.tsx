@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts, mockAiImageStyles } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import type { CustomizationValue, CustomizationArea, AiImageStyle, DesignElement } from "@/lib/types";
+import type { CustomizationValue, CustomizationArea, AiImageStyle, DesignElement, GenerateImageWithStyleInput, GenerateImageWithStyleOutput } from "@/lib/types";
 import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Send, Loader2, QrCode, Bot, Save } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
@@ -405,7 +405,11 @@ const DraggableElement = ({
     return (
         <div
             ref={ref}
-            onPointerDown={(e) => handlePointerDown(e, 'drag')}
+            onPointerDown={(e) => {
+                onSelect(element.id);
+                e.stopPropagation();
+                handlePointerDown(e, 'drag');
+            }}
             style={{
                 position: 'absolute',
                 left: `${element.x}%`,
@@ -615,7 +619,22 @@ export default function CorporateCustomizePage() {
     const [aiReferenceImage, setAiReferenceImage] = useState<{ file: File, src: string } | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
     
-    const availableStyles = useMemo(() => mockAiImageStyles.filter(s => s.target === 'corporate' || s.target === 'both'), []);
+    const [availableStyles, setAvailableStyles] = useState<AiImageStyle[]>([]);
+
+    useEffect(() => {
+        const q = query(collection(db, "aiImageStyles"), orderBy("order"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const styles: AiImageStyle[] = [];
+            snapshot.forEach(doc => {
+                const style = { id: doc.id, ...doc.data() } as AiImageStyle;
+                if (style.target === 'corporate' || style.target === 'both') {
+                    styles.push(style);
+                }
+            });
+            setAvailableStyles(styles);
+        });
+        return () => unsubscribe();
+    }, []);
 
     const firstCustomizableSide = useMemo(() => {
         if (!product?.customizationAreas) return "front";
@@ -855,13 +874,12 @@ export default function CorporateCustomizePage() {
             const style = availableStyles.find(s => s.id === aiStyle);
             const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
             
-            const result = await generateImageWithStyle({
+            const result: GenerateImageWithStyleOutput = await generateImageWithStyle({
                 prompt: aiPrompt,
                 styleBackendPrompt: style?.backendPrompt || 'photorealistic',
                 referenceImageDataUri
             });
 
-            if (result.error) throw new Error(result.error);
             if (!result.imageUrl) throw new Error("AI did not return an image.");
 
             const newElement: DesignElement = {
@@ -1146,7 +1164,7 @@ export default function CorporateCustomizePage() {
                                                 <CardTitle className="text-base">QR Code Generator</CardTitle>
                                             </CardHeader>
                                             <CardContent className="space-y-4">
-                                                {selectedElement?.type === 'qr' ? (
+                                                 {selectedElement?.type === 'qr' ? (
                                                      <div className="space-y-2">
                                                         <Label>QR Code Color</Label>
                                                         <ColorPicker value={selectedElement.textColor || '#000000'} onChange={(color) => handleElementChange(selectedElementId!, { textColor: color })} />

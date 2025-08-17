@@ -92,6 +92,8 @@ export type DisplayProduct = {
   vendorImageUrl?: string;
   tags?: string[];
   images?: string[];
+  galleryImages?: string[];
+  videoUrl?: string;
   sku?: string;
   stock?: number;
   status?: 'Live' | 'Archived' | 'Needs Review' | 'Draft';
@@ -400,4 +402,14 @@ export type AiImageStyle = {
     backendPrompt: string;
     target: AiImageStyleTarget;
     order: number;
-}
+};
+
+export type GenerateImageWithStyleInput = {
+    prompt: string;
+    styleBackendPrompt: string;
+    referenceImageDataUri?: string;
+};
+
+export type GenerateImageWithStyleOutput = {
+    imageUrl: string;
+};

@@ -5,13 +5,13 @@
  * @fileOverview An AI flow to generate an image based on a prompt, a style, and an optional reference image.
  *
  * - generateImageWithStyle - A function that orchestrates the image generation.
- * - GenerateImageWithStyleInput - The input type for the flow.
- * - GenerateImageWithStyleOutput - The return type for the flow.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import type { GenerateImageWithStyleInput, GenerateImageWithStyleOutput } from '@/lib/types';
 
+// Define Zod schemas based on the types imported from types.ts
 const GenerateImageWithStyleInputSchema = z.object({
   prompt: z.string().describe('The user\'s description of the image they want.'),
   styleBackendPrompt: z.string().describe('A pre-defined string of keywords and phrases that define the artistic style, e.g., "Ghibli".'),
@@ -22,12 +22,11 @@ const GenerateImageWithStyleInputSchema = z.object({
       "An optional reference photo, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
     ),
 });
-export type GenerateImageWithStyleInput = z.infer<typeof GenerateImageWithStyleInputSchema>;
 
 const GenerateImageWithStyleOutputSchema = z.object({
   imageUrl: z.string().describe('URL of the generated 8K quality image.'),
 });
-export type GenerateImageWithStyleOutput = z.infer<typeof GenerateImageWithStyleOutputSchema>;
+
 
 export async function generateImageWithStyle(input: GenerateImageWithStyleInput): Promise<GenerateImageWithStyleOutput> {
   return generateImageWithStyleFlow(input);

@@ -878,7 +878,6 @@ export default function CustomizeProductPage() {
                 referenceImageDataUri
             });
 
-            if (result.error) throw new Error(result.error);
             if (!result.imageUrl) throw new Error("AI did not return an image.");
 
             const newElement: DesignElement = {
@@ -1308,5 +1307,3 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
-
-    
