@@ -116,14 +116,16 @@ export function GiftyAngelChatbot() {
 
     return (
         <>
-            <Button 
-                className="absolute bottom-6 right-6 h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl z-40 animate-float p-0"
-                variant="ghost"
-                size="icon"
-                onClick={() => handleOpenChange(true)}
-            >
-                 <Image src="/gifty-angel.png" alt="Gifty Angel" fill className="object-contain p-2" />
-            </Button>
+            <div className="sticky bottom-0 h-0 flex justify-end z-40">
+                 <Button 
+                    className="mr-6 mb-6 h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleOpenChange(true)}
+                >
+                     <Image src="/gifty-angel.png" alt="Gifty Angel" fill className="object-contain p-2" />
+                </Button>
+            </div>
             <Dialog open={isOpen} onOpenChange={handleOpenChange}>
                 <DialogContent className="sm:max-w-2xl h-[80vh] flex flex-col p-0">
                     <ChatContainer title="Gifty Angel" description="Your personal gift finder">

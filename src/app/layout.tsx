@@ -173,7 +173,7 @@ export default function RootLayout({
                             <Header />
                             </>
                         )}
-                        <main className="flex-1 relative">
+                        <main className="flex-1">
                             {children}
                             {showHeaderAndFooter && showGiftyAngel && <GiftyAngelChatbot />}
                         </main>
