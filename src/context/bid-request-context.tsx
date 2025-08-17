@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const BID_REQUEST_STORAGE_KEY = 'shopsphere_bid_request';
 
-export type BidRequestItem = DisplayProduct;
+export type BidRequestItem = DisplayProduct & { customizationRequestId?: string };
 
 interface BidRequestState {
     bidItems: BidRequestItem[];

@@ -26,6 +26,48 @@ export type CustomizationArea = {
   maxLength?: number;
 };
 
+export type DesignElement = {
+    id: string;
+    type: 'text' | 'image' | 'art' | 'qr';
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    rotation: number;
+    // Text properties
+    text?: string;
+    fontFamily?: string;
+    fontSize?: number;
+    fontWeight?: string;
+    textColor?: string;
+    textAlign?: 'left' | 'center' | 'right';
+    textShape?: 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
+    shapeIntensity?: number;
+    outlineColor?: string;
+    outlineWidth?: number;
+    // Image/QR properties
+    imageUrl?: string;
+    // Art properties
+    artContent?: any; 
+    artType?: 'emoji' | 'icon';
+    originalAreaId?: string; 
+};
+
+export type TempCustomization = {
+    id: string; // The hashed tempId
+    userId: string;
+    productId: string;
+    variantId?: string; // For future use
+    designJSON: string; // Minified, canonical JSON of DesignElement[]
+    sidesEdited: ('front' | 'back' | 'left' | 'right' | 'top' | 'bottom')[];
+    previewUrls?: { [key: string]: string }; // Map side to gs:// or https:// URL
+    previewThumbUrls?: { [key: string]: string };
+    renderStatus: 'ready' | 'queued' | 'failed';
+    renderVersion: number;
+    updatedAt: any; // Firestore Timestamp
+    createdAt: any; // Firestore Timestamp
+}
+
 export type CommissionRule = {
     commission: number; // percentage
     buffer: {
@@ -68,6 +110,7 @@ export type DisplayProduct = {
       bottom?: CustomizationArea[];
   };
   commission?: CommissionRule;
+  requirePrepayVendorConfirm?: boolean;
 };
 
 export type DraftProduct = {
@@ -190,6 +233,9 @@ export type OrderItem = {
     quantity: number;
     price: number;
     customizations?: { [key: string]: Partial<CustomizationValue> };
+    customizationRequestId?: string; // Links to tempCustomizations (before order)
+    designId?: string; // Links to permanent /designs (after order)
+    designSnapshotUrl?: string; // For immutable record
 };
 
 export type Order = {
@@ -335,7 +381,7 @@ export type VendorBid = {
 export type CorporateBid = {
   id: string;
   customerId: string;
-  products: DisplayProduct[];
+  products: (DisplayProduct & { customizationRequestId?: string })[];
   quantity: number;
   status: 'Active' | 'Expired' | 'Awarded';
   awardedTo?: string; // vendorId
