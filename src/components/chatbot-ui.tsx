@@ -72,8 +72,8 @@ export function ChatProductCarousel({ products }: { products: DisplayProduct[] }
                     </CarouselItem>
                 ))}
             </CarouselContent>
-            <CarouselPrevious className="hidden sm:flex" />
-            <CarouselNext className="hidden sm:flex" />
+            <CarouselPrevious />
+            <CarouselNext />
         </Carousel>
     );
 }
@@ -88,8 +88,8 @@ export function ChatB2bProductCarousel({ products }: { products: DisplayProduct[
                     </CarouselItem>
                 ))}
             </CarouselContent>
-            <CarouselPrevious className="hidden sm:flex" />
-            <CarouselNext className="hidden sm:flex" />
+            <CarouselPrevious />
+            <CarouselNext />
         </Carousel>
     );
 }
