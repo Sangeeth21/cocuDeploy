@@ -284,7 +284,7 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
 
     if (pathData) {
         return (
-             <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+             <svg viewBox="0 0 100 100" className="w-full h-full pointer-events-none" preserveAspectRatio="none">
                  {outlineColor && outlineWidth && outlineWidth > 0 && (
                     <defs>
                         <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
@@ -315,11 +315,11 @@ const TextRenderer = ({ element }: { element: DesignElement }) => {
          if (fadeDirection === 'down') maskImage = 'linear-gradient(to top, transparent, black 70%)';
          
          const fadedStyle = { ...textStyle, maskImage, WebkitMaskImage: maskImage };
-         return <div ref={containerRef} className="w-full h-full flex items-center justify-center p-1"><span style={fadedStyle}>{text}</span></div>
+         return <div ref={containerRef} className="w-full h-full flex items-center justify-center p-1 pointer-events-none"><span style={fadedStyle}>{text}</span></div>
     }
 
     return (
-        <div ref={containerRef} className="w-full h-full flex items-center justify-center p-1" style={getTransformStyle()}>
+        <div ref={containerRef} className="w-full h-full flex items-center justify-center p-1 pointer-events-none" style={getTransformStyle()}>
             <svg style={{ position: 'absolute', width: 0, height: 0 }}>
                 <defs>
                     <filter id={svgFilterId} x="-50%" y="-50%" width="200%" height="200%">
@@ -452,7 +452,7 @@ const DraggableElement = ({
                 )
             )}
              {element.type === 'qr' && element.text && (
-                 <div className="w-full h-full bg-transparent p-2">
+                 <div className="w-full h-full bg-transparent p-2 pointer-events-none">
                     <QRCode value={element.text} style={{ width: '100%', height: '100%' }} bgColor="transparent" fgColor={element.textColor || "#000000"} level="Q" />
                  </div>
             )}
@@ -1135,7 +1135,7 @@ export default function CorporateCustomizePage() {
                                             </CardHeader>
                                             <CardContent className="space-y-4">
                                                 {selectedElement?.type === 'qr' ? (
-                                                    <div className="space-y-2">
+                                                     <div className="space-y-2">
                                                         <Label>QR Code Color</Label>
                                                         <ColorPicker value={selectedElement.textColor || '#000000'} onChange={(color) => handleElementChange(selectedElementId!, { textColor: color })} />
                                                     </div>
@@ -1150,7 +1150,7 @@ export default function CorporateCustomizePage() {
                                                                 placeholder="https://example.com"
                                                             />
                                                         </div>
-                                                        <div className="space-y-2">
+                                                         <div className="space-y-2">
                                                             <Label>QR Code Color</Label>
                                                             <ColorPicker value={qrColor} onChange={setQrColor} />
                                                         </div>
