@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, User } from "lucide-react";
+import { Bot, User, Gift } from "lucide-react";
 import { ProductCard } from "./product-card";
 import { B2bProductCard } from "@/app/corporate/_components/b2b-product-card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -34,7 +34,7 @@ export function ChatMessage({ sender, message }: { sender: "bot" | "user", messa
         <div className={`flex items-start gap-3 ${sender === 'user' ? 'justify-end' : ''}`}>
             {sender === 'bot' && (
                 <Avatar className="h-6 w-6 border">
-                    <AvatarFallback><Bot className="h-4 w-4"/></AvatarFallback>
+                    <AvatarFallback><Gift className="h-4 w-4"/></AvatarFallback>
                 </Avatar>
             )}
              <div className={`rounded-lg p-3 max-w-xs text-sm ${sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
