@@ -184,7 +184,9 @@ export default function B2BProductDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <p className="text-sm font-medium text-primary">{product.category}</p>
+          <Link href={`/corporate/products?category=${encodeURIComponent(product.category)}`} className="text-sm font-medium text-primary hover:underline">
+            {product.category}
+          </Link>
           <h1 className="text-4xl font-bold font-headline">{product.name}</h1>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">

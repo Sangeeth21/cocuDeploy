@@ -23,6 +23,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Input } from "@/components/ui/input";
 import { getEstimatedDelivery } from "@/app/actions";
 import { Label } from "@/components/ui/label";
+import Link from 'next/link';
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -317,7 +318,9 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="space-y-6">
-          <p className="text-sm font-medium text-primary">{product.category}</p>
+          <Link href={`/products?category=${encodeURIComponent(product.category)}`} className="text-sm font-medium text-primary hover:underline">
+            {product.category}
+          </Link>
           <h1 className="text-4xl font-bold font-headline">{product.name}</h1>
           
           {vendor && (

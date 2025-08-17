@@ -9,10 +9,13 @@ import { B2bProductCard } from "../_components/b2b-product-card";
 import { Button } from "@/components/ui/button";
 import { collection, onSnapshot, query, where, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useSearchParams } from "next/navigation";
 
 const MAX_PRICE = 500;
 
 export default function CorporateProductsPage() {
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get('category');
   const [products, setProducts] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
@@ -20,6 +23,12 @@ export default function CorporateProductsPage() {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, MAX_PRICE]);
   const [sortOption, setSortOption] = useState('featured');
   
+  useEffect(() => {
+    if (categoryParam) {
+      setSelectedCategories([categoryParam]);
+    }
+  }, [categoryParam]);
+
   useEffect(() => {
     setLoading(true);
     let q = query(collection(db, "products"), where("b2bEnabled", "==", true));
