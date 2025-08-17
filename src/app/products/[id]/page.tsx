@@ -102,6 +102,7 @@ export default function ProductDetailPage() {
             const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
             setProduct(productData);
             setActiveMedia({ type: 'image', src: productData.imageUrl });
+            setLoading(false); // <-- FIX: Set loading to false after main product is fetched
 
             // Fetch Vendor
             if (productData.vendorId) {
@@ -135,8 +136,8 @@ export default function ProductDetailPage() {
             }
         } else {
             console.log("No such product document!");
+            setLoading(false); // Also set loading to false if product not found
         }
-        setLoading(false);
     };
 
     fetchProductAndRelations();
