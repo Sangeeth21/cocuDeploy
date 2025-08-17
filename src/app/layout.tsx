@@ -138,6 +138,11 @@ export default function RootLayout({
   const isCorporateRoute = pathname.startsWith('/corporate');
   
   const showHeaderAndFooter = !isAdminRoute && !isVendorRoute && !isCorporateRoute;
+  const showGiftyAngel = 
+    pathname === '/' || 
+    pathname === '/products' ||
+    (pathname.startsWith('/products/') && pathname.split('/').length === 3);
+
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -175,7 +180,7 @@ export default function RootLayout({
                             <>
                             <Footer />
                             <CampaignPopup />
-                            <GiftyAngelChatbot />
+                            {showGiftyAngel && <GiftyAngelChatbot />}
                             </>
                         )}
                         <CustomerAuthDialog />

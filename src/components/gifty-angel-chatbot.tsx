@@ -117,7 +117,7 @@ export function GiftyAngelChatbot() {
     return (
         <>
             <Button 
-                className="fixed bottom-6 right-6 h-20 w-20 rounded-full shadow-2xl z-40 animate-float"
+                className="fixed bottom-24 right-6 h-20 w-20 rounded-full shadow-2xl z-40 animate-float"
                 variant="ghost"
                 size="icon"
                 onClick={() => handleOpenChange(true)}
