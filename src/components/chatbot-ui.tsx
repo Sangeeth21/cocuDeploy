@@ -49,7 +49,7 @@ export function ChatMessage({ sender, message }: { sender: "bot" | "user", messa
     )
 }
 
-export function ChatResponseOptions({ options, onSelect }: { options: string[], onSelect: (option: string) => void }) {
+export function ChatResponseOptions({ options, onSelect, onCustomClick }: { options: string[], onSelect: (option: string) => void, onCustomClick: () => void }) {
     return (
          <div className="flex flex-wrap gap-2 justify-center py-4">
             {options.map((option) => (
@@ -57,6 +57,9 @@ export function ChatResponseOptions({ options, onSelect }: { options: string[], 
                     {option}
                 </Button>
             ))}
+             <Button variant="outline" size="sm" onClick={onCustomClick}>
+                Custom...
+            </Button>
         </div>
     )
 }

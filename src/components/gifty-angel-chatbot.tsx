@@ -10,9 +10,10 @@ import { mockProducts } from "@/lib/mock-data";
 import { ChatContainer, ChatMessage, ChatResponseOptions, ChatProductCarousel } from "@/components/chatbot-ui";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import Image from "next/image";
-import { X, MessageSquare, Bot, Gift } from "lucide-react";
+import { X, MessageSquare, Bot, Gift, Send } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "./ui/scroll-area";
+import { Input } from "./ui/input";
 
 
 type Stage = "initial" | "occasion" | "recipient" | "vibe" | "budget" | "results";
@@ -25,76 +26,96 @@ const budgetOptions = ["< ₹1000", "₹1000-₹2500", "₹2500-₹5000", "₹50
 export function GiftyAngelChatbot() {
     const [isOpen, setIsOpen] = useState(false);
     const [stage, setStage] = useState<Stage>("initial");
-    const [history, setHistory] = useState<{ value: string }[]>([]);
+    const [history, setHistory] = useState<{ sender: 'user' | 'bot', message: string }[]>([]);
+    const [isCustomInputActive, setIsCustomInputActive] = useState(false);
+    const [customInputValue, setCustomInputValue] = useState("");
+
+    const addMessageToHistory = (sender: 'user' | 'bot', message: string) => {
+        setHistory(prev => [...prev, { sender, message }]);
+    };
 
     const handleSelect = (value: string, nextStage: Stage) => {
-        setHistory(prev => [...prev, { value }]);
+        addMessageToHistory('user', value);
         setStage(nextStage);
+        setIsCustomInputActive(false);
+        setCustomInputValue("");
     };
+    
+    const handleCustomClick = () => {
+        setIsCustomInputActive(true);
+    }
+    
+    const handleCustomSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!customInputValue.trim()) return;
+
+        const nextStageMap: Record<Stage, Stage> = {
+            initial: 'recipient',
+            occasion: 'recipient',
+            recipient: 'vibe',
+            vibe: 'budget',
+            budget: 'results',
+            results: 'results',
+        };
+        handleSelect(customInputValue, nextStageMap[stage]);
+    }
     
     const resetChat = () => {
         setStage('initial');
         setHistory([]);
+        setIsCustomInputActive(false);
+        setCustomInputValue("");
     }
     
     const handleOpenChange = (open: boolean) => {
         if (!open) {
-            // Reset chat state when dialog is closed
             setTimeout(() => resetChat(), 300);
         }
         setIsOpen(open);
     }
 
     const renderCurrentStep = () => {
+        const renderHistory = history.map((msg, index) => (
+            <ChatMessage key={index} sender={msg.sender} message={msg.message} />
+        ));
+
         switch (stage) {
             case "initial":
                 return (
                     <>
                         <ChatMessage sender="bot" message="Hi there! I'm Gifty Angel, your personal guide to finding the perfect gift. ✨" />
                         <ChatMessage sender="bot" message="To get started, what's the occasion?" />
-                        <ChatResponseOptions options={occasionOptions} onSelect={(val) => handleSelect(val, 'recipient')} />
+                        {!isCustomInputActive && <ChatResponseOptions options={occasionOptions} onSelect={(val) => handleSelect(val, 'recipient')} onCustomClick={handleCustomClick} />}
                     </>
                 );
             case "recipient":
                  return (
                      <>
-                        <ChatMessage sender="user" message={history[0].value} />
+                        {renderHistory}
                         <ChatMessage sender="bot" message="Great! Who is this special gift for?" />
-                        <ChatResponseOptions options={recipientOptions} onSelect={(val) => handleSelect(val, 'vibe')} />
+                        {!isCustomInputActive && <ChatResponseOptions options={recipientOptions} onSelect={(val) => handleSelect(val, 'vibe')} onCustomClick={handleCustomClick} />}
                     </>
                 );
             case 'vibe':
                  return (
                      <>
-                        <ChatMessage sender="user" message={history[0].value} />
-                        <ChatMessage sender="bot" message="Great! Who is this special gift for?" />
-                        <ChatMessage sender="user" message={history[1].value} />
+                        {renderHistory}
                         <ChatMessage sender="bot" message="Got it. What kind of vibe are you going for?" />
-                        <ChatResponseOptions options={vibeOptions} onSelect={(val) => handleSelect(val, 'budget')} />
+                        {!isCustomInputActive && <ChatResponseOptions options={vibeOptions} onSelect={(val) => handleSelect(val, 'budget')} onCustomClick={handleCustomClick} />}
                     </>
                 );
             case 'budget':
                 return (
                     <>
-                       <ChatMessage sender="user" message={history[0].value} />
-                       <ChatMessage sender="bot" message="Great! Who is this special gift for?" />
-                       <ChatMessage sender="user" message={history[1].value} />
-                       <ChatMessage sender="bot" message="Got it. What kind of vibe are you going for?" />
-                       <ChatMessage sender="user" message={history[2].value} />
+                       {renderHistory}
                        <ChatMessage sender="bot" message="Perfect! What's your budget?" />
-                       <ChatResponseOptions options={budgetOptions} onSelect={(val) => handleSelect(val, 'results')} />
+                       {!isCustomInputActive && <ChatResponseOptions options={budgetOptions} onSelect={(val) => handleSelect(val, 'results')} onCustomClick={handleCustomClick} />}
                    </>
                );
             case 'results':
                 return (
                     <>
-                        <ChatMessage sender="user" message={history[0].value} />
-                        <ChatMessage sender="bot" message="Great! Who is this special gift for?" />
-                        <ChatMessage sender="user" message={history[1].value} />
-                        <ChatMessage sender="bot" message="Got it. What kind of vibe are you going for?" />
-                        <ChatMessage sender="user" message={history[2].value} />
-                        <ChatMessage sender="bot" message="Perfect! What's your budget?" />
-                        <ChatMessage sender="user" message={history[3].value} />
+                        {renderHistory}
                         <ChatMessage sender="bot" message="Based on your choices, I've curated a few collections for you! Here are some ideas to get you started." />
                         <Card>
                             <CardHeader className="p-2">
@@ -125,7 +146,6 @@ export function GiftyAngelChatbot() {
                         className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
                         variant="ghost"
                         size="icon"
-                        onClick={() => handleOpenChange(true)}
                     >
                         <Image src="/gifty-angel.png" alt="Gifty Angel" fill className="object-contain p-2" />
                     </Button>
@@ -144,6 +164,19 @@ export function GiftyAngelChatbot() {
                         <ScrollArea className="flex-1">
                             <div className="p-4 space-y-6">
                                 {renderCurrentStep()}
+                                {isCustomInputActive && (
+                                    <form onSubmit={handleCustomSubmit} className="flex items-center gap-2 pt-4">
+                                        <Input 
+                                            placeholder="Type your answer..." 
+                                            value={customInputValue}
+                                            onChange={(e) => setCustomInputValue(e.target.value)}
+                                            autoFocus
+                                        />
+                                        <Button type="submit" size="icon">
+                                            <Send className="h-4 w-4"/>
+                                        </Button>
+                                    </form>
+                                )}
                             </div>
                         </ScrollArea>
                     </div>
