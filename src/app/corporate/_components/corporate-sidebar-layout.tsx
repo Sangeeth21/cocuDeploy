@@ -48,24 +48,6 @@ function CorporateCampaignBanner() {
     )
 }
 
-function CustomSidebarTrigger() {
-    const { open, toggleSidebar } = useSidebar();
-    
-    return (
-        <Button 
-            className={cn(
-                "absolute top-1/2 z-20 h-7 w-7 rounded-full -translate-y-1/2",
-                open ? "right-[-14px]" : "right-[-14px] bg-primary text-primary-foreground hover:bg-primary/90"
-            )}
-            onClick={toggleSidebar}
-            size="icon"
-            variant={open ? "outline" : "default"}
-        >
-            {open ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
-        </Button>
-    )
-}
-
 function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
@@ -91,7 +73,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                            <Avatar className="h-10 w-10">
                                <Building className="h-6 w-6"/>
                             </Avatar>
-                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
+                            <div className="flex flex-col group-hover/sidebar:opacity-100 opacity-0 transition-opacity duration-200">
                                 <span className="text-lg font-semibold">Corporate Client</span>
                             </div>
                         </Link>
@@ -117,8 +99,8 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                                         tooltip={{children: link.label}}
                                     >
                                         <Link href={link.href}>
-                                            <link.icon />
-                                            <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
+                                            <link.icon className="h-5 w-5" />
+                                            <span className="group-hover/sidebar:opacity-100 opacity-0 transition-opacity duration-200">{link.label}</span>
                                              {badgeContent && <SidebarMenuBadge>{badgeContent}</SidebarMenuBadge>}
                                         </Link>
                                     </SidebarMenuButton>
@@ -132,12 +114,11 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                          <SidebarMenuItem>
                             <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
                                 <LogOut />
-                                <span className="group-data-[state=collapsed]:hidden">Log Out</span>
+                                <span className="group-hover/sidebar:opacity-100 opacity-0 transition-opacity duration-200">Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarFooter>
-                <CustomSidebarTrigger />
             </Sidebar>
             <div className="flex flex-col flex-1 w-0">
                 <CorporateCampaignBanner />
