@@ -2,7 +2,7 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar, SidebarMenuBadge } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar, SidebarMenuBadge, SidebarInset } from "@/components/ui/sidebar";
 import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building, Package, FileText, User, ShoppingCart, Scale, PlusCircle, ChevronsLeft, ChevronsRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -65,7 +65,6 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
         <>
             <Sidebar 
                 collapsible="icon" 
-                className="border-r hidden md:flex"
             >
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -100,7 +99,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                                     >
                                         <Link href={link.href}>
                                             <link.icon className="h-5 w-5" />
-                                            <span className="group-hover/sidebar:opacity-100 opacity-0 transition-opacity duration-200">{link.label}</span>
+                                            <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">{link.label}</span>
                                              {badgeContent && <SidebarMenuBadge>{badgeContent}</SidebarMenuBadge>}
                                         </Link>
                                     </SidebarMenuButton>
@@ -114,13 +113,13 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                          <SidebarMenuItem>
                             <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
                                 <LogOut />
-                                <span className="group-hover/sidebar:opacity-100 opacity-0 transition-opacity duration-200">Log Out</span>
+                                <span className="opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-200">Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarFooter>
             </Sidebar>
-            <div className="flex flex-col flex-1 w-0">
+            <SidebarInset>
                 <CorporateCampaignBanner />
                  <header className="flex h-16 items-center px-4 border-b bg-card">
                     <Link href="/corporate/dashboard" className="flex items-center gap-2 mr-6">
@@ -146,7 +145,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                     </main>
                     <Footer />
                  </div>
-            </div>
+            </SidebarInset>
         </>
     )
 }
