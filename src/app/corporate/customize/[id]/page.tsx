@@ -440,8 +440,8 @@ const DraggableElement = ({
                 )
             )}
              {element.type === 'qr' && element.text && (
-                 <div className="w-full h-full bg-white p-2">
-                    <QRCode value={element.text} style={{ width: '100%', height: '100%' }} bgColor="#FFFFFF" fgColor="#000000" level="Q" />
+                 <div className="w-full h-full bg-transparent p-2">
+                    <QRCode value={element.text} style={{ width: '100%', height: '100%' }} bgColor="transparent" fgColor={element.textColor || "#000000"} level="Q" />
                  </div>
             )}
             {element.type === 'text' && <TextRenderer element={element} />}
@@ -618,6 +618,7 @@ export default function CorporateCustomizePage() {
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
     const [isTextShapeOpen, setIsTextShapeOpen] = useState(false);
     const [qrValue, setQrValue] = useState("");
+    const [qrColor, setQrColor] = useState("#000000");
 
     // AI Image Generation State
     const [aiPrompt, setAiPrompt] = useState("");
@@ -757,6 +758,7 @@ export default function CorporateCustomizePage() {
             type: 'qr',
             x: 35, y: 35, width: 30, height: 30, rotation: 0,
             text: qrValue,
+            textColor: qrColor,
         };
         setDesignElements(prev => [...prev, newElement]);
         setSelectedElementId(newElement.id);
@@ -1129,7 +1131,13 @@ export default function CorporateCustomizePage() {
                                                         placeholder="https://example.com"
                                                     />
                                                 </div>
-                                                <Button className="w-full" onClick={addQrElement}>Add QR Code to Design</Button>
+                                                <div className="space-y-2">
+                                                    <Label>QR Code Color</Label>
+                                                    <ColorPicker value={qrColor} onChange={setQrColor} />
+                                                </div>
+                                                <Button className="w-full" onClick={addQrElement}>
+                                                    Add Transparent QR Code
+                                                </Button>
                                             </CardContent>
                                         </Card>
                                      </TabsContent>

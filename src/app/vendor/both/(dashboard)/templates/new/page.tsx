@@ -15,13 +15,14 @@ import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import { ProductDetailsPreview } from "./_components/product-details-preview";
-import { ReviewsPreview } from "./_components/reviews-preview";
-import { SimilarProductsPreview } from "./_components/similar-products-preview";
-import { FrequentlyBoughtTogetherPreview } from "./_components/frequently-bought-together-preview";
+import { ProductDetailsPreview } from "@/app/vendor/templates/new/_components/product-details-preview";
+import { ReviewsPreview } from "@/app/products/[id]/_components/reviews-preview";
+import { SimilarProductsPreview } from "@/app/vendor/templates/new/_components/similar-products-preview";
+import { FrequentlyBoughtTogetherPreview } from "@/app/products/[id]/_components/frequently-bought-together-preview";
 import { useVerification } from "@/context/vendor-verification-context";
 import { addDoc, collection } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { mockProducts } from "@/lib/mock-data";
 
 
 type ComponentMap = {
@@ -245,7 +246,17 @@ export default function NewTemplatePage() {
                             )}>
                              {components.map((id, index) => {
                                 const { component: Component } = componentMap[id];
-                                const componentProps = id === 'details' ? { layout, thumbnailPosition } : {};
+                                let componentProps: any = {};
+                                if (id === 'details') {
+                                    componentProps = { layout, thumbnailPosition };
+                                }
+                                if(id === 'reviews') {
+                                    // Pass a mock product ID for the preview
+                                    componentProps = { productId: mockProducts[0].id };
+                                }
+                                 if(id === 'frequently-bought') {
+                                    componentProps = { currentProduct: mockProducts[0] };
+                                }
                                 
                                 return (
                                     <div key={id} className={cn(
