@@ -880,8 +880,6 @@ export default function CorporateCustomizePage() {
                 referenceImageDataUri
             });
 
-            if (!result.imageUrl) throw new Error("AI did not return an image.");
-
             const newElement: DesignElement = {
                 id: `image-${Date.now()}`,
                 layerName: aiPrompt.substring(0, 20) || 'AI Image',

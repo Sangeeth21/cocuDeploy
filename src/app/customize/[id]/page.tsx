@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import type { CustomizationValue, CustomizationArea, AiImageStyle, DesignElement } from "@/lib/types";
+import type { CustomizationValue, CustomizationArea, AiImageStyle, DesignElement, GenerateImageWithStyleInput, GenerateImageWithStyleOutput } from "@/lib/types";
 import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Bot, QrCode, Save } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
@@ -872,13 +872,11 @@ export default function CustomizeProductPage() {
             const style = availableStyles.find(s => s.id === aiStyle);
             const referenceImageDataUri = aiReferenceImage ? await fileToDataUri(aiReferenceImage.file) : undefined;
             
-            const result = await generateImageWithStyle({
+            const result: GenerateImageWithStyleOutput = await generateImageWithStyle({
                 prompt: aiPrompt,
                 styleBackendPrompt: style?.backendPrompt || 'photorealistic',
                 referenceImageDataUri
             });
-
-            if (!result.imageUrl) throw new Error("AI did not return an image.");
 
             const newElement: DesignElement = {
                 id: `image-${Date.now()}`,
@@ -1225,9 +1223,6 @@ export default function CustomizeProductPage() {
                                                 </AccordionItem>
                                             ))}
                                         </Accordion>
-                                    </TabsContent>
-                                    <TabsContent value="colors" className="mt-0 text-center text-sm text-muted-foreground py-8">
-                                        Product color options coming soon!
                                     </TabsContent>
                                     <TabsContent value="notes" className="mt-0">
                                         <Card>
