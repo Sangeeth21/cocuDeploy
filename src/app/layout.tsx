@@ -175,7 +175,6 @@ export default function RootLayout({
                         )}
                         <main className="flex-1">
                             {children}
-                            {showHeaderAndFooter && showGiftyAngel && <GiftyAngelChatbot />}
                         </main>
                         {showHeaderAndFooter && (
                             <>
@@ -183,6 +182,7 @@ export default function RootLayout({
                             <CampaignPopup />
                             </>
                         )}
+                        {showHeaderAndFooter && showGiftyAngel && <GiftyAngelChatbot />}
                         <CustomerAuthDialog />
                         <CorporateAuthDialog />
                         <Toaster />

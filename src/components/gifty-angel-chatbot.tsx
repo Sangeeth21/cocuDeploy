@@ -116,9 +116,9 @@ export function GiftyAngelChatbot() {
 
     return (
         <>
-            <div className="sticky bottom-0 h-0 flex justify-end z-40">
+            <div className="fixed bottom-0 right-0 z-40 mr-6 mb-6">
                  <Button 
-                    className="mr-6 mb-6 h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
+                    className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
                     variant="ghost"
                     size="icon"
                     onClick={() => handleOpenChange(true)}
