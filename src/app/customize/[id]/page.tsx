@@ -33,6 +33,7 @@ import QRCode from 'qrcode.react';
 import { useUser } from "@/context/user-context";
 import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import Link from 'next/link';
 
 
 type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
@@ -915,8 +916,10 @@ export default function CustomizeProductPage() {
         <div className="h-screen flex flex-col bg-muted/40">
             <header className="bg-background border-b shadow-sm flex-shrink-0">
                 <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-                     <Button variant="outline" size="sm" onClick={() => router.back()}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Back to Product
+                     <Button variant="outline" size="sm" asChild>
+                        <Link href={`/products/${id}`}>
+                           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Product
+                        </Link>
                     </Button>
                      <p className="hidden md:block text-sm font-medium">{product.name}</p>
                     <div className="flex items-center gap-2">
@@ -1290,3 +1293,5 @@ export default function CustomizeProductPage() {
         </div>
     );
 }
+
+    
