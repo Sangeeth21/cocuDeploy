@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -31,7 +32,6 @@ import { useCorporateAuthDialog } from "@/context/corporate-auth-dialog-context"
 const navLinks = [
   { href: "/products", label: "All Products" },
   { href: "/#categories", label: "Categories" },
-  { href: "/gifty-angel", label: "Gift Finder", icon: Bot },
 ];
 
 const customerNotifications = [

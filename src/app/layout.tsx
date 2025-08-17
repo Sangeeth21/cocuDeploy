@@ -32,6 +32,7 @@ import { ComparisonProvider } from '@/context/comparison-context';
 import { CorporateAuthDialog } from '@/components/corporate-auth-dialog';
 import { AdminAuthProvider } from '@/context/admin-auth-context';
 import { CorporateAuthDialogProvider } from '@/context/corporate-auth-dialog-context';
+import { GiftyAngelChatbot } from '@/components/gifty-angel-chatbot';
 
 // Existing Fonts
 const ptSans = PT_Sans({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-pt-sans' });
@@ -174,6 +175,7 @@ export default function RootLayout({
                             <>
                             <Footer />
                             <CampaignPopup />
+                            <GiftyAngelChatbot />
                             </>
                         )}
                         <CustomerAuthDialog />
