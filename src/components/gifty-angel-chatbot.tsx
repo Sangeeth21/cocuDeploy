@@ -135,7 +135,7 @@ export function GiftyAngelChatbot() {
                         <div className="flex items-center justify-between p-3 bg-primary text-primary-foreground rounded-t-lg flex-shrink-0">
                              <div className="flex items-center gap-2">
                                 <Gift className="h-5 w-5"/>
-                                <h4 className="font-semibold">Co&Cu Gift Assistant</h4>
+                                <h4 className="font-semibold">Gifty Angel</h4>
                              </div>
                              <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary/80" onClick={() => handleOpenChange(false)}>
                                 <X className="h-4 w-4"/>
