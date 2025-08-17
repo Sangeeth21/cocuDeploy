@@ -24,7 +24,7 @@ const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"
-const SIDEBAR_WIDTH_ICON = "3.5rem"
+const SIDEBAR_WIDTH_ICON = "4.5rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
 type SidebarContext = {
@@ -204,8 +204,7 @@ const Sidebar = React.forwardRef<
             >
                 <div
                     className={cn(
-                        "fixed inset-y-0 z-20 flex h-svh w-[var(--sidebar-width-icon)] flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out md:flex",
-                        "group-hover/sidebar:w-[var(--sidebar-width)] group-hover/sidebar:shadow-lg",
+                        "fixed inset-y-0 z-20 flex h-svh w-[var(--sidebar-width-icon)] flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out hover:w-[var(--sidebar-width)] hover:shadow-lg",
                         side === "left" && "border-r",
                         side === "right" && "border-l"
                     )}
@@ -328,8 +327,7 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-background transition-[margin-left] duration-300 ease-in-out",
-        "md:ml-[var(--sidebar-width-icon)] peer-hover:md:ml-[var(--sidebar-width)]",
+        "relative flex min-h-svh flex-1 flex-col bg-background transition-[margin-left] duration-300 ease-in-out md:ml-[var(--sidebar-width-icon)] peer-hover:md:ml-[var(--sidebar-width)]",
         className
       )}
       {...props}
