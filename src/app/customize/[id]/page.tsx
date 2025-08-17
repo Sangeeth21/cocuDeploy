@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts, mockAiImageStyles } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue, CustomizationArea, AiImageStyle } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Bot, QrCode } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Bot, QrCode, Save } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -30,6 +30,9 @@ import tinycolor from 'tinycolor2';
 import { generateImageWithStyle } from '@/ai/flows/generate-image-with-style-flow';
 import { Loader2 } from 'lucide-react';
 import QRCode from 'qrcode.react';
+import { useUser } from "@/context/user-context";
+import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
@@ -464,16 +467,14 @@ const DraggableElement = ({
                 <>
                     {/* Delete Button */}
                     <button
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => onDelete(element.id)}
+                        onPointerDown={(e) => { e.stopPropagation(); onDelete(element.id); }}
                         className="absolute -top-3 -left-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-pointer"
                     >
                         <X className="h-4 w-4 text-destructive" />
                     </button>
                     {/* Duplicate Button */}
                     <button
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => onDuplicate(element.id)}
+                        onPointerDown={(e) => { e.stopPropagation(); onDuplicate(element.id); }}
                         className="absolute -bottom-3 -left-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-pointer"
                     >
                         <CopyIcon className="h-4 w-4 text-primary" />
@@ -625,6 +626,7 @@ export default function CustomizeProductPage() {
     const searchParams = useSearchParams();
     const { addToCart } = useCart();
     const { toast } = useToast();
+    const { user, isLoggedIn } = useUser();
 
     const id = params.id as string;
     const product = useMemo(() => mockProducts.find((p) => p.id === id), [id]);
@@ -649,34 +651,44 @@ export default function CustomizeProductPage() {
         return imageSides.find(side => product.customizationAreas![side]?.length) || "front";
     }, [product]);
 
+    // Firestore interaction
+    const tempCustomizationId = useMemo(() => {
+        if (!user?.id || !product?.id) return null;
+        // In a real app, you'd use a crypto library for a proper hash
+        return `${user.id}_${product.id}`;
+    }, [user, product]);
+    
+    // Load initial draft from Firestore
     useEffect(() => {
-        if (product) {
-            const initialElements = Object.entries(product.customizationAreas || {}).flatMap(([side, areas]) => 
-                (areas || []).map((area: CustomizationArea) => ({
-                    id: `text-${area.id}`,
-                    type: 'text',
-                    originalAreaId: area.id,
-                    x: area.x, y: area.y, width: area.width, height: area.height,
-                    rotation: 0,
-                    text: '', // Start with empty text
-                    fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
-                    fontSize: area.fontSize || 14,
-                    fontWeight: 'normal',
-                    textColor: '#000000',
-                    textAlign: 'center',
-                    textShape: 'normal',
-                    shapeIntensity: 50,
-                    outlineColor: '#FFFFFF',
-                    outlineWidth: 0,
-                }))
-            );
-            // This now populates based on vendor data, but starts empty on canvas
-            // We need a mechanism for user to *activate* these.
-            setDesignElements([]);
-            setActiveSide(firstCustomizableSide);
-            setSelectedElementId(null);
-        }
-    }, [product, firstCustomizableSide, setDesignElements]);
+        if (!tempCustomizationId) return;
+        const docRef = doc(db, 'tempCustomizations', tempCustomizationId);
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setDesignElements(data.designJSON ? JSON.parse(data.designJSON) : []);
+            }
+        });
+        return () => unsubscribe();
+    }, [tempCustomizationId, setDesignElements]);
+    
+     // Auto-save on any change to design elements
+    useEffect(() => {
+        if (!tempCustomizationId || !designElements) return;
+
+        const saveDraft = async () => {
+            const docRef = doc(db, 'tempCustomizations', tempCustomizationId);
+            await setDoc(docRef, {
+                userId: user?.id,
+                productId: product?.id,
+                designJSON: JSON.stringify(designElements),
+                updatedAt: new Date(),
+            }, { merge: true });
+        };
+        
+        saveDraft();
+
+    }, [designElements, tempCustomizationId, user, product]);
+
     
      useEffect(() => {
         setSelectedElementId(null);
@@ -814,20 +826,16 @@ export default function CustomizeProductPage() {
 
     const handleAddToCart = (buyNow = false) => {
         if (!product) return;
-        const customizationsForCart: { [key: string]: Partial<CustomizationValue> } = {};
-        designElements.forEach(el => {
-            if (el.type === 'text' && el.originalAreaId) {
-                customizationsForCart[el.originalAreaId] = {
-                    text: el.text,
-                    fontFamily: el.fontFamily,
-                    fontSize: el.fontSize,
-                    fontWeight: el.fontWeight,
-                    textColor: el.textColor,
-                }
+        
+        addToCart({
+            product,
+            quantity: 1,
+            customizations: {
+                // Pass the unique ID of the temporary customization workspace
+                customizationRequestId: tempCustomizationId || undefined,
             }
         });
         
-        addToCart({ product, customizations: customizationsForCart });
         toast({
             title: "Customized Product Added!",
             description: `${product.name} has been added to your cart.`,

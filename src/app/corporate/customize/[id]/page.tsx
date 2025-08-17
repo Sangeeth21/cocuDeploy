@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts, mockAiImageStyles } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import type { CustomizationValue, CustomizationArea, AiImageStyle } from "@/lib/types";
-import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Send, Loader2, QrCode, Bot } from "lucide-react";
+import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Send, Loader2, QrCode, Bot, Save } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -29,6 +29,10 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import tinycolor from 'tinycolor2';
 import QRCode from 'qrcode.react';
 import { generateImageWithStyle } from '@/ai/flows/generate-image-with-style-flow';
+import { useBidRequest } from "@/context/bid-request-context";
+import { useUser } from "@/context/user-context";
+import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
 
@@ -462,16 +466,14 @@ const DraggableElement = ({
                 <>
                     {/* Delete Button */}
                     <button
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => onDelete(element.id)}
+                        onPointerDown={(e) => { e.stopPropagation(); onDelete(element.id); }}
                         className="absolute -top-3 -left-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-pointer"
                     >
                         <X className="h-4 w-4 text-destructive" />
                     </button>
                     {/* Duplicate Button */}
                     <button
-                        onPointerDown={(e) => e.stopPropagation()}
-                        onClick={() => onDuplicate(element.id)}
+                        onPointerDown={(e) => { e.stopPropagation(); onDuplicate(element.id); }}
                         className="absolute -bottom-3 -left-3 h-6 w-6 rounded-full bg-background border shadow-md flex items-center justify-center cursor-pointer"
                     >
                         <CopyIcon className="h-4 w-4 text-primary" />
@@ -649,35 +651,48 @@ export default function CorporateCustomizePage() {
     const [quantity, setQuantity] = useState(product?.moq || 100);
     const [notes, setNotes] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
-
+    const { user } = useUser();
+    const { addToBid } = useBidRequest();
+    
+    const tempCustomizationId = useMemo(() => {
+        if (!user?.id || !product?.id) return null;
+        return `${user.id}_${product.id}`;
+    }, [user, product]);
+    
+    // Load initial draft from Firestore
     useEffect(() => {
-        if (product) {
-            const initialElements = Object.entries(product.customizationAreas || {}).flatMap(([side, areas]) => 
-                (areas || []).map((area: CustomizationArea) => ({
-                    id: `text-${area.id}`,
-                    type: 'text',
-                    originalAreaId: area.id,
-                    x: area.x, y: area.y, width: area.width, height: area.height,
-                    rotation: 0,
-                    text: '', // Start with empty text
-                    fontFamily: `var(--font-${(area.fontFamily || 'pt-sans').replace(/ /g, '-').toLowerCase()})`,
-                    fontSize: area.fontSize || 14,
-                    fontWeight: 'normal',
-                    textColor: '#000000',
-                    textAlign: 'center',
-                    textShape: 'normal',
-                    shapeIntensity: 50,
-                    outlineColor: '#FFFFFF',
-                    outlineWidth: 0,
-                }))
-            );
-            // This now populates based on vendor data, but starts empty on canvas
-            // We need a mechanism for user to *activate* these.
-            setDesignElements([]);
-            setActiveSide(firstCustomizableSide);
-            setSelectedElementId(null);
-        }
-    }, [product, firstCustomizableSide, setDesignElements]);
+        if (!tempCustomizationId) return;
+        const docRef = doc(db, 'tempCustomizations', tempCustomizationId);
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                setDesignElements(data.designJSON ? JSON.parse(data.designJSON) : []);
+            }
+        });
+        return () => unsubscribe();
+    }, [tempCustomizationId, setDesignElements]);
+    
+    const saveDesign = useCallback(async () => {
+        if (!tempCustomizationId || !user?.id || !product?.id) return;
+        const docRef = doc(db, 'tempCustomizations', tempCustomizationId);
+        await setDoc(docRef, {
+            userId: user.id,
+            productId: product.id,
+            designJSON: JSON.stringify(designElements),
+            updatedAt: new Date(),
+        }, { merge: true });
+    }, [tempCustomizationId, user?.id, product?.id, designElements]);
+    
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            saveDesign();
+        }, 1000); // Autosave after 1 second of inactivity
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [designElements, saveDesign]);
+
     
      useEffect(() => {
         setSelectedElementId(null);
@@ -813,7 +828,7 @@ export default function CorporateCustomizePage() {
     
     const selectedElement = useMemo(() => designElements.find(el => el.id === selectedElementId), [designElements, selectedElementId]);
 
-     const handleSubmitQuote = (e: React.FormEvent) => {
+     const handleSubmitQuote = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!product) return;
 
@@ -827,13 +842,16 @@ export default function CorporateCustomizePage() {
         }
 
         setIsSubmitting(true);
+        await saveDesign(); // Ensure final design is saved before submitting
+        
         setTimeout(() => {
             setIsSubmitting(false);
+            addToBid({ ...product, customizationRequestId: tempCustomizationId });
             toast({
-                title: 'Quote Request Submitted!',
-                description: `Your request for ${product.name} has been sent to the vendor.`,
+                title: 'Added to Bid Request!',
+                description: `${product.name} has been added to your current bid request.`,
             });
-            router.push('/corporate/dashboard');
+            router.push('/corporate/bids/new');
         }, 1500);
     };
     
@@ -897,13 +915,16 @@ export default function CorporateCustomizePage() {
                     </Button>
                      <p className="hidden md:block text-sm font-medium">{product.name}</p>
                     <div className="flex items-center gap-2">
+                        <Button size="sm" variant="ghost" onClick={saveDesign}>
+                            <Save className="mr-2 h-4 w-4"/>Save Design
+                        </Button>
                          <Button size="sm" variant="secondary" onClick={handleSubmitQuote} disabled={isSubmitting}>
                             {isSubmitting ? (
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             ) : (
                                 <Send className="mr-2 h-4 w-4" />
                             )}
-                            Submit Quote
+                            Add to Bid Request
                         </Button>
                     </div>
                 </div>
