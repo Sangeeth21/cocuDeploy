@@ -20,6 +20,27 @@ interface ProductCardProps {
   product: DisplayProduct;
 }
 
+export function MiniProductCard({ product }: ProductCardProps) {
+    return (
+        <Card className="overflow-hidden">
+            <Link href={`/products/${product.id}`} className="block group">
+                <div className="relative aspect-square w-full overflow-hidden">
+                     <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                </div>
+                 <div className="p-2">
+                    <p className="text-xs font-medium leading-tight truncate">{product.name}</p>
+                    <p className="text-xs font-bold">${product.price.toFixed(2)}</p>
+                </div>
+            </Link>
+        </Card>
+    )
+}
+
 export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const { addToCart } = useCart();
