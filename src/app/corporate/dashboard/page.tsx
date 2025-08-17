@@ -45,6 +45,7 @@ const DefaultHeroSlide = () => (
     </div>
 );
 
+
 export default function CorporateMarketplacePage() {
     const [heroCampaigns, setHeroCampaigns] = useState<MarketingCampaign[]>([]);
     const [inlineCampaign, setInlineCampaign] = useState<MarketingCampaign | null>(null);
