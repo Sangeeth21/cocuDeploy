@@ -3,7 +3,7 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar, SidebarMenuBadge } from "@/components/ui/sidebar";
-import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building, Package, FileText, User, ShoppingCart, Scale, PlusCircle } from "lucide-react";
+import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building, Package, FileText, User, ShoppingCart, Scale, PlusCircle, ChevronsLeft, ChevronsRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -45,6 +45,24 @@ function CorporateCampaignBanner() {
                 {bannerCampaign.creatives![0].title} - {bannerCampaign.creatives![0].description}
             </Link>
         </div>
+    )
+}
+
+function CustomSidebarTrigger() {
+    const { open, toggleSidebar } = useSidebar();
+    
+    return (
+        <Button 
+            className={cn(
+                "absolute top-1/2 z-20 h-7 w-7 rounded-full -translate-y-1/2",
+                open ? "right-[-14px]" : "right-[-14px] bg-primary text-primary-foreground hover:bg-primary/90"
+            )}
+            onClick={toggleSidebar}
+            size="icon"
+            variant={open ? "outline" : "default"}
+        >
+            {open ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
+        </Button>
     )
 }
 
@@ -119,6 +137,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarFooter>
+                <CustomSidebarTrigger />
             </Sidebar>
             <div className="flex flex-col flex-1 w-0">
                 <CorporateCampaignBanner />
