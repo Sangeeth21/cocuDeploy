@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { mockCategories } from "@/lib/mock-data";
-import { ArrowRight, Store } from "lucide-react";
+import { ArrowRight, Store, Bot } from "lucide-react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import { B2bProductCard } from "../_components/b2b-product-card";
 import { collection, query, where, onSnapshot, limit } from "firebase/firestore";
@@ -125,6 +125,16 @@ export default function CorporateMarketplacePage() {
                 <CarouselNext className="absolute right-4 top-1/2 -translate-y-1/2 hidden md:flex" />
             </>}
         </Carousel>
+      </section>
+
+      <section>
+          <div className="text-center">
+              <h2 className="text-3xl font-bold font-headline">Need Help Finding the Right Products?</h2>
+              <p className="text-muted-foreground mt-2">Try our guided assistant to get curated recommendations.</p>
+              <Button asChild className="mt-4">
+                  <Link href="/corporate/co-worker"><Bot className="mr-2 h-5 w-5"/> Launch Co-Worker Assistant</Link>
+              </Button>
+          </div>
       </section>
 
       <section id="featured-b2b">

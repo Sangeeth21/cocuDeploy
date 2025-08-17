@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown, ShoppingCart, Heart, Gift, Building } from "lucide-react";
+import { User, Menu, Store, LogOut, Settings, ListChecks, MessageSquare, CreditCard, UserCircle, ChevronDown, ShoppingCart, Heart, Gift, Building, Bot } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { SearchBar } from "@/components/search-bar";
@@ -31,6 +31,7 @@ import { useCorporateAuthDialog } from "@/context/corporate-auth-dialog-context"
 const navLinks = [
   { href: "/products", label: "All Products" },
   { href: "/#categories", label: "Categories" },
+  { href: "/gifty-angel", label: "Gift Finder", icon: Bot },
 ];
 
 const customerNotifications = [
@@ -73,10 +74,11 @@ export function Header() {
                         key={link.href}
                         href={link.href}
                         className={cn(
-                            "text-lg font-medium hover:text-primary transition-colors",
+                            "text-lg font-medium hover:text-primary transition-colors flex items-center gap-2",
                             pathname === link.href ? "text-primary" : "text-foreground"
                         )}
                     >
+                        {link.icon && <link.icon className="h-5 w-5" />}
                         {link.label}
                     </Link>
                     ))}
@@ -97,10 +99,11 @@ export function Header() {
                 key={link.href}
                 href={link.href}
                 className={cn(
-                    "text-sm font-medium transition-colors hover:text-primary",
+                    "text-sm font-medium transition-colors hover:text-primary flex items-center gap-1.5",
                     pathname === link.href ? "text-primary" : "text-muted-foreground"
                 )}
                 >
+                {link.icon && <link.icon className="h-4 w-4" />}
                 {link.label}
                 </Link>
             ))}

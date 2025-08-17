@@ -1,27 +1,18 @@
 
+
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { VendorSidebarLayout } from "../../both/(dashboard)/_components/vendor-sidebar-layout";
-import { VerificationFlowHandler } from "../../_components/verification-flow-handler";
-import type { Conversation } from "@/lib/types";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
+// This component is now redundant due to the new /vendor/(dashboard) layout.
+// It will redirect to the unified "both" dashboard, which handles different vendor types.
+export default function RedirectToUnifiedDashboard() {
+  const router = useRouter();
 
-export default function Layout({ children }: { children: React.ReactNode }) {
-     // In a real app, you might fetch specific unread counts here.
-    const unreadMessages = 1;
+  useEffect(() => {
+    router.replace("/vendor/both/dashboard");
+  }, [router]);
 
-    return (
-        <VendorSidebarLayout unreadMessages={unreadMessages}>
-            <VerificationFlowHandler />
-             {React.Children.map(children, child => {
-                if (React.isValidElement(child)) {
-                    // This is a placeholder for passing live data down.
-                    // The child pages are now responsible for fetching their own data.
-                    return React.cloneElement(child as React.ReactElement, {} as any);
-                }
-                return child;
-            })}
-        </VendorSidebarLayout>
-    );
+  return null;
 }
