@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { 
@@ -140,8 +139,7 @@ export default function RootLayout({
   const showHeaderAndFooter = !isAdminRoute && !isVendorRoute && !isCorporateRoute;
   const showGiftyAngel = 
     pathname === '/' || 
-    pathname === '/products' ||
-    (pathname.startsWith('/products/') && pathname.split('/').length === 3);
+    pathname.startsWith('/products');
 
 
   return (
@@ -175,12 +173,14 @@ export default function RootLayout({
                             <Header />
                             </>
                         )}
-                        <main className="flex-1">{children}</main>
+                        <main className="flex-1 relative">
+                            {children}
+                            {showHeaderAndFooter && showGiftyAngel && <GiftyAngelChatbot />}
+                        </main>
                         {showHeaderAndFooter && (
                             <>
                             <Footer />
                             <CampaignPopup />
-                            {showGiftyAngel && <GiftyAngelChatbot />}
                             </>
                         )}
                         <CustomerAuthDialog />
