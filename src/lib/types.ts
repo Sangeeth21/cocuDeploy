@@ -28,6 +28,7 @@ export type CustomizationArea = {
 
 export type DesignElement = {
     id: string;
+    layerName?: string;
     type: 'text' | 'image' | 'art' | 'qr';
     x: number;
     y: number;
@@ -45,7 +46,7 @@ export type DesignElement = {
     shapeIntensity?: number;
     outlineColor?: string;
     outlineWidth?: number;
-    // Image/QR properties
+    // Image properties
     imageUrl?: string;
     // Art properties
     artContent?: any; 

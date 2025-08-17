@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { mockProducts, mockAiImageStyles } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-import type { CustomizationValue, CustomizationArea, AiImageStyle } from "@/lib/types";
+import type { CustomizationValue, CustomizationArea, AiImageStyle, DesignElement } from "@/lib/types";
 import { ArrowLeft, CheckCircle, ShoppingCart, Wand2, Bold, Italic, Type, Upload, Paintbrush, StickyNote, ZoomIn, Pilcrow, PilcrowLeft, PilcrowRight, Layers, Trash2, Brush, Smile, Star as StarIcon, PartyPopper, Undo2, Redo2, Copy, AlignCenter, AlignLeft, AlignRight, ChevronsUp, ChevronsDown, Shapes, Waves, Flag, CaseUpper, Circle, CornerDownLeft, CornerDownRight, ChevronsUpDown, Maximize, FoldVertical, Expand, CopyIcon, X, SprayCan, Heart, Pizza, Car, Sparkles, Building, Cat, Dog, Music, Gamepad2, Plane, Cloud, TreePine, Send, Loader2, QrCode, Bot, Save } from "lucide-react";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
@@ -35,33 +35,6 @@ import { doc, getDoc, setDoc, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 type TextShape = 'normal' | 'arch-up' | 'arch-down' | 'circle' | 'bulge' | 'pinch' | 'wave' | 'flag' | 'slant-up' | 'slant-down' | 'perspective-left' | 'perspective-right' | 'triangle-up' | 'triangle-down' | 'fade-left' | 'fade-right' | 'fade-up' | 'fade-down' | 'bridge' | 'funnel-in' | 'funnel-out' | 'stairs-up' | 'stairs-down';
-
-type DesignElement = {
-    id: string;
-    type: 'text' | 'image' | 'art' | 'qr';
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-    rotation: number;
-    // Text properties
-    text?: string;
-    fontFamily?: string;
-    fontSize?: number;
-    fontWeight?: string;
-    textColor?: string;
-    textAlign?: 'left' | 'center' | 'right';
-    textShape?: TextShape;
-    shapeIntensity?: number;
-    outlineColor?: string;
-    outlineWidth?: number;
-    // Image/QR properties
-    imageUrl?: string;
-    // Art properties
-    artContent?: string | React.FC<any>; // Emoji (string) or Icon component
-    artType?: 'emoji' | 'icon';
-    originalAreaId?: string; // Links text element back to a vendor-defined area
-}
 
 // Custom hook for managing state with undo/redo
 function useHistoryState<T>(initialState: T): [T, (newState: T | ((prevState: T) => T)) => void, () => void, () => void, boolean, boolean] {
@@ -371,7 +344,6 @@ const DraggableElement = ({
     const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, type: 'drag' | 'resize') => {
         onSelect(element.id);
         e.stopPropagation();
-        e.preventDefault();
         const parentRect = ref.current?.offsetParent?.getBoundingClientRect();
         if (!parentRect) return;
 
@@ -506,7 +478,7 @@ const CustomizationRenderer = ({ product, activeSide, designElements, selectedEl
 
     return (
         <div className="relative w-full h-full" onClick={() => onSelect('')}>
-            <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain" />
+            <Image src={productSrc} alt={`${product.name} ${activeSide} view`} fill className="object-contain pointer-events-none" />
             {designElements.map((element) => {
                 const isVendorArea = !!element.originalAreaId;
                 const elementIsOnActiveSide = product.customizationAreas?.[activeSide]?.some((area: CustomizationArea) => area.id === element.originalAreaId);
@@ -632,6 +604,7 @@ export default function CorporateCustomizePage() {
     const [designElements, setDesignElements, undo, redo, canUndo, canRedo] = useHistoryState<DesignElement[]>([]);
     const [activeSide, setActiveSide] = useState<ImageSide>("front");
     const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
+    const [editingLayerId, setEditingLayerId] = useState<string | null>(null);
     const [isTextShapeOpen, setIsTextShapeOpen] = useState(false);
     const [qrValue, setQrValue] = useState("");
     const [qrColor, setQrColor] = useState("#000000");
@@ -707,6 +680,7 @@ export default function CorporateCustomizePage() {
     const addVendorTextElement = (area: CustomizationArea) => {
         const newElement: DesignElement = {
             id: `text-${area.id}`,
+            layerName: area.label,
             type: 'text',
             originalAreaId: area.id,
             x: area.x, y: area.y, width: area.width, height: area.height,
@@ -729,6 +703,7 @@ export default function CorporateCustomizePage() {
     const addTextElement = () => {
         const newElement: DesignElement = {
             id: `text-${Date.now()}`,
+            layerName: 'New Text',
             type: 'text',
             x: 25, y: 40, width: 50, height: 20, rotation: 0,
             text: 'New Text',
@@ -751,6 +726,7 @@ export default function CorporateCustomizePage() {
             const file = event.target.files[0];
             const newElement: DesignElement = {
                 id: `image-${Date.now()}`,
+                layerName: file.name,
                 type: 'image',
                 x: 25, y: 25, width: 50, height: 50, rotation: 0,
                 imageUrl: URL.createObjectURL(file)
@@ -763,6 +739,7 @@ export default function CorporateCustomizePage() {
     const addArtElement = (art: { type: 'emoji', content: string } | { type: 'icon', content: React.FC<any> }) => {
         const newElement: DesignElement = {
             id: `art-${Date.now()}`,
+            layerName: 'Clipart',
             type: 'art',
             x: 35, y: 35, width: 30, height: 30, rotation: 0,
             artType: art.type,
@@ -784,6 +761,7 @@ export default function CorporateCustomizePage() {
         }
         const newElement: DesignElement = {
             id: `qr-${Date.now()}`,
+            layerName: 'QR Code',
             type: 'qr',
             x: 35, y: 35, width: 30, height: 30, rotation: 0,
             text: qrValue,
@@ -820,6 +798,7 @@ export default function CorporateCustomizePage() {
         const newElement = {
             ...elementToCopy,
             id: `${elementToCopy.type}-${Date.now()}`,
+            layerName: `${elementToCopy.layerName} (Copy)`,
             x: elementToCopy.x + 5,
             y: elementToCopy.y + 5,
         };
@@ -887,6 +866,7 @@ export default function CorporateCustomizePage() {
 
             const newElement: DesignElement = {
                 id: `image-${Date.now()}`,
+                layerName: aiPrompt.substring(0, 20) || 'AI Image',
                 type: 'image',
                 x: 25, y: 25, width: 50, height: 50, rotation: 0,
                 imageUrl: result.imageUrl,
@@ -907,6 +887,15 @@ export default function CorporateCustomizePage() {
     
     const currentVendorCustomizationAreas = product.customizationAreas?.[activeSide] || [];
     const addedVendorAreaIds = designElements.filter(el => el.originalAreaId).map(el => el.originalAreaId);
+
+    const getElementDefaultName = (element: DesignElement) => {
+        if (element.layerName) return element.layerName;
+        if (element.type === 'text') return element.text || 'Untitled Text';
+        if (element.type === 'image') return 'Uploaded Image';
+        if (element.type === 'qr') return 'QR Code';
+        if (element.type === 'art') return 'Clipart';
+        return 'Untitled Layer';
+    };
 
     return (
         <div className="h-screen flex flex-col bg-muted/40">
@@ -1178,7 +1167,7 @@ export default function CorporateCustomizePage() {
                                                             <ColorPicker value={qrColor} onChange={setQrColor} />
                                                         </div>
                                                         <Button className="w-full" onClick={addQrElement}>
-                                                            Add QR Code to Design
+                                                            Add Transparent QR Code
                                                         </Button>
                                                     </>
                                                 )}
@@ -1260,14 +1249,28 @@ export default function CorporateCustomizePage() {
                                                         key={element.id}
                                                         className={cn("flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer", selectedElementId === element.id ? "bg-accent" : "hover:bg-muted/50")}
                                                         onClick={() => setSelectedElementId(element.id)}
+                                                        onDoubleClick={() => setEditingLayerId(element.id)}
                                                     >
                                                         {element.type === 'text' && <Type className="h-4 w-4 text-muted-foreground"/>}
                                                         {element.type === 'image' && <Upload className="h-4 w-4 text-muted-foreground"/>}
                                                         {element.type === 'art' && <Wand2 className="h-4 w-4 text-muted-foreground"/>}
                                                         {element.type === 'qr' && <QrCode className="h-4 w-4 text-muted-foreground"/>}
-                                                        <span className="text-sm truncate flex-1">
-                                                            {element.type === 'text' ? (element.text || 'Untitled Text') : (element.type === 'image' ? 'Uploaded Image' : (element.type === 'qr' ? 'QR Code' : 'Clipart'))}
-                                                        </span>
+                                                        
+                                                        {editingLayerId === element.id ? (
+                                                            <Input
+                                                                autoFocus
+                                                                value={element.layerName || ''}
+                                                                onChange={(e) => handleElementChange(element.id, { layerName: e.target.value })}
+                                                                onBlur={() => setEditingLayerId(null)}
+                                                                onKeyDown={(e) => e.key === 'Enter' && setEditingLayerId(null)}
+                                                                className="h-7 text-sm"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-sm truncate flex-1">
+                                                                {getElementDefaultName(element)}
+                                                            </span>
+                                                        )}
+                                                        
                                                         <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => {e.stopPropagation(); removeElement(element.id)}}><Trash2 className="h-4 w-4"/></Button>
                                                     </div>
                                                 ))
