@@ -4,13 +4,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { mockProducts } from "@/lib/mock-data";
 import { ChatContainer, ChatMessage, ChatResponseOptions, ChatProductCarousel } from "@/components/chatbot-ui";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import Image from "next/image";
-import { X, MessageSquare } from "lucide-react";
+import { X, MessageSquare, Bot, Gift } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "./ui/scroll-area";
+
 
 type Stage = "initial" | "occasion" | "recipient" | "vibe" | "budget" | "results";
 
@@ -115,24 +118,37 @@ export function GiftyAngelChatbot() {
     }
 
     return (
-        <>
-            <div className="fixed bottom-0 right-0 z-40 mr-6 mb-6">
-                 <Button 
-                    className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleOpenChange(true)}
-                >
-                     <Image src="/gifty-angel.png" alt="Gifty Angel" fill className="object-contain p-2" />
-                </Button>
-            </div>
-            <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-                <DialogContent className="sm:max-w-2xl h-[80vh] flex flex-col p-0">
-                    <ChatContainer title="Gifty Angel" description="Your personal gift finder">
-                        {renderCurrentStep()}
-                    </ChatContainer>
-                </DialogContent>
-            </Dialog>
+        <div className="fixed bottom-6 right-6 z-40">
+            <Popover open={isOpen} onOpenChange={handleOpenChange}>
+                <PopoverTrigger asChild>
+                    <Button 
+                        className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleOpenChange(true)}
+                    >
+                        <Image src="/gifty-angel.png" alt="Gifty Angel" fill className="object-contain p-2" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-96 p-0 mr-4" align="end">
+                     <div className="flex flex-col h-[60vh]">
+                        <div className="flex items-center justify-between p-3 bg-primary text-primary-foreground rounded-t-lg flex-shrink-0">
+                             <div className="flex items-center gap-2">
+                                <Gift className="h-5 w-5"/>
+                                <h4 className="font-semibold">Co&Cu Gift Assistant</h4>
+                             </div>
+                             <Button variant="ghost" size="icon" className="h-7 w-7 text-primary-foreground hover:bg-primary/80" onClick={() => handleOpenChange(false)}>
+                                <X className="h-4 w-4"/>
+                             </Button>
+                        </div>
+                        <ScrollArea className="flex-1">
+                            <div className="p-4 space-y-6">
+                                {renderCurrentStep()}
+                            </div>
+                        </ScrollArea>
+                    </div>
+                </PopoverContent>
+            </Popover>
             <style jsx>{`
                 @keyframes float {
                     0% { transform: translateY(0px); }
@@ -143,6 +159,6 @@ export function GiftyAngelChatbot() {
                     animation: float 3s ease-in-out infinite;
                 }
             `}</style>
-        </>
+        </div>
     );
 }

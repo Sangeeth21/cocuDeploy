@@ -31,18 +31,18 @@ export function ChatContainer({ title, description, children }: { title: string,
 
 export function ChatMessage({ sender, message }: { sender: "bot" | "user", message: string }) {
     return (
-        <div className={`flex items-start gap-4 ${sender === 'user' ? 'justify-end' : ''}`}>
+        <div className={`flex items-start gap-3 ${sender === 'user' ? 'justify-end' : ''}`}>
             {sender === 'bot' && (
-                <Avatar className="h-8 w-8 border">
-                    <AvatarFallback><Bot className="h-5 w-5"/></AvatarFallback>
+                <Avatar className="h-6 w-6 border">
+                    <AvatarFallback><Bot className="h-4 w-4"/></AvatarFallback>
                 </Avatar>
             )}
-             <div className={`rounded-lg p-3 max-w-sm ${sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                <p className="text-sm">{message}</p>
+             <div className={`rounded-lg p-3 max-w-xs text-sm ${sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                <p>{message}</p>
             </div>
              {sender === 'user' && (
-                <Avatar className="h-8 w-8 border">
-                    <AvatarFallback><User className="h-5 w-5"/></AvatarFallback>
+                <Avatar className="h-6 w-6 border">
+                    <AvatarFallback><User className="h-4 w-4"/></AvatarFallback>
                 </Avatar>
             )}
         </div>
@@ -53,7 +53,7 @@ export function ChatResponseOptions({ options, onSelect }: { options: string[], 
     return (
          <div className="flex flex-wrap gap-2 justify-center py-4">
             {options.map((option) => (
-                <Button key={option} variant="outline" onClick={() => onSelect(option)}>
+                <Button key={option} variant="outline" size="sm" onClick={() => onSelect(option)}>
                     {option}
                 </Button>
             ))}
