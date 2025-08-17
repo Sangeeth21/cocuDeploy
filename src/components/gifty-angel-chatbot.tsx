@@ -97,18 +97,18 @@ export function GiftyAngelChatbot() {
                         <ChatMessage sender="user" message={history[3].value} />
                         <ChatMessage sender="bot" message="Based on your choices, I've curated a few collections for you! Here are some ideas to get you started." />
                         <Card>
-                            <CardHeader>
-                                <CardTitle>Safe & Sweet Picks</CardTitle>
+                            <CardHeader className="p-2">
+                                <CardTitle className="text-base">Safe & Sweet Picks</CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="p-2">
                                 <ChatProductCarousel products={mockProducts.slice(0, 4)} />
                             </CardContent>
                         </Card>
                          <Card>
-                            <CardHeader>
-                                <CardTitle>Personal & Memorable</CardTitle>
+                            <CardHeader className="p-2">
+                                <CardTitle className="text-base">Personal & Memorable</CardTitle>
                             </CardHeader>
-                            <CardContent>
+                            <CardContent className="p-2">
                                 <ChatProductCarousel products={mockProducts.slice(4, 8)} />
                             </CardContent>
                         </Card>
