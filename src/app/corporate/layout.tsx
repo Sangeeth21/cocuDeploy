@@ -15,6 +15,8 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { MarketingCampaign } from "@/lib/types";
 import { CoWorkerChatbot } from "@/components/co-worker-chatbot";
+import { Providers } from "@/components/layout/providers";
+
 
 function CorporateCampaignPopup() {
     const [isOpen, setIsOpen] = useState(false);
@@ -110,13 +112,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminAuthProvider>
-        <BidRequestProvider>
-          <ProtectedCorporateLayout>
-            {children}
-          </ProtectedCorporateLayout>
-          <CorporateCampaignPopup />
-          {showChatbot && <CoWorkerChatbot />}
-        </BidRequestProvider>
+        <Providers>
+            <BidRequestProvider>
+              <ProtectedCorporateLayout>
+                {children}
+              </ProtectedCorporateLayout>
+              <CorporateCampaignPopup />
+              {showChatbot && <CoWorkerChatbot />}
+            </BidRequestProvider>
+        </Providers>
     </AdminAuthProvider>
   );
 }

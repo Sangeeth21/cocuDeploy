@@ -7,24 +7,24 @@ import { WishlistProvider } from '@/context/wishlist-context';
 import { AuthDialogProvider } from '@/context/auth-dialog-context';
 import { ComparisonProvider } from '@/context/comparison-context';
 import { CorporateAuthDialogProvider } from '@/context/corporate-auth-dialog-context';
-import { AdminAuthProvider } from '@/context/admin-auth-context';
+import { BidRequestProvider } from '@/context/bid-request-context';
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (
         <UserProvider>
-            <AdminAuthProvider>
-                <AuthDialogProvider>
-                    <CorporateAuthDialogProvider>
-                        <CartProvider>
-                            <WishlistProvider>
-                                <ComparisonProvider>
+            <AuthDialogProvider>
+                <CorporateAuthDialogProvider>
+                    <CartProvider>
+                        <WishlistProvider>
+                            <ComparisonProvider>
+                                <BidRequestProvider>
                                     {children}
-                                </ComparisonProvider>
-                            </WishlistProvider>
-                        </CartProvider>
-                    </CorporateAuthDialogProvider>
-                </AuthDialogProvider>
-            </AdminAuthProvider>
+                                </BidRequestProvider>
+                            </ComparisonProvider>
+                        </WishlistProvider>
+                    </CartProvider>
+                </CorporateAuthDialogProvider>
+            </AuthDialogProvider>
         </UserProvider>
     )
 }

@@ -8,6 +8,11 @@ import './globals.css';
 import { cn } from '@/lib/utils';
 import { Providers } from '@/components/layout/providers';
 import { ClientLayout } from '@/components/layout/client-layout';
+import { Toaster } from '@/components/ui/toaster';
+import { CustomerAuthDialog } from '@/components/customer-auth-dialog';
+import { PageLoader } from '@/components/page-loader';
+import { BrandedLoader } from '@/components/branded-loader';
+import { CorporateAuthDialog } from '@/components/corporate-auth-dialog';
 
 // Existing Fonts
 const ptSans = PT_Sans({ subsets: ['latin'], weight: ['400', '700'], variable: '--font-pt-sans' });
