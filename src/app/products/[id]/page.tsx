@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -24,6 +25,7 @@ import { Input } from "@/components/ui/input";
 import { getEstimatedDelivery } from "@/app/actions";
 import { Label } from "@/components/ui/label";
 import Link from 'next/link';
+import { Badge } from "@/components/ui/badge";
 
 
 const ProductCard = dynamic(() => import('@/components/product-card').then(mod => mod.ProductCard), {
@@ -112,7 +114,7 @@ export default function ProductDetailPage() {
         ]);
 
         if (productSnap.exists()) {
-            const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
+            const productData = { id: productSnap.id, ...docSnap.data() } as DisplayProduct;
             setProduct(productData);
             setActiveMedia({ type: 'image', src: productData.imageUrl });
             
@@ -184,7 +186,7 @@ export default function ProductDetailPage() {
         finalPrice *= (1 - (applicableDiscount.reward.value / 100));
     }
     
-    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount };
+    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
   }, [product, commissionRule, applicableDiscount]);
 
   const isCustomizable = useMemo(() => {
@@ -377,7 +379,12 @@ export default function ProductDetailPage() {
           </div>
            <div className="flex items-center gap-2">
             <p className="text-3xl font-bold font-body">${priceDetails.final.toFixed(2)}</p>
-            {priceDetails.hasDiscount && <p className="text-xl font-medium text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>}
+            {priceDetails.hasDiscount && (
+                <>
+                    <p className="text-xl font-medium text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>
+                    <Badge variant="destructive">{priceDetails.discountValue}% OFF</Badge>
+                </>
+            )}
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>

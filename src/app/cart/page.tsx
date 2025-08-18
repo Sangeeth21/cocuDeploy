@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -6,22 +7,62 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Minus, Plus, Trash2, ArrowRight, Wand2 } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, Wand2, Tag } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/context/cart-context";
 import { useUser } from "@/context/user-context";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import type { Program } from "@/lib/types";
+import { useState, useEffect, useMemo } from "react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Badge } from "@/components/ui/badge";
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, subtotal, loading } = useCart();
   const { isLoggedIn, commissionRates } = useUser();
   const { openDialog } = useAuthDialog();
   const router = useRouter();
+  const [promotions, setPromotions] = useState<Program[]>([]);
+
+   useEffect(() => {
+    const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+     const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+        const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+        const relevantPromos = activePromos.filter(p => p.productScope === 'all' && p.type === 'discount');
+        setPromotions(relevantPromos);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const getPriceDetails = (item: typeof cartItems[0]) => {
+      const productType = item.product.b2bEnabled ? 'corporate' : 'personalized';
+      const commissionRule = commissionRates?.[productType]?.[item.product.category];
+      let finalPrice = item.product.price;
+      if (commissionRule && commissionRule.buffer) {
+          if (commissionRule.buffer.type === 'fixed') {
+              finalPrice += commissionRule.buffer.value;
+          } else {
+              finalPrice *= (1 + (commissionRule.buffer.value / 100));
+          }
+      }
+       const originalPrice = finalPrice;
+       const applicableDiscount = promotions.find(p => p.productScope === 'all'); // simplified for now
+       if (applicableDiscount) {
+           finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+       }
+      return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
+  }
+
+  const calculatedSubtotal = useMemo(() => {
+    return cartItems.reduce((acc, item) => acc + getPriceDetails(item).final * item.quantity, 0);
+  }, [cartItems, promotions, commissionRates]);
+
 
   const shipping = cartItems.length > 0 ? 5.00 : 0;
-  const total = subtotal + shipping;
+  const total = calculatedSubtotal + shipping;
 
   const handleCheckout = () => {
     if (!isLoggedIn) {
@@ -30,19 +71,6 @@ export default function CartPage() {
       router.push('/checkout');
     }
   };
-  
-    const getFinalPrice = (item: typeof cartItems[0]) => {
-        const commissionRule = commissionRates?.personalized?.[item.product.category];
-        let finalPrice = item.product.price;
-        if (commissionRule && commissionRule.buffer) {
-            if (commissionRule.buffer.type === 'fixed') {
-                finalPrice += commissionRule.buffer.value;
-            } else {
-                finalPrice *= (1 + (commissionRule.buffer.value / 100));
-            }
-        }
-        return finalPrice;
-    }
 
   const hasCustomizations = (item: typeof cartItems[0]) => {
       return Object.keys(item.customizations).length > 0;
@@ -63,38 +91,46 @@ export default function CartPage() {
       {cartItems.length > 0 ? (
         <div className="grid md:grid-cols-3 gap-12 items-start">
           <div className="md:col-span-2 space-y-4">
-            {cartItems.map(item => (
-              <Card key={item.instanceId} className="overflow-hidden">
-                <div className="flex items-center gap-4">
-                  <Link href={`/products/${item.product.id}`} className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
-                    <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" data-ai-hint={`${item.product.tags?.[0] || 'product'} ${item.product.tags?.[1] || ''}`} />
-                  </Link>
-                  <div className="flex-grow p-4">
-                    <Link href={`/products/${item.product.id}`} className="font-semibold font-headline hover:text-primary">{item.product.name}</Link>
-                    {hasCustomizations(item) && (
-                         <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
-                            <Wand2 className="h-3 w-3" />
-                            <span>Customized</span>
+            {cartItems.map(item => {
+                const priceDetails = getPriceDetails(item);
+                return (
+                  <Card key={item.instanceId} className="overflow-hidden">
+                    <div className="flex items-center gap-4">
+                      <Link href={`/products/${item.product.id}`} className="relative w-24 h-24 sm:w-32 sm:h-32 flex-shrink-0">
+                        <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" data-ai-hint={`${item.product.tags?.[0] || 'product'} ${item.product.tags?.[1] || ''}`} />
+                      </Link>
+                      <div className="flex-grow p-4">
+                        <Link href={`/products/${item.product.id}`} className="font-semibold font-headline hover:text-primary">{item.product.name}</Link>
+                        {hasCustomizations(item) && (
+                            <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+                                <Wand2 className="h-3 w-3" />
+                                <span>Customized</span>
+                            </div>
+                        )}
+                        <p className="text-sm text-muted-foreground mt-1">Vendor ID: {item.product.vendorId}</p>
+                         <div className="flex items-baseline gap-2 mt-2">
+                            <p className="text-lg font-semibold">${priceDetails.final.toFixed(2)}</p>
+                            {priceDetails.hasDiscount && (
+                                <p className="text-sm text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>
+                            )}
                         </div>
-                    )}
-                    <p className="text-sm text-muted-foreground mt-1">Vendor ID: {item.product.vendorId}</p>
-                    <p className="text-lg font-semibold mt-2">${getFinalPrice(item).toFixed(2)}</p>
-                  </div>
-                  <div className="flex items-center gap-2 p-4">
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.instanceId, -1)}>
-                      <Minus className="h-4 w-4" />
-                    </Button>
-                    <Input type="text" value={item.quantity} className="w-14 h-8 text-center" readOnly />
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.instanceId, 1)}>
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => removeFromCart(item.instanceId)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
+                      </div>
+                      <div className="flex items-center gap-2 p-4">
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.instanceId, -1)}>
+                          <Minus className="h-4 w-4" />
+                        </Button>
+                        <Input type="text" value={item.quantity} className="w-14 h-8 text-center" readOnly />
+                        <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.instanceId, 1)}>
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => removeFromCart(item.instanceId)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                )
+            })}
           </div>
           
           <aside className="md:col-span-1 sticky top-24">
@@ -105,7 +141,7 @@ export default function CartPage() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>${calculatedSubtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Shipping</span>

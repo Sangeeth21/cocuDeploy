@@ -3,10 +3,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import type { DisplayProduct } from '@/lib/types';
+import type { DisplayProduct, Program } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Heart, Star, Wand2, ShoppingCart } from 'lucide-react';
+import { Heart, Star, Wand2, ShoppingCart, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { useCart } from '@/context/cart-context';
@@ -14,13 +14,16 @@ import { useWishlist } from '@/context/wishlist-context';
 import { useUser } from '@/context/user-context';
 import { useAuthDialog } from '@/context/auth-dialog-context';
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Badge } from './ui/badge';
 
 interface ProductCardProps {
   product: DisplayProduct;
 }
 
-const getFinalPrice = (product: DisplayProduct, commissionRates: any) => {
+const getFinalPrice = (product: DisplayProduct, commissionRates: any, applicableDiscount?: Program | null) => {
     const commissionRule = commissionRates?.personalized?.[product.category];
     let finalPrice = product.price;
     if (commissionRule && commissionRule.buffer) {
@@ -30,57 +33,14 @@ const getFinalPrice = (product: DisplayProduct, commissionRates: any) => {
             finalPrice *= (1 + (commissionRule.buffer.value / 100));
         }
     }
-    return finalPrice;
-}
-
-
-export function TinyProductCard({ product }: ProductCardProps) {
-    const { commissionRates } = useUser();
-    const finalPrice = getFinalPrice(product, commissionRates);
-
-    return (
-        <Card className="overflow-hidden h-full">
-            <Link href={`/products/${product.id}`} className="block group h-full flex flex-col">
-                <div className="relative aspect-square w-full overflow-hidden">
-                     <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                </div>
-                 <div className="p-2 flex-grow flex flex-col justify-between">
-                    <div>
-                        <p className="text-xs font-medium leading-tight line-clamp-2">{product.name}</p>
-                    </div>
-                    <p className="text-xs font-bold mt-1">${finalPrice.toFixed(2)}</p>
-                </div>
-            </Link>
-        </Card>
-    )
-}
-
-export function MiniProductCard({ product }: ProductCardProps) {
-    const { commissionRates } = useUser();
-    const finalPrice = getFinalPrice(product, commissionRates);
-    return (
-        <Card className="overflow-hidden">
-            <Link href={`/products/${product.id}`} className="block group">
-                <div className="relative aspect-square w-full overflow-hidden">
-                     <Image
-                        src={product.imageUrl}
-                        alt={product.name}
-                        fill
-                        className="object-cover transition-transform duration-300 group-hover:scale-105"
-                    />
-                </div>
-                 <div className="p-2">
-                    <p className="text-xs font-medium leading-tight truncate">{product.name}</p>
-                    <p className="text-xs font-bold">${finalPrice.toFixed(2)}</p>
-                </div>
-            </Link>
-        </Card>
-    )
+    
+    const originalPrice = finalPrice;
+    
+    if (applicableDiscount) {
+        finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+    }
+    
+    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
 }
 
 export function ProductCard({ product }: ProductCardProps) {
@@ -90,11 +50,29 @@ export function ProductCard({ product }: ProductCardProps) {
   const { isLoggedIn, commissionRates } = useUser();
   const { openDialog } = useAuthDialog();
   const router = useRouter();
-  
-  const finalPrice = getFinalPrice(product, commissionRates);
+  const [promotions, setPromotions] = useState<Program[]>([]);
+
+  useEffect(() => {
+    const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+     const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+        const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+        const relevantPromos = activePromos.filter(p => {
+            if (p.productScope === 'all') return true;
+            // Add logic for 'selected' products if needed
+            return false;
+        });
+        setPromotions(relevantPromos);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const applicableDiscount = useMemo(() => {
+    return promotions.find(p => p.type === 'discount');
+  }, [promotions]);
+
+  const priceDetails = getFinalPrice(product, commissionRates, applicableDiscount);
 
   const isCustomizable = useMemo(() => {
-    // A product is customizable if it has any defined customization areas on any side.
     return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
   }, [product]);
 
@@ -149,6 +127,11 @@ export function ProductCard({ product }: ProductCardProps) {
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`}
             />
+            {priceDetails.hasDiscount && (
+                <Badge variant="destructive" className="absolute top-2 left-2">
+                    <Tag className="mr-1 h-3 w-3"/> {priceDetails.discountValue}% OFF
+                </Badge>
+            )}
             <Button 
                 size="icon" 
                 variant="secondary" 
@@ -175,7 +158,12 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
             <span className="text-xs text-muted-foreground ml-2">({product.reviewCount})</span>
         </div>
-         <p className="text-xl font-semibold font-body mt-2">${finalPrice.toFixed(2)}</p>
+         <div className="flex items-baseline gap-2 mt-2">
+            <p className="text-xl font-semibold font-body">${priceDetails.final.toFixed(2)}</p>
+             {priceDetails.hasDiscount && (
+                <p className="text-base font-medium text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>
+            )}
+        </div>
       </CardContent>
        <CardFooter className="p-2 pt-0 flex flex-col gap-2">
         {isCustomizable ? (

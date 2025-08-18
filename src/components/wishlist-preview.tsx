@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, X, ShoppingCart } from "lucide-react";
+import { Heart, X, ShoppingCart, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
@@ -12,6 +13,11 @@ import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/context/user-context";
+import type { Program, DisplayProduct } from "@/lib/types";
+import { useEffect, useState, useMemo } from "react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Badge } from "./ui/badge";
 
 export function WishlistPreview() {
     const router = useRouter();
@@ -19,8 +25,23 @@ export function WishlistPreview() {
     const { wishlistItems, removeFromWishlist } = useWishlist();
     const { addToCart } = useCart();
     const { commissionRates } = useUser();
+    const [promotions, setPromotions] = useState<Program[]>([]);
 
-     const getFinalPrice = (product: typeof wishlistItems[0]) => {
+     useEffect(() => {
+        const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+        const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+            const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+            const relevantPromos = activePromos.filter(p => p.productScope === 'all');
+            setPromotions(relevantPromos);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const applicableDiscount = useMemo(() => {
+        return promotions.find(p => p.type === 'discount');
+    }, [promotions]);
+
+    const getPriceDetails = (product: DisplayProduct) => {
         const commissionRule = commissionRates?.personalized?.[product.category];
         let finalPrice = product.price;
         if (commissionRule && commissionRule.buffer) {
@@ -30,8 +51,14 @@ export function WishlistPreview() {
                 finalPrice *= (1 + (commissionRule.buffer.value / 100));
             }
         }
-        return finalPrice;
-    }
+        const originalPrice = finalPrice;
+        
+        if (applicableDiscount) {
+            finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+        }
+        
+        return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
+    };
 
     const handleAddToCart = (item: (typeof wishlistItems)[0]) => {
         addToCart({product: item, customizations: {}});
@@ -72,29 +99,37 @@ export function WishlistPreview() {
                        {wishlistItems.length > 0 ? (
                             <>
                                 <div className="max-h-[22rem] overflow-y-auto pr-2 space-y-4">
-                                {wishlistItems.map(item => (
-                                    <div key={item.id} className="flex items-start gap-4">
-                                        <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
-                                            <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="product image" />
-                                        </div>
-                                        <div className="flex-1 space-y-2">
-                                            <div className="flex justify-between">
-                                                <Link href={`/products/${item.id}`} className="text-sm font-medium leading-tight hover:text-primary pr-2">{item.name}</Link>
-                                                 <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground" onClick={() => removeFromWishlist(item.id)}>
-                                                    <X className="h-4 w-4" />
-                                                </Button>
+                                {wishlistItems.map(item => {
+                                    const priceDetails = getPriceDetails(item);
+                                    return (
+                                        <div key={item.id} className="flex items-start gap-4">
+                                            <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
+                                                <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="product image" />
                                             </div>
-                                            <p className="text-sm font-semibold">${getFinalPrice(item).toFixed(2)}</p>
-                                             <div className="flex items-center gap-2">
-                                                <Button size="sm" variant="outline" className="w-full" onClick={() => handleAddToCart(item)}>
-                                                    <ShoppingCart className="h-4 w-4 mr-2"/>
-                                                    Add to Cart
-                                                </Button>
-                                                <Button size="sm" className="w-full" onClick={() => handleBuyNow(item)}>Buy Now</Button>
+                                            <div className="flex-1 space-y-2">
+                                                <div className="flex justify-between">
+                                                    <Link href={`/products/${item.id}`} className="text-sm font-medium leading-tight hover:text-primary pr-2">{item.name}</Link>
+                                                    <Button variant="ghost" size="icon" className="h-6 w-6 flex-shrink-0 text-muted-foreground" onClick={() => removeFromWishlist(item.id)}>
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                                <div className="flex items-baseline gap-2">
+                                                    <p className="text-sm font-semibold">${priceDetails.final.toFixed(2)}</p>
+                                                     {priceDetails.hasDiscount && (
+                                                        <p className="text-xs text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Button size="sm" variant="outline" className="w-full" onClick={() => handleAddToCart(item)}>
+                                                        <ShoppingCart className="h-4 w-4 mr-2"/>
+                                                        Add to Cart
+                                                    </Button>
+                                                    <Button size="sm" className="w-full" onClick={() => handleBuyNow(item)}>Buy Now</Button>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                                 </div>
                                 <Separator />
                                  <Button asChild className="w-full">
