@@ -198,14 +198,14 @@ const Sidebar = React.forwardRef<
              <div
                 ref={ref}
                 className={cn(
-                    "peer group/sidebar hidden md:block text-sidebar-foreground relative",
+                    "peer hidden md:block text-sidebar-foreground relative",
                     className
                 )}
                 data-collapsible="icon"
             >
                 <div
                     className={cn(
-                        "fixed inset-y-0 z-20 flex h-svh w-[var(--sidebar-width-icon)] flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out hover:w-[var(--sidebar-width)] hover:shadow-lg",
+                        "group/sidebar fixed inset-y-0 z-20 flex h-svh w-[var(--sidebar-width-icon)] flex-col bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out hover:w-[var(--sidebar-width)] hover:shadow-lg",
                         side === "left" && "border-r",
                         side === "right" && "border-l"
                     )}
@@ -328,7 +328,9 @@ const SidebarInset = React.forwardRef<
     <main
       ref={ref}
       className={cn(
-        "relative flex min-h-svh flex-1 flex-col bg-background transition-[margin-left] duration-300 ease-in-out md:ml-[var(--sidebar-width-icon)] peer-hover:md:ml-[var(--sidebar-width)]",
+        "relative flex min-h-svh flex-1 flex-col bg-background transition-[margin-left] duration-300 ease-in-out md:ml-[var(--sidebar-width-icon)]",
+        "peer-data-[collapsible=icon]:group-hover/sidebar-wrapper:md:ml-[var(--sidebar-width)]",
+        "peer-data-[state=expanded]:peer-data-[variant=sidebar]:md:ml-[var(--sidebar-width)]",
         className
       )}
       {...props}
@@ -409,7 +411,7 @@ const SidebarContent = React.forwardRef<
       ref={ref}
       data-sidebar="content"
       className={cn(
-        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+        "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:group-hover/sidebar:overflow-y-auto group-data-[collapsible=icon]:overflow-hidden",
         className
       )}
       {...props}
@@ -517,7 +519,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem"
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:!size-8 group-data-[collapsible=icon]:!p-2 group-hover:group-data-[collapsible=icon]:!w-full group-hover:group-data-[collapsible=icon]:justify-start group-hover:group-data-[collapsible=icon]:pl-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
+  "peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:w-auto group-hover/sidebar:group-data-[collapsible=icon]:w-full group-hover/sidebar:group-data-[collapsible=icon]:justify-start group-hover/sidebar:group-data-[collapsible=icon]:pl-2 [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0",
   {
     variants: {
       variant: {
@@ -528,7 +530,7 @@ const sidebarMenuButtonVariants = cva(
       size: {
         default: "h-8 text-sm",
         sm: "h-7 text-xs",
-        lg: "h-12 text-sm group-data-[collapsible=icon]:!p-0",
+        lg: "h-12 text-sm",
       },
     },
     defaultVariants: {
