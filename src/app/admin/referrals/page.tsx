@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe } from "lucide-react";
+import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe, Edit, Trash2, PauseCircle, PlayCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -16,10 +16,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { collection, query, onSnapshot, addDoc } from "firebase/firestore";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Program, ProgramPlatform, ProgramTarget } from "@/lib/types";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const programOptions = {
     customer: {
@@ -45,8 +46,19 @@ const programOptions = {
 }
 
 
-function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Program, 'id'>) => void, isLoading: boolean }) {
-    const [open, setOpen] = useState(false);
+function CreateProgramDialog({
+  program,
+  onSave,
+  isLoading,
+  open,
+  onOpenChange,
+}: {
+  program?: Program | null;
+  onSave: (program: Omit<Program, 'id'>, id?: string) => void;
+  isLoading: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
     const [name, setName] = useState('');
     const [platform, setPlatform] = useState<ProgramPlatform>('both');
     const [targetAudience, setTargetAudience] = useState<ProgramTarget | ''>('');
@@ -69,15 +81,24 @@ function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Pro
         setExpiryDays(undefined);
     }
     
-    const handleOpenChange = (isOpen: boolean) => {
-        if (!isOpen) {
+    useEffect(() => {
+        if (program) {
+            setName(program.name);
+            setPlatform(program.platform);
+            setTargetAudience(program.target);
+            setType(program.type);
+            setRewardType(program.reward.type);
+            setRewardValue(program.reward.value);
+            setProductScope(program.productScope);
+            setDate({ from: program.startDate, to: program.endDate });
+            setExpiryDays(program.expiryDays);
+        } else {
             resetForm();
         }
-        setOpen(isOpen);
-    }
+    }, [program, open]);
 
     const handleSave = () => {
-        const newProgram: Omit<Program, 'id'> = {
+        const programData: Omit<Program, 'id'> = {
             name,
             platform,
             target: targetAudience as ProgramTarget,
@@ -87,23 +108,16 @@ function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Pro
             startDate: date!.from!,
             endDate: date!.to!,
             expiryDays,
-            status: 'Active'
+            status: program?.status === 'Paused' ? 'Paused' : 'Active'
         };
-        onSave(newProgram);
-        setOpen(false);
-        resetForm();
+        onSave(programData, program?.id);
     };
 
     return (
-        <Dialog open={open} onOpenChange={handleOpenChange}>
-            <DialogTrigger asChild>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Create New Program
-                </Button>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
-                    <DialogTitle>Create New Loyalty Program</DialogTitle>
+                    <DialogTitle>{program ? "Edit Program" : "Create New Loyalty Program"}</DialogTitle>
                     <DialogDescription>Define the rules and rewards for a new program.</DialogDescription>
                 </DialogHeader>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
@@ -193,7 +207,7 @@ function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Pro
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => handleOpenChange(false)}>Cancel</Button>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button onClick={handleSave} disabled={isLoading}>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Save Program
@@ -208,6 +222,10 @@ export default function PromotionsPage() {
     const { toast } = useToast();
     const [programs, setPrograms] = useState<Program[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [editingProgram, setEditingProgram] = useState<Program | null>(null);
+    const [programToDelete, setProgramToDelete] = useState<Program | null>(null);
+
 
     useEffect(() => {
         const q = query(collection(db, "programs"));
@@ -227,27 +245,56 @@ export default function PromotionsPage() {
         return () => unsubscribe();
     }, []);
 
-    const handleAddProgram = async (newProgram: Omit<Program, 'id'>) => {
+    const handleSaveProgram = async (programData: Omit<Program, 'id'>, id?: string) => {
         setIsLoading(true);
         try {
-            await addDoc(collection(db, "programs"), newProgram);
-            toast({
-                title: "Program Created!",
-                description: `"${newProgram.name}" has been successfully added.`,
-            });
+            if (id) {
+                await updateDoc(doc(db, 'programs', id), programData as any);
+                toast({ title: "Program Updated!", description: `"${programData.name}" has been successfully updated.` });
+            } else {
+                await addDoc(collection(db, "programs"), programData);
+                toast({ title: "Program Created!", description: `"${programData.name}" has been successfully added.` });
+            }
+            setIsDialogOpen(false);
+            setEditingProgram(null);
         } catch (error) {
-             console.error("Error adding program: ", error);
-             toast({ variant: 'destructive', title: 'Failed to create program.' });
+             console.error("Error saving program: ", error);
+             toast({ variant: 'destructive', title: 'Failed to save program.' });
         } finally {
             setIsLoading(false);
         }
     }
+
+    const handleEditClick = (program: Program) => {
+        setEditingProgram(program);
+        setIsDialogOpen(true);
+    };
+
+    const handleCreateClick = () => {
+        setEditingProgram(null);
+        setIsDialogOpen(true);
+    };
+
+    const handleToggleStatus = async (program: Program) => {
+        const newStatus = program.status === 'Active' ? 'Paused' : 'Active';
+        const programRef = doc(db, 'programs', program.id);
+        await updateDoc(programRef, { status: newStatus });
+        toast({ title: `Program ${newStatus}`, description: `"${program.name}" has been ${newStatus.toLowerCase()}.` });
+    };
+
+    const handleDelete = async () => {
+        if (!programToDelete) return;
+        await deleteDoc(doc(db, "programs", programToDelete.id));
+        toast({ variant: "destructive", title: "Program Deleted", description: `"${programToDelete.name}" has been permanently deleted.` });
+        setProgramToDelete(null);
+    };
 
     const getStatusVariant = (status: Program['status']) => {
         switch (status) {
             case 'Active': return 'default';
             case 'Scheduled': return 'secondary';
             case 'Expired': return 'outline';
+            case 'Paused': return 'secondary';
             default: return 'outline';
         }
     }
@@ -271,13 +318,16 @@ export default function PromotionsPage() {
     }
 
     return (
+        <AlertDialog>
         <div>
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-3xl font-bold font-headline">Promotions Engine</h1>
                     <p className="text-muted-foreground">Create and manage your customer and vendor incentive programs.</p>
                 </div>
-                <CreateProgramDialog onSave={handleAddProgram} isLoading={isLoading} />
+                <Button onClick={handleCreateClick}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Create New Program
+                </Button>
             </div>
 
              <Card>
@@ -332,9 +382,18 @@ export default function PromotionsPage() {
                                             </DropdownMenuTrigger>
                                             <DropdownMenuContent>
                                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem>Edit</DropdownMenuItem>
-                                                <DropdownMenuItem>Pause</DropdownMenuItem>
-                                                <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => handleEditClick(program)}>
+                                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                                </DropdownMenuItem>
+                                                 <DropdownMenuItem onSelect={() => handleToggleStatus(program)}>
+                                                    {program.status === 'Active' ? <PauseCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                                                    {program.status === 'Active' ? 'Pause' : 'Resume'}
+                                                </DropdownMenuItem>
+                                                <AlertDialogTrigger asChild>
+                                                    <DropdownMenuItem className="text-destructive" onSelect={() => setProgramToDelete(program)}>
+                                                        <Trash2 className="mr-2 h-4 w-4" />Delete
+                                                    </DropdownMenuItem>
+                                                </AlertDialogTrigger>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
@@ -344,6 +403,28 @@ export default function PromotionsPage() {
                     </Table>
                 </CardContent>
             </Card>
+
+             <CreateProgramDialog 
+                program={editingProgram} 
+                onSave={handleSaveProgram} 
+                isLoading={isLoading} 
+                open={isDialogOpen} 
+                onOpenChange={setIsDialogOpen}
+            />
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the program
+                        "{programToDelete?.name}".
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setProgramToDelete(null)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
         </div>
+        </AlertDialog>
     )
 }
