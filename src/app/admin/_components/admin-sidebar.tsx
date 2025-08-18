@@ -75,9 +75,11 @@ const AdminSidebarHeader = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div">
 >(({ className, ...props }, ref) => {
+  const { isCollapsed } = useAdminSidebar();
   return (
     <div
       ref={ref}
+      data-collapsed={isCollapsed}
       className={cn("flex flex-col gap-2 p-2 overflow-hidden", className)}
       {...props}
     />
@@ -167,11 +169,10 @@ const AdminSidebarMenuButton = React.forwardRef<
         ref={ref}
         variant={isActive ? "secondary" : "ghost"}
         className={cn(
-            "w-full h-10",
+            "w-full h-10 flex items-center",
             isCollapsed ? "justify-center" : "justify-start gap-2",
             className
         )}
-        data-collapsed={isCollapsed}
         asChild={asChild}
         {...props}
       >
