@@ -53,9 +53,11 @@ const programOptions = {
 function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: { coupon?: Coupon | null; onSave: (data: Omit<Coupon, 'id' | 'usageCount' | 'status'>, id?: string) => void; isLoading: boolean; open: boolean; onOpenChange: (open: boolean) => void }) {
     const [code, setCode] = useState('');
     const [type, setType] = useState<'fixed' | 'percentage'>('percentage');
-    const [value, setValue] = useState(0);
+    const [value, setValue] = useState<number | string>('');
+    const [platform, setPlatform] = useState<ProgramPlatform>('both');
+    const [maxDiscount, setMaxDiscount] = useState<number | string>('');
     const [expiresAt, setExpiresAt] = useState<Date | undefined>();
-    const [usageLimit, setUsageLimit] = useState(100);
+    const [usageLimit, setUsageLimit] = useState<number | string>(100);
 
     const generateRandomCode = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -71,6 +73,8 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
              generateRandomCode();
              setType('percentage');
              setValue(10);
+             setPlatform('both');
+             setMaxDiscount('');
              setExpiresAt(undefined);
              setUsageLimit(100);
         }
@@ -78,6 +82,8 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
             setCode(coupon.code);
             setType(coupon.type);
             setValue(coupon.value);
+            setPlatform(coupon.platform);
+            setMaxDiscount(coupon.maxDiscount || '');
             setExpiresAt(coupon.expiresAt);
             setUsageLimit(coupon.usageLimit);
         }
@@ -85,7 +91,12 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
     
     const handleSave = () => {
         const couponData = {
-            code, type, value, expiresAt, usageLimit
+            code, type, 
+            value: Number(value),
+            platform,
+            maxDiscount: maxDiscount ? Number(maxDiscount) : undefined,
+            expiresAt,
+            usageLimit: Number(usageLimit),
         };
         onSave(couponData, coupon?.id);
     }
@@ -104,6 +115,17 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                             <Button variant="outline" onClick={generateRandomCode}>Generate</Button>
                         </div>
                     </div>
+                     <div className="space-y-2">
+                        <Label>Platform</Label>
+                        <Select value={platform} onValueChange={(v) => setPlatform(v as any)}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="both">All Platforms</SelectItem>
+                                <SelectItem value="personalized">Personalized</SelectItem>
+                                <SelectItem value="corporate">Corporate</SelectItem>
+                            </SelectContent>
+                        </Select>
+                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>Discount Type</Label>
@@ -111,15 +133,21 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="percentage">Percentage (%)</SelectItem>
-                                    <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                                    <SelectItem value="fixed">Fixed Amount (₹)</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="space-y-2">
                             <Label>Value</Label>
-                            <Input type="number" value={value} onChange={e => setValue(Number(e.target.value))} />
+                            <Input type="number" value={value} onChange={e => setValue(e.target.value)} />
                         </div>
                     </div>
+                    {type === 'percentage' && (
+                        <div className="space-y-2">
+                            <Label htmlFor="max-discount">Max Discount (₹) (Optional)</Label>
+                            <Input id="max-discount" type="number" value={maxDiscount} onChange={e => setMaxDiscount(e.target.value)} placeholder="e.g., 100" />
+                        </div>
+                    )}
                     <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-2">
                             <Label>Expiry Date (Optional)</Label>
@@ -135,7 +163,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                         </div>
                         <div className="space-y-2">
                             <Label>Usage Limit</Label>
-                            <Input type="number" value={usageLimit} onChange={e => setUsageLimit(Number(e.target.value))} />
+                            <Input type="number" value={usageLimit} onChange={e => setUsageLimit(e.target.value)} />
                         </div>
                     </div>
                 </div>
@@ -587,6 +615,7 @@ export default function PromotionsPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Code</TableHead>
+                                        <TableHead>Platform</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead>Value</TableHead>
                                         <TableHead>Usage</TableHead>
@@ -597,6 +626,7 @@ export default function PromotionsPage() {
                                     {coupons.map(coupon => (
                                         <TableRow key={coupon.id}>
                                             <TableCell className="font-mono">{coupon.code}</TableCell>
+                                            <TableCell className="capitalize">{coupon.platform}</TableCell>
                                             <TableCell className="capitalize">{coupon.type}</TableCell>
                                             <TableCell>{coupon.type === 'fixed' ? `₹${coupon.value}` : `${coupon.value}%`}</TableCell>
                                             <TableCell>{coupon.usageCount} / {coupon.usageLimit}</TableCell>

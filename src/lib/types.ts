@@ -367,6 +367,8 @@ export type Coupon = {
     code: string;
     type: 'fixed' | 'percentage';
     value: number;
+    platform: ProgramPlatform;
+    maxDiscount?: number;
     status: 'Active' | 'Inactive' | 'Expired';
     usageLimit: number;
     usageCount: number;
@@ -436,6 +438,6 @@ export type GenerateImageWithStyleInput = {
 };
 
 export type GenerateImageWithStyleOutput = {
-    imageUrl: string;
+    imageUrl?: string;
     error?: string;
 };
