@@ -66,7 +66,7 @@ export default function CommissionEnginePage() {
     
     // Data fetching from Firestore
     useEffect(() => {
-        // 1. Fetch all categories
+        // 1. Fetch all categories first to ensure we have a list to check against
         const categoriesQuery = query(collection(db, 'categories'));
         const unsubCategories = onSnapshot(categoriesQuery, (snapshot) => {
             const cats: Category[] = [];
@@ -86,21 +86,22 @@ export default function CommissionEnginePage() {
             let hasChanged = false;
 
             allCategoryNames.forEach(name => {
-                if (!updatedCommissions.personalized[name]) {
-                    updatedCommissions.personalized[name] = { commission: 10, buffer: { type: 'fixed', value: 1.00 } };
+                if (!updatedCommissions.personalized?.[name]) {
+                    updatedCommissions.personalized = { ...updatedCommissions.personalized, [name]: { commission: 10, buffer: { type: 'fixed', value: 1.00 } }};
                     hasChanged = true;
                 }
-                if (!updatedCommissions.corporate[name]) {
-                    updatedCommissions.corporate[name] = { commission: 15, buffer: { type: 'fixed', value: 5.00 } }; // Different default for corporate
+                if (!updatedCommissions.corporate?.[name]) {
+                    updatedCommissions.corporate = { ...updatedCommissions.corporate, [name]: { commission: 15, buffer: { type: 'fixed', value: 5.00 } }}; // Different default for corporate
                     hasChanged = true;
                 }
             });
 
-            setCommissions(updatedCommissions);
-
             if (hasChanged) {
                 await setDoc(catComRef, updatedCommissions, { merge: true });
             }
+            // The listener will automatically pick up the new defaults if they were written
+            // so we can just set the state from the fetched data.
+            setCommissions(fetchedCommissions);
         });
 
         // Fetch Vendor Overrides
@@ -159,7 +160,7 @@ export default function CommissionEnginePage() {
         setEditContext({ type, id, name });
         let rule;
         if (type === 'category') {
-            rule = commissions[activeTab][id];
+            rule = commissions[activeTab]?.[id];
         } else if (type === 'vendor') {
             rule = vendorOverrides.find(v => v.id === id)?.rule;
         } else { // product
