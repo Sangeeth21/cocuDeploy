@@ -3,7 +3,7 @@
 "use client";
 
 import Image from "next/image";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
