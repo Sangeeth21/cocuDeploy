@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from "next/image";
@@ -19,7 +18,6 @@ import { useBidRequest } from "@/context/bid-request-context";
 import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { DisplayProduct, MarketingCampaign, User, CommissionRule, Program, Coupon } from "@/lib/types";
 import { BrandedLoader } from "@/components/branded-loader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -208,7 +206,7 @@ export default function B2BProductDetailPage() {
           if (commissionRule.buffer.type === 'fixed') {
               return basePrice + commissionRule.buffer.value;
           } else {
-              return basePrice * (1 + commissionRule.buffer.value / 100);
+              return basePrice * (1 + (commissionRule.buffer.value / 100));
           }
       }
       return basePrice;
@@ -241,6 +239,33 @@ export default function B2BProductDetailPage() {
   const totalPrice = useMemo(() => {
     return priceDetails.final * quantity;
   }, [priceDetails, quantity]);
+
+  const allMedia: MediaItem[] = useMemo(() => {
+    if (!product) return [];
+    
+    const media: MediaItem[] = [];
+    const imageUrls = new Set<string>();
+
+    [product.imageUrl, ...(product.images || [])].forEach(url => {
+        if (url && !imageUrls.has(url)) {
+            media.push({ type: 'image', src: url });
+            imageUrls.add(url);
+        }
+    });
+
+    (product.galleryImages || []).forEach(url => {
+        if (url && !imageUrls.has(url)) {
+            media.push({ type: 'image', src: url });
+            imageUrls.add(url);
+        }
+    });
+
+    if (product.videoUrl) {
+        media.push({ type: 'video', src: product.videoUrl });
+    }
+
+    return media;
+  }, [product]);
   
   const handleQuantityChange = (value: string | number) => {
       const numValue = Number(value);
@@ -249,14 +274,6 @@ export default function B2BProductDetailPage() {
       }
   }
 
-  if (loading) {
-    return <BrandedLoader />;
-  }
-  
-  if (!product) {
-    notFound();
-  }
-  
   const handleRequestQuote = () => {
     if (isCustomizable) {
       router.push(`/corporate/customize/${product.id}`);
@@ -298,35 +315,16 @@ export default function B2BProductDetailPage() {
     }
     setIsCheckingPincode(false);
   }
+
+  if (loading) {
+    return <BrandedLoader />;
+  }
   
-  const allMedia: MediaItem[] = useMemo(() => {
-    if (!product) return [];
-    
-    const media: MediaItem[] = [];
-    const imageUrls = new Set<string>();
-
-    [product.imageUrl, ...(product.images || [])].forEach(url => {
-        if (url && !imageUrls.has(url)) {
-            media.push({ type: 'image', src: url });
-            imageUrls.add(url);
-        }
-    });
-
-    (product.galleryImages || []).forEach(url => {
-        if (url && !imageUrls.has(url)) {
-            media.push({ type: 'image', src: url });
-            imageUrls.add(url);
-        }
-    });
-
-    if (product.videoUrl) {
-        media.push({ type: 'video', src: product.videoUrl });
-    }
-
-    return media;
-  }, [product]);
-
-   const galleryLayoutClasses = {
+  if (!product) {
+    notFound();
+  }
+  
+  const galleryLayoutClasses = {
       bottom: 'flex-col',
       left: 'flex-row-reverse',
       right: 'flex-row',
@@ -354,7 +352,7 @@ export default function B2BProductDetailPage() {
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12">
-        <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
+        <div className={cn("md:sticky md:top-24 flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
            <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
                 {activeMedia?.type === 'image' && activeMedia.src ? (
                     <Image src={activeMedia.src} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
