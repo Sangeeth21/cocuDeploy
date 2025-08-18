@@ -114,7 +114,7 @@ export default function ProductDetailPage() {
         ]);
 
         if (productSnap.exists()) {
-            const productData = { id: productSnap.id, ...docSnap.data() } as DisplayProduct;
+            const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
             setProduct(productData);
             setActiveMedia({ type: 'image', src: productData.imageUrl });
             
@@ -477,4 +477,3 @@ export default function ProductDetailPage() {
   );
 }
 
-    
