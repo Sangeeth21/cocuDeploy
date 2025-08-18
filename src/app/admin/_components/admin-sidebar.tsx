@@ -176,14 +176,13 @@ const AdminSidebarMenuButton = React.forwardRef<
     )
 
     if (isCollapsed && tooltip) {
+        const tooltipProps = typeof tooltip === 'string' ? { children: tooltip } : tooltip;
         return (
             <Tooltip>
                 <TooltipTrigger asChild>
                     {buttonContent}
                 </TooltipTrigger>
-                <TooltipContent side="right" align="center">
-                    {tooltip}
-                </TooltipContent>
+                <TooltipContent side="right" align="center" {...tooltipProps} />
             </Tooltip>
         );
     }
