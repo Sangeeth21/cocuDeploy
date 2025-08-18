@@ -38,7 +38,7 @@ export default function CheckoutPage() {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [emailStatus, setEmailStatus] = useState<VerificationStatus>('unverified');
-    const [phoneStatus, setPhoneStatus] = useState<VerificationStatus>('verified');
+    const [phoneStatus, setPhoneStatus] = useState<VerificationStatus>('unverified');
     const [emailOtp, setEmailOtp] = useState("");
     const [phoneOtp, setPhoneOtp] = useState("");
     const [showEmailOtp, setShowEmailOtp] = useState(false);
@@ -58,7 +58,7 @@ export default function CheckoutPage() {
             setEmail(user.email);
             setPhone(user.phone || "");
             setEmailStatus('verified');
-            setPhoneStatus('verified'); // Assume phone is verified if user is logged in for simplicity
+            setPhoneStatus('verified'); 
         }
     }, [isLoggedIn, user]);
     
@@ -86,6 +86,7 @@ export default function CheckoutPage() {
                 setPlatformDiscount(promo);
                 if (promo.code) {
                     setCouponCode(promo.code);
+                    handleApplyCoupon(promo.code);
                 }
             } else {
                 setPlatformDiscount(null);
@@ -143,62 +144,99 @@ export default function CheckoutPage() {
     }, [appliedCoupon, calculateCouponDiscount]);
     
     const totalDiscount = useMemo(() => {
-        if (appliedCoupon) {
-            // If user applied a stackable coupon, add it to platform discount
+        if (appliedCoupon && platformDiscount) {
             if (appliedCoupon.isStackable) {
                 return platformDiscountAmount + userCouponDiscountAmount;
             }
-            // If user applied a non-stackable coupon, the logic is handled in handleApplyCoupon
-            // We just return the user-applied coupon's value as it has replaced the platform one.
-            return userCouponDiscountAmount;
+            // Non-stackable: apply whichever is smaller (better for the platform)
+            return Math.min(platformDiscountAmount, userCouponDiscountAmount);
         }
-        // If no user coupon, just use the platform discount
-        return platformDiscountAmount;
-    }, [appliedCoupon, platformDiscountAmount, userCouponDiscountAmount]);
+        return platformDiscountAmount + userCouponDiscountAmount;
+    }, [appliedCoupon, platformDiscount, platformDiscountAmount, userCouponDiscountAmount]);
 
 
     const shipping = cartItems.length > 0 ? 5.00 : 0;
     const convenienceFee = (subtotal - totalDiscount) * 0.03;
     const total = subtotal - totalDiscount + shipping + convenienceFee;
 
-    const handleApplyCoupon = async () => {
-        if (!couponCode.trim()) { toast({ variant: "destructive", title: "Please enter a coupon code." }); return; }
-        const q = query(collection(db, "coupons"), where("code", "==", couponCode.toUpperCase()), limit(1));
+    const handleApplyCoupon = async (codeToApply?: string) => {
+        const finalCode = codeToApply || couponCode;
+        if (!finalCode.trim()) { toast({ variant: "destructive", title: "Please enter a coupon code." }); return; }
+        
+        const q = query(collection(db, "coupons"), where("code", "==", finalCode.toUpperCase()), limit(1));
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
             toast({ variant: "destructive", title: "Invalid coupon code." });
             return;
         }
+
         const coupon = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Coupon;
         
         if (coupon.status !== 'Active') {
             toast({ variant: 'destructive', title: 'Coupon Not Active', description: 'This coupon is either expired or inactive.' });
             return;
         }
-
+        
+        const newCouponDiscount = calculateCouponDiscount(coupon);
+        
         if (!coupon.isStackable && platformDiscount) {
-            toast({
-                title: "Promotion Active",
-                description: `A platform discount is already applied. This coupon cannot be stacked.`,
-            });
-            return;
+            if (newCouponDiscount > platformDiscountAmount) {
+                 toast({
+                    title: "Better Promotion Active",
+                    description: `This coupon cannot be applied as a better platform-wide discount is already active.`,
+                });
+                setCouponCode(platformDiscount.code || "");
+                return;
+            }
         }
-
+        
         setAppliedCoupon(coupon);
-        toast({ title: "Coupon Applied!" });
+        if(!codeToApply) {
+            toast({ title: "Coupon Applied!" });
+        }
     };
 
     const removeCoupon = () => {
         setAppliedCoupon(null);
-        setCouponCode("");
+        // Re-apply platform discount if it exists
+        if(platformDiscount?.code){
+            setCouponCode(platformDiscount.code);
+            handleApplyCoupon(platformDiscount.code);
+        } else {
+            setCouponCode("");
+        }
+    };
+
+    const handleSendOtp = (type: 'email' | 'phone') => {
+        toast({ title: 'OTP Sent (Simulated)', description: `An OTP has been sent to your ${type}.`});
+        if (type === 'email') {
+            setShowEmailOtp(true);
+            setEmailStatus('pending');
+        } else {
+            setShowPhoneOtp(true);
+            setPhoneStatus('pending');
+        }
+    };
+    
+    const handleVerifyOtp = (type: 'email' | 'phone') => {
+        if (type === 'email' && emailOtp === MOCK_EMAIL_OTP) {
+            setEmailStatus('verified');
+            setShowEmailOtp(false);
+            toast({ title: 'Email Verified!'});
+        } else if (type === 'phone' && phoneOtp === MOCK_PHONE_OTP) {
+            setPhoneStatus('verified');
+            setShowPhoneOtp(false);
+            toast({ title: 'Phone Verified!'});
+        } else {
+            toast({ variant: 'destructive', title: 'Invalid OTP'});
+        }
     };
     
     const handleFinalizePayment = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!user) { toast({ variant: "destructive", title: "You must be logged in to place an order." }); return; }
         setIsProcessing(true);
-        // ... Firestore logic from original component
         await clearCart();
         toast({ title: "Payment Successful!", description: "Your order has been placed." });
         router.push('/account?tab=orders');
@@ -212,6 +250,8 @@ export default function CheckoutPage() {
             </div>
         )
     }
+
+    const isVerified = emailStatus === 'verified' && phoneStatus === 'verified';
 
     return (
         <div className="container py-12">
@@ -229,12 +269,30 @@ export default function CheckoutPage() {
                             <CardContent className="space-y-4">
                                <div className="space-y-2">
                                     <Label htmlFor="email">Email Address</Label>
-                                    <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                                    <div className="flex items-center gap-2">
+                                        <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} required disabled={emailStatus === 'verified'} />
+                                        {emailStatus === 'verified' ? <Badge variant="secondary"><CheckCircle className="h-4 w-4 mr-1.5"/>Verified</Badge> : <Button type="button" size="sm" onClick={() => handleSendOtp('email')}>Verify</Button>}
+                                    </div>
                                </div>
+                               {showEmailOtp && (
+                                   <div className="space-y-2">
+                                       <Label htmlFor="email-otp">Email OTP</Label>
+                                       <Input id="email-otp" value={emailOtp} onChange={e => setEmailOtp(e.target.value)} onBlur={() => handleVerifyOtp('email')} />
+                                   </div>
+                               )}
                                 <div className="space-y-2">
                                     <Label htmlFor="phone">Phone Number</Label>
-                                    <Input id="phone" type="tel" placeholder="For delivery updates" value={phone} onChange={e => setPhone(e.target.value)} />
+                                    <div className="flex items-center gap-2">
+                                        <Input id="phone" type="tel" value={phone} onChange={e => setPhone(e.target.value)} disabled={phoneStatus === 'verified'} />
+                                        {phoneStatus === 'verified' ? <Badge variant="secondary"><CheckCircle className="h-4 w-4 mr-1.5"/>Verified</Badge> : <Button type="button" size="sm" onClick={() => handleSendOtp('phone')}>Verify</Button>}
+                                    </div>
                                </div>
+                               {showPhoneOtp && (
+                                   <div className="space-y-2">
+                                       <Label htmlFor="phone-otp">Phone OTP</Label>
+                                       <Input id="phone-otp" value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} onBlur={() => handleVerifyOtp('phone')}/>
+                                   </div>
+                               )}
                             </CardContent>
                         </Card>
                         <Card>
@@ -291,7 +349,7 @@ export default function CheckoutPage() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {cartItems.map(item => {
-                                        const originalPrice = calculateItemPrice(item.product);
+                                        const priceDetails = getPriceDetails(item);
                                         return (
                                             <div key={item.instanceId} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
@@ -304,7 +362,10 @@ export default function CheckoutPage() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="font-semibold">${(originalPrice * item.quantity).toFixed(2)}</p>
+                                                    <p className="font-semibold">${(priceDetails.final * item.quantity).toFixed(2)}</p>
+                                                     {priceDetails.hasDiscount && (
+                                                        <p className="text-xs text-muted-foreground line-through">${(priceDetails.original * item.quantity).toFixed(2)}</p>
+                                                     )}
                                                 </div>
                                             </div>
                                         )
@@ -324,7 +385,7 @@ export default function CheckoutPage() {
                                         ) : (
                                             <div className="flex items-center gap-2">
                                                 <Input id="coupon-code" placeholder="Enter coupon" value={couponCode} onChange={e => setCouponCode(e.target.value)} />
-                                                <Button type="button" variant="outline" onClick={handleApplyCoupon}>Apply</Button>
+                                                <Button type="button" variant="outline" onClick={() => handleApplyCoupon()}>Apply</Button>
                                             </div>
                                         )}
                                     </div>
@@ -347,10 +408,11 @@ export default function CheckoutPage() {
                             </CardContent>
                         </Card>
                         <div className="mt-4">
-                            <Button size="lg" type="submit" className="w-full" disabled={isProcessing}>
+                            <Button size="lg" type="submit" className="w-full" disabled={isProcessing || !isVerified}>
                                 {isProcessing && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                                 {isProcessing ? 'Processing...' : `Pay Now ($${total.toFixed(2)})`}
                             </Button>
+                            {!isVerified && <p className="text-xs text-destructive text-center mt-2">Please verify your contact information to proceed.</p>}
                         </div>
                     </div>
                 </div>
