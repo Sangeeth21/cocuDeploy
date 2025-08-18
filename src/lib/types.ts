@@ -341,10 +341,12 @@ export type WishlistedCombo = {
 
 // Referrals and Loyalty
 export type ProgramTarget = 'customer' | 'vendor';
+export type ProgramPlatform = 'personalized' | 'corporate' | 'both';
 
 export type Program = {
     id: string;
     name: string;
+    platform: ProgramPlatform;
     target: ProgramTarget;
     type: string;
     reward: {

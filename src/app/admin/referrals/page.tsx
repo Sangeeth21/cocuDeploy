@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2 } from "lucide-react";
+import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,24 +19,7 @@ import type { DateRange } from "react-day-picker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { collection, query, onSnapshot, addDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
-type ProgramTarget = 'customer' | 'vendor';
-
-type Program = {
-    id: string;
-    name: string;
-    target: ProgramTarget;
-    type: string;
-    reward: {
-        type: string;
-        value: number;
-    };
-    productScope: 'all' | 'selected';
-    status: 'Active' | 'Scheduled' | 'Expired';
-    startDate: Date;
-    endDate: Date;
-    expiryDays?: number;
-};
+import type { Program, ProgramPlatform, ProgramTarget } from "@/lib/types";
 
 const programOptions = {
     customer: {
@@ -65,6 +48,7 @@ const programOptions = {
 function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Program, 'id'>) => void, isLoading: boolean }) {
     const [open, setOpen] = useState(false);
     const [name, setName] = useState('');
+    const [platform, setPlatform] = useState<ProgramPlatform>('both');
     const [targetAudience, setTargetAudience] = useState<ProgramTarget | ''>('');
     const [type, setType] = useState('');
     const [rewardType, setRewardType] = useState('');
@@ -75,6 +59,7 @@ function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Pro
     
     const resetForm = () => {
         setName('');
+        setPlatform('both');
         setTargetAudience('');
         setType('');
         setRewardType('');
@@ -94,6 +79,7 @@ function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Pro
     const handleSave = () => {
         const newProgram: Omit<Program, 'id'> = {
             name,
+            platform,
             target: targetAudience as ProgramTarget,
             type: type,
             reward: { type: rewardType, value: rewardValue },
@@ -124,6 +110,17 @@ function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Pro
                     <div className="md:col-span-2 space-y-2">
                         <Label htmlFor="program-name">Program Name</Label>
                         <Input id="program-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Summer Referral Bonanza" />
+                    </div>
+                     <div className="space-y-2">
+                        <Label>Platform</Label>
+                        <Select value={platform} onValueChange={(value) => setPlatform(value as ProgramPlatform)}>
+                            <SelectTrigger><SelectValue placeholder="Select platform..." /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="both">Both</SelectItem>
+                                <SelectItem value="personalized">Personalized</SelectItem>
+                                <SelectItem value="corporate">Corporate</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
                      <div className="space-y-2">
                         <Label>Target Audience</Label>
@@ -292,6 +289,7 @@ export default function PromotionsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Program Name</TableHead>
+                                <TableHead>Platform</TableHead>
                                 <TableHead>Target</TableHead>
                                 <TableHead>Reward</TableHead>
                                 <TableHead>Status</TableHead>
@@ -302,6 +300,12 @@ export default function PromotionsPage() {
                             {programs.map(program => (
                                 <TableRow key={program.id}>
                                     <TableCell className="font-medium">{program.name}</TableCell>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2 capitalize">
+                                            <Globe className="h-4 w-4 text-muted-foreground" />
+                                            <span>{program.platform}</span>
+                                        </div>
+                                    </TableCell>
                                      <TableCell>
                                         <div className="flex items-center gap-2 capitalize">
                                              {getTargetIcon(program.target)}
