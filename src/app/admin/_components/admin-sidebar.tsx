@@ -166,7 +166,11 @@ const AdminSidebarMenuButton = React.forwardRef<
       <Button
         ref={ref}
         variant={isActive ? "secondary" : "ghost"}
-        className={cn("w-full justify-start gap-2 h-10", className)}
+        className={cn(
+            "w-full h-10",
+            isCollapsed ? "justify-center" : "justify-start gap-2",
+            className
+        )}
         data-collapsed={isCollapsed}
         asChild={asChild}
         {...props}
