@@ -4,23 +4,16 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
-import { CartProvider } from '@/context/cart-context';
-import { UserProvider } from '@/context/user-context';
-import { WishlistProvider } from '@/context/wishlist-context';
 import { usePathname } from 'next/navigation';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { AuthDialogProvider } from '@/context/auth-dialog-context';
 import { CustomerAuthDialog } from '@/components/customer-auth-dialog';
 import { PageLoader } from '@/components/page-loader';
 import { BrandedLoader } from '@/components/branded-loader';
-import { ComparisonProvider } from '@/context/comparison-context';
 import { CorporateAuthDialog } from '@/components/corporate-auth-dialog';
-import { AdminAuthProvider } from '@/context/admin-auth-context';
-import { CorporateAuthDialogProvider } from '@/context/corporate-auth-dialog-context';
 import { GiftyAngelChatbot } from '@/components/gifty-angel-chatbot';
 import type { MarketingCampaign } from '@/lib/types';
 import { collection, query, where, onSnapshot } from "firebase/firestore";
@@ -122,40 +115,28 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
     pathname.startsWith('/products');
 
   return (
-    <UserProvider>
-      <AdminAuthProvider>
-        <AuthDialogProvider>
-            <CorporateAuthDialogProvider>
-                <CartProvider>
-                <WishlistProvider>
-                    <ComparisonProvider>
-                    {showHeaderAndFooter && (
-                        <>
-                        <CampaignBanner />
-                        <Header />
-                        </>
-                    )}
-                    <BrandedLoader />
-                    <PageLoader />
-                    <main className="flex-1">
-                        {children}
-                    </main>
-                    {showHeaderAndFooter && (
-                        <>
-                        <Footer />
-                        <CampaignPopup />
-                        </>
-                    )}
-                    {showHeaderAndFooter && showGiftyAngel && <GiftyAngelChatbot />}
-                    <CustomerAuthDialog />
-                    <CorporateAuthDialog />
-                    <Toaster />
-                    </ComparisonProvider>
-                </WishlistProvider>
-                </CartProvider>
-            </CorporateAuthDialogProvider>
-        </AuthDialogProvider>
-      </AdminAuthProvider>
-    </UserProvider>
+    <>
+      {showHeaderAndFooter && (
+          <>
+          <CampaignBanner />
+          <Header />
+          </>
+      )}
+      <BrandedLoader />
+      <PageLoader />
+      <main className="flex-1">
+          {children}
+      </main>
+      {showHeaderAndFooter && (
+          <>
+          <Footer />
+          <CampaignPopup />
+          </>
+      )}
+      {showHeaderAndFooter && showGiftyAngel && <GiftyAngelChatbot />}
+      <CustomerAuthDialog />
+      <CorporateAuthDialog />
+      <Toaster />
+    </>
   );
 }

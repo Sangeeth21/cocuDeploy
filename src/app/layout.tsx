@@ -6,6 +6,7 @@ import {
 } from 'next/font/google';
 import './globals.css';
 import { cn } from '@/lib/utils';
+import { Providers } from '@/components/layout/providers';
 import { ClientLayout } from '@/components/layout/client-layout';
 
 // Existing Fonts
@@ -61,7 +62,9 @@ export default function RootLayout({
           arvo.variable, anton.variable, bebasNeue.variable, alfaSlabOne.variable,
           caveat.variable, satisfy.variable, sacramento.variable, jetbrainsMono.variable
         )}>
-        <ClientLayout>{children}</ClientLayout>
+        <Providers>
+          <ClientLayout>{children}</ClientLayout>
+        </Providers>
       </body>
     </html>
   );
