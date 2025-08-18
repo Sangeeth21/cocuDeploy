@@ -82,7 +82,7 @@ export default function VendorTemplatesPage() {
                     <p className="text-muted-foreground mt-2">Create, manage, and customize templates for your product pages.</p>
                 </div>
                  <Button asChild>
-                    <Link href="/vendor/both/templates/new">
+                    <Link href="/vendor/templates/new">
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Create New Template
                     </Link>
