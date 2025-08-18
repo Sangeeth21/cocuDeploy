@@ -10,6 +10,7 @@ import { Badge } from "./ui/badge";
 import { cn } from "@/lib/utils";
 import { collection, onSnapshot, query, where, orderBy, limit, doc, updateDoc, writeBatch } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { useUser } from "@/context/user-context";
 
 type NotificationAction = {
     label: string;
@@ -41,17 +42,28 @@ const notificationIcons: { [key: string]: React.ElementType } = {
     default: Bell
 };
 
-export function NotificationPopover({ forAdmin = false }: { notifications?: any[], forAdmin?: boolean }) {
+export function NotificationPopover({ forAdmin = false }: { forAdmin?: boolean }) {
     const [notifications, setNotifications] = useState<Notification[]>([]);
+    const { user } = useUser();
 
     useEffect(() => {
-        // This is a placeholder for user/vendor ID. In a real app, you'd get this from context.
-        const targetId = forAdmin ? "admin" : "VDR001";
-        const q = query(
-            collection(db, "notifications"), 
-            where(forAdmin ? "forAdmin" : "vendorId", "==", targetId),
-            limit(10)
-        );
+        let q;
+        if (forAdmin) {
+            q = query(
+                collection(db, "notifications"), 
+                where("forAdmin", "==", true),
+                limit(10)
+            );
+        } else if (user?.id) {
+             q = query(
+                collection(db, "notifications"), 
+                where("customerId", "==", user.id),
+                limit(10)
+            );
+        } else {
+            setNotifications([]);
+            return;
+        }
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
@@ -61,7 +73,7 @@ export function NotificationPopover({ forAdmin = false }: { notifications?: any[
         });
 
         return () => unsubscribe();
-    }, [forAdmin]);
+    }, [forAdmin, user]);
 
     const handleMarkAllRead = async (e: React.MouseEvent) => {
         e.preventDefault();
@@ -77,8 +89,6 @@ export function NotificationPopover({ forAdmin = false }: { notifications?: any[
     };
 
     const handleDismissNotification = async (id: string) => {
-        // For simplicity, we'll mark as read which will make it disappear for now.
-        // A better implementation might have a "dismissed" flag.
         const notifRef = doc(db, "notifications", id);
         await updateDoc(notifRef, { isRead: true });
     };

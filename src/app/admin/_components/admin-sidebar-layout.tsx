@@ -8,7 +8,6 @@ import { LayoutDashboard, Package, ListChecks, BarChart3, Users, Settings, LogOu
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { NotificationPopover } from "@/components/notification-popover";
-import { mockActivity } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useAdminAuth } from "@/context/admin-auth-context";
@@ -132,7 +131,7 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
                         <span className="font-bold hidden max-md:inline-block">Admin Portal</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <NotificationPopover notifications={mockActivity} />
+                        <NotificationPopover forAdmin={true} />
                     </div>
                 </header>
                 <main className="flex-1 p-4 sm:p-6 md:p-8 bg-muted/40 overflow-y-auto">

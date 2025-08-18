@@ -23,7 +23,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useUser } from "@/context/user-context";
 import { WishlistPreview } from "@/components/wishlist-preview";
 import { NotificationPopover } from "@/components/notification-popover";
-import { mockActivity } from "@/lib/mock-data";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { ComparisonPreview } from "../comparison-preview";
 import { useCorporateAuthDialog } from "@/context/corporate-auth-dialog-context";
@@ -33,12 +32,6 @@ const navLinks = [
   { href: "/products", label: "All Products" },
   { href: "/#categories", label: "Categories" },
 ];
-
-const customerNotifications = [
-    { type: 'order_shipped', id: 'ORD002', text: 'Your order #ORD002 has shipped!', time: '1d ago', href: '/account?tab=orders', actions: [{label: 'Track', href: '/account?tab=orders'}] },
-    { type: 'request_approved', id: 'REQ001', text: 'Your request for "Classic Leather Watch" was approved!', time: '2d ago', href: '/cart', actions: [{label: 'Go to Cart', href: '/cart'}] },
-    { type: 'request_denied', id: 'REQ002', text: '"Modern Minimalist Desk" is unavailable.', time: '3d ago', href: '/products?category=Furniture', actions: [{label: 'View Similar', href: '/products?category=Furniture', variant: 'secondary'}] },
-]
 
 export function Header() {
   const pathname = usePathname();
@@ -125,7 +118,7 @@ export function Header() {
         <div className="flex items-center justify-end gap-1 sm:gap-2">
           {isLoggedIn ? (
             <>
-              <NotificationPopover notifications={customerNotifications} />
+              <NotificationPopover />
               <WishlistPreview />
               <CartPreview />
               <div className="flex items-center rounded-md hover:bg-accent focus-within:bg-accent">
