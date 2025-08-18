@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe, Edit, Trash2, PauseCircle, PlayCircle, Ticket, X } from "lucide-react";
+import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe, Edit, Trash2, PauseCircle, PlayCircle, Ticket, X, Upload, AlertCircle } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -18,7 +18,8 @@ import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Program, ProgramPlatform, ProgramTarget, Coupon, Freebie, Category, DisplayProduct } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,6 +28,9 @@ import Image from "next/image";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertTitle, AlertDescription as AlertDesc } from '@/components/ui/alert';
+
 
 const programOptions = {
     customer: {
@@ -305,6 +309,91 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                     <Button onClick={handleSave} disabled={isLoading}>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Save Coupon
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function FreebieDialog({ freebie, onSave, open, onOpenChange, isLoading }: { freebie?: Freebie | null, onSave: (data: Omit<Freebie, 'id' | 'vendorId' | 'imageUrl' | 'status'>, file?: File | null) => void; open: boolean; onOpenChange: (open: boolean) => void; isLoading: boolean; }) {
+    const [name, setName] = useState('');
+    const [description, setDescription] = useState('');
+    const [price, setPrice] = useState<number | string>('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (open) {
+            setName(freebie?.name || '');
+            setDescription(freebie?.description || '');
+            setPrice(freebie?.price || '');
+            setPreviewUrl(freebie?.imageUrl || null);
+            setImageFile(null);
+        }
+    }, [freebie, open]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            setImageFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
+    const handleSave = () => {
+        const numPrice = Number(price);
+        if (!name.trim() || !description.trim()) {
+            toast({ variant: 'destructive', title: 'Missing fields', description: 'Name and description are required.' });
+            return;
+        }
+        if (isNaN(numPrice) || numPrice < 10 || numPrice > 60) {
+            toast({ variant: 'destructive', title: 'Invalid Price', description: 'Price must be a number between ₹10 and ₹60.' });
+            return;
+        }
+        if (!previewUrl) {
+            toast({ variant: 'destructive', title: 'Image Required', description: 'Please upload an image for the freebie.' });
+            return;
+        }
+        onSave({ name, description, price: numPrice }, imageFile);
+    };
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{freebie ? 'Edit Freebie' : 'Add New Freebie'}</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                        <Label>Freebie Image</Label>
+                        <label htmlFor="freebie-upload" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-md cursor-pointer hover:bg-muted/50">
+                            {previewUrl ? <Image src={previewUrl} alt="Preview" width={100} height={100} className="object-contain h-full" /> : <Upload className="h-8 w-8 text-muted-foreground" />}
+                        </label>
+                        <Input id="freebie-upload" type="file" className="sr-only" onChange={handleFileChange} accept="image/*" />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="freebie-name">Name</Label>
+                        <Input id="freebie-name" value={name} onChange={e => setName(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="freebie-desc">Description</Label>
+                        <Textarea id="freebie-desc" value={description} onChange={e => setDescription(e.target.value)} />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="freebie-price">Vendor Cost (Price for Reimbursement)</Label>
+                        <div className="relative">
+                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">₹</span>
+                            <Input id="freebie-price" type="number" value={price} onChange={e => setPrice(e.target.value)} placeholder="10 - 60" className="pl-6" />
+                        </div>
+                    </div>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isLoading}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Freebie
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -672,19 +761,19 @@ export default function PromotionsPage() {
         }
     }
     
-     const handleSaveFreebie = async (data: Omit<Freebie, 'id' | 'vendorId' | 'imageUrl'>, file?: File | null) => {
+     const handleSaveFreebie = async (data: Omit<Freebie, 'id' | 'vendorId' | 'imageUrl' | 'status'>, file?: File | null) => {
         setIsLoading(true);
         let finalImageUrl = editingFreebie?.imageUrl || "";
 
         try {
             if (file) {
                 // In a real app, get vendorId from session/auth
-                const storageRef = ref(storage, `freebies/VDR001/${Date.now()}_${file.name}`);
+                const storageRef = ref(storage, `freebies/ADMIN_UPLOAD/${Date.now()}_${file.name}`);
                 const snapshot = await uploadBytes(storageRef, file);
                 finalImageUrl = await getDownloadURL(snapshot.ref);
             }
             
-            const freebieData = { ...data, vendorId: "VDR001", imageUrl: finalImageUrl, status: editingFreebie?.status || 'pending' };
+            const freebieData = { ...data, imageUrl: finalImageUrl, status: editingFreebie?.status || 'pending' };
 
             if (editingFreebie) {
                 await updateDoc(doc(db, 'freebies', editingFreebie.id), freebieData as any);
@@ -878,7 +967,7 @@ export default function PromotionsPage() {
                                                             {coupon.status === 'Active' ? 'Pause' : 'Resume'}
                                                         </DropdownMenuItem>
                                                         <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem className="text-destructive" onSelect={() => handleDeleteCouponClick(coupon)}>
+                                                            <DropdownMenuItem className="text-destructive" onSelect={() => setCouponToDelete(coupon)}>
                                                                 <Trash2 className="mr-2 h-4 w-4" />Delete
                                                             </DropdownMenuItem>
                                                         </AlertDialogTrigger>
@@ -905,7 +994,7 @@ export default function PromotionsPage() {
                                         <TableHead>Item</TableHead>
                                         <TableHead>Vendor ID</TableHead>
                                         <TableHead>Status</TableHead>
-                                        <TableHead>Price</TableHead>
+                                        <TableHead>Cost</TableHead>
                                         <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -936,14 +1025,14 @@ export default function PromotionsPage() {
                                                     <DropdownMenuContent>
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                                         <DropdownMenuItem onSelect={() => handleEditFreebieClick(freebie)}>
-                                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                                            <Edit className="mr-2 h-4 w-4" /> Edit Details
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem onSelect={() => handleToggleFreebieStatus(freebie)}>
                                                             {freebie.status === 'active' ? <PauseCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
                                                             {freebie.status === 'active' ? 'Pause' : 'Activate'}
                                                         </DropdownMenuItem>
                                                          <AlertDialogTrigger asChild>
-                                                            <DropdownMenuItem className="text-destructive" onSelect={() => handleDeleteFreebieClick(freebie)}>
+                                                            <DropdownMenuItem className="text-destructive" onSelect={() => setFreebieToDelete(freebie)}>
                                                                 <Trash2 className="mr-2 h-4 w-4" />Delete
                                                             </DropdownMenuItem>
                                                         </AlertDialogTrigger>
@@ -1019,7 +1108,7 @@ export default function PromotionsPage() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                              <AlertDialogCancel onClick={() => setFreebieToDelete(null)}>Cancel</AlertDialogCancel>
-                             <AlertDialogAction onClick={() => {handleDeleteFreebie(freebieToDelete!.id); setFreebieToDelete(null);}} className="bg-destructive hover:bg-destructive/90">Delete Freebie</AlertDialogAction>
+                             <AlertDialogAction onClick={handleDeleteFreebie} className="bg-destructive hover:bg-destructive/90">Delete Freebie</AlertDialogAction>
                         </AlertDialogFooter>
                     </>
                 ) : null}
