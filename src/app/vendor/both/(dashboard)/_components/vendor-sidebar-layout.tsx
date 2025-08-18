@@ -4,17 +4,43 @@
 import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight, Gift, ShieldAlert, LifeBuoy, Gavel, Building, User, Wand2 } from "lucide-react";
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar, CustomSidebarTrigger } from "@/components/ui/sidebar";
+import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, Gift, ShieldAlert, LifeBuoy, Gavel, Building, User, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useVerification } from "@/context/vendor-verification-context";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { NotificationPopover } from "@/components/notification-popover";
 import { mockVendorActivity } from "@/lib/mock-data";
 
-const navLinks = [
+const personalNavLinks = [
+  { href: "/vendor/personal/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/vendor/personal/products", label: "Products", icon: Package },
+  { href: "/vendor/templates", label: "Templates", icon: Wand2 },
+  { href: "/vendor/personal/inventory", label: "Inventory", icon: Warehouse },
+  { href: "/vendor/personal/orders", label: "Orders", icon: ListChecks },
+  { href: "/vendor/personal/analytics", label: "Analytics", icon: LineChart },
+  { href: "/vendor/personal/messages", label: "Messages", icon: MessageSquare, id: "messages" },
+  { href: "/vendor/personal/referrals", label: "Referrals", icon: Gift },
+  { href: "/vendor/personal/support", label: "Support", icon: LifeBuoy },
+  { href: "/vendor/personal/settings", label: "Settings", icon: Settings },
+];
+
+const corporateNavLinks = [
+  { href: "/vendor/corporate/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/vendor/corporate/products", label: "Corporate Products", icon: Building },
+  { href: "/vendor/templates", label: "Templates", icon: Wand2 },
+  { href: "/vendor/corporate/inventory", label: "Inventory", icon: Warehouse },
+  { href: "/vendor/corporate/orders", label: "Corporate Orders", icon: ListChecks },
+  { href: "/vendor/corporate/bids", label: "Bidding", icon: Gavel },
+  { href: "/vendor/corporate/analytics", label: "Analytics", icon: LineChart },
+  { href: "/vendor/corporate/messages", label: "Corporate Messages", icon: MessageSquare, id: "messages" },
+  { href: "/vendor/corporate/referrals", label: "Referrals", icon: Gift },
+  { href: "/vendor/corporate/support", label: "Support", icon: LifeBuoy },
+  { href: "/vendor/corporate/settings", label: "Settings", icon: Settings },
+];
+
+const bothNavLinks = [
   { href: "/vendor/both/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/vendor/both/products", label: "Products", icon: Package },
   { href: "/vendor/both/inventory", label: "Inventory", icon: Warehouse },
@@ -28,31 +54,17 @@ const navLinks = [
   { href: "/vendor/both/settings", label: "Settings", icon: Settings },
 ];
 
-function CustomSidebarTrigger() {
-    const { open, toggleSidebar } = useSidebar();
-    
-    return (
-        <Button 
-            className={cn(
-                "absolute top-1/2 z-20 h-7 w-7 rounded-full -translate-y-1/2",
-                open ? "right-[-14px]" : "right-[-14px] bg-primary text-primary-foreground hover:bg-primary/90"
-            )}
-            onClick={toggleSidebar}
-            size="icon"
-            variant={open ? "outline" : "default"}
-        >
-            {open ? <ChevronsLeft className="h-4 w-4" /> : <ChevronsRight className="h-4 w-4" />}
-        </Button>
-    )
-}
 
 function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children: React.ReactNode; unreadMessages?: number }) {
     const pathname = usePathname();
-    const { isVerified } = useVerification();
+    const { isVerified, vendorType } = useVerification();
     const { open: isSidebarOpen } = useSidebar();
+    
+    const navLinks = vendorType === 'corporate' ? corporateNavLinks : vendorType === 'personalized' ? personalNavLinks : bothNavLinks;
+    const vendorName = vendorType === 'corporate' ? 'Corporate Vendor' : vendorType === 'personalized' ? 'Personal Vendor' : 'Hybrid Vendor';
 
     return (
-        <div className="flex min-h-screen">
+        <div className="flex h-screen overflow-hidden">
             <Sidebar collapsible="icon" className="border-r hidden md:flex">
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -61,8 +73,8 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
                                 <AvatarImage src="https://placehold.co/100x100.png" alt="Vendor Avatar" data-ai-hint="company logo" />
                                 <AvatarFallback>V</AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
-                                <span className="text-lg font-semibold">Hybrid Vendor,</span>
+                            <div className={cn("flex flex-col", !isSidebarOpen && "hidden")}>
+                                <span className="text-lg font-semibold">{vendorName},</span>
                                 <span className="text-lg font-bold -mt-1">Timeless Co.</span>
                             </div>
                         </div>
@@ -80,7 +92,7 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
                                 >
                                     <Link href="/vendor/verify">
                                         <ShieldAlert className="h-5 w-5 stroke-[1.5]" />
-                                        <span className="group-data-[state=collapsed]:hidden">Verify Account</span>
+                                        <span className={cn(!isSidebarOpen && "hidden")}>Verify Account</span>
                                     </Link>
                                 </SidebarMenuButton>
                             </SidebarMenuItem>
@@ -97,7 +109,7 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
                                 >
                                     <Link href={link.href}>
                                         <link.icon className="h-5 w-5 stroke-[1.5]" />
-                                        <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
+                                        <span className={cn(!isSidebarOpen && "hidden")}>{link.label}</span>
                                          {showBadge && <SidebarMenuBadge>{unreadMessages}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
@@ -111,7 +123,7 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
                             <SidebarMenuButton asChild tooltip={{children: 'Back to Store'}}>
                                 <Link href="/">
                                     <Store className="h-5 w-5 stroke-[1.5]" />
-                                    <span className="group-data-[state=collapsed]:hidden">Back to Store</span>
+                                    <span className={cn(!isSidebarOpen && "hidden")}>Back to Store</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -119,7 +131,7 @@ function VendorSidebarLayoutContent({ children, unreadMessages = 0 }: { children
                             <SidebarMenuButton asChild tooltip={{children: 'Log Out'}}>
                                 <Link href="/vendor/login">
                                     <LogOut className="h-5 w-5 stroke-[1.5]" />
-                                    <span className="group-data-[state=collapsed]:hidden">Log Out</span>
+                                    <span className={cn(!isSidebarOpen && "hidden")}>Log Out</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
