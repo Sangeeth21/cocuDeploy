@@ -7,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bot, User, Gift } from "lucide-react";
 import { TinyProductCard } from "./product-card";
-import { B2bProductCard } from "@/app/corporate/_components/b2b-product-card";
+import { TinyB2bProductCard } from "@/app/corporate/_components/b2b-product-card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
 import type { DisplayProduct } from "@/lib/types";
 
@@ -88,8 +88,8 @@ export function ChatB2bProductCarousel({ products }: { products: DisplayProduct[
         <Carousel opts={{ align: "start" }} className="w-full">
             <CarouselContent className="-ml-4">
                 {products.map((product) => (
-                    <CarouselItem key={product.id} className="basis-1/2 pl-4">
-                        <B2bProductCard product={product} />
+                    <CarouselItem key={product.id} className="basis-2/5 pl-4">
+                        <TinyB2bProductCard product={product} />
                     </CarouselItem>
                 ))}
             </CarouselContent>

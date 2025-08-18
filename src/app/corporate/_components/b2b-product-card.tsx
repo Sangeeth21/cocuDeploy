@@ -21,6 +21,36 @@ interface ProductCardProps {
   product: DisplayProduct;
 }
 
+export function TinyB2bProductCard({ product }: ProductCardProps) {
+    const lowestTierPrice = product.tierPrices && product.tierPrices.length > 0
+    ? Math.min(...product.tierPrices.map(p => p.price))
+    : product.price;
+
+    return (
+        <Card className="overflow-hidden h-full">
+            <Link href={`/corporate/products/${product.id}`} className="block group h-full flex flex-col">
+                <div className="relative aspect-square w-full overflow-hidden">
+                     <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                </div>
+                 <div className="p-2 flex-grow flex flex-col justify-between">
+                    <div>
+                        <p className="text-xs font-medium leading-tight line-clamp-2">{product.name}</p>
+                    </div>
+                     <div>
+                        <p className="text-xs text-muted-foreground">Starts from</p>
+                        <p className="text-sm font-bold mt-1">${lowestTierPrice.toFixed(2)}</p>
+                    </div>
+                </div>
+            </Link>
+        </Card>
+    )
+}
+
 export function B2bProductCard({ product }: ProductCardProps) {
   const router = useRouter();
   const { addToCart } = useCart();
