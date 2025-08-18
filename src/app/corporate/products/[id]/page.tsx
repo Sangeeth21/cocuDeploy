@@ -13,9 +13,9 @@ import { CorporateProductInteractions } from "./_components/product-interactions
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
-import { useWishlist } from "@/context/wishlist-context";
 import { useUser } from "@/context/user-context";
-import { useAuthDialog } from "@/context/auth-dialog-context";
+import { useComparison } from "@/context/comparison-context";
+import { useBidRequest } from "@/context/bid-request-context";
 import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -24,8 +24,6 @@ import { BrandedLoader } from "@/components/branded-loader";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useComparison } from "@/context/comparison-context";
-import { useBidRequest } from "@/context/bid-request-context";
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,6 +31,7 @@ import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/comp
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { getEstimatedDelivery } from "@/app/actions";
 import { Loader2 } from 'lucide-react';
+import { B2bProductCard } from "../../_components/b2b-product-card";
 
 
 const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
@@ -106,6 +105,8 @@ export default function B2BProductDetailPage() {
   const [vendor, setVendor] = useState<User | null>(null);
   const [promotions, setPromotions] = useState<Program[]>([]);
   const [publicCoupons, setPublicCoupons] = useState<Coupon[]>([]);
+  const [similarProducts, setSimilarProducts] = useState<DisplayProduct[]>([]);
+  const [vendorProducts, setVendorProducts] = useState<DisplayProduct[]>([]);
 
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(100);
@@ -140,7 +141,6 @@ export default function B2BProductDetailPage() {
         const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"));
         const unsubCampaigns = onSnapshot(campaignsQuery, (snapshot) => {
             const campaignsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MarketingCampaign));
-            // In a real app, you would filter promotions based on corporate targeting
             setPromotions(campaignsData as any); 
         });
 
@@ -155,15 +155,51 @@ export default function B2BProductDetailPage() {
             unsubCoupons();
         };
     }, [id]);
+    
+    // Fetch related data after product is loaded
+    useEffect(() => {
+        if (!product) return;
+
+        // Fetch vendor
+        if (product.vendorId) {
+            const vendorRef = doc(db, "users", product.vendorId);
+            getDoc(vendorRef).then(docSnap => {
+                if (docSnap.exists()) {
+                    setVendor({ id: docSnap.id, ...docSnap.data() } as User);
+                }
+            });
+        }
+
+        // Fetch similar products
+        if (product.category) {
+            const similarQuery = query(collection(db, "products"), where("category", "==", product.category), where("__name__", "!=", product.id), where("b2bEnabled", "==", true), limit(4));
+            getDocs(similarQuery).then(snap => {
+                setSimilarProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
+            });
+        }
+        
+        // Fetch more from vendor
+        if (product.vendorId) {
+             const vendorProductsQuery = query(collection(db, "products"), where("vendorId", "==", product.vendorId), where("__name__", "!=", product.id), where("b2bEnabled", "==", true), limit(4));
+            getDocs(vendorProductsQuery).then(snap => {
+                setVendorProducts(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
+            });
+        }
+
+    }, [product]);
 
   const isCustomizable = useMemo(() => {
     return Object.values(product?.customizationAreas || {}).some(areas => areas && areas.length > 0);
   }, [product]);
 
    const applicableDiscount = useMemo(() => {
-    if (!product) return null;
-    return promotions.find(p => p.type === 'Sale' && (p.placement === 'corporate-banner' || p.placement === 'hero') && p.associatedProducts?.includes(product.id));
-  }, [promotions, product]);
+        if (!product) return null;
+        const salePromo = promotions.find(p => p.type === 'Sale' && (p.placement === 'corporate-banner' || p.placement === 'hero') && p.associatedProducts?.includes(product.id));
+        if (salePromo) return salePromo;
+        
+        const genericPromo = promotions.find(p => p.type === 'discount' && p.productScope === 'all');
+        return genericPromo || null;
+    }, [promotions, product]);
 
 
   const getBufferedPrice = (basePrice: number) => {
@@ -190,9 +226,14 @@ export default function B2BProductDetailPage() {
     const originalPrice = getBufferedPrice(tierPrice);
     let finalPrice = originalPrice;
     
-    const discountValue = applicableDiscount?.creatives?.[0]?.title ? parseInt(applicableDiscount.creatives[0].title, 10) : 0;
+    let discountValue = 0;
+    if (applicableDiscount?.type === 'Sale') {
+        discountValue = applicableDiscount?.creatives?.[0]?.title ? parseInt(applicableDiscount.creatives[0].title, 10) : 0;
+    } else if (applicableDiscount?.type === 'discount') {
+        discountValue = applicableDiscount.reward.value;
+    }
     
-    if (applicableDiscount && discountValue) {
+    if (applicableDiscount && discountValue > 0) {
         finalPrice *= (1 - (discountValue / 100));
     }
     
@@ -280,7 +321,7 @@ export default function B2BProductDetailPage() {
         <div className={cn("md:sticky md:top-24 flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
            <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
                 {activeMedia?.type === 'image' ? (
-                    <Image src={activeImage} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+                    <Image src={activeImage!} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
                 ) : activeMedia?.src ? (
                     <iframe
                         src={activeMedia.src}
@@ -305,18 +346,19 @@ export default function B2BProductDetailPage() {
           {allMedia.length > 1 && (
             <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition as keyof typeof thumbnailLayoutClasses], thumbnailOrderClasses[thumbnailPosition as keyof typeof thumbnailOrderClasses])}>
              {allMedia.map((media, index) => {
-                 const isVideo = media.includes('youtube.com');
+                 const isVideo = typeof media === 'string' && media.includes('youtube.com');
+                 const mediaSrc = typeof media === 'string' ? media : '';
                  return (
                  <button
                     key={index}
-                    onClick={() => setActiveMedia({type: isVideo ? 'video' : 'image', src: media})}
+                    onClick={() => setActiveMedia({type: isVideo ? 'video' : 'image', src: mediaSrc})}
                     className={cn(
                         "relative aspect-square rounded-md overflow-hidden transition-all flex-shrink-0",
-                        activeMedia?.src === media ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
+                        activeMedia?.src === mediaSrc ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
                         thumbnailPosition === 'bottom' ? 'w-20' : 'w-16'
                     )}
                  >
-                    <Image src={isVideo ? product.imageUrl : media} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
+                    <Image src={isVideo ? product.imageUrl : mediaSrc} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
                     {isVideo && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                             <Video className="h-6 w-6 text-white" />
@@ -349,8 +391,6 @@ export default function B2BProductDetailPage() {
               <span className="text-muted-foreground text-sm">({product.reviewCount} reviews)</span>
             </div>
           </div>
-          
-          <p className="text-muted-foreground leading-relaxed">{product.description}</p>
           
           <Card>
             <CardHeader>
@@ -414,8 +454,8 @@ export default function B2BProductDetailPage() {
                 <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
                     <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
                     {promotions.map(promo => {
-                        if (promo.type === 'discount') {
-                           return <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}: Get {promo.reward.value}% off your order</p>
+                        if (promo.type === 'discount' || promo.type === 'Sale') {
+                           return <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}</p>
                         }
                         return null;
                     })}
@@ -450,6 +490,7 @@ export default function B2BProductDetailPage() {
             </div>
             <CorporateProductInteractions product={product} isCustomizable={isCustomizable} />
           </div>
+          <p className="text-muted-foreground leading-relaxed pt-4">{product.description}</p>
         </div>
       </div>
 
@@ -458,8 +499,28 @@ export default function B2BProductDetailPage() {
       <Separator className="my-12" />
 
       <ReviewsPreview productId={product.id} />
+      
+      {similarProducts.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {similarProducts.map(p => <B2bProductCard key={p.id} product={p} />)}
+            </div>
+        </div>
+      )}
+
+      {vendorProducts.length > 0 && (
+         <div className="mt-12">
+            <h2 className="text-2xl font-bold font-headline mb-6">More from {vendor?.name}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {vendorProducts.map(p => <B2bProductCard key={p.id} product={p} />)}
+            </div>
+        </div>
+      )}
+
     </div>
     {vendor && <VendorInfoDialog vendor={vendor} />}
     </Dialog>
   );
 }
+
