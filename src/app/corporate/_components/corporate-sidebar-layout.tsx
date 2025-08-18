@@ -2,7 +2,7 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar, SidebarMenuBadge, SidebarInset, CustomSidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar, SidebarMenuBadge, SidebarInset } from "@/components/ui/sidebar";
 import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building, Package, FileText, User, ShoppingCart, Scale, PlusCircle, ChevronsLeft, ChevronsRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -119,7 +119,6 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarFooter>
-                 <CustomSidebarTrigger />
             </Sidebar>
             <SidebarInset>
                 <CorporateCampaignBanner />
