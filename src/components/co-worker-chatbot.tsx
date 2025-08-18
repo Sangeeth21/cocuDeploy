@@ -22,6 +22,7 @@ const quantityOptions = ["0-100", "100-200", "200+"];
 const budgetOptions = ["< ₹500", "₹500-₹1500", "₹1500-₹5000", "₹5000+"];
 const toneOptions = ["Premium", "Eco-friendly", "Functional", "Festive", "Luxury Branding"];
 
+const b2bProducts = mockProducts.filter(p => p.b2bEnabled);
 
 export function CoWorkerChatbot() {
     const [isOpen, setIsOpen] = useState(false);
@@ -85,7 +86,7 @@ export function CoWorkerChatbot() {
                     <>
                         <ChatMessage sender="bot" message="Welcome. I am Co-Worker, your assistant for corporate and bulk procurement." />
                         <ChatMessage sender="bot" message="To begin, what is the purpose of this order?" />
-                        {!isCustomInputActive && <ChatResponseOptions options={purposeOptions} onSelect={(val) => handleSelect(val, 'quantity')} />}
+                        {!isCustomInputActive && <ChatResponseOptions options={purposeOptions} onSelect={(val) => handleSelect(val, 'quantity')} onCustomClick={handleCustomClick} />}
                     </>
                 );
             case "quantity":
@@ -93,7 +94,7 @@ export function CoWorkerChatbot() {
                      <>
                         {renderHistory}
                         <ChatMessage sender="bot" message="Understood. What is the approximate quantity required per product?" />
-                        {!isCustomInputActive && <ChatResponseOptions options={quantityOptions} onSelect={(val) => handleSelect(val, 'budget')} />}
+                        {!isCustomInputActive && <ChatResponseOptions options={quantityOptions} onSelect={(val) => handleSelect(val, 'budget')} onCustomClick={handleCustomClick} />}
                     </>
                 );
             case 'budget':
@@ -101,7 +102,7 @@ export function CoWorkerChatbot() {
                     <>
                        {renderHistory}
                        <ChatMessage sender="bot" message="Thank you. Please select the budget per unit." />
-                       {!isCustomInputActive && <ChatResponseOptions options={budgetOptions} onSelect={(val) => handleSelect(val, 'tone')} />}
+                       {!isCustomInputActive && <ChatResponseOptions options={budgetOptions} onSelect={(val) => handleSelect(val, 'tone')} onCustomClick={handleCustomClick} />}
                    </>
                );
              case 'tone':
@@ -109,7 +110,7 @@ export function CoWorkerChatbot() {
                     <>
                        {renderHistory}
                        <ChatMessage sender="bot" message="Excellent. What is the desired tone for the branding and products?" />
-                       {!isCustomInputActive && <ChatResponseOptions options={toneOptions} onSelect={(val) => handleSelect(val, 'results')} />}
+                       {!isCustomInputActive && <ChatResponseOptions options={toneOptions} onSelect={(val) => handleSelect(val, 'results')} onCustomClick={handleCustomClick} />}
                    </>
                );
             case 'results':
@@ -122,7 +123,7 @@ export function CoWorkerChatbot() {
                                 <CardTitle className="text-base">Budget-Friendly Pack</CardTitle>
                             </CardHeader>
                             <CardContent className="p-2">
-                                <ChatB2bProductCarousel products={mockProducts.slice(0, 4)} />
+                                <ChatB2bProductCarousel products={b2bProducts.slice(0, 4)} />
                             </CardContent>
                         </Card>
                          <Card>
@@ -130,7 +131,7 @@ export function CoWorkerChatbot() {
                                 <CardTitle className="text-base">Balanced Premium Pack</CardTitle>
                             </CardHeader>
                             <CardContent className="p-2">
-                                <ChatB2bProductCarousel products={mockProducts.slice(4, 8)} />
+                                <ChatB2bProductCarousel products={b2bProducts.slice(4, 8)} />
                             </CardContent>
                         </Card>
                     </>

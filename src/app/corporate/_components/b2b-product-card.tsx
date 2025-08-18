@@ -40,6 +40,7 @@ export function TinyB2bProductCard({ product }: ProductCardProps) {
                  <div className="p-2 flex-grow flex flex-col justify-between">
                     <div>
                         <p className="text-xs font-medium leading-tight line-clamp-2">{product.name}</p>
+                        <p className="text-xs text-muted-foreground mt-1">MOQ: {product.moq}</p>
                     </div>
                      <div>
                         <p className="text-xs text-muted-foreground">Starts from</p>
