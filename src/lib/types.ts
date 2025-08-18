@@ -1,5 +1,4 @@
 
-
 export type CustomizationValue = {
   text: string;
   fontFamily: string;
@@ -114,6 +113,7 @@ export type DisplayProduct = {
   };
   commission?: CommissionRule;
   requirePrepayVendorConfirm?: boolean;
+  hasFreebies?: boolean;
 };
 
 export type DraftProduct = {
@@ -239,6 +239,7 @@ export type OrderItem = {
     customizationRequestId?: string; // Links to tempCustomizations (before order)
     designId?: string; // Links to permanent /designs (after order)
     designSnapshotUrl?: string; // For immutable record
+    isFreebie?: boolean;
 };
 
 export type Order = {
@@ -372,6 +373,15 @@ export type Coupon = {
     expiresAt?: Date;
     minPurchase?: number;
 };
+
+export type Freebie = {
+  id: string;
+  vendorId: string;
+  name: string;
+  description: string;
+  price: number;
+  imageUrl: string;
+}
 
 
 // Support

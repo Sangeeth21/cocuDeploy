@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -20,10 +19,11 @@ import type { DateRange } from "react-day-picker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Program, ProgramPlatform, ProgramTarget, Coupon } from "@/lib/types";
+import type { Program, ProgramPlatform, ProgramTarget, Coupon, Freebie } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import Image from "next/image";
 
 const programOptions = {
     customer: {
@@ -415,6 +415,7 @@ export default function PromotionsPage() {
     const { toast } = useToast();
     const [programs, setPrograms] = useState<Program[]>([]);
     const [coupons, setCoupons] = useState<Coupon[]>([]);
+    const [freebies, setFreebies] = useState<Freebie[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     
     // Dialog states
@@ -427,38 +428,37 @@ export default function PromotionsPage() {
     const [couponToDelete, setCouponToDelete] = useState<Coupon | null>(null);
 
     useEffect(() => {
-        const qPrograms = query(collection(db, "programs"));
-        const unsubPrograms = onSnapshot(qPrograms, (snapshot) => {
-            const programsData: Program[] = [];
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                programsData.push({ 
-                    id: doc.id,
-                    ...data,
-                    startDate: data.startDate?.toDate(), // Convert Firestore Timestamp to JS Date
-                    endDate: data.endDate?.toDate()
-                } as Program);
-            });
+        const unsubPrograms = onSnapshot(query(collection(db, "programs")), (snapshot) => {
+            const programsData: Program[] = snapshot.docs.map(doc => ({ 
+                id: doc.id,
+                ...doc.data(),
+                startDate: doc.data().startDate?.toDate(),
+                endDate: doc.data().endDate?.toDate()
+            } as Program));
             setPrograms(programsData);
         });
         
-        const qCoupons = query(collection(db, "coupons"));
-        const unsubCoupons = onSnapshot(qCoupons, (snapshot) => {
-            const couponsData: Coupon[] = [];
-            snapshot.forEach(doc => {
-                 const data = doc.data();
-                couponsData.push({ 
-                    id: doc.id,
-                    ...data,
-                    expiresAt: data.expiresAt?.toDate(),
-                } as Coupon);
-            });
+        const unsubCoupons = onSnapshot(query(collection(db, "coupons")), (snapshot) => {
+            const couponsData: Coupon[] = snapshot.docs.map(doc => ({ 
+                id: doc.id,
+                ...doc.data(),
+                expiresAt: doc.data().expiresAt?.toDate(),
+            } as Coupon));
             setCoupons(couponsData);
+        });
+        
+        const unsubFreebies = onSnapshot(query(collection(db, "freebies")), (snapshot) => {
+            const freebiesData: Freebie[] = snapshot.docs.map(doc => ({ 
+                id: doc.id,
+                ...doc.data(),
+            } as Freebie));
+            setFreebies(freebiesData);
         });
 
         return () => {
             unsubPrograms();
             unsubCoupons();
+            unsubFreebies();
         }
     }, []);
 
@@ -503,12 +503,12 @@ export default function PromotionsPage() {
         }
     }
 
-    const handleEditClick = (program: Program) => {
+    const handleEditProgramClick = (program: Program) => {
         setEditingProgram(program);
         setIsProgramDialogOpen(true);
     };
 
-    const handleCreateClick = () => {
+    const handleCreateProgramClick = () => {
         setEditingProgram(null);
         setIsProgramDialogOpen(true);
     };
@@ -520,11 +520,11 @@ export default function PromotionsPage() {
         toast({ title: `Program ${newStatus}`, description: `"${program.name}" has been ${newStatus.toLowerCase()}.` });
     };
 
-    const handleDeleteClick = (program: Program) => {
+    const handleDeleteProgramClick = (program: Program) => {
         setProgramToDelete(program);
     };
 
-    const handleDelete = async () => {
+    const handleDeleteProgram = async () => {
         if (!programToDelete) return;
         await deleteDoc(doc(db, "programs", programToDelete.id));
         toast({ variant: "destructive", title: "Program Deleted", description: `"${programToDelete.name}" has been permanently deleted.` });
@@ -561,9 +561,10 @@ export default function PromotionsPage() {
             </div>
 
             <Tabs defaultValue="programs" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 md:grid-cols-3">
+                <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="programs">Loyalty Programs</TabsTrigger>
                     <TabsTrigger value="coupons">Coupon Codes</TabsTrigger>
+                    <TabsTrigger value="freebies">Freebies</TabsTrigger>
                 </TabsList>
                 <TabsContent value="programs" className="mt-4">
                     <Tabs defaultValue="customer" className="w-full">
@@ -572,10 +573,10 @@ export default function PromotionsPage() {
                             <TabsTrigger value="vendor">Vendor Programs</TabsTrigger>
                         </TabsList>
                         <TabsContent value="customer" className="mt-4">
-                            <ProgramTable programs={customerPrograms} onEdit={handleEditClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteClick} />
+                            <ProgramTable programs={customerPrograms} onEdit={handleEditProgramClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteProgramClick} />
                         </TabsContent>
                         <TabsContent value="vendor" className="mt-4">
-                            <ProgramTable programs={vendorPrograms} onEdit={handleEditClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteClick} />
+                            <ProgramTable programs={vendorPrograms} onEdit={handleEditProgramClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteProgramClick} />
                         </TabsContent>
                     </Tabs>
                 </TabsContent>
@@ -597,9 +598,47 @@ export default function PromotionsPage() {
                                         <TableRow key={coupon.id}>
                                             <TableCell className="font-mono">{coupon.code}</TableCell>
                                             <TableCell className="capitalize">{coupon.type}</TableCell>
-                                            <TableCell>{coupon.type === 'fixed' ? `$${coupon.value}` : `${coupon.value}%`}</TableCell>
+                                            <TableCell>{coupon.type === 'fixed' ? `₹${coupon.value}` : `${coupon.value}%`}</TableCell>
                                             <TableCell>{coupon.usageCount} / {coupon.usageLimit}</TableCell>
                                             <TableCell><Badge>{coupon.status}</Badge></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                 <TabsContent value="freebies" className="mt-4">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Vendor-Provided Freebies</CardTitle>
+                            <CardDescription>Review all free items offered by vendors on the platform.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Freebie</TableHead>
+                                        <TableHead>Vendor ID</TableHead>
+                                        <TableHead>Price</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {freebies.map(freebie => (
+                                        <TableRow key={freebie.id}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="relative h-12 w-12 rounded-md overflow-hidden">
+                                                        <Image src={freebie.imageUrl} alt={freebie.name} fill className="object-cover" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold">{freebie.name}</p>
+                                                        <p className="text-xs text-muted-foreground truncate">{freebie.description}</p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="font-mono">{freebie.vendorId}</TableCell>
+                                            <TableCell>₹{freebie.price.toFixed(2)}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -635,7 +674,7 @@ export default function PromotionsPage() {
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                     <AlertDialogCancel onClick={() => setProgramToDelete(null)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
+                    <AlertDialogAction onClick={handleDeleteProgram} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </div>

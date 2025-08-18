@@ -10,13 +10,15 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
-import { Loader2, ShieldCheck, CheckCircle } from "lucide-react";
+import { Loader2, ShieldCheck, CheckCircle, Gift } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/user-context";
 import { useCart } from "@/context/cart-context";
 import { db } from "@/lib/firebase";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import type { OrderItem } from "@/lib/types";
+import { addDoc, collection, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore";
+import type { OrderItem, Freebie } from "@/lib/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 
 const MOCK_EMAIL_OTP = "123456";
@@ -41,6 +43,10 @@ export default function CheckoutPage() {
     const [phoneOtp, setPhoneOtp] = useState("");
     const [showEmailOtp, setShowEmailOtp] = useState(false);
     const [showPhoneOtp, setShowPhoneOtp] = useState(false);
+    
+    // Freebie state
+    const [availableFreebies, setAvailableFreebies] = useState<Freebie[]>([]);
+    const [selectedFreebie, setSelectedFreebie] = useState<Freebie | null>(null);
 
     useEffect(() => {
         if(isLoggedIn && user) {
@@ -50,6 +56,28 @@ export default function CheckoutPage() {
             setPhoneStatus('verified'); // Assume phone is verified if user is logged in for simplicity
         }
     }, [isLoggedIn, user]);
+    
+     // Fetch available freebies based on items in cart
+    useEffect(() => {
+        const fetchFreebies = async () => {
+            if (cartItems.length === 0) {
+                setAvailableFreebies([]);
+                return;
+            }
+            // In a real app, you might have complex logic to determine freebie eligibility.
+            // For now, we'll check if any vendor in the cart offers freebies.
+            const vendorIds = [...new Set(cartItems.map(item => item.product.vendorId))];
+            if (vendorIds.length > 0) {
+                const q = query(collection(db, "freebies"), where("vendorId", "in", vendorIds), limit(5));
+                const querySnapshot = await getDocs(q);
+                const freebiesData: Freebie[] = [];
+                querySnapshot.forEach(doc => freebiesData.push({ id: doc.id, ...doc.data() } as Freebie));
+                setAvailableFreebies(freebiesData);
+            }
+        };
+
+        fetchFreebies();
+    }, [cartItems]);
     
     const getFinalPrice = (item: typeof cartItems[0]) => {
         const productType = item.product.b2bEnabled ? 'corporate' : 'personalized';
@@ -115,7 +143,7 @@ export default function CheckoutPage() {
 
         setIsProcessing(true);
         try {
-             const orderItemsForDb: OrderItem[] = cartItems.map(item => ({
+             let orderItemsForDb: OrderItem[] = cartItems.map(item => ({
                 productId: item.product.id,
                 productName: item.product.name,
                 productImage: item.product.imageUrl,
@@ -125,6 +153,18 @@ export default function CheckoutPage() {
                 // Include customizations if they exist
                 ...(Object.keys(item.customizations).length > 0 && { customizations: item.customizations }),
             }));
+
+            if (selectedFreebie) {
+                orderItemsForDb.push({
+                    productId: selectedFreebie.id,
+                    productName: selectedFreebie.name,
+                    productImage: selectedFreebie.imageUrl,
+                    vendorId: selectedFreebie.vendorId,
+                    quantity: 1,
+                    price: 0, // Freebie has no cost to customer
+                    isFreebie: true,
+                });
+            }
 
             await addDoc(collection(db, "orders"), {
                 customer: {
@@ -301,6 +341,20 @@ export default function CheckoutPage() {
                                             <p className="font-semibold">${getFinalPrice(item).toFixed(2)}</p>
                                         </div>
                                     ))}
+                                    {selectedFreebie && (
+                                        <div className="flex items-center justify-between border-t pt-4 mt-4">
+                                             <div className="flex items-center gap-4">
+                                                 <div className="relative w-16 h-16 rounded-md overflow-hidden">
+                                                    <Image src={selectedFreebie.imageUrl} alt={selectedFreebie.name} fill className="object-cover" />
+                                                </div>
+                                                 <div>
+                                                    <p className="font-semibold">{selectedFreebie.name}</p>
+                                                    <p className="text-sm text-primary font-medium">Freebie!</p>
+                                                </div>
+                                            </div>
+                                            <p className="font-semibold">$0.00</p>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="mt-4 pt-4 border-t space-y-4">
                                     <div className="flex items-center gap-2">
@@ -323,13 +377,39 @@ export default function CheckoutPage() {
                                     </div>
                                 </div>
                             </CardContent>
-                            <CardFooter>
-                                <Button size="lg" type="submit" className="w-full" disabled={isProcessing || !isFormFullyVerified}>
-                                    {isProcessing && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                                    {isProcessing ? 'Processing...' : `Pay Now ($${total.toFixed(2)})`}
-                                </Button>
-                            </CardFooter>
                         </Card>
+                        {availableFreebies.length > 0 && (
+                            <Card className="mt-4">
+                                <CardHeader>
+                                    <CardTitle className="font-headline flex items-center gap-2"><Gift className="h-5 w-5 text-primary" /> Claim Your Freebie!</CardTitle>
+                                    <CardDescription>Select one of the items below to add to your order for free.</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <RadioGroup value={selectedFreebie?.id} onValueChange={(id) => setSelectedFreebie(availableFreebies.find(f => f.id === id) || null)}>
+                                        <div className="space-y-2">
+                                        {availableFreebies.map(freebie => (
+                                            <Label key={freebie.id} htmlFor={freebie.id} className="flex items-center gap-4 p-2 border rounded-md cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                                <RadioGroupItem value={freebie.id} id={freebie.id} />
+                                                 <div className="relative w-12 h-12 rounded-md overflow-hidden">
+                                                    <Image src={freebie.imageUrl} alt={freebie.name} fill className="object-cover" />
+                                                 </div>
+                                                 <div>
+                                                    <p className="font-semibold text-sm">{freebie.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{freebie.description}</p>
+                                                 </div>
+                                            </Label>
+                                        ))}
+                                        </div>
+                                    </RadioGroup>
+                                </CardContent>
+                            </Card>
+                        )}
+                        <div className="mt-4">
+                            <Button size="lg" type="submit" className="w-full" disabled={isProcessing || !isFormFullyVerified}>
+                                {isProcessing && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                                {isProcessing ? 'Processing...' : `Pay Now ($${total.toFixed(2)})`}
+                            </Button>
+                        </div>
                         {!isFormFullyVerified && <p className="text-xs text-center text-muted-foreground mt-2">Please verify email and phone to complete your order.</p>}
                     </div>
                 </div>

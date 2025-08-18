@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarMenuBadge, useSidebar, CustomSidebarTrigger } from "@/components/ui/sidebar";
-import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, Gift, ShieldAlert, LifeBuoy, Gavel, Building, User, Wand2 } from "lucide-react";
+import { LayoutDashboard, Package, ListChecks, LineChart, MessageSquare, Settings, LogOut, Store, Warehouse, ChevronsLeft, ChevronsRight, Gift, ShieldAlert, LifeBuoy, Gavel, Building, User, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,7 @@ const bothNavLinks = [
   { href: "/vendor/both/analytics", label: "Analytics", icon: LineChart },
   { href: "/vendor/both/messages", label: "Messages", icon: MessageSquare, id: "messages" },
   { href: "/vendor/both/referrals", label: "Referrals", icon: Gift },
+  { href: "/vendor/both/freebies", label: "Freebies", icon: Gift },
   { href: "/vendor/both/support", label: "Support", icon: LifeBuoy },
   { href: "/vendor/both/settings", label: "Settings", icon: Settings },
 ];
