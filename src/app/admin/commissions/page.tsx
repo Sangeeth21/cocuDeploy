@@ -66,54 +66,51 @@ export default function CommissionEnginePage() {
     
     // Data fetching from Firestore
     useEffect(() => {
-        // 1. Fetch all categories first to ensure we have a list to check against
         const categoriesQuery = query(collection(db, 'categories'));
+        const catComRef = doc(db, 'commissions', 'categories');
+        const vendorQuery = query(collection(db, "vendorCommissionOverrides"));
+        const productQuery = query(collection(db, "productCommissionOverrides"));
+    
         const unsubCategories = onSnapshot(categoriesQuery, (snapshot) => {
-            const cats: Category[] = [];
-            snapshot.forEach(doc => cats.push({ id: doc.id, ...doc.data() } as Category));
+            const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category));
             setAllCategories(cats);
         });
 
-        // 2. Fetch Category Commissions and create defaults if missing
-        const catComRef = doc(db, 'commissions', 'categories');
-        const unsubCat = onSnapshot(catComRef, async (docSnap) => {
-            const fetchedCommissions = docSnap.exists() ? docSnap.data() as CommissionData : { personalized: {}, corporate: {} };
-
-            const categoriesSnapshot = await getDocs(query(collection(db, 'categories')));
+        const unsubCatCommissions = onSnapshot(catComRef, async (docSnap) => {
+            // First, get the definitive list of all categories from the categories collection
+            const categoriesSnapshot = await getDocs(categoriesQuery);
             const allCategoryNames = categoriesSnapshot.docs.map(doc => doc.data().name);
-            
-            let updatedCommissions = { ...fetchedCommissions };
+
+            const fetchedCommissions = docSnap.exists() ? docSnap.data() as CommissionData : { personalized: {}, corporate: {} };
+            let updatedCommissions = JSON.parse(JSON.stringify(fetchedCommissions)); // Deep copy
             let hasChanged = false;
 
             allCategoryNames.forEach(name => {
                 if (!updatedCommissions.personalized?.[name]) {
-                    updatedCommissions.personalized = { ...updatedCommissions.personalized, [name]: { commission: 10, buffer: { type: 'fixed', value: 1.00 } }};
+                    updatedCommissions.personalized[name] = { commission: 10, buffer: { type: 'fixed', value: 1.00 } };
                     hasChanged = true;
                 }
                 if (!updatedCommissions.corporate?.[name]) {
-                    updatedCommissions.corporate = { ...updatedCommissions.corporate, [name]: { commission: 15, buffer: { type: 'fixed', value: 5.00 } }}; // Different default for corporate
+                    updatedCommissions.corporate[name] = { commission: 15, buffer: { type: 'fixed', value: 5.00 } };
                     hasChanged = true;
                 }
             });
 
             if (hasChanged) {
+                // Write the missing defaults to Firestore. The onSnapshot will automatically pick this up.
                 await setDoc(catComRef, updatedCommissions, { merge: true });
             }
-            // The listener will automatically pick up the new defaults if they were written
-            // so we can just set the state from the fetched data.
-            setCommissions(fetchedCommissions);
+            
+            // Set the state with the most current data (either from Firestore or with defaults added)
+            setCommissions(updatedCommissions);
         });
 
-        // Fetch Vendor Overrides
-        const vendorQuery = query(collection(db, "vendorCommissionOverrides"));
         const unsubVendor = onSnapshot(vendorQuery, (snapshot) => {
             const overrides: VendorCommissionOverride[] = [];
             snapshot.forEach(doc => overrides.push({ id: doc.id, ...doc.data() } as VendorCommissionOverride));
             setVendorOverrides(overrides);
         });
         
-        // Fetch Product Overrides
-        const productQuery = query(collection(db, "productCommissionOverrides"));
         const unsubProduct = onSnapshot(productQuery, (snapshot) => {
             const overrides: ProductCommissionOverride[] = [];
             snapshot.forEach(doc => overrides.push({ id: doc.id, ...doc.data() } as ProductCommissionOverride));
@@ -122,7 +119,7 @@ export default function CommissionEnginePage() {
 
         return () => {
             unsubCategories();
-            unsubCat();
+            unsubCatCommissions();
             unsubVendor();
             unsubProduct();
         }
