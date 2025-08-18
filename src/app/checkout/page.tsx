@@ -149,7 +149,7 @@ export default function CheckoutPage() {
                 return platformDiscountAmount + userCouponDiscountAmount;
             }
             // If user applied a non-stackable coupon, the logic is handled in handleApplyCoupon
-            // We just return the user-applied coupon's value here as it has replaced the platform one.
+            // We just return the user-applied coupon's value as it has replaced the platform one.
             return userCouponDiscountAmount;
         }
         // If no user coupon, just use the platform discount
@@ -177,29 +177,21 @@ export default function CheckoutPage() {
             return;
         }
 
-        const newCouponDiscount = calculateCouponDiscount(coupon);
-
-        if (!coupon.isStackable && platformDiscountAmount > 0) {
-            if (newCouponDiscount > platformDiscountAmount) {
-                toast({
-                    title: "Better Discount Already Applied",
-                    description: "Your current platform discount is better than this coupon.",
-                });
-                setCouponCode(platformDiscount?.code || ""); // Revert input to platform code
-                return;
-            } else {
-                 setAppliedCoupon(coupon);
-                 toast({ title: "Coupon Applied!", description: `The platform discount was replaced.` });
-            }
-        } else {
-            setAppliedCoupon(coupon);
-            toast({ title: "Coupon Applied!" });
+        if (!coupon.isStackable && platformDiscount) {
+            toast({
+                title: "Promotion Active",
+                description: `A platform discount is already applied. This coupon cannot be stacked.`,
+            });
+            return;
         }
+
+        setAppliedCoupon(coupon);
+        toast({ title: "Coupon Applied!" });
     };
 
     const removeCoupon = () => {
         setAppliedCoupon(null);
-        setCouponCode(platformDiscount?.code || "");
+        setCouponCode("");
     };
     
     const handleFinalizePayment = async (e: React.FormEvent) => {
@@ -231,9 +223,39 @@ export default function CheckoutPage() {
                 <div className="grid md:grid-cols-2 gap-12 items-start">
                     <div className="space-y-8">
                         <Card>
+                             <CardHeader>
+                                <CardTitle className="font-headline">Contact Information</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                               <div className="space-y-2">
+                                    <Label htmlFor="email">Email Address</Label>
+                                    <Input id="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required />
+                               </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone">Phone Number</Label>
+                                    <Input id="phone" type="tel" placeholder="For delivery updates" value={phone} onChange={e => setPhone(e.target.value)} />
+                               </div>
+                            </CardContent>
+                        </Card>
+                        <Card>
                             <CardHeader><CardTitle className="font-headline">Shipping Information</CardTitle></CardHeader>
                             <CardContent className="grid grid-cols-2 gap-x-4 gap-y-6">
-                                {/* Shipping form fields */}
+                                <div className="col-span-2 space-y-2">
+                                    <Label htmlFor="shipping-name">Full Name</Label>
+                                    <Input id="shipping-name" defaultValue={user?.name} required />
+                                </div>
+                                <div className="col-span-2 space-y-2">
+                                    <Label htmlFor="shipping-address">Address</Label>
+                                    <Input id="shipping-address" placeholder="123 Main St" required />
+                                </div>
+                                 <div className="col-span-2 sm:col-span-1 space-y-2">
+                                    <Label htmlFor="shipping-city">City</Label>
+                                    <Input id="shipping-city" placeholder="Anytown" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="shipping-zip">ZIP Code</Label>
+                                    <Input id="shipping-zip" placeholder="12345" required />
+                                </div>
                             </CardContent>
                         </Card>
                         <Card>
@@ -242,7 +264,24 @@ export default function CheckoutPage() {
                                 <CardDescription>All transactions are secure and encrypted.</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-4">
-                               {/* Payment form fields */}
+                               <div className="space-y-2">
+                                    <Label htmlFor="card-number">Card Number</Label>
+                                    <Input id="card-number" placeholder="•••• •••• •••• ••••" />
+                               </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="expiry">Expiry Date</Label>
+                                        <Input id="expiry" placeholder="MM / YY" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="cvc">CVC</Label>
+                                        <Input id="cvc" placeholder="123" />
+                                    </div>
+                                </div>
+                                 <div className="flex items-center space-x-2">
+                                    <Checkbox id="billing-same" defaultChecked />
+                                    <Label htmlFor="billing-same" className="font-normal">Billing address is same as shipping</Label>
+                                </div>
                             </CardContent>
                         </Card>
                     </div>
