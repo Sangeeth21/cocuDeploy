@@ -55,8 +55,6 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
     const { totalItems: cartItemsCount } = useCart();
     const { totalItems: comparisonItemsCount } = useComparison();
     const { totalItems: bidItemsCount } = useBidRequest();
-    const { open } = useSidebar();
-
 
     const handleLogout = () => {
         adminLogout();
@@ -75,7 +73,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                            <Avatar className="h-10 w-10">
                                <Building className="h-6 w-6"/>
                             </Avatar>
-                            <div className={cn("flex flex-col", !open && "hidden")}>
+                            <div className="group-data-[state=expanded]:opacity-100 group-data-[state=collapsed]:opacity-0 transition-opacity duration-300 flex flex-col">
                                 <span className="text-lg font-semibold whitespace-nowrap">Corporate Client</span>
                             </div>
                         </Link>
@@ -102,7 +100,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                                     >
                                         <Link href={link.href}>
                                             <link.icon className="h-5 w-5" />
-                                            <span className={cn(!open && "hidden")}>{link.label}</span>
+                                            <span className="group-data-[state=expanded]:opacity-100 group-data-[state=collapsed]:opacity-0 transition-opacity duration-200">{link.label}</span>
                                              {badgeContent && <SidebarMenuBadge>{badgeContent}</SidebarMenuBadge>}
                                         </Link>
                                     </SidebarMenuButton>
@@ -116,7 +114,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                          <SidebarMenuItem>
                             <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
                                 <LogOut />
-                                <span className={cn(!open && "hidden")}>Log Out</span>
+                                <span className="group-data-[state=expanded]:opacity-100 group-data-[state=collapsed]:opacity-0 transition-opacity duration-200">Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
