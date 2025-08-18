@@ -302,7 +302,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                             <Input type="number" value={usageLimit} onChange={e => setUsageLimit(e.target.value)} />
                         </div>
                     </div>
-                     <div className="flex items-center justify-between pt-2">
+                     <div className="space-y-3 pt-2">
                         <div className="flex items-center space-x-2">
                             <Switch id="is-public" checked={isPublic} onCheckedChange={setIsPublic} />
                             <Label htmlFor="is-public">Publish Coupon Publicly</Label>
@@ -311,12 +311,12 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                             <Switch id="is-stackable" checked={isStackable} onCheckedChange={setIsStackable} />
                             <Label htmlFor="is-stackable">Allow Stacking</Label>
                         </div>
+                         {isStackable && (
+                            <p className="text-xs text-muted-foreground pl-8">
+                                Allows this coupon to be used with other site-wide promotions.
+                            </p>
+                        )}
                     </div>
-                     {isStackable && (
-                        <AlertDesc className="text-xs text-muted-foreground">
-                            Allows this coupon to be used with other site-wide promotions.
-                        </AlertDesc>
-                    )}
                 </div>
                  </ScrollArea>
                  <DialogFooter className="pt-4 border-t">
@@ -434,10 +434,11 @@ function CreateProgramDialog({
     const [targetAudience, setTargetAudience] = useState<ProgramTarget | ''>('');
     const [type, setType] = useState('');
     const [rewardType, setRewardType] = useState('');
-    const [rewardValue, setRewardValue] = useState(0);
+    const [rewardValue, setRewardValue] = useState<number | string>('');
     const [productScope, setProductScope] = useState('all');
     const [date, setDate] = useState<DateRange | undefined>(undefined);
     const [expiryDays, setExpiryDays] = useState<number | undefined>();
+    const [code, setCode] = useState("");
     
     const resetForm = () => {
         setName('');
@@ -445,10 +446,11 @@ function CreateProgramDialog({
         setTargetAudience('');
         setType('');
         setRewardType('');
-        setRewardValue(0);
+        setRewardValue('');
         setProductScope('all');
         setDate(undefined);
         setExpiryDays(undefined);
+        setCode('');
     }
     
     useEffect(() => {
@@ -462,6 +464,7 @@ function CreateProgramDialog({
             setProductScope(program.productScope);
             setDate({ from: program.startDate, to: program.endDate });
             setExpiryDays(program.expiryDays);
+            setCode(program.code || "");
         } else {
             resetForm();
         }
@@ -473,12 +476,13 @@ function CreateProgramDialog({
             platform,
             target: targetAudience as ProgramTarget,
             type: type,
-            reward: { type: rewardType, value: rewardValue },
+            reward: { type: rewardType, value: Number(rewardValue) },
             productScope: productScope as any,
             startDate: date!.from!,
             endDate: date!.to!,
             expiryDays,
-            status: program?.status === 'Paused' ? 'Paused' : 'Active'
+            status: program?.status === 'Paused' ? 'Paused' : 'Active',
+            code,
         };
         onSave(programData, program?.id);
     };
@@ -543,16 +547,10 @@ function CreateProgramDialog({
                         <Input type="number" value={rewardValue || ''} onChange={e => setRewardValue(Number(e.target.value))} />
                          <p className="text-xs text-muted-foreground">E.g., 100 for wallet, 15 for %, 2 for # of orders/referrals.</p>
                     </div>
-                     <div className="space-y-2">
-                        <Label>Product Scope</Label>
-                        <Select value={productScope} onValueChange={setProductScope}>
-                             <SelectTrigger><SelectValue /></SelectTrigger>
-                             <SelectContent>
-                                <SelectItem value="all">All Products</SelectItem>
-                                <SelectItem value="selected">Selected Products Only</SelectItem>
-                            </SelectContent>
-                        </Select>
-                         {productScope === 'selected' && <Button variant="outline" size="sm" className="mt-2 w-full">Select Products</Button>}
+                    <div className="space-y-2">
+                        <Label>Coupon Code (Optional)</Label>
+                        <Input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g., WELCOME10" />
+                        <p className="text-xs text-muted-foreground">If set, this code will be auto-applied for eligible customers.</p>
                     </div>
                      <div className="space-y-2">
                         <Label>Program Duration</Label>

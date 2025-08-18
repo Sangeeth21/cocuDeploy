@@ -51,7 +51,7 @@ export default function CheckoutPage() {
     // Coupon and Discount State
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
-    const [loyaltyDiscount, setLoyaltyDiscount] = useState<Program | null>(null);
+    const [platformDiscount, setPlatformDiscount] = useState<Program | null>(null);
     
     useEffect(() => {
         if(isLoggedIn && user) {
@@ -82,9 +82,13 @@ export default function CheckoutPage() {
         const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"), where("type", "==", "discount"), where("productScope", "==", "all"));
         const unsubscribePromos = onSnapshot(promotionsQuery, (snapshot) => {
             if(!snapshot.empty){
-                setLoyaltyDiscount({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Program);
+                const promo = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as Program;
+                setPlatformDiscount(promo);
+                if (promo.code) {
+                    setCouponCode(promo.code);
+                }
             } else {
-                setLoyaltyDiscount(null);
+                setPlatformDiscount(null);
             }
         });
         return () => unsubscribePromos();
@@ -128,24 +132,30 @@ export default function CheckoutPage() {
         return Math.min(calculatedDiscount, applicableSubtotal);
     }, [cartItems, subtotal, calculateItemPrice]);
     
-    const loyaltyDiscountAmount = useMemo(() => {
-        if (!loyaltyDiscount) return 0;
-        return subtotal * (loyaltyDiscount.reward.value / 100);
-    }, [loyaltyDiscount, subtotal]);
+    const platformDiscountAmount = useMemo(() => {
+        if (!platformDiscount) return 0;
+        return subtotal * (platformDiscount.reward.value / 100);
+    }, [platformDiscount, subtotal]);
 
-    const couponDiscountAmount = useMemo(() => {
+    const userCouponDiscountAmount = useMemo(() => {
         if (!appliedCoupon) return 0;
         return calculateCouponDiscount(appliedCoupon);
     }, [appliedCoupon, calculateCouponDiscount]);
     
     const totalDiscount = useMemo(() => {
-        // If a non-stackable coupon is better than the loyalty discount, use it instead.
-        if (appliedCoupon && !appliedCoupon.isStackable) {
-            return Math.max(loyaltyDiscountAmount, couponDiscountAmount);
+        if (appliedCoupon) {
+            // If user applied a stackable coupon, add it to platform discount
+            if (appliedCoupon.isStackable) {
+                return platformDiscountAmount + userCouponDiscountAmount;
+            }
+            // If user applied a non-stackable coupon, the logic is handled in handleApplyCoupon
+            // We just return the user-applied coupon's value here as it has replaced the platform one.
+            return userCouponDiscountAmount;
         }
-        // Otherwise, add the stackable coupon discount to the loyalty discount.
-        return loyaltyDiscountAmount + (appliedCoupon?.isStackable ? couponDiscountAmount : 0);
-    }, [appliedCoupon, couponDiscountAmount, loyaltyDiscountAmount]);
+        // If no user coupon, just use the platform discount
+        return platformDiscountAmount;
+    }, [appliedCoupon, platformDiscountAmount, userCouponDiscountAmount]);
+
 
     const shipping = cartItems.length > 0 ? 5.00 : 0;
     const convenienceFee = (subtotal - totalDiscount) * 0.03;
@@ -155,7 +165,11 @@ export default function CheckoutPage() {
         if (!couponCode.trim()) { toast({ variant: "destructive", title: "Please enter a coupon code." }); return; }
         const q = query(collection(db, "coupons"), where("code", "==", couponCode.toUpperCase()), limit(1));
         const querySnapshot = await getDocs(q);
-        if (querySnapshot.empty) { toast({ variant: "destructive", title: "Invalid coupon code." }); return; }
+
+        if (querySnapshot.empty) {
+            toast({ variant: "destructive", title: "Invalid coupon code." });
+            return;
+        }
         const coupon = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Coupon;
         
         if (coupon.status !== 'Active') {
@@ -163,13 +177,29 @@ export default function CheckoutPage() {
             return;
         }
 
-        setAppliedCoupon(coupon);
-        toast({ title: "Coupon Applied!" });
+        const newCouponDiscount = calculateCouponDiscount(coupon);
+
+        if (!coupon.isStackable && platformDiscountAmount > 0) {
+            if (newCouponDiscount > platformDiscountAmount) {
+                toast({
+                    title: "Better Discount Already Applied",
+                    description: "Your current platform discount is better than this coupon.",
+                });
+                setCouponCode(platformDiscount?.code || ""); // Revert input to platform code
+                return;
+            } else {
+                 setAppliedCoupon(coupon);
+                 toast({ title: "Coupon Applied!", description: `The platform discount was replaced.` });
+            }
+        } else {
+            setAppliedCoupon(coupon);
+            toast({ title: "Coupon Applied!" });
+        }
     };
 
     const removeCoupon = () => {
         setAppliedCoupon(null);
-        setCouponCode("");
+        setCouponCode(platformDiscount?.code || "");
     };
     
     const handleFinalizePayment = async (e: React.FormEvent) => {
@@ -223,11 +253,6 @@ export default function CheckoutPage() {
                                 <div className="space-y-4">
                                     {cartItems.map(item => {
                                         const originalPrice = calculateItemPrice(item.product);
-                                        const finalPrice = appliedCoupon && !appliedCoupon.isStackable 
-                                                ? originalPrice * (1 - (couponDiscountAmount / subtotal)) // non-stackable handled at total level
-                                                : originalPrice * (1 - (totalDiscount / subtotal)); // proportional discount
-                                        const hasDiscount = totalDiscount > 0;
-
                                         return (
                                             <div key={item.instanceId} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
@@ -240,7 +265,7 @@ export default function CheckoutPage() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                     <p className="font-semibold">${(originalPrice * item.quantity).toFixed(2)}</p>
+                                                    <p className="font-semibold">${(originalPrice * item.quantity).toFixed(2)}</p>
                                                 </div>
                                             </div>
                                         )

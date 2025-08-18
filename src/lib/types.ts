@@ -363,6 +363,7 @@ export type Program = {
     startDate: Date;
     endDate: Date;
     expiryDays?: number;
+    code?: string;
 };
 
 export type Coupon = {
