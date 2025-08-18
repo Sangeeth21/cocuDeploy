@@ -32,6 +32,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { getEstimatedDelivery } from "@/app/actions";
 import { Loader2 } from 'lucide-react';
 import { B2bProductCard } from "../../_components/b2b-product-card";
+import { FrequentlyBoughtTogetherPreview } from "@/app/products/[id]/_components/frequently-bought-together-preview";
 
 
 const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
@@ -108,7 +109,6 @@ export default function B2BProductDetailPage() {
   const [similarProducts, setSimilarProducts] = useState<DisplayProduct[]>([]);
   const [vendorProducts, setVendorProducts] = useState<DisplayProduct[]>([]);
 
-  const [activeImage, setActiveImage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(100);
   const [isVendorInfoOpen, setIsVendorInfoOpen] = useState(false);
   const [pincode, setPincode] = useState("");
@@ -127,7 +127,6 @@ export default function B2BProductDetailPage() {
             if (docSnap.exists() && docSnap.data().b2bEnabled) {
                 const productData = { id: docSnap.id, ...docSnap.data() } as DisplayProduct;
                 setProduct(productData);
-                setActiveImage(productData.imageUrl);
                 setQuantity(productData.moq || 100);
                  if (productData.imageUrl) {
                     setActiveMedia({ type: 'image', src: productData.imageUrl });
@@ -138,9 +137,9 @@ export default function B2BProductDetailPage() {
             setLoading(false);
         });
 
-        const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"));
-        const unsubCampaigns = onSnapshot(campaignsQuery, (snapshot) => {
-            const campaignsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MarketingCampaign));
+        const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+        const unsubCampaigns = onSnapshot(promotionsQuery, (snapshot) => {
+            const campaignsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
             setPromotions(campaignsData as any); 
         });
 
@@ -194,10 +193,10 @@ export default function B2BProductDetailPage() {
 
    const applicableDiscount = useMemo(() => {
         if (!product) return null;
-        const salePromo = promotions.find(p => p.type === 'Sale' && (p.placement === 'corporate-banner' || p.placement === 'hero') && p.associatedProducts?.includes(product.id));
+        const salePromo = promotions.find(p => p.type === 'Sale' && (p.platform === 'corporate' || p.platform === 'both') && p.productScope.includes(product.id));
         if (salePromo) return salePromo;
         
-        const genericPromo = promotions.find(p => p.type === 'discount' && p.productScope === 'all');
+        const genericPromo = promotions.find(p => p.type === 'discount' && p.productScope === 'all' && (p.platform === 'corporate' || p.platform === 'both'));
         return genericPromo || null;
     }, [promotions, product]);
 
@@ -227,10 +226,8 @@ export default function B2BProductDetailPage() {
     let finalPrice = originalPrice;
     
     let discountValue = 0;
-    if (applicableDiscount?.type === 'Sale') {
-        discountValue = applicableDiscount?.creatives?.[0]?.title ? parseInt(applicableDiscount.creatives[0].title, 10) : 0;
-    } else if (applicableDiscount?.type === 'discount') {
-        discountValue = applicableDiscount.reward.value;
+    if (applicableDiscount?.type === 'Sale' || applicableDiscount?.type === 'discount') {
+        discountValue = applicableDiscount?.reward.value || 0;
     }
     
     if (applicableDiscount && discountValue > 0) {
@@ -269,8 +266,8 @@ export default function B2BProductDetailPage() {
   }
   
   const handleAddToCart = () => {
-      addToCart({product, customizations: {}});
-      toast({title: "Added to Cart", description: `${product.name} has been added to your cart.`});
+      addToCart({product, customizations: {}, quantity});
+      toast({title: "Added to Cart", description: `${quantity} x ${product.name} has been added to your cart.`});
   }
   
   const handleAddToBid = () => {
@@ -285,10 +282,49 @@ export default function B2BProductDetailPage() {
       });
   }
 
-  const allMedia = [product.imageUrl, ...(product.images || [])].filter((img, index, self) => img && self.indexOf(img) === index);
-  if (product.videoUrl) {
-    allMedia.push(product.videoUrl);
+  const handleCheckDelivery = async () => {
+    if (!pincode || pincode.length !== 6 || !/^\d+$/.test(pincode)) {
+        toast({ variant: 'destructive', title: 'Invalid Pincode', description: 'Please enter a valid 6-digit pincode.'});
+        return;
+    }
+    setIsCheckingPincode(true);
+    setDeliveryEstimate(null);
+    const result = await getEstimatedDelivery(id, pincode);
+    if(result.error) {
+        toast({ variant: 'destructive', title: 'Delivery Check Failed', description: result.error });
+        setDeliveryEstimate('Currently not deliverable to this pincode.');
+    } else {
+        setDeliveryEstimate(result.estimate || 'Could not determine delivery date.');
+    }
+    setIsCheckingPincode(false);
   }
+  
+  const allMedia: MediaItem[] = useMemo(() => {
+    if (!product) return [];
+    
+    const media: MediaItem[] = [];
+    const imageUrls = new Set<string>();
+
+    [product.imageUrl, ...(product.images || [])].forEach(url => {
+        if (url && !imageUrls.has(url)) {
+            media.push({ type: 'image', src: url });
+            imageUrls.add(url);
+        }
+    });
+
+    (product.galleryImages || []).forEach(url => {
+        if (url && !imageUrls.has(url)) {
+            media.push({ type: 'image', src: url });
+            imageUrls.add(url);
+        }
+    });
+
+    if (product.videoUrl) {
+        media.push({ type: 'video', src: product.videoUrl });
+    }
+
+    return media;
+  }, [product]);
 
    const galleryLayoutClasses = {
       bottom: 'flex-col',
@@ -317,12 +353,12 @@ export default function B2BProductDetailPage() {
   return (
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
-      <div className="grid md:grid-cols-2 gap-12 items-start">
+      <div className="grid md:grid-cols-2 gap-12">
         <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
            <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
-                {activeMedia?.type === 'image' ? (
-                    <Image src={activeImage!} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
-                ) : activeMedia?.src ? (
+                {activeMedia?.type === 'image' && activeMedia.src ? (
+                    <Image src={activeMedia.src} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+                ) : activeMedia?.type === 'video' && activeMedia.src ? (
                     <iframe
                         src={activeMedia.src}
                         title="Product Video"
@@ -346,19 +382,18 @@ export default function B2BProductDetailPage() {
           {allMedia.length > 1 && (
             <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition as keyof typeof thumbnailLayoutClasses], thumbnailOrderClasses[thumbnailPosition as keyof typeof thumbnailOrderClasses])}>
              {allMedia.map((media, index) => {
-                 const isVideo = typeof media === 'string' && media.includes('youtube.com');
-                 const mediaSrc = typeof media === 'string' ? media : '';
+                 const isVideo = media.type === 'video';
                  return (
                  <button
                     key={index}
-                    onClick={() => setActiveMedia({type: isVideo ? 'video' : 'image', src: mediaSrc})}
+                    onClick={() => setActiveMedia(media)}
                     className={cn(
                         "relative aspect-square rounded-md overflow-hidden transition-all flex-shrink-0",
-                        activeMedia?.src === mediaSrc ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
+                        activeMedia?.src === media.src ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
                         thumbnailPosition === 'bottom' ? 'w-20' : 'w-16'
                     )}
                  >
-                    <Image src={isVideo ? product.imageUrl : mediaSrc} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
+                    <Image src={isVideo ? product.imageUrl : media.src} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
                     {isVideo && (
                         <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                             <Video className="h-6 w-6 text-white" />
@@ -391,6 +426,26 @@ export default function B2BProductDetailPage() {
               <span className="text-muted-foreground text-sm">({product.reviewCount} reviews)</span>
             </div>
           </div>
+          
+           {(promotions.length > 0 || publicCoupons.length > 0) && (
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                    <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
+                    {promotions.map(promo => {
+                        if (promo.type === 'discount' || promo.type === 'Sale') {
+                           return <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}</p>
+                        }
+                        return null;
+                    })}
+                    {publicCoupons.map(coupon => (
+                         <p key={coupon.id} className="text-sm flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>
+                                {coupon.type === 'percentage' ? `${coupon.value}% OFF` : `₹${coupon.value} OFF`} with code: <span className="font-bold font-mono">{coupon.code}</span>
+                            </span>
+                         </p>
+                    ))}
+                </div>
+            )}
           
           <Card>
             <CardHeader>
@@ -450,25 +505,31 @@ export default function B2BProductDetailPage() {
             </CardContent>
           </Card>
 
-           {(promotions.length > 0 || publicCoupons.length > 0) && (
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                    <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
-                    {promotions.map(promo => {
-                        if (promo.type === 'discount' || promo.type === 'Sale') {
-                           return <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}</p>
-                        }
-                        return null;
-                    })}
-                    {publicCoupons.map(coupon => (
-                         <p key={coupon.id} className="text-sm flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                            <span>
-                                {coupon.type === 'percentage' ? `${coupon.value}% OFF` : `₹${coupon.value} OFF`} with code: <span className="font-bold font-mono">{coupon.code}</span>
-                            </span>
-                         </p>
-                    ))}
+            <div className="border rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                    <Truck className="h-5 w-5 text-muted-foreground" />
+                    <Label htmlFor="pincode-check" className="font-semibold">Check Delivery Options</Label>
                 </div>
-            )}
+                <div className="flex items-center gap-2">
+                    <Input 
+                        id="pincode-check"
+                        placeholder="Enter 6-digit pincode" 
+                        className="h-9" 
+                        value={pincode}
+                        onChange={(e) => setPincode(e.target.value)}
+                        maxLength={6}
+                    />
+                    <Button variant="outline" size="sm" className="h-9" onClick={handleCheckDelivery} disabled={isCheckingPincode}>
+                        {isCheckingPincode ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Check'}
+                    </Button>
+                </div>
+                 {deliveryEstimate && (
+                    <div className="text-sm flex items-center gap-2 pt-1 text-muted-foreground">
+                        <CheckCircle className="h-4 w-4 text-green-600"/>
+                        <span>{deliveryEstimate}</span>
+                    </div>
+                )}
+            </div>
           
            <div className="space-y-2">
             <Button size="lg" className="w-full" onClick={handleRequestQuote}>
@@ -481,7 +542,7 @@ export default function B2BProductDetailPage() {
             <div className="grid grid-cols-2 gap-2">
                 <Button size="lg" variant="outline" className="w-full" onClick={handleCompareClick}>
                     <Scale className="mr-2 h-5 w-5" />
-                    {isComparing(product.id) ? 'Remove from Compare' : 'Add to Compare'}
+                    {isComparing(product.id) ? 'Remove' : 'Compare'}
                 </Button>
                 <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
                     <ShoppingCart className="mr-2 h-5 w-5" />
@@ -498,26 +559,27 @@ export default function B2BProductDetailPage() {
 
       <Separator className="my-12" />
 
-      <ReviewsPreview productId={product.id} />
+      <div className="my-12 space-y-12">
+        <ReviewsPreview productId={product.id} />
+        <FrequentlyBoughtTogetherPreview currentProduct={product} />
+        {vendorProducts.length > 0 && (
+            <div>
+                <h2 className="text-2xl font-bold font-headline mb-6">More from {vendor?.name}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {vendorProducts.map(p => <B2bProductCard key={p.id} product={p} />)}
+                </div>
+            </div>
+        )}
+        {similarProducts.length > 0 && (
+            <div>
+                <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {similarProducts.map(p => <B2bProductCard key={p.id} product={p} />)}
+                </div>
+            </div>
+        )}
+      </div>
       
-      {similarProducts.length > 0 && (
-          <div className="mt-12">
-            <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {similarProducts.map(p => <B2bProductCard key={p.id} product={p} />)}
-            </div>
-        </div>
-      )}
-
-      {vendorProducts.length > 0 && (
-         <div className="mt-12">
-            <h2 className="text-2xl font-bold font-headline mb-6">More from {vendor?.name}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {vendorProducts.map(p => <B2bProductCard key={p.id} product={p} />)}
-            </div>
-        </div>
-      )}
-
     </div>
     {vendor && <VendorInfoDialog vendor={vendor} />}
     </Dialog>
