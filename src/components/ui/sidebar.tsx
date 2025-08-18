@@ -217,7 +217,7 @@ const Sidebar = React.forwardRef<
       <div
         ref={ref}
         className={cn(
-            "peer hidden md:block text-sidebar-foreground relative transition-[width] duration-300 ease-in-out",
+            "peer hidden md:flex text-sidebar-foreground relative transition-[width] duration-300 ease-in-out flex-shrink-0",
             state === 'collapsed' ? "w-[var(--sidebar-width-icon)]" : "w-[var(--sidebar-width)]",
             className
         )}

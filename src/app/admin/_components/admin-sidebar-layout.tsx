@@ -47,7 +47,7 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
     }
 
     return (
-        <div className="flex min-h-screen">
+        <div className="flex h-screen overflow-hidden">
             <Sidebar>
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
