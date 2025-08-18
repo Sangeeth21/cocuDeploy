@@ -46,9 +46,11 @@ export function CartPreview() {
             }
         }
         const originalPrice = finalPrice;
+        
         if (applicableDiscount) {
             finalPrice *= (1 - (applicableDiscount.reward.value / 100));
         }
+        
         return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
     };
 
@@ -87,6 +89,11 @@ export function CartPreview() {
                                         <div key={item.instanceId} className="flex items-start gap-4">
                                             <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
                                                 <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" data-ai-hint="product image" />
+                                                {priceDetails.hasDiscount && (
+                                                    <Badge variant="destructive" className="absolute top-1 left-1">
+                                                        <Tag className="mr-1 h-3 w-3" /> {priceDetails.discountValue}% OFF
+                                                    </Badge>
+                                                )}
                                             </div>
                                             <div className="flex-1 space-y-1">
                                                 <Link href={`/products/${item.product.id}`} className="text-sm font-medium leading-tight hover:text-primary">{item.product.name}</Link>

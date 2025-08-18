@@ -105,6 +105,11 @@ export function WishlistPreview() {
                                         <div key={item.id} className="flex items-start gap-4">
                                             <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
                                                 <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="product image" />
+                                                 {priceDetails.hasDiscount && (
+                                                    <Badge variant="destructive" className="absolute top-1 left-1">
+                                                        <Tag className="mr-1 h-3 w-3" /> {priceDetails.discountValue}% OFF
+                                                    </Badge>
+                                                )}
                                             </div>
                                             <div className="flex-1 space-y-2">
                                                 <div className="flex justify-between">
