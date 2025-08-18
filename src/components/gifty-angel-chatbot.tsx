@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -22,6 +22,8 @@ const occasionOptions = ["Birthday", "Anniversary", "Farewell", "Festival", "Jus
 const recipientOptions = ["Partner", "Friend", "Family", "Colleague"];
 const vibeOptions = ["Classy", "Cute", "Funny", "Minimal", "Luxury", "Eco-friendly"];
 const budgetOptions = ["< ₹1000", "₹1000-₹2500", "₹2500-₹5000", "₹5000+"];
+const SESSION_STORAGE_KEY = 'gifty_angel_chat_session';
+
 
 export function GiftyAngelChatbot() {
     const [isOpen, setIsOpen] = useState(false);
@@ -29,6 +31,33 @@ export function GiftyAngelChatbot() {
     const [history, setHistory] = useState<{ sender: 'user' | 'bot', message: string }[]>([]);
     const [isCustomInputActive, setIsCustomInputActive] = useState(false);
     const [customInputValue, setCustomInputValue] = useState("");
+
+    // Load state from sessionStorage on mount
+    useEffect(() => {
+        try {
+            const savedState = sessionStorage.getItem(SESSION_STORAGE_KEY);
+            if (savedState) {
+                const { savedStage, savedHistory } = JSON.parse(savedState);
+                if (savedStage && savedHistory) {
+                    setStage(savedStage);
+                    setHistory(savedHistory);
+                }
+            }
+        } catch (error) {
+            console.error("Could not load chat state from session storage", error);
+        }
+    }, []);
+
+    // Save state to sessionStorage on change
+    useEffect(() => {
+        try {
+            const stateToSave = JSON.stringify({ savedStage: stage, savedHistory: history });
+            sessionStorage.setItem(SESSION_STORAGE_KEY, stateToSave);
+        } catch (error) {
+            console.error("Could not save chat state to session storage", error);
+        }
+    }, [stage, history]);
+
 
     const addMessageToHistory = (sender: 'user' | 'bot', message: string) => {
         setHistory(prev => [...prev, { sender, message }]);
@@ -65,12 +94,10 @@ export function GiftyAngelChatbot() {
         setHistory([]);
         setIsCustomInputActive(false);
         setCustomInputValue("");
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
     }
     
     const handleOpenChange = (open: boolean) => {
-        if (!open) {
-            setTimeout(() => resetChat(), 300);
-        }
         setIsOpen(open);
     }
 
@@ -179,6 +206,11 @@ export function GiftyAngelChatbot() {
                                 )}
                             </div>
                         </ScrollArea>
+                        {stage !== 'initial' && (
+                            <div className="p-2 border-t">
+                                <Button variant="link" size="sm" onClick={resetChat}>Start Over</Button>
+                            </div>
+                        )}
                     </div>
                 </PopoverContent>
             </Popover>

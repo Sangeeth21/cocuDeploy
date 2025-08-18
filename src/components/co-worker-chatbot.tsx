@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -23,6 +23,8 @@ const budgetOptions = ["< ₹500", "₹500-₹1500", "₹1500-₹5000", "₹5000
 const toneOptions = ["Premium", "Eco-friendly", "Functional", "Festive", "Luxury Branding"];
 
 const b2bProducts = mockProducts.filter(p => p.b2bEnabled);
+const SESSION_STORAGE_KEY = 'co_worker_chat_session';
+
 
 export function CoWorkerChatbot() {
     const [isOpen, setIsOpen] = useState(false);
@@ -30,6 +32,33 @@ export function CoWorkerChatbot() {
     const [history, setHistory] = useState<{ sender: 'user' | 'bot', message: string }[]>([]);
     const [isCustomInputActive, setIsCustomInputActive] = useState(false);
     const [customInputValue, setCustomInputValue] = useState("");
+
+    // Load state from sessionStorage on mount
+    useEffect(() => {
+        try {
+            const savedState = sessionStorage.getItem(SESSION_STORAGE_KEY);
+            if (savedState) {
+                const { savedStage, savedHistory } = JSON.parse(savedState);
+                if (savedStage && savedHistory) {
+                    setStage(savedStage);
+                    setHistory(savedHistory);
+                }
+            }
+        } catch (error) {
+            console.error("Could not load chat state from session storage", error);
+        }
+    }, []);
+
+    // Save state to sessionStorage on change
+    useEffect(() => {
+        try {
+            const stateToSave = JSON.stringify({ savedStage: stage, savedHistory: history });
+            sessionStorage.setItem(SESSION_STORAGE_KEY, stateToSave);
+        } catch (error) {
+            console.error("Could not save chat state to session storage", error);
+        }
+    }, [stage, history]);
+
 
     const addMessageToHistory = (sender: 'user' | 'bot', message: string) => {
         setHistory(prev => [...prev, { sender, message }]);
@@ -66,12 +95,10 @@ export function CoWorkerChatbot() {
         setHistory([]);
         setIsCustomInputActive(false);
         setCustomInputValue("");
+        sessionStorage.removeItem(SESSION_STORAGE_KEY);
     }
     
     const handleOpenChange = (open: boolean) => {
-        if (!open) {
-            setTimeout(() => resetChat(), 300);
-        }
         setIsOpen(open);
     }
 
@@ -180,7 +207,7 @@ export function CoWorkerChatbot() {
                                 )}
                             </div>
                         </ScrollArea>
-                         {stage === 'results' && (
+                         {stage !== 'initial' && (
                             <div className="p-2 border-t">
                                 <Button variant="link" size="sm" onClick={resetChat}>Start Over</Button>
                             </div>
