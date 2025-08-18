@@ -16,11 +16,17 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { collection, doc, onSnapshot, query, updateDoc, writeBatch, getDocs, addDoc, deleteDoc, where, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
 type CategoryCommissions = {
     [categoryName: string]: CommissionRule;
 };
+
+type CommissionData = {
+    personalized: CategoryCommissions;
+    corporate: CategoryCommissions;
+}
 
 type VendorCommissionOverride = {
     id: string; // Firestore document ID
@@ -43,9 +49,10 @@ export default function CommissionEnginePage() {
     
     // State for commissions
     const [allCategories, setAllCategories] = useState<Category[]>([]);
-    const [categoryCommissions, setCategoryCommissions] = useState<CategoryCommissions>({});
+    const [commissions, setCommissions] = useState<CommissionData>({ personalized: {}, corporate: {} });
     const [vendorOverrides, setVendorOverrides] = useState<VendorCommissionOverride[]>([]);
     const [productOverrides, setProductOverrides] = useState<ProductCommissionOverride[]>([]);
+    const [activeTab, setActiveTab] = useState<'personalized' | 'corporate'>('personalized');
 
     // State for dialogs and editing
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -70,7 +77,7 @@ export default function CommissionEnginePage() {
         // 2. Fetch Category Commissions and create defaults if missing
         const catComRef = doc(db, 'commissions', 'categories');
         const unsubCat = onSnapshot(catComRef, async (docSnap) => {
-            const fetchedCommissions = docSnap.exists() ? docSnap.data() as CategoryCommissions : {};
+            const fetchedCommissions = docSnap.exists() ? docSnap.data() as CommissionData : { personalized: {}, corporate: {} };
 
             const categoriesSnapshot = await getDocs(query(collection(db, 'categories')));
             const allCategoryNames = categoriesSnapshot.docs.map(doc => doc.data().name);
@@ -79,16 +86,19 @@ export default function CommissionEnginePage() {
             let hasChanged = false;
 
             allCategoryNames.forEach(name => {
-                if (!updatedCommissions[name]) {
-                    updatedCommissions[name] = { commission: 10, buffer: { type: 'fixed', value: 1.00 } };
+                if (!updatedCommissions.personalized[name]) {
+                    updatedCommissions.personalized[name] = { commission: 10, buffer: { type: 'fixed', value: 1.00 } };
+                    hasChanged = true;
+                }
+                if (!updatedCommissions.corporate[name]) {
+                    updatedCommissions.corporate[name] = { commission: 15, buffer: { type: 'fixed', value: 5.00 } }; // Different default for corporate
                     hasChanged = true;
                 }
             });
 
-            setCategoryCommissions(updatedCommissions);
+            setCommissions(updatedCommissions);
 
             if (hasChanged) {
-                // Save the newly created default commissions back to Firestore
                 await setDoc(catComRef, updatedCommissions, { merge: true });
             }
         });
@@ -149,7 +159,7 @@ export default function CommissionEnginePage() {
         setEditContext({ type, id, name });
         let rule;
         if (type === 'category') {
-            rule = categoryCommissions[id];
+            rule = commissions[activeTab][id];
         } else if (type === 'vendor') {
             rule = vendorOverrides.find(v => v.id === id)?.rule;
         } else { // product
@@ -175,7 +185,9 @@ export default function CommissionEnginePage() {
         try {
             if (editContext.type === 'category') {
                 const catComRef = doc(db, 'commissions', 'categories');
-                await updateDoc(catComRef, { [editContext.id]: newRule });
+                // Use dot notation for nested field update
+                const fieldPath = `${activeTab}.${editContext.id}`;
+                await updateDoc(catComRef, { [fieldPath]: newRule });
             } else if (editContext.type === 'vendor') {
                  const vendorDocRef = doc(db, 'vendorCommissionOverrides', editContext.id);
                  await updateDoc(vendorDocRef, { rule: newRule });
@@ -248,6 +260,8 @@ export default function CommissionEnginePage() {
         }
         return `${buffer.value}%`;
     }
+    
+    const categoryCommissionsToShow = commissions[activeTab] || {};
 
     return (
         <div>
@@ -258,40 +272,46 @@ export default function CommissionEnginePage() {
 
             <div className="grid lg:grid-cols-3 gap-8 items-start">
                 <div className="lg:col-span-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Category-based Commissions</CardTitle>
-                            <CardDescription>
-                                This is the primary way to set commissions. Rules here apply to all products within a category unless a specific override exists.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Category</TableHead>
-                                        <TableHead>Commission Rate</TableHead>
-                                        <TableHead>Buffer Price/ Buffer %</TableHead>
-                                        <TableHead className="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {Object.entries(categoryCommissions).map(([category, rule]) => (
-                                        <TableRow key={category}>
-                                            <TableCell className="font-medium">{category}</TableCell>
-                                            <TableCell>{rule.commission}%</TableCell>
-                                            <TableCell>{formatBuffer(rule.buffer)}</TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="outline" size="sm" onClick={() => handleEditClick('category', category, category)}>
-                                                    <Edit className="mr-2 h-3 w-3" /> Edit
-                                                </Button>
-                                            </TableCell>
+                    <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
+                         <TabsList className="mb-4">
+                            <TabsTrigger value="personalized">Personalized Retail</TabsTrigger>
+                            <TabsTrigger value="corporate">Corporate & Bulk Gifting</TabsTrigger>
+                        </TabsList>
+                        <Card>
+                            <CardHeader>
+                                <CardTitle>Category-based Commissions</CardTitle>
+                                <CardDescription>
+                                    This is the primary way to set commissions. Rules here apply to all products within a category unless a specific override exists.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Category</TableHead>
+                                            <TableHead>Commission Rate</TableHead>
+                                            <TableHead>Buffer Price/ Buffer %</TableHead>
+                                            <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {Object.entries(categoryCommissionsToShow).map(([category, rule]) => (
+                                            <TableRow key={category}>
+                                                <TableCell className="font-medium">{category}</TableCell>
+                                                <TableCell>{rule.commission}%</TableCell>
+                                                <TableCell>{formatBuffer(rule.buffer)}</TableCell>
+                                                <TableCell className="text-right">
+                                                    <Button variant="outline" size="sm" onClick={() => handleEditClick('category', category, category)}>
+                                                        <Edit className="mr-2 h-3 w-3" /> Edit
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </CardContent>
+                        </Card>
+                    </Tabs>
                 </div>
                 <div className="lg:col-span-1 space-y-8">
                     <Card>
@@ -437,3 +457,4 @@ export default function CommissionEnginePage() {
         </div>
     );
 }
+    
