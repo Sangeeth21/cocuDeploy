@@ -55,6 +55,8 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
     const { totalItems: cartItemsCount } = useCart();
     const { totalItems: comparisonItemsCount } = useComparison();
     const { totalItems: bidItemsCount } = useBidRequest();
+    const { open } = useSidebar();
+
 
     const handleLogout = () => {
         adminLogout();
@@ -65,7 +67,6 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
         <>
             <Sidebar 
                 collapsible="icon"
-                className="group/sidebar"
             >
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -73,7 +74,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                            <Avatar className="h-10 w-10">
                                <Building className="h-6 w-6"/>
                             </Avatar>
-                            <div className="flex flex-col opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto transition-all duration-200">
+                            <div className={cn("flex flex-col", !open && "hidden")}>
                                 <span className="text-lg font-semibold whitespace-nowrap">Corporate Client</span>
                             </div>
                         </Link>
@@ -100,7 +101,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                                     >
                                         <Link href={link.href}>
                                             <link.icon className="h-5 w-5" />
-                                            <span className="opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto transition-all duration-200 whitespace-nowrap">{link.label}</span>
+                                            <span className={cn(!open && "hidden")}>{link.label}</span>
                                              {badgeContent && <SidebarMenuBadge>{badgeContent}</SidebarMenuBadge>}
                                         </Link>
                                     </SidebarMenuButton>
@@ -114,7 +115,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                          <SidebarMenuItem>
                             <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
                                 <LogOut />
-                                <span className="opacity-0 w-0 group-hover/sidebar:opacity-100 group-hover/sidebar:w-auto transition-all duration-200 whitespace-nowrap">Log Out</span>
+                                <span className={cn(!open && "hidden")}>Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
@@ -154,7 +155,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
 export function CorporateSidebarLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex min-h-screen bg-background">
-            <SidebarProvider defaultOpen={false}>
+            <SidebarProvider defaultOpen={true}>
                 <CorporateSidebarLayoutContent>
                     {children}
                 </CorporateSidebarLayoutContent>
