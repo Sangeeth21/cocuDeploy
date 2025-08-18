@@ -94,7 +94,8 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
     
     const handleSave = () => {
         const couponData = {
-            code, type, 
+            code,
+            type,
             value: Number(value),
             platform,
             maxDiscount: maxDiscount ? Number(maxDiscount) : undefined,
@@ -103,7 +104,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
             isPublic
         };
         onSave(couponData, coupon?.id);
-    }
+    };
 
     return (
          <Dialog open={open} onOpenChange={onOpenChange}>
