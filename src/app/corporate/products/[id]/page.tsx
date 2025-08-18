@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -244,7 +245,7 @@ export default function B2BProductDetailPage() {
     return priceDetails.original * quantity;
   }, [priceDetails, quantity]);
 
-  const allMedia: MediaItem[] = useMemo(() => {
+  const allMedia = useMemo(() => {
     if (!product) return [];
     
     const media: MediaItem[] = [];
@@ -492,9 +493,11 @@ export default function B2BProductDetailPage() {
                      <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">Price per Unit</span>
                          <div className="flex items-baseline gap-2">
-                            {priceDetails.hasDiscount && (
-                                <Badge variant="destructive">{priceDetails.discountValue}% OFF</Badge>
-                            )}
+                             {priceDetails.hasDiscount && (
+                                <Badge variant="destructive" className="text-[10px] h-auto px-1.5 py-0 leading-tight">
+                                    <Tag className="mr-1 h-3 w-3"/> {priceDetails.discountValue}% OFF
+                                </Badge>
+                             )}
                             {priceDetails.hasDiscount && (
                                 <span className="text-base text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</span>
                             )}
@@ -505,7 +508,7 @@ export default function B2BProductDetailPage() {
                     <div className="flex justify-between items-center font-bold text-lg">
                         <span>Estimated Total</span>
                         <div className="flex items-baseline gap-2">
-                             {priceDetails.hasDiscount && (
+                            {priceDetails.hasDiscount && (
                                 <span className="text-base text-muted-foreground line-through font-medium">${originalTotalPrice.toFixed(2)}</span>
                             )}
                             <span>${totalPrice.toFixed(2)}</span>
@@ -595,3 +598,4 @@ export default function B2BProductDetailPage() {
     </Dialog>
   );
 }
+
