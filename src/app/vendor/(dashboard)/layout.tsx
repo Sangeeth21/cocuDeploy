@@ -3,9 +3,7 @@
 
 import React from "react";
 import { useVerification } from "@/context/vendor-verification-context";
-import { VendorSidebarLayout as PersonalLayout } from "../personal/(dashboard)/_components/vendor-sidebar-layout";
-import { VendorSidebarLayout as CorporateLayout } from "../corporate/(dashboard)/_components/vendor-sidebar-layout";
-import { VendorSidebarLayout as BothLayout } from "../both/(dashboard)/_components/vendor-sidebar-layout";
+import { VendorSidebarLayout } from "./_components/vendor-sidebar-layout";
 import { BrandedLoader } from "@/components/branded-loader";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -16,14 +14,5 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         return <BrandedLoader />;
     }
 
-    if (vendorType === 'personalized') {
-        return <PersonalLayout>{children}</PersonalLayout>;
-    }
-
-    if (vendorType === 'corporate') {
-        return <CorporateLayout>{children}</CorporateLayout>;
-    }
-    
-    // Default to the 'both' layout
-    return <BothLayout>{children}</BothLayout>;
+    return <VendorSidebarLayout>{children}</VendorSidebarLayout>;
 }
