@@ -88,7 +88,7 @@ export default function ProductDetailPage() {
   const thumbnailPosition = "bottom"; 
 
   const { isWishlisted, toggleWishlist } = useWishlist();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, user } = useUser();
   const { openDialog } = useAuthDialog();
   
   useEffect(() => {
@@ -96,16 +96,33 @@ export default function ProductDetailPage() {
 
     const fetchProductAndRelations = async () => {
         setLoading(true);
+        
+        // Fetch product and commission rules concurrently
         const productRef = doc(db, "products", id);
-        const productSnap = await getDoc(productRef);
+        const commissionRef = doc(db, 'commissions', 'categories');
+
+        const [productSnap, commissionSnap] = await Promise.all([
+            getDoc(productRef),
+            getDoc(commissionRef)
+        ]);
 
         if (productSnap.exists()) {
             const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
             setProduct(productData);
             setActiveMedia({ type: 'image', src: productData.imageUrl });
-            setLoading(false); // <-- FIX: Set loading to false after main product is fetched
+            
+            // Set commission rule
+            if(commissionSnap.exists()){
+                const commissions = commissionSnap.data();
+                const rule = commissions.personalized?.[productData.category];
+                if(rule) {
+                    setCommissionRule(rule);
+                }
+            }
+            
+            setLoading(false); 
 
-            // Fetch Vendor
+            // Fetch Vendor and related products after main data is loaded
             if (productData.vendorId) {
                 const vendorRef = doc(db, "users", productData.vendorId);
                 const vendorSnap = await getDoc(vendorRef);
@@ -113,7 +130,6 @@ export default function ProductDetailPage() {
                     setVendor({ id: vendorSnap.id, ...vendorSnap.data() } as User);
                 }
                 
-                // Fetch other products from the same vendor
                 const vendorProductsQuery = query(
                     collection(db, "products"),
                     where("vendorId", "==", productData.vendorId),
@@ -124,7 +140,6 @@ export default function ProductDetailPage() {
                 setVendorProducts(vendorProductsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
             }
             
-            // Fetch similar products by category
             if(productData.category) {
                 const similarQuery = query(
                     collection(db, "products"), 
@@ -137,7 +152,7 @@ export default function ProductDetailPage() {
             }
         } else {
             console.log("No such product document!");
-            setLoading(false); // Also set loading to false if product not found
+            setLoading(false);
         }
     };
 
@@ -146,9 +161,17 @@ export default function ProductDetailPage() {
 
   const finalPrice = useMemo(() => {
     if (!product) return 0;
-    // Commission logic can be added back here if needed. For now, it's direct price.
-    return product.price;
-  }, [product]);
+    
+    let price = product.price;
+    if (commissionRule && commissionRule.buffer) {
+        if (commissionRule.buffer.type === 'fixed') {
+            price += commissionRule.buffer.value;
+        } else { // percentage
+            price *= (1 + (commissionRule.buffer.value / 100));
+        }
+    }
+    return price;
+  }, [product, commissionRule]);
 
   const isCustomizable = useMemo(() => {
     if (!product) return false;
