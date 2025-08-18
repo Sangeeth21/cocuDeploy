@@ -368,6 +368,9 @@ export type Coupon = {
     type: 'fixed' | 'percentage';
     value: number;
     platform: ProgramPlatform;
+    scope: 'all' | 'category' | 'product';
+    applicableCategories?: string[];
+    applicableProducts?: string[];
     maxDiscount?: number;
     status: 'Active' | 'Inactive' | 'Expired';
     usageLimit: number;

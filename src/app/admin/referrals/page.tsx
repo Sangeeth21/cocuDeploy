@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe, Edit, Trash2, PauseCircle, PlayCircle, Ticket } from "lucide-react";
+import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe, Edit, Trash2, PauseCircle, PlayCircle, Ticket, X } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,11 +19,14 @@ import type { DateRange } from "react-day-picker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Program, ProgramPlatform, ProgramTarget, Coupon, Freebie } from "@/lib/types";
+import type { Program, ProgramPlatform, ProgramTarget, Coupon, Freebie, Category, DisplayProduct } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import Image from "next/image";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const programOptions = {
     customer: {
@@ -59,6 +62,14 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
     const [expiresAt, setExpiresAt] = useState<Date | undefined>();
     const [usageLimit, setUsageLimit] = useState<number | string>(100);
     const [isPublic, setIsPublic] = useState(true);
+    const [scope, setScope] = useState<'all' | 'category' | 'product'>('all');
+    
+    // State for scope selections
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [products, setProducts] = useState<DisplayProduct[]>([]);
+    const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+    const [selectedProducts, setSelectedProducts] = useState<DisplayProduct[]>([]);
+    const [productSearch, setProductSearch] = useState("");
 
     const generateRandomCode = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -70,6 +81,29 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
     };
     
     useEffect(() => {
+        // Fetch categories and products for selection
+        const unsubCategories = onSnapshot(query(collection(db, 'categories')), snapshot => {
+            setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Category)));
+        });
+        const unsubProducts = onSnapshot(query(collection(db, 'products')), snapshot => {
+            setProducts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
+        });
+
+        return () => {
+            unsubCategories();
+            unsubProducts();
+        }
+    }, []);
+
+    const searchedProducts = useMemo(() => {
+        if (!productSearch) return [];
+        return products.filter(p => 
+            p.name.toLowerCase().includes(productSearch.toLowerCase()) &&
+            !selectedProducts.find(sp => sp.id === p.id)
+        );
+    }, [productSearch, products, selectedProducts]);
+    
+    useEffect(() => {
         if(open && !coupon) {
              generateRandomCode();
              setType('percentage');
@@ -79,6 +113,9 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
              setExpiresAt(undefined);
              setUsageLimit(100);
              setIsPublic(true);
+             setScope('all');
+             setSelectedCategories([]);
+             setSelectedProducts([]);
         }
         if (open && coupon) {
             setCode(coupon.code);
@@ -89,8 +126,13 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
             setExpiresAt(coupon.expiresAt);
             setUsageLimit(coupon.usageLimit);
             setIsPublic(coupon.isPublic ?? true);
+            setScope(coupon.scope || 'all');
+            setSelectedCategories(coupon.applicableCategories || []);
+            // This part is tricky as we only have IDs. A real app would fetch product details.
+            // For now, we'll assume we have the full product objects if they were passed in.
+            setSelectedProducts(products.filter(p => coupon.applicableProducts?.includes(p.id)));
         }
-    }, [open, coupon]);
+    }, [open, coupon, products]);
     
     const handleSave = () => {
         const couponData = {
@@ -101,17 +143,32 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
             maxDiscount: maxDiscount ? Number(maxDiscount) : undefined,
             expiresAt,
             usageLimit: Number(usageLimit),
-            isPublic
+            isPublic,
+            scope,
+            applicableCategories: scope === 'category' ? selectedCategories : [],
+            applicableProducts: scope === 'product' ? selectedProducts.map(p => p.id) : [],
         };
         onSave(couponData, coupon?.id);
     };
 
+    const handleSelectProduct = (product: DisplayProduct) => {
+        if (!selectedProducts.find(p => p.id === product.id)) {
+            setSelectedProducts(prev => [...prev, product]);
+        }
+        setProductSearch("");
+    }
+
+    const handleRemoveProduct = (id: string) => {
+        setSelectedProducts(prev => prev.filter(p => p.id !== id));
+    }
+
     return (
          <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>{coupon ? "Edit Coupon" : "Create New Coupon"}</DialogTitle>
                 </DialogHeader>
+                 <ScrollArea className="max-h-[70vh] -mx-6 px-6">
                  <div className="space-y-4 py-2">
                     <div className="space-y-2">
                         <Label htmlFor="coupon-code">Coupon Code</Label>
@@ -153,6 +210,72 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                             <Input id="max-discount" type="number" value={maxDiscount} onChange={e => setMaxDiscount(e.target.value)} placeholder="e.g., 100" />
                         </div>
                     )}
+                    <div className="space-y-2">
+                        <Label>Coupon Scope</Label>
+                        <RadioGroup value={scope} onValueChange={(v) => setScope(v as any)} className="flex gap-4">
+                            <Label htmlFor="scope-all" className="flex items-center gap-2 p-2 border rounded-md cursor-pointer flex-1 text-sm">
+                                <RadioGroupItem value="all" id="scope-all"/> All Products
+                            </Label>
+                             <Label htmlFor="scope-cat" className="flex items-center gap-2 p-2 border rounded-md cursor-pointer flex-1 text-sm">
+                                <RadioGroupItem value="category" id="scope-cat"/> Specific Categories
+                            </Label>
+                             <Label htmlFor="scope-prod" className="flex items-center gap-2 p-2 border rounded-md cursor-pointer flex-1 text-sm">
+                                <RadioGroupItem value="product" id="scope-prod"/> Specific Products
+                            </Label>
+                        </RadioGroup>
+                    </div>
+
+                    {scope === 'category' && (
+                        <Card>
+                            <CardHeader className="p-3"><CardTitle className="text-sm">Select Categories</CardTitle></CardHeader>
+                            <CardContent className="p-3">
+                                <ScrollArea className="h-32">
+                                <div className="grid grid-cols-2 gap-2">
+                                    {categories.map(cat => (
+                                         <div key={cat.id} className="flex items-center space-x-2">
+                                            <Checkbox 
+                                                id={`cat-${cat.id}`} 
+                                                checked={selectedCategories.includes(cat.id!)}
+                                                onCheckedChange={(checked) => {
+                                                    setSelectedCategories(prev => checked ? [...prev, cat.id!] : prev.filter(id => id !== cat.id));
+                                                }}
+                                            />
+                                            <Label htmlFor={`cat-${cat.id}`} className="font-normal">{cat.name}</Label>
+                                        </div>
+                                    ))}
+                                </div>
+                                </ScrollArea>
+                            </CardContent>
+                        </Card>
+                    )}
+                    {scope === 'product' && (
+                        <Card>
+                             <CardHeader className="p-3"><CardTitle className="text-sm">Select Products</CardTitle></CardHeader>
+                             <CardContent className="p-3 space-y-2">
+                                 <div className="relative">
+                                    <Input placeholder="Search for products..." value={productSearch} onChange={e => setProductSearch(e.target.value)}/>
+                                     {searchedProducts.length > 0 && (
+                                        <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                                            {searchedProducts.map(p => (
+                                                <div key={p.id} className="p-2 hover:bg-accent cursor-pointer text-sm" onClick={() => handleSelectProduct(p)}>
+                                                    {p.name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                 <div className="space-y-1">
+                                    {selectedProducts.map(p => (
+                                         <div key={p.id} className="flex items-center gap-2 text-xs p-1 border rounded-md bg-muted/50">
+                                            <p className="flex-1 truncate">{p.name}</p>
+                                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleRemoveProduct(p.id)}><X className="h-3 w-3"/></Button>
+                                         </div>
+                                    ))}
+                                </div>
+                             </CardContent>
+                        </Card>
+                    )}
+
                     <div className="grid grid-cols-2 gap-4">
                          <div className="space-y-2">
                             <Label>Expiry Date (Optional)</Label>
@@ -176,7 +299,8 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                         <Label htmlFor="is-public">Publish Coupon Publicly</Label>
                     </div>
                 </div>
-                 <DialogFooter>
+                 </ScrollArea>
+                 <DialogFooter className="pt-4 border-t">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
                     <Button onClick={handleSave} disabled={isLoading}>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

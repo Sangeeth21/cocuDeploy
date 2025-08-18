@@ -112,7 +112,7 @@ export default function ProductDetailPage() {
         ]);
 
         if (productSnap.exists()) {
-            const productData = { id: productSnap.id, ...productSnap.data() } as DisplayProduct;
+            const productData = { id: productSnap.id, ...doc.data() } as DisplayProduct;
             setProduct(productData);
             setActiveMedia({ type: 'image', src: productData.imageUrl });
             
@@ -123,10 +123,21 @@ export default function ProductDetailPage() {
             }
             
             const activePromos = promotionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
-            setPromotions(activePromos);
+            const relevantPromos = activePromos.filter(p => {
+                if(p.productScope === 'all') return true;
+                // Add logic for 'selected' products if needed
+                return false;
+            });
+            setPromotions(relevantPromos);
 
-            const activeCoupons = couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
-            setPublicCoupons(activeCoupons);
+            const allPublicCoupons = couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
+            const relevantCoupons = allPublicCoupons.filter(c => {
+                if (c.scope === 'all') return true;
+                if (c.scope === 'category' && c.applicableCategories?.includes(productData.category)) return true;
+                if (c.scope === 'product' && c.applicableProducts?.includes(productData.id)) return true;
+                return false;
+            });
+            setPublicCoupons(relevantCoupons);
             
             setLoading(false); 
 
