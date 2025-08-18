@@ -190,10 +190,10 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     if (step === 'verify') {
         return (
             <form onSubmit={handleVerificationSubmit} className="space-y-4">
-                <DialogHeader className="text-center">
-                    <DialogTitle>Verify Your Account</DialogTitle>
-                    <DialogDescription>Enter the codes sent to your email and phone.</DialogDescription>
-                </DialogHeader>
+                 <div className="text-center">
+                    <h3 className="text-lg font-semibold">Verify Your Account</h3>
+                    <p className="text-sm text-muted-foreground">Enter the codes sent to your email and phone.</p>
+                </div>
                 <div className="space-y-2">
                     <Label htmlFor="email-otp">Email Verification Code</Label>
                     <Input id="email-otp" required value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)} />
@@ -281,13 +281,14 @@ export function CustomerAuthDialog() {
     return (
         <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
             <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
+                 <DialogHeader>
+                    <DialogTitle className="text-center font-headline text-2xl">Account Access</DialogTitle>
+                </DialogHeader>
                 <Tabs defaultValue={authDialogState.initialTab} className="w-full flex flex-col min-h-0">
-                    <DialogHeader className="flex-shrink-0">
-                        <TabsList className="grid w-full grid-cols-2">
-                            <TabsTrigger value="login">Login</TabsTrigger>
-                            <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                        </TabsList>
-                    </DialogHeader>
+                    <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+                        <TabsTrigger value="login">Login</TabsTrigger>
+                        <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                    </TabsList>
                     <div className="pt-4 flex-1 min-h-0">
                         <TabsContent value="login">
                              <Tabs defaultValue="personal" className="w-full">
@@ -308,11 +309,11 @@ export function CustomerAuthDialog() {
                             </Tabs>
                         </TabsContent>
                         <TabsContent value="signup" className="h-full flex flex-col">
-                             <DialogHeader>
-                                <DialogTitle>Create a Personal Account</DialogTitle>
-                                <DialogDescription>Join our community to shop, save favorites, and track orders.</DialogDescription>
-                            </DialogHeader>
-                            <ScrollArea className="flex-1 -mr-6 pr-6 pt-4">
+                            <div className="text-center mb-4">
+                                <h3 className="text-lg font-semibold">Create a Personal Account</h3>
+                                <p className="text-sm text-muted-foreground">Join our community to shop, save favorites, and track orders.</p>
+                            </div>
+                            <ScrollArea className="flex-1 -mr-6 pr-6">
                                 <SignupForm onSignupSuccess={closeDialog} />
                             </ScrollArea>
                         </TabsContent>
