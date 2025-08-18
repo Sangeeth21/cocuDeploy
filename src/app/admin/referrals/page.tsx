@@ -587,6 +587,10 @@ export default function PromotionsPage() {
     const [isCouponDialogOpen, setIsCouponDialogOpen] = useState(false);
     const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
     const [couponToDelete, setCouponToDelete] = useState<Coupon | null>(null);
+    
+    const [isFreebieDialogOpen, setIsFreebieDialogOpen] = useState(false);
+    const [editingFreebie, setEditingFreebie] = useState<Freebie | null>(null);
+    const [freebieToDelete, setFreebieToDelete] = useState<Freebie | null>(null);
 
     useEffect(() => {
         const unsubPrograms = onSnapshot(query(collection(db, "programs")), (snapshot) => {
@@ -667,6 +671,38 @@ export default function PromotionsPage() {
             setIsLoading(false);
         }
     }
+    
+     const handleSaveFreebie = async (data: Omit<Freebie, 'id' | 'vendorId' | 'imageUrl'>, file?: File | null) => {
+        setIsLoading(true);
+        let finalImageUrl = editingFreebie?.imageUrl || "";
+
+        try {
+            if (file) {
+                // In a real app, get vendorId from session/auth
+                const storageRef = ref(storage, `freebies/VDR001/${Date.now()}_${file.name}`);
+                const snapshot = await uploadBytes(storageRef, file);
+                finalImageUrl = await getDownloadURL(snapshot.ref);
+            }
+            
+            const freebieData = { ...data, vendorId: "VDR001", imageUrl: finalImageUrl, status: editingFreebie?.status || 'pending' };
+
+            if (editingFreebie) {
+                await updateDoc(doc(db, 'freebies', editingFreebie.id), freebieData as any);
+                toast({ title: 'Freebie Updated!' });
+            } else {
+                await addDoc(collection(db, 'freebies'), freebieData);
+                toast({ title: 'Freebie Added!' });
+            }
+            
+            setIsFreebieDialogOpen(false);
+            setEditingFreebie(null);
+        } catch (error) {
+            console.error("Error saving freebie:", error);
+            toast({ variant: 'destructive', title: 'Failed to save freebie.' });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     const handleEditProgramClick = (program: Program) => {
         setEditingProgram(program);
@@ -722,6 +758,39 @@ export default function PromotionsPage() {
         toast({ title: `Coupon is now ${newStatus}` });
     };
 
+    // Freebie Actions
+    const handleEditFreebieClick = (freebie: Freebie) => {
+        setEditingFreebie(freebie);
+        setIsFreebieDialogOpen(true);
+    };
+
+    const handleDeleteFreebieClick = (freebie: Freebie) => {
+        setFreebieToDelete(freebie);
+    };
+    
+    const handleDeleteFreebie = async () => {
+        if (!freebieToDelete) return;
+        await deleteDoc(doc(db, 'freebies', freebieToDelete.id));
+        toast({ variant: 'destructive', title: 'Freebie Deleted' });
+        setFreebieToDelete(null);
+    };
+    
+    const handleToggleFreebieStatus = async (freebie: Freebie) => {
+        const newStatus = freebie.status === 'active' ? 'paused' : 'active';
+        await updateDoc(doc(db, 'freebies', freebie.id), { status: newStatus });
+        toast({ title: `Freebie is now ${newStatus}` });
+    };
+
+    const getFreebieStatusVariant = (status: Freebie['status']) => {
+        switch(status) {
+            case 'active': return 'default';
+            case 'paused': return 'secondary';
+            case 'pending': return 'outline';
+            default: return 'outline';
+        }
+    }
+
+
     return (
         <AlertDialog>
         <div>
@@ -752,7 +821,7 @@ export default function PromotionsPage() {
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="programs">Loyalty Programs</TabsTrigger>
                     <TabsTrigger value="coupons">Coupon Codes</TabsTrigger>
-                    <TabsTrigger value="freebies">Freebies</TabsTrigger>
+                    <TabsTrigger value="freebies">Vendor Freebies</TabsTrigger>
                 </TabsList>
                 <TabsContent value="programs" className="mt-4">
                     <Tabs defaultValue="customer" className="w-full">
@@ -824,7 +893,7 @@ export default function PromotionsPage() {
                     </Card>
                 </TabsContent>
                  <TabsContent value="freebies" className="mt-4">
-                    <Card>
+                     <Card>
                         <CardHeader>
                             <CardTitle>Vendor-Provided Freebies</CardTitle>
                             <CardDescription>Review all free items offered by vendors on the platform.</CardDescription>
@@ -833,9 +902,11 @@ export default function PromotionsPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Freebie</TableHead>
+                                        <TableHead>Item</TableHead>
                                         <TableHead>Vendor ID</TableHead>
+                                        <TableHead>Status</TableHead>
                                         <TableHead>Price</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -853,7 +924,32 @@ export default function PromotionsPage() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="font-mono">{freebie.vendorId}</TableCell>
+                                            <TableCell>
+                                                 <Badge variant={getFreebieStatusVariant(freebie.status)}>{freebie.status}</Badge>
+                                            </TableCell>
                                             <TableCell>₹{freebie.price.toFixed(2)}</TableCell>
+                                             <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuItem onSelect={() => handleEditFreebieClick(freebie)}>
+                                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => handleToggleFreebieStatus(freebie)}>
+                                                            {freebie.status === 'active' ? <PauseCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                                                            {freebie.status === 'active' ? 'Pause' : 'Activate'}
+                                                        </DropdownMenuItem>
+                                                         <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem className="text-destructive" onSelect={() => handleDeleteFreebieClick(freebie)}>
+                                                                <Trash2 className="mr-2 h-4 w-4" />Delete
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -877,6 +973,13 @@ export default function PromotionsPage() {
                 isLoading={isLoading}
                 open={isCouponDialogOpen}
                 onOpenChange={setIsCouponDialogOpen}
+            />
+             <FreebieDialog 
+                open={isFreebieDialogOpen} 
+                onOpenChange={setIsFreebieDialogOpen} 
+                freebie={editingFreebie} 
+                onSave={handleSaveFreebie} 
+                isLoading={isLoading} 
             />
 
             <AlertDialogContent>
@@ -904,6 +1007,19 @@ export default function PromotionsPage() {
                         <AlertDialogFooter>
                             <AlertDialogCancel onClick={() => setCouponToDelete(null)}>Cancel</AlertDialogCancel>
                             <AlertDialogAction onClick={handleDeleteCoupon} className="bg-destructive hover:bg-destructive/90">Delete Coupon</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </>
+                ) : freebieToDelete ? (
+                    <>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure you want to delete this freebie?</AlertDialogTitle>
+                             <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the freebie "{freebieToDelete.name}".
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                             <AlertDialogCancel onClick={() => setFreebieToDelete(null)}>Cancel</AlertDialogCancel>
+                             <AlertDialogAction onClick={() => {handleDeleteFreebie(freebieToDelete!.id); setFreebieToDelete(null);}} className="bg-destructive hover:bg-destructive/90">Delete Freebie</AlertDialogAction>
                         </AlertDialogFooter>
                     </>
                 ) : null}

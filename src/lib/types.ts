@@ -1,4 +1,5 @@
 
+
 export type CustomizationValue = {
   text: string;
   fontFamily: string;
@@ -255,6 +256,8 @@ export type Order = {
     total: number;
     subtotal: number;
     shipping: number;
+    discount?: number;
+    appliedCoupon?: { code: string; type: 'fixed' | 'percentage'; value: number } | null;
     status: 'Pending' | 'Processing' | 'Shipped' | 'Delivered' | 'Cancelled';
     shippingAddress: {
         recipient: string;
@@ -377,7 +380,7 @@ export type Coupon = {
     usageCount: number;
     expiresAt?: Date;
     minPurchase?: number;
-    isPublic?: boolean;
+    isPublic: boolean;
 };
 
 export type Freebie = {
@@ -387,6 +390,7 @@ export type Freebie = {
   description: string;
   price: number;
   imageUrl: string;
+  status: 'pending' | 'active' | 'paused';
 }
 
 
