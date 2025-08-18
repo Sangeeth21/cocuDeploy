@@ -9,16 +9,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
-import { Loader2, ShieldCheck, CheckCircle, Gift } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Loader2, ShieldCheck, CheckCircle, Gift, BadgePercent, X, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/user-context";
 import { useCart } from "@/context/cart-context";
 import { db } from "@/lib/firebase";
 import { addDoc, collection, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore";
-import type { OrderItem, Freebie } from "@/lib/types";
+import type { OrderItem, Freebie, Coupon } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
 
 
 const MOCK_EMAIL_OTP = "123456";
@@ -48,6 +49,12 @@ export default function CheckoutPage() {
     const [availableFreebies, setAvailableFreebies] = useState<Freebie[]>([]);
     const [selectedFreebie, setSelectedFreebie] = useState<Freebie | null>(null);
 
+    // Coupon and Discount State
+    const [couponCode, setCouponCode] = useState("");
+    const [appliedCoupon, setAppliedCoupon] = useState<Coupon | null>(null);
+    const [discount, setDiscount] = useState(0);
+    const [couponError, setCouponError] = useState<string | null>(null);
+
     useEffect(() => {
         if(isLoggedIn && user) {
             setEmail(user.email);
@@ -64,8 +71,6 @@ export default function CheckoutPage() {
                 setAvailableFreebies([]);
                 return;
             }
-            // In a real app, you might have complex logic to determine freebie eligibility.
-            // For now, we'll check if any vendor in the cart offers freebies.
             const vendorIds = [...new Set(cartItems.map(item => item.product.vendorId))];
             if (vendorIds.length > 0) {
                 const q = query(collection(db, "freebies"), where("vendorId", "in", vendorIds), limit(5));
@@ -79,7 +84,7 @@ export default function CheckoutPage() {
         fetchFreebies();
     }, [cartItems]);
     
-    const getFinalPrice = (item: typeof cartItems[0]) => {
+    const getFinalPrice = useCallback((item: typeof cartItems[0]) => {
         const productType = item.product.b2bEnabled ? 'corporate' : 'personalized';
         const commissionRule = commissionRates?.[productType]?.[item.product.category];
         let finalPrice = item.product.price;
@@ -91,14 +96,79 @@ export default function CheckoutPage() {
             }
         }
         return finalPrice * item.quantity;
+    }, [commissionRates]);
+
+    const calculateDiscount = useCallback((coupon: Coupon) => {
+        let applicableSubtotal = 0;
+
+        if (coupon.scope === 'all') {
+            applicableSubtotal = subtotal;
+        } else if (coupon.scope === 'category') {
+            applicableSubtotal = cartItems
+                .filter(item => coupon.applicableCategories?.includes(item.product.category))
+                .reduce((acc, item) => acc + getFinalPrice(item), 0);
+        } else if (coupon.scope === 'product') {
+            applicableSubtotal = cartItems
+                .filter(item => coupon.applicableProducts?.includes(item.product.id))
+                .reduce((acc, item) => acc + getFinalPrice(item), 0);
+        }
+
+        if (applicableSubtotal === 0) return 0;
+
+        let calculatedDiscount = 0;
+        if (coupon.type === 'fixed') {
+            calculatedDiscount = coupon.value;
+        } else { // percentage
+            calculatedDiscount = applicableSubtotal * (coupon.value / 100);
+            if (coupon.maxDiscount && calculatedDiscount > coupon.maxDiscount) {
+                calculatedDiscount = coupon.maxDiscount;
+            }
+        }
+
+        return Math.min(calculatedDiscount, applicableSubtotal); // Discount can't be more than the subtotal it applies to
+    }, [cartItems, subtotal, getFinalPrice]);
+
+
+    const handleApplyCoupon = async () => {
+        if (!couponCode.trim()) {
+            setCouponError("Please enter a coupon code.");
+            return;
+        }
+        
+        const q = query(collection(db, "coupons"), where("code", "==", couponCode.toUpperCase()), limit(1));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            setCouponError("Invalid coupon code.");
+            setAppliedCoupon(null);
+            setDiscount(0);
+            return;
+        }
+        
+        const coupon = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Coupon;
+        
+        // Add more validation here (expiry, usage limits, etc.)
+
+        const newDiscount = calculateDiscount(coupon);
+        setDiscount(newDiscount);
+        setAppliedCoupon(coupon);
+        setCouponError(null);
+        toast({ title: "Coupon Applied!", description: `You saved $${newDiscount.toFixed(2)}` });
+    };
+
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode("");
+        setDiscount(0);
+        setCouponError(null);
     }
 
     const hasLoyalty = (user?.loyalty?.totalOrdersForReward ?? 0) < 3;
     const shipping = cartItems.length > 0 ? (hasLoyalty ? 0 : 5.00) : 0;
     
     const total = useMemo(() => {
-        return subtotal + shipping;
-    }, [subtotal, shipping]);
+        return subtotal + shipping - discount;
+    }, [subtotal, shipping, discount]);
     
     const handleSendCode = (type: 'email' | 'phone') => {
         if (isLoggedIn) return; // Don't send for logged in users
@@ -150,7 +220,6 @@ export default function CheckoutPage() {
                 vendorId: item.product.vendorId,
                 quantity: item.quantity,
                 price: item.product.price,
-                // Include customizations if they exist
                 ...(Object.keys(item.customizations).length > 0 && { customizations: item.customizations }),
             }));
 
@@ -161,7 +230,7 @@ export default function CheckoutPage() {
                     productImage: selectedFreebie.imageUrl,
                     vendorId: selectedFreebie.vendorId,
                     quantity: 1,
-                    price: 0, // Freebie has no cost to customer
+                    price: 0,
                     isFreebie: true,
                 });
             }
@@ -177,6 +246,8 @@ export default function CheckoutPage() {
                 total,
                 subtotal,
                 shipping,
+                discount,
+                appliedCoupon: appliedCoupon ? { code: appliedCoupon.code, type: appliedCoupon.type, value: appliedCoupon.value } : null,
                 status: 'Pending',
                 date: serverTimestamp(),
                 shippingAddress: {
@@ -346,7 +417,7 @@ export default function CheckoutPage() {
                                              <div className="flex items-center gap-4">
                                                  <div className="relative w-16 h-16 rounded-md overflow-hidden">
                                                     <Image src={selectedFreebie.imageUrl} alt={selectedFreebie.name} fill className="object-cover" />
-                                                </div>
+                                                 </div>
                                                  <div>
                                                     <p className="font-semibold">{selectedFreebie.name}</p>
                                                     <p className="text-sm text-primary font-medium">Freebie!</p>
@@ -356,10 +427,24 @@ export default function CheckoutPage() {
                                         </div>
                                     )}
                                 </div>
-                                <div className="mt-4 pt-4 border-t space-y-4">
-                                    <div className="flex items-center gap-2">
-                                        <Input placeholder="Enter coupon or gift card" />
-                                        <Button variant="outline">Apply</Button>
+                                <div className="mt-4 pt-4 border-t space-y-2">
+                                     <div className="space-y-2">
+                                         <Label htmlFor="coupon-code">Coupon Code</Label>
+                                        {appliedCoupon ? (
+                                             <div className="flex items-center justify-between gap-2 p-2 bg-green-100 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+                                                <div className="flex items-center gap-2">
+                                                    <Tag className="h-4 w-4 text-green-700 dark:text-green-300" />
+                                                    <span className="text-sm font-medium text-green-800 dark:text-green-200">{appliedCoupon.code}</span>
+                                                </div>
+                                                <Button type="button" variant="ghost" size="icon" className="h-6 w-6 text-green-700 dark:text-green-300" onClick={removeCoupon}><X className="h-4 w-4"/></Button>
+                                             </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2">
+                                                <Input id="coupon-code" placeholder="Enter coupon" value={couponCode} onChange={e => setCouponCode(e.target.value)} />
+                                                <Button type="button" variant="outline" onClick={handleApplyCoupon}>Apply</Button>
+                                            </div>
+                                        )}
+                                        {couponError && <p className="text-xs text-destructive">{couponError}</p>}
                                     </div>
                                 </div>
                                 <div className="mt-4 pt-4 border-t space-y-2">
@@ -367,10 +452,15 @@ export default function CheckoutPage() {
                                         <p className="text-muted-foreground">Subtotal</p>
                                         <p>${subtotal.toFixed(2)}</p>
                                     </div>
+                                     <div className="flex justify-between text-green-600 dark:text-green-400">
+                                        <p>Discount</p>
+                                        <p>-${discount.toFixed(2)}</p>
+                                    </div>
                                     <div className="flex justify-between">
                                         <p className="text-muted-foreground">Shipping</p>
                                         {hasLoyalty ? <p className="text-green-600 font-semibold">FREE</p> : <p>${shipping.toFixed(2)}</p>}
                                     </div>
+                                    <Separator />
                                     <div className="flex justify-between font-bold text-lg">
                                         <p>Total</p>
                                         <p>${total.toFixed(2)}</p>
