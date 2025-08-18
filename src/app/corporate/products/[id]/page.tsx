@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from "next/image";
@@ -356,7 +355,7 @@ export default function B2BProductDetailPage() {
   return (
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
-      <div className="grid md:grid-cols-2 gap-12">
+      <div className="grid md:grid-cols-2 gap-12 items-start">
         <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
            <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
                 {activeMedia?.type === 'image' && activeMedia.src ? (
@@ -491,13 +490,15 @@ export default function B2BProductDetailPage() {
                     </div>
                     <Separator/>
                      <div className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Price per Unit</span>
-                         <div className="flex items-baseline gap-2">
-                             {priceDetails.hasDiscount && (
+                        <span className="text-muted-foreground flex items-center gap-1.5">
+                            Price per Unit
+                            {priceDetails.hasDiscount && (
                                 <Badge variant="destructive" className="text-[10px] h-auto px-1.5 py-0 leading-tight">
-                                    <Tag className="mr-1 h-3 w-3"/> {priceDetails.discountValue}% OFF
+                                    <Tag className="mr-1 h-3 w-3" /> {priceDetails.discountValue}% OFF
                                 </Badge>
                              )}
+                        </span>
+                         <div className="flex items-baseline gap-2">
                             {priceDetails.hasDiscount && (
                                 <span className="text-base text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</span>
                             )}
@@ -517,6 +518,27 @@ export default function B2BProductDetailPage() {
                 </div>
             </CardContent>
           </Card>
+          
+           <div className="space-y-2">
+                <Button size="lg" className="w-full" onClick={handleRequestQuote}>
+                    {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
+                </Button>
+                 <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
+                    <Gavel className="mr-2 h-5 w-5" />
+                    {isInBid(product.id) ? 'Added to Bid Request' : 'Add to Bid Request'}
+                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button size="lg" variant="outline" className="w-full" onClick={handleCompareClick}>
+                        <Scale className="mr-2 h-5 w-5" />
+                        {isComparing(product.id) ? 'Remove' : 'Compare'}
+                    </Button>
+                    <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
+                        <ShoppingCart className="mr-2 h-5 w-5" />
+                        Add to Cart
+                    </Button>
+                </div>
+                <CorporateProductInteractions product={product} isCustomizable={isCustomizable} />
+            </div>
 
             <div className="border rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2">
@@ -543,27 +565,7 @@ export default function B2BProductDetailPage() {
                     </div>
                 )}
             </div>
-          
-           <div className="space-y-2">
-                <Button size="lg" className="w-full" onClick={handleRequestQuote}>
-                    {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
-                </Button>
-                 <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
-                    <Gavel className="mr-2 h-5 w-5" />
-                    {isInBid(product.id) ? 'Added to Bid Request' : 'Add to Bid Request'}
-                </Button>
-                <div className="grid grid-cols-2 gap-2">
-                    <Button size="lg" variant="outline" className="w-full" onClick={handleCompareClick}>
-                        <Scale className="mr-2 h-5 w-5" />
-                        {isComparing(product.id) ? 'Remove' : 'Compare'}
-                    </Button>
-                    <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
-                        <ShoppingCart className="mr-2 h-5 w-5" />
-                        Add to Cart
-                    </Button>
-                </div>
-                <CorporateProductInteractions product={product} isCustomizable={isCustomizable} />
-            </div>
+
           <p className="text-muted-foreground leading-relaxed pt-4">{product.description}</p>
         </div>
       </div>
@@ -598,4 +600,3 @@ export default function B2BProductDetailPage() {
     </Dialog>
   );
 }
-
