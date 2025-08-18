@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -7,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe, Edit, Trash2, PauseCircle, PlayCircle } from "lucide-react";
+import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe, Edit, Trash2, PauseCircle, PlayCircle, Ticket } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -19,9 +20,10 @@ import type { DateRange } from "react-day-picker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { Program, ProgramPlatform, ProgramTarget } from "@/lib/types";
+import type { Program, ProgramPlatform, ProgramTarget, Coupon } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 
 const programOptions = {
     customer: {
@@ -48,6 +50,106 @@ const programOptions = {
     }
 }
 
+function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: { coupon?: Coupon | null; onSave: (data: Omit<Coupon, 'id' | 'usageCount' | 'status'>, id?: string) => void; isLoading: boolean; open: boolean; onOpenChange: (open: boolean) => void }) {
+    const [code, setCode] = useState('');
+    const [type, setType] = useState<'fixed' | 'percentage'>('percentage');
+    const [value, setValue] = useState(0);
+    const [expiresAt, setExpiresAt] = useState<Date | undefined>();
+    const [usageLimit, setUsageLimit] = useState(100);
+
+    const generateRandomCode = () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        setCode(result);
+    };
+    
+    useEffect(() => {
+        if(open && !coupon) {
+             generateRandomCode();
+             setType('percentage');
+             setValue(10);
+             setExpiresAt(undefined);
+             setUsageLimit(100);
+        }
+        if (open && coupon) {
+            setCode(coupon.code);
+            setType(coupon.type);
+            setValue(coupon.value);
+            setExpiresAt(coupon.expiresAt);
+            setUsageLimit(coupon.usageLimit);
+        }
+    }, [open, coupon]);
+    
+    const handleSave = () => {
+        const couponData = {
+            code, type, value, expiresAt, usageLimit
+        };
+        onSave(couponData, coupon?.id);
+    }
+
+    return (
+         <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{coupon ? "Edit Coupon" : "Create New Coupon"}</DialogTitle>
+                </DialogHeader>
+                 <div className="space-y-4 py-2">
+                    <div className="space-y-2">
+                        <Label htmlFor="coupon-code">Coupon Code</Label>
+                        <div className="flex gap-2">
+                            <Input id="coupon-code" value={code} onChange={e => setCode(e.target.value.toUpperCase())} />
+                            <Button variant="outline" onClick={generateRandomCode}>Generate</Button>
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label>Discount Type</Label>
+                            <Select value={type} onValueChange={(v) => setType(v as any)}>
+                                <SelectTrigger><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="percentage">Percentage (%)</SelectItem>
+                                    <SelectItem value="fixed">Fixed Amount ($)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Value</Label>
+                            <Input type="number" value={value} onChange={e => setValue(Number(e.target.value))} />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-2">
+                            <Label>Expiry Date (Optional)</Label>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {expiresAt ? format(expiresAt, "PPP") : <span>No expiry</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={expiresAt} onSelect={setExpiresAt} /></PopoverContent>
+                            </Popover>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Usage Limit</Label>
+                            <Input type="number" value={usageLimit} onChange={e => setUsageLimit(Number(e.target.value))} />
+                        </div>
+                    </div>
+                </div>
+                 <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={handleSave} disabled={isLoading}>
+                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Coupon
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 function CreateProgramDialog({
   program,
@@ -312,27 +414,52 @@ function ProgramTable({ programs, onEdit, onToggleStatus, onDelete }: { programs
 export default function PromotionsPage() {
     const { toast } = useToast();
     const [programs, setPrograms] = useState<Program[]>([]);
+    const [coupons, setCoupons] = useState<Coupon[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    
+    // Dialog states
+    const [isProgramDialogOpen, setIsProgramDialogOpen] = useState(false);
     const [editingProgram, setEditingProgram] = useState<Program | null>(null);
     const [programToDelete, setProgramToDelete] = useState<Program | null>(null);
 
+    const [isCouponDialogOpen, setIsCouponDialogOpen] = useState(false);
+    const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+    const [couponToDelete, setCouponToDelete] = useState<Coupon | null>(null);
+
     useEffect(() => {
-        const q = query(collection(db, "programs"));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
+        const qPrograms = query(collection(db, "programs"));
+        const unsubPrograms = onSnapshot(qPrograms, (snapshot) => {
             const programsData: Program[] = [];
             snapshot.forEach(doc => {
                 const data = doc.data();
                 programsData.push({ 
                     id: doc.id,
                     ...data,
-                    startDate: data.startDate.toDate(), // Convert Firestore Timestamp to JS Date
-                    endDate: data.endDate.toDate()
+                    startDate: data.startDate?.toDate(), // Convert Firestore Timestamp to JS Date
+                    endDate: data.endDate?.toDate()
                 } as Program);
             });
             setPrograms(programsData);
         });
-        return () => unsubscribe();
+        
+        const qCoupons = query(collection(db, "coupons"));
+        const unsubCoupons = onSnapshot(qCoupons, (snapshot) => {
+            const couponsData: Coupon[] = [];
+            snapshot.forEach(doc => {
+                 const data = doc.data();
+                couponsData.push({ 
+                    id: doc.id,
+                    ...data,
+                    expiresAt: data.expiresAt?.toDate(),
+                } as Coupon);
+            });
+            setCoupons(couponsData);
+        });
+
+        return () => {
+            unsubPrograms();
+            unsubCoupons();
+        }
     }, []);
 
     const handleSaveProgram = async (programData: Omit<Program, 'id'>, id?: string) => {
@@ -345,7 +472,7 @@ export default function PromotionsPage() {
                 await addDoc(collection(db, "programs"), programData);
                 toast({ title: "Program Created!", description: `"${programData.name}" has been successfully added.` });
             }
-            setIsDialogOpen(false);
+            setIsProgramDialogOpen(false);
             setEditingProgram(null);
         } catch (error) {
              console.error("Error saving program: ", error);
@@ -355,14 +482,35 @@ export default function PromotionsPage() {
         }
     }
 
+    const handleSaveCoupon = async (couponData: Omit<Coupon, 'id' | 'usageCount' | 'status'>, id?: string) => {
+        setIsLoading(true);
+        try {
+            const dataToSave = { ...couponData, status: 'Active', usageCount: 0 };
+             if (id) {
+                await updateDoc(doc(db, 'coupons', id), dataToSave as any);
+                toast({ title: "Coupon Updated!" });
+            } else {
+                await addDoc(collection(db, "coupons"), dataToSave);
+                toast({ title: "Coupon Created!" });
+            }
+            setIsCouponDialogOpen(false);
+            setEditingCoupon(null);
+        } catch (error) {
+            console.error("Error saving coupon: ", error);
+            toast({ variant: 'destructive', title: 'Failed to save coupon.' });
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
     const handleEditClick = (program: Program) => {
         setEditingProgram(program);
-        setIsDialogOpen(true);
+        setIsProgramDialogOpen(true);
     };
 
     const handleCreateClick = () => {
         setEditingProgram(null);
-        setIsDialogOpen(true);
+        setIsProgramDialogOpen(true);
     };
 
     const handleToggleStatus = async (program: Program) => {
@@ -394,21 +542,70 @@ export default function PromotionsPage() {
                     <h1 className="text-3xl font-bold font-headline">Promotions Engine</h1>
                     <p className="text-muted-foreground">Create and manage your customer and vendor incentive programs.</p>
                 </div>
-                <Button onClick={handleCreateClick}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Create New Program
-                </Button>
+                 <Dialog>
+                    <DialogTrigger asChild>
+                        <Button><PlusCircle className="mr-2 h-4 w-4" /> Create New</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader><DialogTitle>What would you like to create?</DialogTitle></DialogHeader>
+                        <div className="grid grid-cols-2 gap-4 py-4">
+                            <Button variant="outline" className="h-20" onClick={() => { setIsProgramDialogOpen(true); setEditingProgram(null); }}>
+                                <Gift className="mr-2 h-5 w-5"/> Loyalty Program
+                            </Button>
+                             <Button variant="outline" className="h-20" onClick={() => { setIsCouponDialogOpen(true); setEditingCoupon(null); }}>
+                                <Ticket className="mr-2 h-5 w-5"/> Coupon Code
+                            </Button>
+                        </div>
+                    </DialogContent>
+                 </Dialog>
             </div>
 
-            <Tabs defaultValue="customer">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="customer">Customer Programs</TabsTrigger>
-                    <TabsTrigger value="vendor">Vendor Programs</TabsTrigger>
+            <Tabs defaultValue="programs" className="w-full">
+                <TabsList className="grid w-full grid-cols-2 md:grid-cols-3">
+                    <TabsTrigger value="programs">Loyalty Programs</TabsTrigger>
+                    <TabsTrigger value="coupons">Coupon Codes</TabsTrigger>
                 </TabsList>
-                <TabsContent value="customer" className="mt-4">
-                     <ProgramTable programs={customerPrograms} onEdit={handleEditClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteClick} />
+                <TabsContent value="programs" className="mt-4">
+                    <Tabs defaultValue="customer" className="w-full">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="customer">Customer Programs</TabsTrigger>
+                            <TabsTrigger value="vendor">Vendor Programs</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="customer" className="mt-4">
+                            <ProgramTable programs={customerPrograms} onEdit={handleEditClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteClick} />
+                        </TabsContent>
+                        <TabsContent value="vendor" className="mt-4">
+                            <ProgramTable programs={vendorPrograms} onEdit={handleEditClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteClick} />
+                        </TabsContent>
+                    </Tabs>
                 </TabsContent>
-                 <TabsContent value="vendor" className="mt-4">
-                    <ProgramTable programs={vendorPrograms} onEdit={handleEditClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteClick} />
+                <TabsContent value="coupons" className="mt-4">
+                    <Card>
+                        <CardContent className="p-0">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Code</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Value</TableHead>
+                                        <TableHead>Usage</TableHead>
+                                        <TableHead>Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {coupons.map(coupon => (
+                                        <TableRow key={coupon.id}>
+                                            <TableCell className="font-mono">{coupon.code}</TableCell>
+                                            <TableCell className="capitalize">{coupon.type}</TableCell>
+                                            <TableCell>{coupon.type === 'fixed' ? `$${coupon.value}` : `${coupon.value}%`}</TableCell>
+                                            <TableCell>{coupon.usageCount} / {coupon.usageLimit}</TableCell>
+                                            <TableCell><Badge>{coupon.status}</Badge></TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
             </Tabs>
             
@@ -417,9 +614,17 @@ export default function PromotionsPage() {
                 program={editingProgram} 
                 onSave={handleSaveProgram} 
                 isLoading={isLoading} 
-                open={isDialogOpen} 
-                onOpenChange={setIsDialogOpen}
+                open={isProgramDialogOpen} 
+                onOpenChange={setIsProgramDialogOpen}
             />
+            <CreateCouponDialog 
+                coupon={editingCoupon}
+                onSave={handleSaveCoupon}
+                isLoading={isLoading}
+                open={isCouponDialogOpen}
+                onOpenChange={setIsCouponDialogOpen}
+            />
+
             <AlertDialogContent>
                 <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>

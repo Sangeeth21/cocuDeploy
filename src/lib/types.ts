@@ -1,4 +1,5 @@
 
+
 export type CustomizationValue = {
   text: string;
   fontFamily: string;
@@ -354,11 +355,24 @@ export type Program = {
         value: number;
     };
     productScope: 'all' | 'selected';
-    status: 'Active' | 'Scheduled' | 'Expired';
+    status: 'Active' | 'Scheduled' | 'Expired' | 'Paused';
     startDate: Date;
     endDate: Date;
     expiryDays?: number;
 };
+
+export type Coupon = {
+    id: string;
+    code: string;
+    type: 'fixed' | 'percentage';
+    value: number;
+    status: 'Active' | 'Inactive' | 'Expired';
+    usageLimit: number;
+    usageCount: number;
+    expiresAt?: Date;
+    minPurchase?: number;
+};
+
 
 // Support
 export interface SupportTicket {
