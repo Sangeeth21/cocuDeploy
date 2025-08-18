@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Button } from "@/components/ui/button";
@@ -115,22 +116,10 @@ export default function CheckoutPage() {
         let finalDiscountProgram = platformDiscount;
 
         const couponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, [product]) : 0;
-        const platformDiscountAmount = platformDiscount ? originalPrice * (platformDiscount.reward.value / 100) : 0;
-
-        if (appliedCoupon && platformDiscount && !appliedCoupon.isStackable) {
-            if (couponDiscountAmount > platformDiscountAmount) {
-                finalPrice = originalPrice; // Cannot apply; better deal exists
-                finalDiscountProgram = platformDiscount;
-            } else {
-                finalPrice = originalPrice - couponDiscountAmount;
-                finalDiscountProgram = null; // Coupon overrides
-            }
-        } else if (appliedCoupon) {
+        
+        if (appliedCoupon) {
             finalPrice = originalPrice - couponDiscountAmount;
-            finalDiscountProgram = null; // Coupon overrides
-        }
-
-        if (finalDiscountProgram) {
+        } else if (finalDiscountProgram) {
             finalPrice = originalPrice * (1 - (finalDiscountProgram.reward.value / 100));
         }
         
@@ -164,18 +153,23 @@ export default function CheckoutPage() {
     }, [cartItems, commissionRates]);
 
     const totalDiscount = useMemo(() => {
-        let discount = 0;
-        const platformDiscountAmount = platformDiscount ? subtotal * (platformDiscount.reward.value / 100) : 0;
-        const userCouponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, cartItems.map(i => i.product)) : 0;
-        
-        if(appliedCoupon && platformDiscount && !appliedCoupon.isStackable) {
-             // Platform benefits, so we apply the smaller discount of the two
-            discount = Math.min(platformDiscountAmount, userCouponDiscountAmount);
-        } else {
-            discount = platformDiscountAmount + userCouponDiscountAmount;
+        let platformDiscountAmount = 0;
+        let couponDiscountAmount = 0;
+
+        if (platformDiscount) {
+            platformDiscountAmount = subtotal * (platformDiscount.reward.value / 100);
+        }
+
+        if (appliedCoupon) {
+            couponDiscountAmount = calculateCouponDiscount(appliedCoupon, cartItems.map(i => i.product));
+            // If the coupon is not stackable, it might replace the platform discount
+            if (!appliedCoupon.isStackable) {
+                return Math.max(platformDiscountAmount, couponDiscountAmount);
+            }
         }
         
-        return discount;
+        // If stackable, or only one exists, add them up
+        return platformDiscountAmount + couponDiscountAmount;
 
     }, [appliedCoupon, platformDiscount, subtotal, cartItems, calculateCouponDiscount]);
 
@@ -206,14 +200,14 @@ export default function CheckoutPage() {
         if (!coupon.isStackable && platformDiscount) {
             const platformDiscountAmount = platformDiscount ? subtotal * (platformDiscount.reward.value / 100) : 0;
             const newCouponDiscount = calculateCouponDiscount(coupon, cartItems.map(i => i.product));
-
+            
             if (newCouponDiscount > platformDiscountAmount) {
                 toast({
-                    title: "A better promotion is active",
-                    description: `The existing ${platformDiscount.reward.value}% discount is better than this coupon.`,
+                    variant: 'destructive',
+                    title: "Coupon Not Applicable",
+                    description: "This coupon can’t be applied because your current offer is not eligible for replacement.",
                 });
-                setCouponCode(platformDiscount.code || "");
-                return; // Do not apply the worse coupon
+                return;
             }
         }
         
@@ -225,13 +219,7 @@ export default function CheckoutPage() {
 
     const removeCoupon = () => {
         setAppliedCoupon(null);
-        // Re-apply platform discount if it exists
-        if(platformDiscount?.code){
-            setCouponCode(platformDiscount.code);
-            handleApplyCoupon(platformDiscount.code);
-        } else {
-            setCouponCode("");
-        }
+        setCouponCode("");
     };
 
     const handleSendOtp = (type: 'email' | 'phone') => {
