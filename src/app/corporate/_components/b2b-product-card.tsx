@@ -22,13 +22,35 @@ interface ProductCardProps {
 }
 
 export function TinyB2bProductCard({ product }: ProductCardProps) {
+    const { toggleCompare, isComparing } = useComparison();
+    const { toast } = useToast();
+
     const lowestTierPrice = product.tierPrices && product.tierPrices.length > 0
     ? Math.min(...product.tierPrices.map(p => p.price))
     : product.price;
+    
+    const handleToggleCompare = (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent link navigation
+        e.stopPropagation();
+        toggleCompare(product);
+        toast({
+          title: isComparing(product.id) ? "Removed from Comparison" : "Added to Comparison",
+          description: product.name,
+        });
+    }
 
     return (
         <Card className="overflow-hidden h-full">
-            <Link href={`/corporate/products/${product.id}`} className="block group h-full flex flex-col">
+            <Link href={`/corporate/products/${product.id}`} className="block group h-full flex flex-col relative">
+                 <Button 
+                    size="icon" 
+                    variant={isComparing(product.id) ? "secondary" : "ghost"}
+                    className="absolute top-1 right-1 h-6 w-6 z-10"
+                    onClick={handleToggleCompare}
+                    aria-label="Compare product"
+                >
+                    <Scale className="h-3 w-3" />
+                </Button>
                 <div className="relative aspect-square w-full overflow-hidden">
                      <Image
                         src={product.imageUrl}
