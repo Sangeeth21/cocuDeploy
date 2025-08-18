@@ -128,16 +128,6 @@ export default function CorporateMarketplacePage() {
         </Carousel>
       </section>
 
-      <section>
-          <div className="text-center">
-              <h2 className="text-3xl font-bold font-headline">Need Help Finding the Right Products?</h2>
-              <p className="text-muted-foreground mt-2">Try our guided assistant to get curated recommendations.</p>
-              <Button asChild className="mt-4">
-                  <Link href="/corporate/co-worker"><Bot className="mr-2 h-5 w-5"/> Launch Co-Worker Assistant</Link>
-              </Button>
-          </div>
-      </section>
-
       <section id="featured-b2b">
           <h2 className="text-3xl font-bold text-center mb-8 font-headline">Featured Bulk Products</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

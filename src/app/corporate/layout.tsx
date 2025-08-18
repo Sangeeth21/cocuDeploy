@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { MarketingCampaign } from "@/lib/types";
+import { CoWorkerChatbot } from "@/components/co-worker-chatbot";
 
 function CorporateCampaignPopup() {
     const [isOpen, setIsOpen] = useState(false);
@@ -104,6 +105,9 @@ function ProtectedCorporateLayout({ children }: { children: React.ReactNode }) {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const showChatbot = pathname !== '/corporate' && pathname !== '/corporate/co-worker';
+
   return (
     <AdminAuthProvider>
         <BidRequestProvider>
@@ -111,6 +115,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             {children}
           </ProtectedCorporateLayout>
           <CorporateCampaignPopup />
+          {showChatbot && <CoWorkerChatbot />}
         </BidRequestProvider>
     </AdminAuthProvider>
   );
