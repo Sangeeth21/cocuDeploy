@@ -30,7 +30,7 @@ export default function CheckoutPage() {
     const { toast } = useToast();
     const router = useRouter();
     const { user, isLoggedIn, commissionRates } = useUser();
-    const { cartItems, subtotal: rawSubtotal, clearCart, loading: isCartLoading } = useCart();
+    const { cartItems, clearCart, loading: isCartLoading } = useCart();
 
     const [isProcessing, setIsProcessing] = useState(false);
     
@@ -108,51 +108,76 @@ export default function CheckoutPage() {
         }
         return finalPrice;
     }
+
+    const getPriceDetails = useCallback((product: DisplayProduct) => {
+        const originalPrice = calculateItemPrice(product);
+        let finalPrice = originalPrice;
+        let finalDiscountProgram = platformDiscount;
+
+        const couponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, [product]) : 0;
+        const platformDiscountAmount = platformDiscount ? originalPrice * (platformDiscount.reward.value / 100) : 0;
+
+        if (appliedCoupon && platformDiscount && !appliedCoupon.isStackable) {
+            if (couponDiscountAmount > platformDiscountAmount) {
+                finalPrice = originalPrice; // Cannot apply; better deal exists
+                finalDiscountProgram = platformDiscount;
+            } else {
+                finalPrice = originalPrice - couponDiscountAmount;
+                finalDiscountProgram = null; // Coupon overrides
+            }
+        } else if (appliedCoupon) {
+            finalPrice = originalPrice - couponDiscountAmount;
+            finalDiscountProgram = null; // Coupon overrides
+        }
+
+        if (finalDiscountProgram) {
+            finalPrice = originalPrice * (1 - (finalDiscountProgram.reward.value / 100));
+        }
+        
+        return { original: originalPrice, final: finalPrice, hasDiscount: finalPrice < originalPrice, discountValue: finalDiscountProgram?.reward.value };
+    }, [commissionRates, platformDiscount, appliedCoupon]);
+
+    const calculateCouponDiscount = useCallback((coupon: Coupon, relevantItems: DisplayProduct[]) => {
+        const applicableSubtotal = relevantItems.reduce((acc, product) => {
+            if (coupon.scope === 'all' || 
+                (coupon.scope === 'category' && coupon.applicableCategories?.includes(product.category)) ||
+                (coupon.scope === 'product' && coupon.applicableProducts?.includes(product.id))) {
+                return acc + calculateItemPrice(product);
+            }
+            return acc;
+        }, 0);
+
+        if (applicableSubtotal === 0) return 0;
+        
+        let calculatedDiscount = coupon.type === 'fixed' 
+            ? coupon.value 
+            : applicableSubtotal * (coupon.value / 100);
+
+        if (coupon.type === 'percentage' && coupon.maxDiscount) {
+            calculatedDiscount = Math.min(calculatedDiscount, coupon.maxDiscount);
+        }
+        return Math.min(calculatedDiscount, applicableSubtotal);
+    }, [commissionRates]);
     
     const subtotal = useMemo(() => {
         return cartItems.reduce((acc, item) => acc + calculateItemPrice(item.product) * item.quantity, 0);
     }, [cartItems, commissionRates]);
 
-    const calculateCouponDiscount = useCallback((coupon: Coupon) => {
-        let applicableSubtotal = 0;
-        if (coupon.scope === 'all') {
-            applicableSubtotal = subtotal;
-        } else {
-            applicableSubtotal = cartItems
-                .filter(item => 
-                    (coupon.scope === 'category' && coupon.applicableCategories?.includes(item.product.category)) ||
-                    (coupon.scope === 'product' && coupon.applicableProducts?.includes(item.product.id))
-                )
-                .reduce((acc, item) => acc + calculateItemPrice(item.product) * item.quantity, 0);
-        }
-        if (applicableSubtotal === 0) return 0;
-        let calculatedDiscount = coupon.type === 'fixed' ? coupon.value : applicableSubtotal * (coupon.value / 100);
-        if (coupon.type === 'percentage' && coupon.maxDiscount) {
-            calculatedDiscount = Math.min(calculatedDiscount, coupon.maxDiscount);
-        }
-        return Math.min(calculatedDiscount, applicableSubtotal);
-    }, [cartItems, subtotal, calculateItemPrice]);
-    
-    const platformDiscountAmount = useMemo(() => {
-        if (!platformDiscount) return 0;
-        return subtotal * (platformDiscount.reward.value / 100);
-    }, [platformDiscount, subtotal]);
-
-    const userCouponDiscountAmount = useMemo(() => {
-        if (!appliedCoupon) return 0;
-        return calculateCouponDiscount(appliedCoupon);
-    }, [appliedCoupon, calculateCouponDiscount]);
-    
     const totalDiscount = useMemo(() => {
-        if (appliedCoupon && platformDiscount) {
-            if (appliedCoupon.isStackable) {
-                return platformDiscountAmount + userCouponDiscountAmount;
-            }
-            // Non-stackable: apply whichever is smaller (better for the platform)
-            return Math.min(platformDiscountAmount, userCouponDiscountAmount);
+        let discount = 0;
+        const platformDiscountAmount = platformDiscount ? subtotal * (platformDiscount.reward.value / 100) : 0;
+        const userCouponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, cartItems.map(i => i.product)) : 0;
+        
+        if(appliedCoupon && platformDiscount && !appliedCoupon.isStackable) {
+             // Platform benefits, so we apply the smaller discount of the two
+            discount = Math.min(platformDiscountAmount, userCouponDiscountAmount);
+        } else {
+            discount = platformDiscountAmount + userCouponDiscountAmount;
         }
-        return platformDiscountAmount + userCouponDiscountAmount;
-    }, [appliedCoupon, platformDiscount, platformDiscountAmount, userCouponDiscountAmount]);
+        
+        return discount;
+
+    }, [appliedCoupon, platformDiscount, subtotal, cartItems, calculateCouponDiscount]);
 
 
     const shipping = cartItems.length > 0 ? 5.00 : 0;
@@ -177,17 +202,18 @@ export default function CheckoutPage() {
             toast({ variant: 'destructive', title: 'Coupon Not Active', description: 'This coupon is either expired or inactive.' });
             return;
         }
-        
-        const newCouponDiscount = calculateCouponDiscount(coupon);
-        
+
         if (!coupon.isStackable && platformDiscount) {
+            const platformDiscountAmount = platformDiscount ? subtotal * (platformDiscount.reward.value / 100) : 0;
+            const newCouponDiscount = calculateCouponDiscount(coupon, cartItems.map(i => i.product));
+
             if (newCouponDiscount > platformDiscountAmount) {
-                 toast({
-                    title: "Better Promotion Active",
-                    description: `This coupon cannot be applied as a better platform-wide discount is already active.`,
+                toast({
+                    title: "A better promotion is active",
+                    description: `The existing ${platformDiscount.reward.value}% discount is better than this coupon.`,
                 });
                 setCouponCode(platformDiscount.code || "");
-                return;
+                return; // Do not apply the worse coupon
             }
         }
         
@@ -349,7 +375,7 @@ export default function CheckoutPage() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {cartItems.map(item => {
-                                        const priceDetails = getPriceDetails(item);
+                                        const priceDetails = getPriceDetails(item.product);
                                         return (
                                             <div key={item.instanceId} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
