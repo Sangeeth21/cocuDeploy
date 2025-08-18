@@ -16,7 +16,7 @@ import { Loader2 } from "lucide-react";
 
 export default function CartPage() {
   const { cartItems, updateQuantity, removeFromCart, subtotal, loading } = useCart();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, commissionRates } = useUser();
   const { openDialog } = useAuthDialog();
   const router = useRouter();
 
@@ -31,6 +31,19 @@ export default function CartPage() {
     }
   };
   
+    const getFinalPrice = (item: typeof cartItems[0]) => {
+        const commissionRule = commissionRates?.personalized?.[item.product.category];
+        let finalPrice = item.product.price;
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                finalPrice += commissionRule.buffer.value;
+            } else {
+                finalPrice *= (1 + (commissionRule.buffer.value / 100));
+            }
+        }
+        return finalPrice;
+    }
+
   const hasCustomizations = (item: typeof cartItems[0]) => {
       return Object.keys(item.customizations).length > 0;
   }
@@ -65,7 +78,7 @@ export default function CartPage() {
                         </div>
                     )}
                     <p className="text-sm text-muted-foreground mt-1">Vendor ID: {item.product.vendorId}</p>
-                    <p className="text-lg font-semibold mt-2">${item.product.price.toFixed(2)}</p>
+                    <p className="text-lg font-semibold mt-2">${getFinalPrice(item).toFixed(2)}</p>
                   </div>
                   <div className="flex items-center gap-2 p-4">
                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.instanceId, -1)}>

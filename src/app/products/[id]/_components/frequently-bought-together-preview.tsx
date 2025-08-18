@@ -11,8 +11,24 @@ import { useEffect, useState } from "react";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { DisplayProduct } from "@/lib/types";
+import { useUser } from "@/context/user-context";
 
 function ProductCardMini({ product }: { product: DisplayProduct }) {
+    const { commissionRates } = useUser();
+    
+    const getFinalPrice = (product: DisplayProduct) => {
+        const commissionRule = commissionRates?.personalized?.[product.category];
+        let finalPrice = product.price;
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                finalPrice += commissionRule.buffer.value;
+            } else {
+                finalPrice *= (1 + (commissionRule.buffer.value / 100));
+            }
+        }
+        return finalPrice;
+    }
+
   return (
     <div className="flex-1 flex items-center gap-2 group">
         <Link href={`/products/${product.id}`} className="flex-1 flex items-center gap-2">
@@ -21,7 +37,7 @@ function ProductCardMini({ product }: { product: DisplayProduct }) {
             </div>
             <div>
                 <p className="text-sm font-semibold line-clamp-2 group-hover:text-primary">{product.name}</p>
-                <p className="text-sm font-bold">${product.price.toFixed(2)}</p>
+                <p className="text-sm font-bold">${getFinalPrice(product).toFixed(2)}</p>
             </div>
         </Link>
     </div>
@@ -30,6 +46,7 @@ function ProductCardMini({ product }: { product: DisplayProduct }) {
 
 export function FrequentlyBoughtTogetherPreview({ currentProduct }: { currentProduct: DisplayProduct }) {
     const { toast } = useToast();
+    const { commissionRates } = useUser();
     const [relatedProduct, setRelatedProduct] = useState<DisplayProduct | null>(null);
 
     useEffect(() => {
@@ -50,12 +67,25 @@ export function FrequentlyBoughtTogetherPreview({ currentProduct }: { currentPro
         };
         fetchRelated();
     }, [currentProduct]);
+    
+    const getFinalPrice = (product: DisplayProduct) => {
+        const commissionRule = commissionRates?.personalized?.[product.category];
+        let finalPrice = product.price;
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                finalPrice += commissionRule.buffer.value;
+            } else {
+                finalPrice *= (1 + (commissionRule.buffer.value / 100));
+            }
+        }
+        return finalPrice;
+    }
 
     if (!relatedProduct) {
         return null; // Or a loading skeleton
     }
 
-    const totalPrice = currentProduct.price + relatedProduct.price;
+    const totalPrice = getFinalPrice(currentProduct) + getFinalPrice(relatedProduct);
 
     const handleAddBothToCart = () => {
         // This would dispatch to a cart context in a real app

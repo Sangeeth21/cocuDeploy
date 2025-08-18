@@ -27,7 +27,7 @@ type VerificationStatus = 'unverified' | 'pending' | 'verified';
 export default function CheckoutPage() {
     const { toast } = useToast();
     const router = useRouter();
-    const { user, isLoggedIn } = useUser();
+    const { user, isLoggedIn, commissionRates } = useUser();
     const { cartItems, subtotal, clearCart, loading: isCartLoading } = useCart();
 
     const [isProcessing, setIsProcessing] = useState(false);
@@ -50,6 +50,19 @@ export default function CheckoutPage() {
             setPhoneStatus('verified'); // Assume phone is verified if user is logged in for simplicity
         }
     }, [isLoggedIn, user]);
+    
+    const getFinalPrice = (item: typeof cartItems[0]) => {
+        const commissionRule = commissionRates?.personalized?.[item.product.category];
+        let finalPrice = item.product.price;
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                finalPrice += commissionRule.buffer.value;
+            } else {
+                finalPrice *= (1 + (commissionRule.buffer.value / 100));
+            }
+        }
+        return finalPrice * item.quantity;
+    }
 
     const hasLoyalty = (user?.loyalty?.totalOrdersForReward ?? 0) < 3;
     const shipping = cartItems.length > 0 ? (hasLoyalty ? 0 : 5.00) : 0;
@@ -85,7 +98,7 @@ export default function CheckoutPage() {
          if (type === 'phone') {
             if (phoneOtp === MOCK_PHONE_OTP) {
                 setPhoneStatus('verified');
-                toast({ title: "Phone Verified!", className: "bg-green-100 dark:bg-green-900" });
+                toast({ title: "Phone Verified!", className: "bg-green-100 dark:bg-green-900 dark:text-green-200" });
             } else {
                 toast({ variant: "destructive", title: "Invalid Phone Code" });
             }
@@ -284,7 +297,7 @@ export default function CheckoutPage() {
                                                      <p className="text-xs text-muted-foreground">Sold by: {item.product.vendorName}</p>
                                                 </div>
                                             </div>
-                                            <p className="font-semibold">${(item.product.price * item.quantity).toFixed(2)}</p>
+                                            <p className="font-semibold">${getFinalPrice(item).toFixed(2)}</p>
                                         </div>
                                     ))}
                                 </div>

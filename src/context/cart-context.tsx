@@ -30,7 +30,7 @@ type CartAction =
 
 // Create the context
 interface CartContextType extends CartState {
-    addToCart: (payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> } }) => void;
+    addToCart: (payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> }, quantity?: number }) => void;
     removeFromCart: (instanceId: string) => void;
     updateQuantity: (instanceId: string, delta: number) => void;
     clearCart: () => Promise<void>;
@@ -54,7 +54,7 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 };
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-    const { isLoggedIn, user } = useUser();
+    const { isLoggedIn, user, commissionRates } = useUser();
     const { toast } = useToast();
     const [state, dispatch] = useReducer(cartReducer, { cartItems: [], loading: true });
 
@@ -92,12 +92,12 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
     };
 
-    const addToCart = async (payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> } }) => {
+    const addToCart = async (payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> }, quantity?: number }) => {
         if (!isLoggedIn) {
             toast({ variant: 'destructive', title: "Please log in to add items to your cart."});
             return;
         }
-        const { product, customizations } = payload;
+        const { product, customizations, quantity = 1 } = payload;
         const hasCustomizations = Object.keys(customizations).length > 0;
         const existingItem = !hasCustomizations 
             ? state.cartItems.find(item => item.product.id === product.id && Object.keys(item.customizations).length === 0)
@@ -107,14 +107,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         if (existingItem) {
             newCart = state.cartItems.map(item => 
                 item.instanceId === existingItem.instanceId 
-                ? { ...item, quantity: item.quantity + 1 } 
+                ? { ...item, quantity: item.quantity + quantity } 
                 : item
             );
         } else {
             const newCartItem: CartItem = {
                 instanceId: `${product.id}-${Date.now()}`,
                 product,
-                quantity: 1,
+                quantity: quantity,
                 customizations,
             };
             newCart = [...state.cartItems, newCartItem];
@@ -146,7 +146,19 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         await updateFirestoreCart([]);
     }
 
-    const subtotal = state.cartItems.reduce((acc, item) => acc + item.product.price * item.quantity, 0);
+    const subtotal = state.cartItems.reduce((acc, item) => {
+        const commissionRule = commissionRates?.personalized?.[item.product.category];
+        let finalPrice = item.product.price;
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                finalPrice += commissionRule.buffer.value;
+            } else {
+                finalPrice *= (1 + (commissionRule.buffer.value / 100));
+            }
+        }
+        return acc + finalPrice * item.quantity;
+    }, 0);
+
     const totalItems = state.cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
     return (

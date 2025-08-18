@@ -2,8 +2,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import type { User } from '@/lib/types';
-import { doc, onSnapshot } from 'firebase/firestore';
+import type { User, CommissionRule } from '@/lib/types';
+import { doc, onSnapshot, getDoc, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
@@ -13,6 +13,7 @@ interface UserState {
     isLoggedIn: boolean;
     user: User | null;
     avatar: string;
+    commissionRates: { [key: string]: { [key: string]: CommissionRule } } | null;
 }
 
 // Define the actions that can be performed
@@ -30,12 +31,21 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState<User | null>(null);
+    const [commissionRates, setCommissionRates] = useState(null);
 
-    // Fetch initial user data
+
+    // Fetch user and commission data
     useEffect(() => {
+        const commissionRef = doc(db, 'commissions', 'categories');
+        const unsubCommissions = onSnapshot(commissionRef, (docSnap) => {
+            if (docSnap.exists()) {
+                setCommissionRates(docSnap.data() as any);
+            }
+        });
+
         if (isLoggedIn) {
             const userId = "USR001"; // This would come from an auth session in a real app
-            const unsub = onSnapshot(doc(db, "users", userId), (doc) => {
+            const unsubUser = onSnapshot(doc(db, "users", userId), (doc) => {
                 if (doc.exists()) {
                     setUser({ id: doc.id, ...doc.data() } as User);
                 } else {
@@ -43,9 +53,13 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                     setUser(null);
                 }
             });
-            return () => unsub();
+            return () => {
+                unsubUser();
+                unsubCommissions();
+            };
         } else {
             setUser(null);
+            return () => unsubCommissions();
         }
     }, [isLoggedIn]);
 
@@ -68,7 +82,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const avatar = user?.avatar || DEFAULT_AVATAR;
 
     return (
-        <UserContext.Provider value={{ isLoggedIn, user, avatar, login, logout, updateAvatar, setUser }}>
+        <UserContext.Provider value={{ isLoggedIn, user, avatar, login, logout, updateAvatar, setUser, commissionRates }}>
             {children}
         </UserContext.Provider>
     );

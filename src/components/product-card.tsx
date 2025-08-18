@@ -20,7 +20,24 @@ interface ProductCardProps {
   product: DisplayProduct;
 }
 
+const getFinalPrice = (product: DisplayProduct, commissionRates: any) => {
+    const commissionRule = commissionRates?.personalized?.[product.category];
+    let finalPrice = product.price;
+    if (commissionRule && commissionRule.buffer) {
+        if (commissionRule.buffer.type === 'fixed') {
+            finalPrice += commissionRule.buffer.value;
+        } else {
+            finalPrice *= (1 + (commissionRule.buffer.value / 100));
+        }
+    }
+    return finalPrice;
+}
+
+
 export function TinyProductCard({ product }: ProductCardProps) {
+    const { commissionRates } = useUser();
+    const finalPrice = getFinalPrice(product, commissionRates);
+
     return (
         <Card className="overflow-hidden h-full">
             <Link href={`/products/${product.id}`} className="block group h-full flex flex-col">
@@ -36,7 +53,7 @@ export function TinyProductCard({ product }: ProductCardProps) {
                     <div>
                         <p className="text-xs font-medium leading-tight line-clamp-2">{product.name}</p>
                     </div>
-                    <p className="text-xs font-bold mt-1">${product.price.toFixed(2)}</p>
+                    <p className="text-xs font-bold mt-1">${finalPrice.toFixed(2)}</p>
                 </div>
             </Link>
         </Card>
@@ -44,6 +61,8 @@ export function TinyProductCard({ product }: ProductCardProps) {
 }
 
 export function MiniProductCard({ product }: ProductCardProps) {
+    const { commissionRates } = useUser();
+    const finalPrice = getFinalPrice(product, commissionRates);
     return (
         <Card className="overflow-hidden">
             <Link href={`/products/${product.id}`} className="block group">
@@ -57,7 +76,7 @@ export function MiniProductCard({ product }: ProductCardProps) {
                 </div>
                  <div className="p-2">
                     <p className="text-xs font-medium leading-tight truncate">{product.name}</p>
-                    <p className="text-xs font-bold">${product.price.toFixed(2)}</p>
+                    <p className="text-xs font-bold">${finalPrice.toFixed(2)}</p>
                 </div>
             </Link>
         </Card>
@@ -68,10 +87,12 @@ export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, commissionRates } = useUser();
   const { openDialog } = useAuthDialog();
   const router = useRouter();
   
+  const finalPrice = getFinalPrice(product, commissionRates);
+
   const isCustomizable = useMemo(() => {
     // A product is customizable if it has any defined customization areas on any side.
     return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
@@ -154,7 +175,7 @@ export function ProductCard({ product }: ProductCardProps) {
             </div>
             <span className="text-xs text-muted-foreground ml-2">({product.reviewCount})</span>
         </div>
-         <p className="text-xl font-semibold font-body mt-2">${product.price.toFixed(2)}</p>
+         <p className="text-xl font-semibold font-body mt-2">${finalPrice.toFixed(2)}</p>
       </CardContent>
        <CardFooter className="p-2 pt-0 flex flex-col gap-2">
         {isCustomizable ? (

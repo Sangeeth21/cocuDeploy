@@ -11,15 +11,30 @@ import { useWishlist } from "@/context/wishlist-context";
 import { useCart } from "@/context/cart-context";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/context/user-context";
 
 export function WishlistPreview() {
     const router = useRouter();
     const { toast } = useToast();
     const { wishlistItems, removeFromWishlist } = useWishlist();
     const { addToCart } = useCart();
+    const { commissionRates } = useUser();
+
+     const getFinalPrice = (product: typeof wishlistItems[0]) => {
+        const commissionRule = commissionRates?.personalized?.[product.category];
+        let finalPrice = product.price;
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                finalPrice += commissionRule.buffer.value;
+            } else {
+                finalPrice *= (1 + (commissionRule.buffer.value / 100));
+            }
+        }
+        return finalPrice;
+    }
 
     const handleAddToCart = (item: (typeof wishlistItems)[0]) => {
-        addToCart(item);
+        addToCart({product: item, customizations: {}});
         removeFromWishlist(item.id);
         toast({
             title: "Added to cart!",
@@ -28,7 +43,7 @@ export function WishlistPreview() {
     };
 
     const handleBuyNow = (item: (typeof wishlistItems)[0]) => {
-        addToCart(item);
+        addToCart({product: item, customizations: {}});
         removeFromWishlist(item.id);
         router.push('/checkout');
     };
@@ -69,7 +84,7 @@ export function WishlistPreview() {
                                                     <X className="h-4 w-4" />
                                                 </Button>
                                             </div>
-                                            <p className="text-sm font-semibold">${item.price.toFixed(2)}</p>
+                                            <p className="text-sm font-semibold">${getFinalPrice(item).toFixed(2)}</p>
                                              <div className="flex items-center gap-2">
                                                 <Button size="sm" variant="outline" className="w-full" onClick={() => handleAddToCart(item)}>
                                                     <ShoppingCart className="h-4 w-4 mr-2"/>
