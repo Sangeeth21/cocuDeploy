@@ -39,7 +39,7 @@ export default function CheckoutPage() {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [emailStatus, setEmailStatus] = useState<VerificationStatus>('unverified');
-    const [phoneStatus, setPhoneStatus] = useState<VerificationStatus>('unverified');
+    const [phoneStatus, setPhoneStatus] = useState<VerificationStatus>('verified');
     const [emailOtp, setEmailOtp] = useState("");
     const [phoneOtp, setPhoneOtp] = useState("");
     const [showEmailOtp, setShowEmailOtp] = useState(false);
@@ -98,7 +98,9 @@ export default function CheckoutPage() {
     }, [cartItems]);
 
     const calculateItemPrice = (product: DisplayProduct) => {
-        const commissionRule = commissionRates?.personalized?.[product.category];
+        const productType = product.b2bEnabled ? 'corporate' : 'personalized';
+        const commissionRule = commissionRates?.[productType]?.[product.category];
+
         let finalPrice = product.price;
         if (commissionRule && commissionRule.buffer) {
             if (commissionRule.buffer.type === 'fixed') {

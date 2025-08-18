@@ -3,25 +3,29 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import type { DisplayProduct } from '@/lib/types';
+import type { DisplayProduct, Program } from '@/lib/types';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, Truck, Wand2, ShoppingCart, Scale, Gavel } from 'lucide-react';
+import { Star, Truck, Wand2, ShoppingCart, Scale, Gavel, Tag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useCart } from '@/context/cart-context';
 import { useComparison } from '@/context/comparison-context';
 import { useToast } from '@/hooks/use-toast';
 import { useUser } from '@/context/user-context';
 import { useAuthDialog } from '@/context/auth-dialog-context';
 import { useBidRequest } from '@/context/bid-request-context';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Badge } from '@/components/ui/badge';
+
 
 interface ProductCardProps {
   product: DisplayProduct;
 }
 
-const getFinalPrice = (product: DisplayProduct, commissionRates: any, type: 'personalized' | 'corporate' = 'corporate') => {
+const getFinalPrice = (product: DisplayProduct, commissionRates: any, applicableDiscount?: Program | null, type: 'personalized' | 'corporate' = 'corporate') => {
     const commissionRule = commissionRates?.[type]?.[product.category];
     let finalPrice = product.price;
     if (commissionRule && commissionRule.buffer) {
@@ -31,7 +35,13 @@ const getFinalPrice = (product: DisplayProduct, commissionRates: any, type: 'per
             finalPrice *= (1 + (commissionRule.buffer.value / 100));
         }
     }
-    return finalPrice;
+    const originalPrice = finalPrice;
+    
+    if (applicableDiscount) {
+        finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+    }
+    
+    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
 }
 
 
@@ -39,22 +49,28 @@ export function TinyB2bProductCard({ product }: ProductCardProps) {
     const { toggleCompare, isComparing } = useComparison();
     const { toast } = useToast();
     const { commissionRates } = useUser();
+    const [promotions, setPromotions] = useState<Program[]>([]);
 
-    const lowestTierPrice = useMemo(() => {
+    useEffect(() => {
+        const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+        const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+            const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+            const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === 'corporate' || p.platform === 'both'));
+            setPromotions(relevantPromos);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const applicableDiscount = useMemo(() => {
+        return promotions.find(p => p.type === 'discount');
+    }, [promotions]);
+
+    const priceDetails = useMemo(() => {
         const basePrice = product.tierPrices && product.tierPrices.length > 0
             ? Math.min(...product.tierPrices.map(p => p.price))
             : product.price;
-
-        const commissionRule = commissionRates?.corporate?.[product.category];
-        if (commissionRule && commissionRule.buffer) {
-            if (commissionRule.buffer.type === 'fixed') {
-                return basePrice + commissionRule.buffer.value;
-            } else {
-                return basePrice * (1 + (commissionRule.buffer.value / 100));
-            }
-        }
-        return basePrice;
-    }, [product, commissionRates]);
+        return getFinalPrice({ ...product, price: basePrice }, commissionRates, applicableDiscount, 'corporate');
+    }, [product, commissionRates, applicableDiscount]);
     
     const handleToggleCompare = (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent link navigation
@@ -85,6 +101,11 @@ export function TinyB2bProductCard({ product }: ProductCardProps) {
                         fill
                         className="object-cover transition-transform duration-300 group-hover:scale-105"
                     />
+                     {priceDetails.hasDiscount && (
+                        <Badge variant="destructive" className="absolute top-2 left-2 text-[10px] h-auto px-1.5 py-0">
+                            <Tag className="mr-1 h-3 w-3"/> {priceDetails.discountValue}% OFF
+                        </Badge>
+                     )}
                 </div>
                  <div className="p-2 flex-grow flex flex-col justify-between">
                     <div>
@@ -93,7 +114,12 @@ export function TinyB2bProductCard({ product }: ProductCardProps) {
                     </div>
                      <div>
                         <p className="text-xs text-muted-foreground">Starts from</p>
-                        <p className="text-sm font-bold mt-1">${lowestTierPrice.toFixed(2)}</p>
+                        <div className="flex items-baseline gap-1.5 mt-1">
+                            <p className="text-sm font-bold">${priceDetails.final.toFixed(2)}</p>
+                             {priceDetails.hasDiscount && (
+                                <p className="text-xs text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>
+                            )}
+                        </div>
                     </div>
                 </div>
             </Link>
@@ -109,6 +135,21 @@ export function B2bProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const { isLoggedIn, commissionRates } = useUser();
   const { openDialog } = useAuthDialog();
+  const [promotions, setPromotions] = useState<Program[]>([]);
+
+  useEffect(() => {
+    const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+    const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+        const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+        const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === 'corporate' || p.platform === 'both'));
+        setPromotions(relevantPromos);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const applicableDiscount = useMemo(() => {
+    return promotions.find(p => p.type === 'discount');
+  }, [promotions]);
 
   const isCustomizable = useMemo(() => {
     return Object.values(product.customizationAreas || {}).some(areas => areas && areas.length > 0);
@@ -151,13 +192,12 @@ export function B2bProductCard({ product }: ProductCardProps) {
       addToBid(product);
   }
 
-  const lowestTierPrice = useMemo(() => {
+  const priceDetails = useMemo(() => {
     const basePrice = product.tierPrices && product.tierPrices.length > 0
         ? Math.min(...product.tierPrices.map(p => p.price))
         : product.price;
-
-    return getFinalPrice({ ...product, price: basePrice }, commissionRates, 'corporate');
-  }, [product, commissionRates]);
+    return getFinalPrice({ ...product, price: basePrice }, commissionRates, applicableDiscount, 'corporate');
+  }, [product, commissionRates, applicableDiscount]);
 
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
@@ -177,6 +217,11 @@ export function B2bProductCard({ product }: ProductCardProps) {
                 <span>Customizable</span>
               </div>
             )}
+            {priceDetails.hasDiscount && (
+                <Badge variant="destructive" className="absolute top-2 right-2">
+                    <Tag className="mr-1 h-3 w-3"/> {priceDetails.discountValue}% OFF
+                </Badge>
+            )}
           </div>
         </Link>
       </CardHeader>
@@ -195,7 +240,13 @@ export function B2bProductCard({ product }: ProductCardProps) {
        <CardFooter className="p-2 pt-0 flex flex-col items-start gap-2">
          <div className='w-full px-2'>
             <p className="text-xs text-muted-foreground">Starts from</p>
-            <p className="text-xl font-semibold font-body">${lowestTierPrice.toFixed(2)} / unit</p>
+             <div className="flex items-baseline gap-2">
+                <p className="text-xl font-semibold font-body">${priceDetails.final.toFixed(2)}</p>
+                 {priceDetails.hasDiscount && (
+                    <p className="text-base font-medium text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>
+                )}
+                 <span className="text-sm text-muted-foreground">/ unit</span>
+            </div>
          </div>
         <div className="w-full flex flex-col gap-2">
             <Button size="sm" className="w-full" onClick={handleRequestQuote}>
