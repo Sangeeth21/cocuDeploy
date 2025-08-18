@@ -11,7 +11,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { CorporateProductInteractions } from "./_components/product-interactions";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useCart } from "@/context/cart-context";
 import { useUser } from "@/context/user-context";
 import { useComparison } from "@/context/comparison-context";
 import { useBidRequest } from "@/context/bid-request-context";
@@ -31,6 +30,7 @@ import { getEstimatedDelivery } from "@/app/actions";
 import { Loader2 } from 'lucide-react';
 import { B2bProductCard } from "../../_components/b2b-product-card";
 import { FrequentlyBoughtTogetherPreview } from "@/app/products/[id]/_components/frequently-bought-together-preview";
+import { useCart } from "@/context/cart-context";
 
 
 const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
@@ -38,13 +38,13 @@ const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').the
 });
 
 function ProductPageCampaignBanner() {
-    const [bannerCampaign, setBannerCampaign] = useState<MarketingCampaign | null>(null);
+    const [bannerCampaign, setBannerCampaign] = useState<any | null>(null);
 
     useEffect(() => {
         const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"), where("placement", "==", "product-page-banner"), limit(1));
         const unsub = onSnapshot(campaignsQuery, (snapshot) => {
-            if (!snapshot.empty) {
-                setBannerCampaign({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as MarketingCampaign);
+             if (!snapshot.empty) {
+                setBannerCampaign({ id: snapshot.docs[0].id, ...snapshot.docs[0].data() });
             } else {
                 setBannerCampaign(null);
             }
@@ -240,6 +240,10 @@ export default function B2BProductDetailPage() {
     return priceDetails.final * quantity;
   }, [priceDetails, quantity]);
 
+   const originalTotalPrice = useMemo(() => {
+    return priceDetails.original * quantity;
+  }, [priceDetails, quantity]);
+
   const allMedia: MediaItem[] = useMemo(() => {
     if (!product) return [];
     
@@ -352,7 +356,7 @@ export default function B2BProductDetailPage() {
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12">
-        <div className={cn("md:sticky md:top-24 flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
+        <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
            <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
                 {activeMedia?.type === 'image' && activeMedia.src ? (
                     <Image src={activeMedia.src} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
@@ -489,6 +493,9 @@ export default function B2BProductDetailPage() {
                         <span className="text-muted-foreground">Price per Unit</span>
                          <div className="flex items-baseline gap-2">
                             {priceDetails.hasDiscount && (
+                                <Badge variant="destructive">{priceDetails.discountValue}% OFF</Badge>
+                            )}
+                            {priceDetails.hasDiscount && (
                                 <span className="text-base text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</span>
                             )}
                             <span className="font-semibold text-base">${priceDetails.final.toFixed(2)}</span>
@@ -497,7 +504,12 @@ export default function B2BProductDetailPage() {
                     <Separator/>
                     <div className="flex justify-between items-center font-bold text-lg">
                         <span>Estimated Total</span>
-                        <span>${totalPrice.toFixed(2)}</span>
+                        <div className="flex items-baseline gap-2">
+                             {priceDetails.hasDiscount && (
+                                <span className="text-base text-muted-foreground line-through font-medium">${originalTotalPrice.toFixed(2)}</span>
+                            )}
+                            <span>${totalPrice.toFixed(2)}</span>
+                        </div>
                     </div>
                 </div>
             </CardContent>
@@ -530,25 +542,25 @@ export default function B2BProductDetailPage() {
             </div>
           
            <div className="space-y-2">
-            <Button size="lg" className="w-full" onClick={handleRequestQuote}>
-                {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
-            </Button>
-             <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
-                <Gavel className="mr-2 h-5 w-5" />
-                {isInBid(product.id) ? 'Added to Bid Request' : 'Add to Bid Request'}
-            </Button>
-            <div className="grid grid-cols-2 gap-2">
-                <Button size="lg" variant="outline" className="w-full" onClick={handleCompareClick}>
-                    <Scale className="mr-2 h-5 w-5" />
-                    {isComparing(product.id) ? 'Remove' : 'Compare'}
+                <Button size="lg" className="w-full" onClick={handleRequestQuote}>
+                    {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
                 </Button>
-                <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
-                    <ShoppingCart className="mr-2 h-5 w-5" />
-                    Add to Cart
+                 <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
+                    <Gavel className="mr-2 h-5 w-5" />
+                    {isInBid(product.id) ? 'Added to Bid Request' : 'Add to Bid Request'}
                 </Button>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button size="lg" variant="outline" className="w-full" onClick={handleCompareClick}>
+                        <Scale className="mr-2 h-5 w-5" />
+                        {isComparing(product.id) ? 'Remove' : 'Compare'}
+                    </Button>
+                    <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
+                        <ShoppingCart className="mr-2 h-5 w-5" />
+                        Add to Cart
+                    </Button>
+                </div>
+                <CorporateProductInteractions product={product} isCustomizable={isCustomizable} />
             </div>
-            <CorporateProductInteractions product={product} isCustomizable={isCustomizable} />
-          </div>
           <p className="text-muted-foreground leading-relaxed pt-4">{product.description}</p>
         </div>
       </div>
