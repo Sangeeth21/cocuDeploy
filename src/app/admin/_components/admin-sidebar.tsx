@@ -148,7 +148,7 @@ const AdminSidebarMenuButton = React.forwardRef<
   React.ComponentProps<typeof Button> & {
     asChild?: boolean
     isActive?: boolean
-    tooltip?: string | React.ComponentProps<typeof TooltipContent>
+    tooltip?: React.ComponentProps<typeof TooltipContent>
   }
 >(
   (
@@ -169,8 +169,8 @@ const AdminSidebarMenuButton = React.forwardRef<
         ref={ref}
         variant={isActive ? "secondary" : "ghost"}
         className={cn(
-            "w-full h-10 flex items-center",
-            isCollapsed ? "justify-center" : "justify-start gap-2",
+            "w-full h-10 flex items-center gap-2",
+            isCollapsed ? "justify-center" : "justify-start",
             className
         )}
         asChild={asChild}
@@ -181,13 +181,12 @@ const AdminSidebarMenuButton = React.forwardRef<
     )
 
     if (isCollapsed && tooltip) {
-        const tooltipProps = typeof tooltip === 'string' ? { children: tooltip } : tooltip;
         return (
             <Tooltip>
                 <TooltipTrigger asChild>
                     {buttonContent}
                 </TooltipTrigger>
-                <TooltipContent side="right" align="center" {...tooltipProps} />
+                <TooltipContent side="right" align="center" {...tooltip} />
             </Tooltip>
         );
     }
