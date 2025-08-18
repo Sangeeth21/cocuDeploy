@@ -374,6 +374,7 @@ export type Coupon = {
     usageCount: number;
     expiresAt?: Date;
     minPurchase?: number;
+    isPublic?: boolean;
 };
 
 export type Freebie = {

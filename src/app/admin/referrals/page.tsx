@@ -58,6 +58,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
     const [maxDiscount, setMaxDiscount] = useState<number | string>('');
     const [expiresAt, setExpiresAt] = useState<Date | undefined>();
     const [usageLimit, setUsageLimit] = useState<number | string>(100);
+    const [isPublic, setIsPublic] = useState(true);
 
     const generateRandomCode = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -77,6 +78,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
              setMaxDiscount('');
              setExpiresAt(undefined);
              setUsageLimit(100);
+             setIsPublic(true);
         }
         if (open && coupon) {
             setCode(coupon.code);
@@ -86,6 +88,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
             setMaxDiscount(coupon.maxDiscount || '');
             setExpiresAt(coupon.expiresAt);
             setUsageLimit(coupon.usageLimit);
+            setIsPublic(coupon.isPublic ?? true);
         }
     }, [open, coupon]);
     
@@ -97,6 +100,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
             maxDiscount: maxDiscount ? Number(maxDiscount) : undefined,
             expiresAt,
             usageLimit: Number(usageLimit),
+            isPublic
         };
         onSave(couponData, coupon?.id);
     }
@@ -165,6 +169,10 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                             <Label>Usage Limit</Label>
                             <Input type="number" value={usageLimit} onChange={e => setUsageLimit(e.target.value)} />
                         </div>
+                    </div>
+                    <div className="flex items-center space-x-2 pt-2">
+                        <Switch id="is-public" checked={isPublic} onCheckedChange={setIsPublic} />
+                        <Label htmlFor="is-public">Publish Coupon Publicly</Label>
                     </div>
                 </div>
                  <DialogFooter>
@@ -619,6 +627,7 @@ export default function PromotionsPage() {
                                         <TableHead>Type</TableHead>
                                         <TableHead>Value</TableHead>
                                         <TableHead>Usage</TableHead>
+                                        <TableHead>Public</TableHead>
                                         <TableHead>Status</TableHead>
                                     </TableRow>
                                 </TableHeader>
@@ -630,6 +639,9 @@ export default function PromotionsPage() {
                                             <TableCell className="capitalize">{coupon.type}</TableCell>
                                             <TableCell>{coupon.type === 'fixed' ? `₹${coupon.value}` : `${coupon.value}%`}</TableCell>
                                             <TableCell>{coupon.usageCount} / {coupon.usageLimit}</TableCell>
+                                            <TableCell>
+                                                <Badge variant={coupon.isPublic ? 'secondary' : 'outline'}>{coupon.isPublic ? 'Yes' : 'No'}</Badge>
+                                            </TableCell>
                                             <TableCell><Badge>{coupon.status}</Badge></TableCell>
                                         </TableRow>
                                     ))}
