@@ -110,22 +110,6 @@ export default function CheckoutPage() {
         return finalPrice;
     }
 
-    const getPriceDetails = useCallback((product: DisplayProduct) => {
-        const originalPrice = calculateItemPrice(product);
-        let finalPrice = originalPrice;
-        let finalDiscountProgram = platformDiscount;
-
-        const couponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, [product]) : 0;
-        
-        if (appliedCoupon) {
-            finalPrice = originalPrice - couponDiscountAmount;
-        } else if (finalDiscountProgram) {
-            finalPrice = originalPrice * (1 - (finalDiscountProgram.reward.value / 100));
-        }
-        
-        return { original: originalPrice, final: finalPrice, hasDiscount: finalPrice < originalPrice, discountValue: finalDiscountProgram?.reward.value };
-    }, [commissionRates, platformDiscount, appliedCoupon]);
-
     const calculateCouponDiscount = useCallback((coupon: Coupon, relevantItems: DisplayProduct[]) => {
         const applicableSubtotal = relevantItems.reduce((acc, product) => {
             if (coupon.scope === 'all' || 
@@ -147,7 +131,7 @@ export default function CheckoutPage() {
         }
         return Math.min(calculatedDiscount, applicableSubtotal);
     }, [commissionRates]);
-    
+
     const subtotal = useMemo(() => {
         return cartItems.reduce((acc, item) => acc + calculateItemPrice(item.product) * item.quantity, 0);
     }, [cartItems, commissionRates]);
@@ -162,13 +146,11 @@ export default function CheckoutPage() {
 
         if (appliedCoupon) {
             couponDiscountAmount = calculateCouponDiscount(appliedCoupon, cartItems.map(i => i.product));
-            // If the coupon is not stackable, it might replace the platform discount
             if (!appliedCoupon.isStackable) {
                 return Math.max(platformDiscountAmount, couponDiscountAmount);
             }
         }
         
-        // If stackable, or only one exists, add them up
         return platformDiscountAmount + couponDiscountAmount;
 
     }, [appliedCoupon, platformDiscount, subtotal, cartItems, calculateCouponDiscount]);
@@ -266,6 +248,22 @@ export default function CheckoutPage() {
     }
 
     const isVerified = emailStatus === 'verified' && phoneStatus === 'verified';
+
+    const getPriceDetails = useCallback((product: DisplayProduct) => {
+        const originalPrice = calculateItemPrice(product);
+        let finalPrice = originalPrice;
+        let finalDiscountProgram = platformDiscount;
+
+        const couponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, [product]) : 0;
+        
+        if (appliedCoupon) {
+            finalPrice = originalPrice - couponDiscountAmount;
+        } else if (finalDiscountProgram) {
+            finalPrice = originalPrice * (1 - (finalDiscountProgram.reward.value / 100));
+        }
+        
+        return { original: originalPrice, final: finalPrice, hasDiscount: finalPrice < originalPrice, discountValue: finalDiscountProgram?.reward.value };
+    }, [commissionRates, platformDiscount, appliedCoupon, calculateCouponDiscount]);
 
     return (
         <div className="container py-12">
@@ -369,6 +367,11 @@ export default function CheckoutPage() {
                                                 <div className="flex items-center gap-4">
                                                     <div className="relative w-16 h-16 rounded-md overflow-hidden">
                                                         <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" />
+                                                        {priceDetails.hasDiscount && (
+                                                            <Badge variant="destructive" className="absolute top-1 left-1 text-[10px] h-auto px-1 py-0">
+                                                                <Tag className="mr-1 h-2.5 w-2.5" /> {priceDetails.discountValue}% OFF
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                     <div>
                                                         <p className="font-semibold">{item.product.name}</p>
