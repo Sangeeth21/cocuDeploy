@@ -381,6 +381,7 @@ export type Coupon = {
     expiresAt?: Date;
     minPurchase?: number;
     isPublic: boolean;
+    isStackable?: boolean;
 };
 
 export type Freebie = {

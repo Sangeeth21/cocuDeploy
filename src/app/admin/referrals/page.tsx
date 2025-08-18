@@ -66,6 +66,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
     const [expiresAt, setExpiresAt] = useState<Date | undefined>();
     const [usageLimit, setUsageLimit] = useState<number | string>(100);
     const [isPublic, setIsPublic] = useState(true);
+    const [isStackable, setIsStackable] = useState(false);
     const [scope, setScope] = useState<'all' | 'category' | 'product'>('all');
     
     // State for scope selections
@@ -117,6 +118,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
              setExpiresAt(undefined);
              setUsageLimit(100);
              setIsPublic(true);
+             setIsStackable(false);
              setScope('all');
              setSelectedCategories([]);
              setSelectedProducts([]);
@@ -127,9 +129,10 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
             setValue(coupon.value);
             setPlatform(coupon.platform);
             setMaxDiscount(coupon.maxDiscount || '');
-            setExpiresAt(coupon.expiresAt);
+            setExpiresAt(coupon.expiresAt ? new Date(coupon.expiresAt) : undefined);
             setUsageLimit(coupon.usageLimit);
             setIsPublic(coupon.isPublic ?? true);
+            setIsStackable(coupon.isStackable ?? false);
             setScope(coupon.scope || 'all');
             setSelectedCategories(coupon.applicableCategories || []);
             // This part is tricky as we only have IDs. A real app would fetch product details.
@@ -148,6 +151,7 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
             expiresAt,
             usageLimit: Number(usageLimit),
             isPublic,
+            isStackable,
             scope,
             applicableCategories: scope === 'category' ? selectedCategories : [],
             applicableProducts: scope === 'product' ? selectedProducts.map(p => p.id) : [],
@@ -298,9 +302,15 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                             <Input type="number" value={usageLimit} onChange={e => setUsageLimit(e.target.value)} />
                         </div>
                     </div>
-                    <div className="flex items-center space-x-2 pt-2">
-                        <Switch id="is-public" checked={isPublic} onCheckedChange={setIsPublic} />
-                        <Label htmlFor="is-public">Publish Coupon Publicly</Label>
+                     <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center space-x-2">
+                            <Switch id="is-public" checked={isPublic} onCheckedChange={setIsPublic} />
+                            <Label htmlFor="is-public">Publish Coupon Publicly</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                            <Switch id="is-stackable" checked={isStackable} onCheckedChange={setIsStackable} />
+                            <Label htmlFor="is-stackable">Allow Stacking</Label>
+                        </div>
                     </div>
                 </div>
                  </ScrollArea>
@@ -739,11 +749,14 @@ export default function PromotionsPage() {
     const handleSaveCoupon = async (couponData: Omit<Coupon, 'id' | 'usageCount' | 'status'>, id?: string) => {
         setIsLoading(true);
         try {
-            const dataToSave = { 
+            const dataToSave: Partial<Coupon> = { 
                 ...couponData, 
                 status: couponData.expiresAt && couponData.expiresAt < new Date() ? 'Expired' : 'Active', 
-                usageCount: editingCoupon?.usageCount || 0 
             };
+            if (!id) {
+                dataToSave.usageCount = 0;
+            }
+
              if (id) {
                 await updateDoc(doc(db, 'coupons', id), dataToSave as any);
                 toast({ title: "Coupon Updated!" });
@@ -933,7 +946,6 @@ export default function PromotionsPage() {
                                 <TableHeader>
                                     <TableRow>
                                         <TableHead>Code</TableHead>
-                                        <TableHead>Platform</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead>Value</TableHead>
                                         <TableHead>Usage</TableHead>
@@ -946,7 +958,6 @@ export default function PromotionsPage() {
                                     {coupons.map(coupon => (
                                         <TableRow key={coupon.id}>
                                             <TableCell className="font-mono">{coupon.code}</TableCell>
-                                            <TableCell className="capitalize">{coupon.platform}</TableCell>
                                             <TableCell className="capitalize">{coupon.type}</TableCell>
                                             <TableCell>{coupon.type === 'fixed' ? `₹${coupon.value}` : `${coupon.value}%`}</TableCell>
                                             <TableCell>{coupon.usageCount} / {coupon.usageLimit}</TableCell>
@@ -964,7 +975,7 @@ export default function PromotionsPage() {
                                                         <DropdownMenuItem onSelect={() => handleEditCouponClick(coupon)}><Edit className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
                                                         <DropdownMenuItem onSelect={() => handleToggleCouponStatus(coupon)}>
                                                             {coupon.status === 'Active' ? <PauseCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
-                                                            {coupon.status === 'Active' ? 'Pause' : 'Resume'}
+                                                            {coupon.status === 'Active' ? 'Deactivate' : 'Activate'}
                                                         </DropdownMenuItem>
                                                         <AlertDialogTrigger asChild>
                                                             <DropdownMenuItem className="text-destructive" onSelect={() => setCouponToDelete(coupon)}>
