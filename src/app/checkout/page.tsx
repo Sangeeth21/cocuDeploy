@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/context/user-context";
 import { useCart } from "@/context/cart-context";
 import { db } from "@/lib/firebase";
-import { addDoc, collection, serverTimestamp, query, where, getDocs, limit } from "firebase/firestore";
+import { addDoc, collection, serverTimestamp, query, where, getDocs, limit, onSnapshot } from "firebase/firestore";
 import type { OrderItem, Freebie, Coupon, Program, DisplayProduct } from "@/lib/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
