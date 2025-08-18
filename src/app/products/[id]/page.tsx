@@ -17,7 +17,7 @@ import { useAuthDialog } from "@/context/auth-dialog-context";
 import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { DisplayProduct, CommissionRule, User, Program } from "@/lib/types";
+import type { DisplayProduct, CommissionRule, User, Program, Coupon } from "@/lib/types";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -77,6 +77,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [commissionRule, setCommissionRule] = useState<CommissionRule | null>(null);
   const [promotions, setPromotions] = useState<Program[]>([]);
+  const [publicCoupons, setPublicCoupons] = useState<Coupon[]>([]);
   const [isVendorInfoOpen, setIsVendorInfoOpen] = useState(false);
   
   const [pincode, setPincode] = useState("");
@@ -101,11 +102,13 @@ export default function ProductDetailPage() {
         const productRef = doc(db, "products", id);
         const commissionRef = doc(db, 'commissions', 'categories');
         const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+        const couponsQuery = query(collection(db, "coupons"), where("status", "==", "Active"), where("isPublic", "==", true));
 
-        const [productSnap, commissionSnap, promotionsSnap] = await Promise.all([
+        const [productSnap, commissionSnap, promotionsSnap, couponsSnap] = await Promise.all([
             getDoc(productRef),
             getDoc(commissionRef),
-            getDocs(promotionsQuery)
+            getDocs(promotionsQuery),
+            getDocs(couponsQuery)
         ]);
 
         if (productSnap.exists()) {
@@ -121,6 +124,9 @@ export default function ProductDetailPage() {
             
             const activePromos = promotionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
             setPromotions(activePromos);
+
+            const activeCoupons = couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
+            setPublicCoupons(activeCoupons);
             
             setLoading(false); 
 
@@ -386,12 +392,22 @@ export default function ProductDetailPage() {
                 </div>
             </div>
 
-            <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
-                {promotions.map(promo => (
-                    <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}: Get {promo.reward.value}{promo.reward.type === 'discount_percent' ? '%' : '₹'} off</p>
-                ))}
-            </div>
+            {(promotions.length > 0 || publicCoupons.length > 0) && (
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                    <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
+                    {promotions.map(promo => (
+                        <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}: Get {promo.reward.value}{promo.reward.type === 'discount_percent' ? '%' : '₹'} off</p>
+                    ))}
+                    {publicCoupons.map(coupon => (
+                         <p key={coupon.id} className="text-sm flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            <span>
+                                {coupon.type === 'percentage' ? `${coupon.value}% OFF` : `₹${coupon.value} OFF`} with code: <span className="font-bold font-mono">{coupon.code}</span>
+                            </span>
+                         </p>
+                    ))}
+                </div>
+            )}
 
            <ProductInteractions product={product} isCustomizable={isCustomizable} quantity={quantity} />
            
