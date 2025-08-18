@@ -108,7 +108,7 @@ export default function CheckoutPage() {
         return cartItems.reduce((acc, item) => acc + calculateItemPrice(item.product) * item.quantity, 0);
     }, [cartItems, commissionRates]);
 
-    const calculateDiscount = useCallback((coupon: Coupon) => {
+    const calculateCouponDiscount = useCallback((coupon: Coupon) => {
         let applicableSubtotal = 0;
         if (coupon.scope === 'all') {
             applicableSubtotal = subtotal;
@@ -135,17 +135,16 @@ export default function CheckoutPage() {
 
     const couponDiscountAmount = useMemo(() => {
         if (!appliedCoupon) return 0;
-        // If coupon is not stackable, it overrides the loyalty discount.
-        if (!appliedCoupon.isStackable) return calculateDiscount(appliedCoupon);
-        // If stackable, apply it on the subtotal after loyalty discount.
-        return (subtotal - loyaltyDiscountAmount) * (appliedCoupon.value / 100);
-    }, [appliedCoupon, loyaltyDiscountAmount, subtotal, calculateDiscount]);
-
+        return calculateCouponDiscount(appliedCoupon);
+    }, [appliedCoupon, calculateCouponDiscount]);
+    
     const totalDiscount = useMemo(() => {
+        // If a non-stackable coupon is better than the loyalty discount, use it instead.
         if (appliedCoupon && !appliedCoupon.isStackable) {
-            return couponDiscountAmount > loyaltyDiscountAmount ? couponDiscountAmount : loyaltyDiscountAmount;
+            return Math.max(loyaltyDiscountAmount, couponDiscountAmount);
         }
-        return loyaltyDiscountAmount + couponDiscountAmount;
+        // Otherwise, add the stackable coupon discount to the loyalty discount.
+        return loyaltyDiscountAmount + (appliedCoupon?.isStackable ? couponDiscountAmount : 0);
     }, [appliedCoupon, couponDiscountAmount, loyaltyDiscountAmount]);
 
     const shipping = cartItems.length > 0 ? 5.00 : 0;
@@ -158,11 +157,20 @@ export default function CheckoutPage() {
         const querySnapshot = await getDocs(q);
         if (querySnapshot.empty) { toast({ variant: "destructive", title: "Invalid coupon code." }); return; }
         const coupon = { id: querySnapshot.docs[0].id, ...querySnapshot.docs[0].data() } as Coupon;
+        
+        if (coupon.status !== 'Active') {
+            toast({ variant: 'destructive', title: 'Coupon Not Active', description: 'This coupon is either expired or inactive.' });
+            return;
+        }
+
         setAppliedCoupon(coupon);
         toast({ title: "Coupon Applied!" });
     };
 
-    const removeCoupon = () => setAppliedCoupon(null);
+    const removeCoupon = () => {
+        setAppliedCoupon(null);
+        setCouponCode("");
+    };
     
     const handleFinalizePayment = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -214,15 +222,12 @@ export default function CheckoutPage() {
                             <CardContent>
                                 <div className="space-y-4">
                                     {cartItems.map(item => {
-                                        const basePrice = calculateItemPrice(item.product);
-                                        let itemDiscount = 0;
-                                        if (appliedCoupon && !appliedCoupon.isStackable) {
-                                            itemDiscount = calculateDiscount(appliedCoupon);
-                                        } else {
-                                            itemDiscount += loyaltyDiscountAmount;
-                                            if (appliedCoupon?.isStackable) itemDiscount += couponDiscountAmount;
-                                        }
-                                        const finalItemPrice = basePrice - (itemDiscount / cartItems.length); // Simplified distribution
+                                        const originalPrice = calculateItemPrice(item.product);
+                                        const finalPrice = appliedCoupon && !appliedCoupon.isStackable 
+                                                ? originalPrice * (1 - (couponDiscountAmount / subtotal)) // non-stackable handled at total level
+                                                : originalPrice * (1 - (totalDiscount / subtotal)); // proportional discount
+                                        const hasDiscount = totalDiscount > 0;
+
                                         return (
                                             <div key={item.instanceId} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-4">
@@ -235,10 +240,7 @@ export default function CheckoutPage() {
                                                     </div>
                                                 </div>
                                                 <div className="text-right">
-                                                    <p className="font-semibold">${(finalItemPrice * item.quantity).toFixed(2)}</p>
-                                                    {(loyaltyDiscount || appliedCoupon) && (
-                                                         <p className="text-xs text-muted-foreground line-through">${basePrice.toFixed(2)}</p>
-                                                    )}
+                                                     <p className="font-semibold">${(originalPrice * item.quantity).toFixed(2)}</p>
                                                 </div>
                                             </div>
                                         )
@@ -265,8 +267,14 @@ export default function CheckoutPage() {
                                 </div>
                                 <div className="mt-4 pt-4 border-t space-y-2">
                                     <div className="flex justify-between"><p>Subtotal</p><p>${subtotal.toFixed(2)}</p></div>
-                                    {loyaltyDiscountAmount > 0 && <div className="flex justify-between text-green-600"><p>Loyalty Discount</p><p>-${loyaltyDiscountAmount.toFixed(2)}</p></div>}
-                                    {couponDiscountAmount > 0 && <div className="flex justify-between text-green-600"><p>Coupon Discount</p><p>-${couponDiscountAmount.toFixed(2)}</p></div>}
+                                    
+                                     {totalDiscount > 0 && (
+                                        <div className="flex justify-between text-green-600">
+                                            <p>Discount</p>
+                                            <p>-${totalDiscount.toFixed(2)}</p>
+                                        </div>
+                                    )}
+
                                     <div className="flex justify-between"><p className="text-muted-foreground">Shipping</p><p>${shipping.toFixed(2)}</p></div>
                                     <div className="flex justify-between"><p className="text-muted-foreground">Convenience Fee (3%)</p><p>${convenienceFee.toFixed(2)}</p></div>
                                     <Separator />

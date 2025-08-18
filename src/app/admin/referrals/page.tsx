@@ -312,6 +312,11 @@ function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: {
                             <Label htmlFor="is-stackable">Allow Stacking</Label>
                         </div>
                     </div>
+                     {isStackable && (
+                        <AlertDesc className="text-xs text-muted-foreground">
+                            Allows this coupon to be used with other site-wide promotions.
+                        </AlertDesc>
+                    )}
                 </div>
                  </ScrollArea>
                  <DialogFooter className="pt-4 border-t">
@@ -878,7 +883,7 @@ export default function PromotionsPage() {
     };
     
     const handleToggleFreebieStatus = async (freebie: Freebie) => {
-        const newStatus = freebie.status === 'active' ? 'paused' : 'active';
+        const newStatus = freebie.status === 'active' ? 'paused' : freebie.status === 'paused' ? 'active' : 'active';
         await updateDoc(doc(db, 'freebies', freebie.id), { status: newStatus });
         toast({ title: `Freebie is now ${newStatus}` });
     };
