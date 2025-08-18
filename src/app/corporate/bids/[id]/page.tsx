@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { BrandedLoader } from '@/components/branded-loader';
+import { useUser } from '@/context/user-context';
 
 function CountdownTimer({ expiryDate }: { expiryDate: string }) {
     const calculateTimeLeft = () => {
@@ -142,6 +143,7 @@ export default function BidDetailsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const id = params.id as string;
+    const { commissionRates } = useUser();
     
     const [bid, setBid] = useState<CorporateBid | undefined | null>(undefined);
 
@@ -181,6 +183,21 @@ export default function BidDetailsPage() {
             console.error("Error awarding bid:", error);
             toast({ variant: 'destructive', title: 'Failed to award bid.' });
         }
+    }
+    
+    const getBufferedPrice = (vendorBid: VendorBid) => {
+        if (!commissionRates || !bid?.products[0]?.category) {
+            return vendorBid.pricePerUnit;
+        }
+        const commissionRule = commissionRates.corporate?.[bid.products[0].category];
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                return vendorBid.pricePerUnit + commissionRule.buffer.value;
+            } else {
+                return vendorBid.pricePerUnit * (1 + commissionRule.buffer.value / 100);
+            }
+        }
+        return vendorBid.pricePerUnit;
     }
 
     if (bid === undefined) {
@@ -249,10 +266,12 @@ export default function BidDetailsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {bid.responses.map(res => (
+                                    {bid.responses.map(res => {
+                                        const finalPrice = getBufferedPrice(res);
+                                        return (
                                         <TableRow key={res.vendorId} className={awardedVendor?.vendorId === res.vendorId ? "bg-green-100/50 dark:bg-green-900/20" : ""}>
                                             <TableCell className="font-medium">{res.alias} {awardedVendor?.vendorId === res.vendorId && <span className="text-green-600 font-bold">(Awarded)</span>}</TableCell>
-                                            <TableCell>${res.pricePerUnit.toFixed(2)}</TableCell>
+                                            <TableCell>${finalPrice.toFixed(2)}</TableCell>
                                             <TableCell>{res.estimatedDelivery}</TableCell>
                                             <TableCell className="text-right flex justify-end gap-2">
                                                 {bid.status === 'Awarded' && awardedVendor?.vendorId === res.vendorId && (
@@ -268,7 +287,7 @@ export default function BidDetailsPage() {
                                                         <AlertDialogHeader>
                                                             <AlertDialogTitle>Award Bid to {res.alias}?</AlertDialogTitle>
                                                             <AlertDialogDescription>
-                                                                This will notify the vendor to proceed with the order at the quoted price of ${res.pricePerUnit.toFixed(2)} per unit. This action cannot be undone.
+                                                                This will notify the vendor to proceed with the order at the quoted price of ${finalPrice.toFixed(2)} per unit. This action cannot be undone.
                                                             </AlertDialogDescription>
                                                         </AlertDialogHeader>
                                                         <AlertDialogFooter>
@@ -279,7 +298,7 @@ export default function BidDetailsPage() {
                                                 </AlertDialog>
                                             </TableCell>
                                         </TableRow>
-                                    ))}
+                                    )})}
                                     {bid.responses.length === 0 && (
                                         <TableRow>
                                             <TableCell colSpan={4} className="text-center text-muted-foreground py-8">

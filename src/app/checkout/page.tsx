@@ -52,7 +52,8 @@ export default function CheckoutPage() {
     }, [isLoggedIn, user]);
     
     const getFinalPrice = (item: typeof cartItems[0]) => {
-        const commissionRule = commissionRates?.personalized?.[item.product.category];
+        const productType = item.product.b2bEnabled ? 'corporate' : 'personalized';
+        const commissionRule = commissionRates?.[productType]?.[item.product.category];
         let finalPrice = item.product.price;
         if (commissionRule && commissionRule.buffer) {
             if (commissionRule.buffer.type === 'fixed') {

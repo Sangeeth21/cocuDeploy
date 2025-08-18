@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -23,6 +24,7 @@ import { collection, doc, getDoc, getDocs, query, where, limit, onSnapshot } fro
 import { db } from "@/lib/firebase";
 import type { DisplayProduct, MarketingCampaign } from "@/lib/types";
 import { BrandedLoader } from "@/components/branded-loader";
+import { useUser } from "@/context/user-context";
 
 
 function ProductPageCampaignBanner() {
@@ -64,6 +66,7 @@ export default function B2BProductDetailPage() {
   const router = useRouter();
   const { toast } = useToast();
   const id = params.id as string;
+  const { commissionRates } = useUser();
   
   const [product, setProduct] = useState<DisplayProduct | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,14 +100,27 @@ export default function B2BProductDetailPage() {
     return Object.values(product?.customizationAreas || {}).some(areas => areas && areas.length > 0);
   }, [product]);
 
+  const getBufferedPrice = (basePrice: number) => {
+      if (!product || !commissionRates) return basePrice;
+      const commissionRule = commissionRates.corporate?.[product.category];
+      if (commissionRule && commissionRule.buffer) {
+          if (commissionRule.buffer.type === 'fixed') {
+              return basePrice + commissionRule.buffer.value;
+          } else {
+              return basePrice * (1 + commissionRule.buffer.value / 100);
+          }
+      }
+      return basePrice;
+  }
+
   const pricePerUnit = useMemo(() => {
-    if (!product || !product.tierPrices) return product?.price || 0;
-    const applicableTier = product.tierPrices
-        .slice()
+    if (!product) return 0;
+    const basePrice = product.tierPrices
+        ?.slice()
         .sort((a, b) => b.quantity - a.quantity)
-        .find(tier => quantity >= tier.quantity);
-    return applicableTier ? applicableTier.price : product.price;
-  }, [product, quantity]);
+        .find(tier => quantity >= tier.quantity)?.price || product.price;
+    return getBufferedPrice(basePrice);
+  }, [product, quantity, commissionRates]);
 
   const totalPrice = useMemo(() => {
     return pricePerUnit * quantity;
@@ -214,7 +230,7 @@ export default function B2BProductDetailPage() {
                             <SelectContent>
                                 {product.tierPrices?.map((tier, index) => (
                                     <SelectItem key={index} value={String(tier.quantity)}>
-                                        {tier.quantity.toLocaleString()}+ (at ${tier.price.toFixed(2)} each)
+                                        {tier.quantity.toLocaleString()}+ (at ${getBufferedPrice(tier.price).toFixed(2)} each)
                                     </SelectItem>
                                 ))}
                             </SelectContent>

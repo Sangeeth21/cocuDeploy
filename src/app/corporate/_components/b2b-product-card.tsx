@@ -21,13 +21,40 @@ interface ProductCardProps {
   product: DisplayProduct;
 }
 
+const getFinalPrice = (product: DisplayProduct, commissionRates: any, type: 'personalized' | 'corporate' = 'corporate') => {
+    const commissionRule = commissionRates?.[type]?.[product.category];
+    let finalPrice = product.price;
+    if (commissionRule && commissionRule.buffer) {
+        if (commissionRule.buffer.type === 'fixed') {
+            finalPrice += commissionRule.buffer.value;
+        } else {
+            finalPrice *= (1 + (commissionRule.buffer.value / 100));
+        }
+    }
+    return finalPrice;
+}
+
+
 export function TinyB2bProductCard({ product }: ProductCardProps) {
     const { toggleCompare, isComparing } = useComparison();
     const { toast } = useToast();
+    const { commissionRates } = useUser();
 
-    const lowestTierPrice = product.tierPrices && product.tierPrices.length > 0
-    ? Math.min(...product.tierPrices.map(p => p.price))
-    : product.price;
+    const lowestTierPrice = useMemo(() => {
+        const basePrice = product.tierPrices && product.tierPrices.length > 0
+            ? Math.min(...product.tierPrices.map(p => p.price))
+            : product.price;
+
+        const commissionRule = commissionRates?.corporate?.[product.category];
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                return basePrice + commissionRule.buffer.value;
+            } else {
+                return basePrice * (1 + (commissionRule.buffer.value / 100));
+            }
+        }
+        return basePrice;
+    }, [product, commissionRates]);
     
     const handleToggleCompare = (e: React.MouseEvent) => {
         e.preventDefault(); // Prevent link navigation
@@ -80,7 +107,7 @@ export function B2bProductCard({ product }: ProductCardProps) {
   const { toggleCompare, isComparing } = useComparison();
   const { addToBid, isInBid } = useBidRequest();
   const { toast } = useToast();
-  const { isLoggedIn } = useUser();
+  const { isLoggedIn, commissionRates } = useUser();
   const { openDialog } = useAuthDialog();
 
   const isCustomizable = useMemo(() => {
@@ -124,9 +151,13 @@ export function B2bProductCard({ product }: ProductCardProps) {
       addToBid(product);
   }
 
-  const lowestTierPrice = product.tierPrices && product.tierPrices.length > 0
-    ? Math.min(...product.tierPrices.map(p => p.price))
-    : product.price;
+  const lowestTierPrice = useMemo(() => {
+    const basePrice = product.tierPrices && product.tierPrices.length > 0
+        ? Math.min(...product.tierPrices.map(p => p.price))
+        : product.price;
+
+    return getFinalPrice({ ...product, price: basePrice }, commissionRates, 'corporate');
+  }, [product, commissionRates]);
 
   return (
     <Card className="flex flex-col h-full overflow-hidden transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
