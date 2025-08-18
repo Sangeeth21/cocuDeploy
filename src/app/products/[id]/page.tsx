@@ -17,7 +17,7 @@ import { useAuthDialog } from "@/context/auth-dialog-context";
 import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { DisplayProduct, CommissionRule, User } from "@/lib/types";
+import type { DisplayProduct, CommissionRule, User, Program } from "@/lib/types";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -76,6 +76,7 @@ export default function ProductDetailPage() {
   const [vendorProducts, setVendorProducts] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [commissionRule, setCommissionRule] = useState<CommissionRule | null>(null);
+  const [promotions, setPromotions] = useState<Program[]>([]);
   const [isVendorInfoOpen, setIsVendorInfoOpen] = useState(false);
   
   const [pincode, setPincode] = useState("");
@@ -97,13 +98,14 @@ export default function ProductDetailPage() {
     const fetchProductAndRelations = async () => {
         setLoading(true);
         
-        // Fetch product and commission rules concurrently
         const productRef = doc(db, "products", id);
         const commissionRef = doc(db, 'commissions', 'categories');
+        const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
 
-        const [productSnap, commissionSnap] = await Promise.all([
+        const [productSnap, commissionSnap, promotionsSnap] = await Promise.all([
             getDoc(productRef),
-            getDoc(commissionRef)
+            getDoc(commissionRef),
+            getDocs(promotionsQuery)
         ]);
 
         if (productSnap.exists()) {
@@ -111,47 +113,32 @@ export default function ProductDetailPage() {
             setProduct(productData);
             setActiveMedia({ type: 'image', src: productData.imageUrl });
             
-            // Set commission rule
             if(commissionSnap.exists()){
                 const commissions = commissionSnap.data();
                 const rule = commissions.personalized?.[productData.category];
-                if(rule) {
-                    setCommissionRule(rule);
-                }
+                if(rule) setCommissionRule(rule);
             }
+            
+            const activePromos = promotionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+            setPromotions(activePromos);
             
             setLoading(false); 
 
-            // Fetch Vendor and related products after main data is loaded
+            // Defer non-critical fetches
             if (productData.vendorId) {
                 const vendorRef = doc(db, "users", productData.vendorId);
                 const vendorSnap = await getDoc(vendorRef);
                 if (vendorSnap.exists()) {
                     setVendor({ id: vendorSnap.id, ...vendorSnap.data() } as User);
                 }
-                
-                const vendorProductsQuery = query(
-                    collection(db, "products"),
-                    where("vendorId", "==", productData.vendorId),
-                    where("__name__", "!=", id),
-                    limit(4)
-                );
-                const vendorProductsSnap = await getDocs(vendorProductsQuery);
-                setVendorProducts(vendorProductsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
             }
             
             if(productData.category) {
-                const similarQuery = query(
-                    collection(db, "products"), 
-                    where("category", "==", productData.category),
-                    where("__name__", "!=", id),
-                    limit(4)
-                );
+                const similarQuery = query(collection(db, "products"), where("category", "==", productData.category), where("__name__", "!=", id), limit(4));
                 const similarSnap = await getDocs(similarQuery);
                 setSimilarProducts(similarSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as DisplayProduct)));
             }
         } else {
-            console.log("No such product document!");
             setLoading(false);
         }
     };
@@ -159,19 +146,29 @@ export default function ProductDetailPage() {
     fetchProductAndRelations();
   }, [id]);
 
-  const finalPrice = useMemo(() => {
-    if (!product) return 0;
+  const applicableDiscount = useMemo(() => {
+    return promotions.find(p => p.type === 'discount' && (p.productScope === 'all' /* || p.productScope.includes(id) */));
+  }, [promotions, id]);
+
+  const priceDetails = useMemo(() => {
+    if (!product) return { original: 0, final: 0 };
     
-    let price = product.price;
+    let originalPrice = product.price;
     if (commissionRule && commissionRule.buffer) {
         if (commissionRule.buffer.type === 'fixed') {
-            price += commissionRule.buffer.value;
-        } else { // percentage
-            price *= (1 + (commissionRule.buffer.value / 100));
+            originalPrice += commissionRule.buffer.value;
+        } else {
+            originalPrice *= (1 + (commissionRule.buffer.value / 100));
         }
     }
-    return price;
-  }, [product, commissionRule]);
+    
+    let finalPrice = originalPrice;
+    if (applicableDiscount) {
+        finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+    }
+    
+    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount };
+  }, [product, commissionRule, applicableDiscount]);
 
   const isCustomizable = useMemo(() => {
     if (!product) return false;
@@ -362,7 +359,8 @@ export default function ProductDetailPage() {
             </div>
           </div>
            <div className="flex items-center gap-2">
-            <p className="text-3xl font-bold font-body">${finalPrice.toFixed(2)}</p>
+            <p className="text-3xl font-bold font-body">${priceDetails.final.toFixed(2)}</p>
+            {priceDetails.hasDiscount && <p className="text-xl font-medium text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>}
             <TooltipProvider>
                 <Tooltip>
                     <TooltipTrigger asChild>
@@ -390,7 +388,9 @@ export default function ProductDetailPage() {
 
             <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
                 <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
-                <p className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> 10% off on your first order</p>
+                {promotions.map(promo => (
+                    <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}: Get {promo.reward.value}{promo.reward.type === 'discount_percent' ? '%' : '₹'} off</p>
+                ))}
             </div>
 
            <ProductInteractions product={product} isCustomizable={isCustomizable} quantity={quantity} />
@@ -433,16 +433,6 @@ export default function ProductDetailPage() {
           <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
-          </div>
-        </div>
-        <div>
-          <h2 className="text-2xl font-bold font-headline mb-6">More from this Vendor</h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {vendorProducts.length > 0 ? (
-                vendorProducts.map(p => <ProductCard key={p.id} product={p} />)
-            ) : (
-               <p className="text-muted-foreground col-span-full">No other products found from this vendor.</p>
-            )}
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -21,12 +21,15 @@ import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from
 import { db } from "@/lib/firebase";
 import type { Program, ProgramPlatform, ProgramTarget } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const programOptions = {
     customer: {
         types: [
             { value: 'referral', label: 'Referral Program' },
             { value: 'milestone', label: 'Purchase Milestone' },
+            { value: 'discount', label: 'Percentage Discount' },
+            { value: 'wallet_credit', label: 'Wallet Credit Grant' }
         ],
         rewards: [
             { value: 'wallet_credit', label: 'Wallet Credit (₹)' },
@@ -218,6 +221,94 @@ function CreateProgramDialog({
     )
 }
 
+function ProgramTable({ programs, onEdit, onToggleStatus, onDelete }: { programs: Program[], onEdit: (p: Program) => void, onToggleStatus: (p: Program) => void, onDelete: (p: Program) => void }) {
+    const getStatusVariant = (status: Program['status']) => {
+        switch (status) {
+            case 'Active': return 'default';
+            case 'Scheduled': return 'secondary';
+            case 'Expired': return 'outline';
+            case 'Paused': return 'secondary';
+            default: return 'outline';
+        }
+    }
+
+    const getRewardIcon = (type: Program['reward']['type']) => {
+        switch (type) {
+            case 'wallet_credit': return <DollarSign className="h-4 w-4 text-muted-foreground" />;
+            case 'discount_percent': return <Percent className="h-4 w-4 text-muted-foreground" />;
+            case 'commission_discount': return <Percent className="h-4 w-4 text-muted-foreground" />;
+            case 'free_shipping': return <Gift className="h-4 w-4 text-muted-foreground" />;
+            default: return <Trophy className="h-4 w-4 text-muted-foreground" />;
+        }
+    }
+
+    return (
+        <Card>
+            <CardContent className="p-0">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Program Name</TableHead>
+                            <TableHead>Platform</TableHead>
+                            <TableHead>Reward</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {programs.map(program => (
+                            <TableRow key={program.id}>
+                                <TableCell className="font-medium">{program.name}</TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2 capitalize">
+                                        <Globe className="h-4 w-4 text-muted-foreground" />
+                                        <span>{program.platform}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        {getRewardIcon(program.reward.type)}
+                                        <span>
+                                            {program.reward.type === 'wallet_credit' && `₹${program.reward.value}`}
+                                            {(program.reward.type === 'discount_percent' || program.reward.type === 'commission_discount') && `${program.reward.value}%`}
+                                            {(program.reward.type === 'free_shipping') && `${program.reward.value} Orders`}
+                                        </span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={getStatusVariant(program.status)}>{program.status}</Badge>
+                                </TableCell>
+                                    <TableCell className="text-right">
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent>
+                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                            <DropdownMenuItem onSelect={() => onEdit(program)}>
+                                                <Edit className="mr-2 h-4 w-4" /> Edit
+                                            </DropdownMenuItem>
+                                                <DropdownMenuItem onSelect={() => onToggleStatus(program)}>
+                                                {program.status === 'Active' ? <PauseCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                                                {program.status === 'Active' ? 'Pause' : 'Resume'}
+                                            </DropdownMenuItem>
+                                            <AlertDialogTrigger asChild>
+                                                <DropdownMenuItem className="text-destructive" onSelect={() => onDelete(program)}>
+                                                    <Trash2 className="mr-2 h-4 w-4" />Delete
+                                                </DropdownMenuItem>
+                                            </AlertDialogTrigger>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    );
+}
+
 export default function PromotionsPage() {
     const { toast } = useToast();
     const [programs, setPrograms] = useState<Program[]>([]);
@@ -225,7 +316,6 @@ export default function PromotionsPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingProgram, setEditingProgram] = useState<Program | null>(null);
     const [programToDelete, setProgramToDelete] = useState<Program | null>(null);
-
 
     useEffect(() => {
         const q = query(collection(db, "programs"));
@@ -282,40 +372,19 @@ export default function PromotionsPage() {
         toast({ title: `Program ${newStatus}`, description: `"${program.name}" has been ${newStatus.toLowerCase()}.` });
     };
 
+    const handleDeleteClick = (program: Program) => {
+        setProgramToDelete(program);
+    };
+
     const handleDelete = async () => {
         if (!programToDelete) return;
         await deleteDoc(doc(db, "programs", programToDelete.id));
         toast({ variant: "destructive", title: "Program Deleted", description: `"${programToDelete.name}" has been permanently deleted.` });
         setProgramToDelete(null);
     };
-
-    const getStatusVariant = (status: Program['status']) => {
-        switch (status) {
-            case 'Active': return 'default';
-            case 'Scheduled': return 'secondary';
-            case 'Expired': return 'outline';
-            case 'Paused': return 'secondary';
-            default: return 'outline';
-        }
-    }
-
-    const getRewardIcon = (type: Program['reward']['type']) => {
-        switch (type) {
-            case 'wallet_credit': return <DollarSign className="h-4 w-4 text-muted-foreground" />;
-            case 'discount_percent': return <Percent className="h-4 w-4 text-muted-foreground" />;
-            case 'commission_discount': return <Percent className="h-4 w-4 text-muted-foreground" />;
-            case 'free_shipping': return <Gift className="h-4 w-4 text-muted-foreground" />;
-            default: return <Trophy className="h-4 w-4 text-muted-foreground" />;
-        }
-    }
     
-    const getTargetIcon = (target: ProgramTarget) => {
-        switch(target) {
-            case 'customer': return <Users className="h-4 w-4 text-muted-foreground" />;
-            case 'vendor': return <Store className="h-4 w-4 text-muted-foreground" />;
-            default: return null;
-        }
-    }
+    const customerPrograms = useMemo(() => programs.filter(p => p.target === 'customer'), [programs]);
+    const vendorPrograms = useMemo(() => programs.filter(p => p.target === 'vendor'), [programs]);
 
     return (
         <AlertDialog>
@@ -330,79 +399,19 @@ export default function PromotionsPage() {
                 </Button>
             </div>
 
-             <Card>
-                <CardHeader>
-                    <CardTitle>All Programs</CardTitle>
-                </CardHeader>
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Program Name</TableHead>
-                                <TableHead>Platform</TableHead>
-                                <TableHead>Target</TableHead>
-                                <TableHead>Reward</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {programs.map(program => (
-                                <TableRow key={program.id}>
-                                    <TableCell className="font-medium">{program.name}</TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2 capitalize">
-                                            <Globe className="h-4 w-4 text-muted-foreground" />
-                                            <span>{program.platform}</span>
-                                        </div>
-                                    </TableCell>
-                                     <TableCell>
-                                        <div className="flex items-center gap-2 capitalize">
-                                             {getTargetIcon(program.target)}
-                                             <span>{program.target}</span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            {getRewardIcon(program.reward.type)}
-                                            <span>
-                                                {program.reward.type === 'wallet_credit' && `₹${program.reward.value}`}
-                                                {(program.reward.type === 'discount_percent' || program.reward.type === 'commission_discount') && `${program.reward.value}%`}
-                                                {(program.reward.type === 'free_shipping') && `${program.reward.value} Orders`}
-                                            </span>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant={getStatusVariant(program.status)}>{program.status}</Badge>
-                                    </TableCell>
-                                     <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent>
-                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                <DropdownMenuItem onSelect={() => handleEditClick(program)}>
-                                                    <Edit className="mr-2 h-4 w-4" /> Edit
-                                                </DropdownMenuItem>
-                                                 <DropdownMenuItem onSelect={() => handleToggleStatus(program)}>
-                                                    {program.status === 'Active' ? <PauseCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
-                                                    {program.status === 'Active' ? 'Pause' : 'Resume'}
-                                                </DropdownMenuItem>
-                                                <AlertDialogTrigger asChild>
-                                                    <DropdownMenuItem className="text-destructive" onSelect={() => setProgramToDelete(program)}>
-                                                        <Trash2 className="mr-2 h-4 w-4" />Delete
-                                                    </DropdownMenuItem>
-                                                </AlertDialogTrigger>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            <Tabs defaultValue="customer">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="customer">Customer Programs</TabsTrigger>
+                    <TabsTrigger value="vendor">Vendor Programs</TabsTrigger>
+                </TabsList>
+                <TabsContent value="customer" className="mt-4">
+                     <ProgramTable programs={customerPrograms} onEdit={handleEditClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteClick} />
+                </TabsContent>
+                 <TabsContent value="vendor" className="mt-4">
+                    <ProgramTable programs={vendorPrograms} onEdit={handleEditClick} onToggleStatus={handleToggleStatus} onDelete={handleDeleteClick} />
+                </TabsContent>
+            </Tabs>
+            
 
              <CreateProgramDialog 
                 program={editingProgram} 
