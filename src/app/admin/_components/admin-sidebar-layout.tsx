@@ -56,9 +56,7 @@ export function AdminSidebarLayout({ children }: { children: React.ReactNode }) 
                             <AvatarImage src="https://placehold.co/100x100.png" alt="Admin Avatar" data-ai-hint="person face" />
                             <AvatarFallback>A</AvatarFallback>
                         </Avatar>
-                        <div className="flex flex-col data-[collapsed=true]:hidden">
-                            <span className="text-lg font-semibold">Admin</span>
-                        </div>
+                        <span className="text-lg font-semibold data-[collapsed=true]:hidden">Admin</span>
                     </div>
                 </div>
             </AdminSidebarHeader>

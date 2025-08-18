@@ -174,6 +174,7 @@ const AdminSidebarMenuButton = React.forwardRef<
             className
         )}
         asChild={asChild}
+        data-collapsed={isCollapsed}
         {...props}
       >
         {children}
@@ -186,7 +187,7 @@ const AdminSidebarMenuButton = React.forwardRef<
                 <TooltipTrigger asChild>
                     {buttonContent}
                 </TooltipTrigger>
-                <TooltipContent side="right" align="center" {...tooltip} />
+                <TooltipContent {...tooltip} side="right" align="center" />
             </Tooltip>
         );
     }
