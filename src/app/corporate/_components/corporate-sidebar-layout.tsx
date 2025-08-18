@@ -100,7 +100,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                                     >
                                         <Link href={link.href}>
                                             <link.icon className="h-5 w-5" />
-                                            <span className="group-data-[state=expanded]:opacity-100 group-data-[state=collapsed]:opacity-0 transition-opacity duration-200">{link.label}</span>
+                                            <span className="group-data-[state=collapsed]:hidden">{link.label}</span>
                                              {badgeContent && <SidebarMenuBadge>{badgeContent}</SidebarMenuBadge>}
                                         </Link>
                                     </SidebarMenuButton>
@@ -114,7 +114,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                          <SidebarMenuItem>
                             <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
                                 <LogOut />
-                                <span className="group-data-[state=expanded]:opacity-100 group-data-[state=collapsed]:opacity-0 transition-opacity duration-200">Log Out</span>
+                                <span className="group-data-[state=collapsed]:hidden">Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
