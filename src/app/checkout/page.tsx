@@ -132,6 +132,23 @@ export default function CheckoutPage() {
         return Math.min(calculatedDiscount, applicableSubtotal);
     }, [commissionRates]);
 
+    const getPriceDetails = useCallback((product: DisplayProduct) => {
+        const originalPrice = calculateItemPrice(product);
+        let finalPrice = originalPrice;
+        let finalDiscountProgram = platformDiscount;
+
+        const couponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, [product]) : 0;
+        
+        if (appliedCoupon) {
+            finalPrice = originalPrice - couponDiscountAmount;
+        } else if (finalDiscountProgram) {
+            finalPrice = originalPrice * (1 - (finalDiscountProgram.reward.value / 100));
+        }
+        
+        return { original: originalPrice, final: finalPrice, hasDiscount: finalPrice < originalPrice, discountValue: finalDiscountProgram?.reward.value };
+    }, [commissionRates, platformDiscount, appliedCoupon, calculateCouponDiscount]);
+
+
     const subtotal = useMemo(() => {
         return cartItems.reduce((acc, item) => acc + calculateItemPrice(item.product) * item.quantity, 0);
     }, [cartItems, commissionRates]);
@@ -249,22 +266,6 @@ export default function CheckoutPage() {
 
     const isVerified = emailStatus === 'verified' && phoneStatus === 'verified';
 
-    const getPriceDetails = useCallback((product: DisplayProduct) => {
-        const originalPrice = calculateItemPrice(product);
-        let finalPrice = originalPrice;
-        let finalDiscountProgram = platformDiscount;
-
-        const couponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, [product]) : 0;
-        
-        if (appliedCoupon) {
-            finalPrice = originalPrice - couponDiscountAmount;
-        } else if (finalDiscountProgram) {
-            finalPrice = originalPrice * (1 - (finalDiscountProgram.reward.value / 100));
-        }
-        
-        return { original: originalPrice, final: finalPrice, hasDiscount: finalPrice < originalPrice, discountValue: finalDiscountProgram?.reward.value };
-    }, [commissionRates, platformDiscount, appliedCoupon, calculateCouponDiscount]);
-
     return (
         <div className="container py-12">
             <div className="text-center mb-12">
@@ -368,7 +369,7 @@ export default function CheckoutPage() {
                                                     <div className="relative w-16 h-16 rounded-md overflow-hidden">
                                                         <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" />
                                                         {priceDetails.hasDiscount && (
-                                                            <Badge variant="destructive" className="absolute top-1 left-1 text-[10px] h-auto px-1 py-0">
+                                                            <Badge variant="destructive" className="absolute top-1 left-1 text-[9px] h-auto px-1 py-0 leading-tight">
                                                                 <Tag className="mr-1 h-2.5 w-2.5" /> {priceDetails.discountValue}% OFF
                                                             </Badge>
                                                         )}
@@ -437,3 +438,4 @@ export default function CheckoutPage() {
         </div>
     );
 }
+
