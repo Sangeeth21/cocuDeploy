@@ -1,5 +1,4 @@
 
-
 export type CustomizationValue = {
   text: string;
   fontFamily: string;
@@ -412,4 +411,5 @@ export type GenerateImageWithStyleInput = {
 
 export type GenerateImageWithStyleOutput = {
     imageUrl: string;
+    error?: string;
 };

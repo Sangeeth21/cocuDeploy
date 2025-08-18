@@ -207,7 +207,7 @@ function CreateProgramDialog({ onSave, isLoading }: { onSave: (program: Omit<Pro
     )
 }
 
-export default function ReferralsPage() {
+export default function PromotionsPage() {
     const { toast } = useToast();
     const [programs, setPrograms] = useState<Program[]>([]);
     const [isLoading, setIsLoading] = useState(false);
