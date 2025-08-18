@@ -162,7 +162,8 @@ const Sidebar = React.forwardRef<
   React.ComponentProps<"div"> & {
     side?: "left" | "right"
     variant?: "sidebar" | "floating" | "inset"
-    collapsible?: "offcanvas" | "icon" | "none"
+    collapsible?: "offcanvas" | "icon" | "none",
+    expandOnHover?: boolean;
   }
 >(
   (
@@ -170,13 +171,29 @@ const Sidebar = React.forwardRef<
       side = "left",
       variant = "sidebar",
       collapsible = "offcanvas",
+      expandOnHover = false,
       className,
       children,
       ...props
     },
     ref
   ) => {
-    const { isMobile, state, open, openMobile, setOpenMobile } = useSidebar()
+    const { isMobile, state, open, setOpen, openMobile, setOpenMobile } = useSidebar()
+    const [isHovered, setIsHovered] = React.useState(false);
+    
+    const isEffectivelyOpen = open || isHovered;
+    const effectiveState = isEffectivelyOpen ? 'expanded' : 'collapsed';
+
+    const handleMouseEnter = () => {
+        if (expandOnHover && !open) {
+            setIsHovered(true);
+        }
+    };
+    const handleMouseLeave = () => {
+        if (expandOnHover && !open) {
+            setIsHovered(false);
+        }
+    };
 
     if (collapsible === "none") {
       return (
@@ -216,12 +233,14 @@ const Sidebar = React.forwardRef<
     return (
       <div
         ref={ref}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className={cn(
             "peer hidden md:flex text-sidebar-foreground relative transition-[width] duration-300 ease-in-out flex-shrink-0",
-            state === 'collapsed' ? "w-[var(--sidebar-width-icon)]" : "w-[var(--sidebar-width)]",
+            effectiveState === 'collapsed' ? "w-[var(--sidebar-width-icon)]" : "w-[var(--sidebar-width)]",
             className
         )}
-        data-state={state}
+        data-state={effectiveState}
         data-collapsible={collapsible}
         data-variant={variant}
         data-side={side}

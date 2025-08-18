@@ -2,7 +2,7 @@
 "use client";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar, SidebarMenuBadge, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarFooter, SidebarHeader, useSidebar, SidebarMenuBadge, SidebarInset, CustomSidebarTrigger } from "@/components/ui/sidebar";
 import { LayoutDashboard, LogOut, Settings, Gavel, Briefcase, Building, Package, FileText, User, ShoppingCart, Scale, PlusCircle, ChevronsLeft, ChevronsRight } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -67,6 +67,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
         <>
             <Sidebar 
                 collapsible="icon"
+                expandOnHover={true}
             >
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
@@ -120,6 +121,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                         </SidebarMenuItem>
                     </SidebarMenu>
                 </SidebarFooter>
+                 <CustomSidebarTrigger />
             </Sidebar>
             <SidebarInset>
                 <CorporateCampaignBanner />
@@ -155,7 +157,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
 export function CorporateSidebarLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex min-h-screen bg-background">
-            <SidebarProvider defaultOpen={true}>
+            <SidebarProvider defaultOpen={false}>
                 <CorporateSidebarLayoutContent>
                     {children}
                 </CorporateSidebarLayoutContent>
