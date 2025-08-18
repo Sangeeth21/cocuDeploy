@@ -646,7 +646,11 @@ export default function PromotionsPage() {
     const handleSaveCoupon = async (couponData: Omit<Coupon, 'id' | 'usageCount' | 'status'>, id?: string) => {
         setIsLoading(true);
         try {
-            const dataToSave = { ...couponData, status: 'Active', usageCount: 0 };
+            const dataToSave = { 
+                ...couponData, 
+                status: couponData.expiresAt && couponData.expiresAt < new Date() ? 'Expired' : 'Active', 
+                usageCount: editingCoupon?.usageCount || 0 
+            };
              if (id) {
                 await updateDoc(doc(db, 'coupons', id), dataToSave as any);
                 toast({ title: "Coupon Updated!" });
@@ -694,6 +698,29 @@ export default function PromotionsPage() {
     
     const customerPrograms = useMemo(() => programs.filter(p => p.target === 'customer'), [programs]);
     const vendorPrograms = useMemo(() => programs.filter(p => p.target === 'vendor'), [programs]);
+
+    // Coupon Actions
+    const handleEditCouponClick = (coupon: Coupon) => {
+        setEditingCoupon(coupon);
+        setIsCouponDialogOpen(true);
+    };
+    
+    const handleDeleteCouponClick = (coupon: Coupon) => {
+        setCouponToDelete(coupon);
+    };
+
+    const handleDeleteCoupon = async () => {
+        if (!couponToDelete) return;
+        await deleteDoc(doc(db, "coupons", couponToDelete.id));
+        toast({ variant: 'destructive', title: 'Coupon Deleted', description: `Coupon "${couponToDelete.code}" has been deleted.` });
+        setCouponToDelete(null);
+    };
+
+    const handleToggleCouponStatus = async (coupon: Coupon) => {
+        const newStatus = coupon.status === 'Active' ? 'Inactive' : 'Active';
+        await updateDoc(doc(db, 'coupons', coupon.id), { status: newStatus });
+        toast({ title: `Coupon is now ${newStatus}` });
+    };
 
     return (
         <AlertDialog>
@@ -754,6 +781,7 @@ export default function PromotionsPage() {
                                         <TableHead>Usage</TableHead>
                                         <TableHead>Public</TableHead>
                                         <TableHead>Status</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
@@ -767,7 +795,27 @@ export default function PromotionsPage() {
                                             <TableCell>
                                                 <Badge variant={coupon.isPublic ? 'secondary' : 'outline'}>{coupon.isPublic ? 'Yes' : 'No'}</Badge>
                                             </TableCell>
-                                            <TableCell><Badge>{coupon.status}</Badge></TableCell>
+                                            <TableCell><Badge variant={coupon.status === 'Active' ? 'default' : 'secondary'}>{coupon.status}</Badge></TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button size="icon" variant="ghost"><MoreHorizontal className="h-4 w-4" /></Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent>
+                                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                        <DropdownMenuItem onSelect={() => handleEditCouponClick(coupon)}><Edit className="mr-2 h-4 w-4"/>Edit</DropdownMenuItem>
+                                                        <DropdownMenuItem onSelect={() => handleToggleCouponStatus(coupon)}>
+                                                            {coupon.status === 'Active' ? <PauseCircle className="mr-2 h-4 w-4" /> : <PlayCircle className="mr-2 h-4 w-4" />}
+                                                            {coupon.status === 'Active' ? 'Pause' : 'Resume'}
+                                                        </DropdownMenuItem>
+                                                        <AlertDialogTrigger asChild>
+                                                            <DropdownMenuItem className="text-destructive" onSelect={() => handleDeleteCouponClick(coupon)}>
+                                                                <Trash2 className="mr-2 h-4 w-4" />Delete
+                                                            </DropdownMenuItem>
+                                                        </AlertDialogTrigger>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -832,17 +880,33 @@ export default function PromotionsPage() {
             />
 
             <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the program
-                        "{programToDelete?.name}".
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => setProgramToDelete(null)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteProgram} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
-                </AlertDialogFooter>
+                 {programToDelete ? (
+                    <>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure you want to delete this program?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the program "{programToDelete.name}".
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setProgramToDelete(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteProgram} className="bg-destructive hover:bg-destructive/90">Delete Program</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </>
+                ) : couponToDelete ? (
+                     <>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure you want to delete this coupon?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete the coupon "{couponToDelete.code}".
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel onClick={() => setCouponToDelete(null)}>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteCoupon} className="bg-destructive hover:bg-destructive/90">Delete Coupon</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </>
+                ) : null}
             </AlertDialogContent>
         </div>
         </AlertDialog>
