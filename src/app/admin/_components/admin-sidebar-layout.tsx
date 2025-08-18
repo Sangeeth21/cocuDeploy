@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -46,9 +47,7 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
 
     return (
         <SidebarProvider>
-            <Sidebar 
-                collapsible="icon"
-            >
+            <Sidebar>
                 <SidebarHeader>
                     <div className="flex items-center justify-between p-2">
                         <div className="flex items-center gap-2">
@@ -56,7 +55,7 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
                                 <AvatarImage src="https://placehold.co/100x100.png" alt="Admin Avatar" data-ai-hint="person face" />
                                 <AvatarFallback>A</AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col group-data-[collapsible=icon]:hidden group-hover/sidebar:inline-block">
+                            <div className="flex flex-col group-data-[state=collapsed]:hidden">
                                 <span className="text-lg font-semibold">Admin</span>
                             </div>
                         </div>
@@ -65,26 +64,26 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
                 <SidebarContent className="p-2">
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'Create Order'}}>
+                            <SidebarMenuButton asChild tooltip={{children: 'Create Order'}} size="sm">
                                 <Link href="/admin/orders/new">
-                                    <PlusCircle strokeWidth={1.5} />
-                                    <span className="hidden group-hover/sidebar:inline-block">New Order</span>
+                                    <PlusCircle />
+                                    <span>New Order</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'Create Campaign'}}>
+                            <SidebarMenuButton asChild tooltip={{children: 'Create Campaign'}} size="sm">
                                 <Link href="/admin/marketing/new">
-                                    <Megaphone strokeWidth={1.5}/>
-                                    <span className="hidden group-hover/sidebar:inline-block">New Campaign</span>
+                                    <Megaphone />
+                                    <span>New Campaign</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'New Corporate Campaign'}}>
+                            <SidebarMenuButton asChild tooltip={{children: 'New Corporate Campaign'}} size="sm">
                                 <Link href="/admin/corporate-marketing/new">
-                                    <Building strokeWidth={1.5}/>
-                                    <span className="hidden group-hover/sidebar:inline-block">New Corporate Campaign</span>
+                                    <Building />
+                                    <span>New Corporate Campaign</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -94,10 +93,11 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
                                     asChild
                                     isActive={pathname.startsWith(link.href) && (link.href !== "/admin" || pathname === "/admin")}
                                     tooltip={{children: link.label}}
+                                    size="sm"
                                 >
                                     <Link href={link.href}>
                                         <link.icon />
-                                        <span className="hidden group-hover/sidebar:inline-block">{link.label}</span>
+                                        <span>{link.label}</span>
                                         {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
@@ -108,17 +108,17 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
                 <SidebarFooter>
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'Back to Homepage'}}>
+                            <SidebarMenuButton asChild tooltip={{children: 'Back to Homepage'}} size="sm">
                                 <Link href="/">
                                     <Home />
-                                    <span className="hidden group-hover/sidebar:inline-block">Homepage</span>
+                                    <span>Homepage</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                         <SidebarMenuItem>
-                            <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
+                            <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}} size="sm">
                                 <LogOut />
-                                <span className="hidden group-hover/sidebar:inline-block">Log Out</span>
+                                <span>Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>

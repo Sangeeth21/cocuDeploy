@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { AdminSidebarLayout } from "./_components/admin-sidebar-layout";
 import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
+import { SidebarProvider } from "@/components/ui/sidebar";
 
 function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
   const { isAdminLoggedIn } = useAdminAuth();
@@ -21,9 +22,11 @@ function ProtectedAdminLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AdminSidebarLayout>
-      {children}
-    </AdminSidebarLayout>
+    <SidebarProvider>
+      <AdminSidebarLayout>
+        {children}
+      </AdminSidebarLayout>
+    </SidebarProvider>
   );
 }
 
