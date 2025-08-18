@@ -57,7 +57,7 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
                                 <AvatarImage src="https://placehold.co/100x100.png" alt="Admin Avatar" data-ai-hint="person face" />
                                 <AvatarFallback>A</AvatarFallback>
                             </Avatar>
-                            <div className="flex flex-col group-hover/sidebar:inline-block hidden">
+                            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
                                 <span className="text-lg font-semibold">Admin</span>
                             </div>
                         </div>
@@ -66,26 +66,26 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
                 <SidebarContent className="p-2">
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'Create Order'}} size="sm">
+                            <SidebarMenuButton asChild tooltip={{children: 'Create Order'}}>
                                 <Link href="/admin/orders/new">
-                                    <PlusCircle/>
-                                    <span className="group-hover/sidebar:inline-block hidden">New Order</span>
+                                    <PlusCircle strokeWidth={1.5} />
+                                    <span className="group-data-[collapsible=icon]:hidden">New Order</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'Create Campaign'}} size="sm">
+                            <SidebarMenuButton asChild tooltip={{children: 'Create Campaign'}}>
                                 <Link href="/admin/marketing/new">
-                                    <Megaphone/>
-                                    <span className="group-hover/sidebar:inline-block hidden">New Campaign</span>
+                                    <Megaphone strokeWidth={1.5}/>
+                                    <span className="group-data-[collapsible=icon]:hidden">New Campaign</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'New Corporate Campaign'}} size="sm">
+                            <SidebarMenuButton asChild tooltip={{children: 'New Corporate Campaign'}}>
                                 <Link href="/admin/corporate-marketing/new">
-                                    <Building/>
-                                    <span className="group-hover/sidebar:inline-block hidden">New Corporate Campaign</span>
+                                    <Building strokeWidth={1.5}/>
+                                    <span className="group-data-[collapsible=icon]:hidden">New Corporate Campaign</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
@@ -93,13 +93,12 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
                             <SidebarMenuItem key={link.href}>
                                 <SidebarMenuButton
                                     asChild
-                                    size="sm"
                                     isActive={pathname.startsWith(link.href) && (link.href !== "/admin" || pathname === "/admin")}
                                     tooltip={{children: link.label}}
                                 >
                                     <Link href={link.href}>
                                         <link.icon />
-                                        <span className="group-hover/sidebar:inline-block hidden">{link.label}</span>
+                                        <span className="group-data-[collapsible=icon]:hidden">{link.label}</span>
                                         {link.badge && <SidebarMenuBadge>{link.badge}</SidebarMenuBadge>}
                                     </Link>
                                 </SidebarMenuButton>
@@ -110,17 +109,17 @@ function AdminSidebarLayoutContent({ children }: { children: React.ReactNode }) 
                 <SidebarFooter>
                     <SidebarMenu>
                         <SidebarMenuItem>
-                            <SidebarMenuButton asChild tooltip={{children: 'Back to Homepage'}} size="sm">
+                            <SidebarMenuButton asChild tooltip={{children: 'Back to Homepage'}}>
                                 <Link href="/">
                                     <Home />
-                                    <span className="group-hover/sidebar:inline-block hidden">Homepage</span>
+                                    <span className="group-data-[collapsible=icon]:hidden">Homepage</span>
                                 </Link>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                         <SidebarMenuItem>
-                            <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}} size="sm">
+                            <SidebarMenuButton onClick={handleLogout} tooltip={{children: 'Log Out'}}>
                                 <LogOut />
-                                <span className="group-hover/sidebar:inline-block hidden">Log Out</span>
+                                <span className="group-data-[collapsible=icon]:hidden">Log Out</span>
                             </SidebarMenuButton>
                         </SidebarMenuItem>
                     </SidebarMenu>
