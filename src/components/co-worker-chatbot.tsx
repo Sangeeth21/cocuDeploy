@@ -76,47 +76,47 @@ export function CoWorkerChatbot() {
 
     const renderCurrentStep = () => {
         const renderHistory = history.map((msg, index) => (
-            <ChatMessage key={index} sender={msg.sender} message={msg.message} icon={msg.sender === 'bot' ? Building : undefined} />
+            <ChatMessage key={index} sender={msg.sender} message={msg.message} />
         ));
 
         switch (stage) {
             case "initial":
                 return (
                     <>
-                        <ChatMessage sender="bot" icon={Building} message="Welcome. I am Co-Worker, your assistant for corporate and bulk procurement." />
-                        <ChatMessage sender="bot" icon={Building} message="To begin, what is the purpose of this order?" />
-                        {!isCustomInputActive && <ChatResponseOptions options={purposeOptions} onSelect={(val) => handleSelect(val, 'quantity')} onCustomClick={handleCustomClick} />}
+                        <ChatMessage sender="bot" message="Welcome. I am Co-Worker, your assistant for corporate and bulk procurement." />
+                        <ChatMessage sender="bot" message="To begin, what is the purpose of this order?" />
+                        {!isCustomInputActive && <ChatResponseOptions options={purposeOptions} onSelect={(val) => handleSelect(val, 'quantity')} />}
                     </>
                 );
             case "quantity":
                  return (
                      <>
                         {renderHistory}
-                        <ChatMessage sender="bot" icon={Building} message="Understood. What is the approximate quantity required per product?" />
-                        {!isCustomInputActive && <ChatResponseOptions options={quantityOptions} onSelect={(val) => handleSelect(val, 'budget')} onCustomClick={handleCustomClick} />}
+                        <ChatMessage sender="bot" message="Understood. What is the approximate quantity required per product?" />
+                        {!isCustomInputActive && <ChatResponseOptions options={quantityOptions} onSelect={(val) => handleSelect(val, 'budget')} />}
                     </>
                 );
             case 'budget':
                 return (
                     <>
                        {renderHistory}
-                       <ChatMessage sender="bot" icon={Building} message="Thank you. Please select the budget per unit." />
-                       {!isCustomInputActive && <ChatResponseOptions options={budgetOptions} onSelect={(val) => handleSelect(val, 'tone')} onCustomClick={handleCustomClick} />}
+                       <ChatMessage sender="bot" message="Thank you. Please select the budget per unit." />
+                       {!isCustomInputActive && <ChatResponseOptions options={budgetOptions} onSelect={(val) => handleSelect(val, 'tone')} />}
                    </>
                );
              case 'tone':
                 return (
                     <>
                        {renderHistory}
-                       <ChatMessage sender="bot" icon={Building} message="Excellent. What is the desired tone for the branding and products?" />
-                       {!isCustomInputActive && <ChatResponseOptions options={toneOptions} onSelect={(val) => handleSelect(val, 'results')} onCustomClick={handleCustomClick} />}
+                       <ChatMessage sender="bot" message="Excellent. What is the desired tone for the branding and products?" />
+                       {!isCustomInputActive && <ChatResponseOptions options={toneOptions} onSelect={(val) => handleSelect(val, 'results')} />}
                    </>
                );
             case 'results':
                 return (
                     <>
                         {renderHistory}
-                        <ChatMessage sender="bot" icon={Building} message="Based on your requirements, here are three curated package options." />
+                        <ChatMessage sender="bot" message="Based on your requirements, here are three curated package options." />
                         <Card>
                             <CardHeader className="p-2">
                                 <CardTitle className="text-base">Budget-Friendly Pack</CardTitle>

@@ -29,12 +29,12 @@ export function ChatContainer({ title, description, children }: { title: string,
     )
 }
 
-export function ChatMessage({ sender, message }: { sender: "bot" | "user", message: string }) {
+export function ChatMessage({ sender, message, icon: Icon = Gift }: { sender: "bot" | "user", message: string, icon?: React.ElementType }) {
     return (
         <div className={`flex items-start gap-3 ${sender === 'user' ? 'justify-end' : ''}`}>
             {sender === 'bot' && (
                 <Avatar className="h-6 w-6 border">
-                    <AvatarFallback><Gift className="h-4 w-4"/></AvatarFallback>
+                    <AvatarFallback><Icon className="h-4 w-4"/></AvatarFallback>
                 </Avatar>
             )}
              <div className={`rounded-lg p-3 max-w-xs text-sm ${sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
@@ -49,7 +49,7 @@ export function ChatMessage({ sender, message }: { sender: "bot" | "user", messa
     )
 }
 
-export function ChatResponseOptions({ options, onSelect }: { options: string[], onSelect: (option: string) => void }) {
+export function ChatResponseOptions({ options, onSelect, onCustomClick }: { options: string[], onSelect: (option: string) => void, onCustomClick?: () => void }) {
     return (
          <div className="flex flex-wrap gap-2 justify-center py-4">
             {options.map((option) => (
@@ -57,6 +57,11 @@ export function ChatResponseOptions({ options, onSelect }: { options: string[], 
                     {option}
                 </Button>
             ))}
+            {onCustomClick && (
+                <Button variant="outline" size="sm" onClick={onCustomClick}>
+                    Custom...
+                </Button>
+            )}
         </div>
     )
 }
@@ -72,8 +77,8 @@ export function ChatProductCarousel({ products }: { products: DisplayProduct[] }
                     </CarouselItem>
                 ))}
             </CarouselContent>
-            <CarouselPrevious className="hidden sm:flex" />
-            <CarouselNext className="hidden sm:flex" />
+            <CarouselPrevious />
+            <CarouselNext />
         </Carousel>
     );
 }
@@ -83,7 +88,7 @@ export function ChatB2bProductCarousel({ products }: { products: DisplayProduct[
         <Carousel opts={{ align: "start" }} className="w-full">
             <CarouselContent className="-ml-4">
                 {products.map((product) => (
-                    <CarouselItem key={product.id} className="md:basis-1/2 lg:basis-1/3 pl-4">
+                    <CarouselItem key={product.id} className="basis-1/2 pl-4">
                         <B2bProductCard product={product} />
                     </CarouselItem>
                 ))}
