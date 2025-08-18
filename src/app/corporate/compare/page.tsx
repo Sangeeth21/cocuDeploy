@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Link from "next/link";
@@ -6,11 +7,36 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useComparison } from "@/context/comparison-context";
 import Image from "next/image";
-import { Star, Wand2, X, Check } from "lucide-react";
+import { Star, Wand2, X, Check, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from 'next/navigation';
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/context/cart-context";
+import { useState, useEffect, useMemo } from 'react';
+import type { Program, DisplayProduct } from '@/lib/types';
+import { useUser } from '@/context/user-context';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Badge } from "@/components/ui/badge";
+
+const getFinalPrice = (product: DisplayProduct, commissionRates: any, applicableDiscount?: Program | null) => {
+    const commissionRule = commissionRates?.corporate?.[product.category];
+    let finalPrice = product.price;
+    if (commissionRule && commissionRule.buffer) {
+        if (commissionRule.buffer.type === 'fixed') {
+            finalPrice += commissionRule.buffer.value;
+        } else {
+            finalPrice *= (1 + (commissionRule.buffer.value / 100));
+        }
+    }
+    const originalPrice = finalPrice;
+    
+    if (applicableDiscount) {
+        finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+    }
+    
+    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
+}
 
 
 export default function ComparePage() {
@@ -18,6 +44,22 @@ export default function ComparePage() {
     const { addToCart } = useCart();
     const router = useRouter();
     const { toast } = useToast();
+    const { commissionRates } = useUser();
+    const [promotions, setPromotions] = useState<Program[]>([]);
+
+    useEffect(() => {
+        const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+        const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+            const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+            const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === 'corporate' || p.platform === 'both'));
+            setPromotions(relevantPromos);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const applicableDiscount = useMemo(() => {
+        return promotions.find(p => p.type === 'discount');
+    }, [promotions]);
 
     const handleAddToCart = (product: typeof comparisonItems[0]) => {
         addToCart({product, customizations: {}});
@@ -68,9 +110,23 @@ export default function ComparePage() {
                     <TableBody>
                         <TableRow>
                             <TableCell className="font-semibold">Price</TableCell>
-                            {comparisonItems.map(item => (
-                                <TableCell key={item.id} className="text-center font-medium">${item.price.toFixed(2)}</TableCell>
-                            ))}
+                            {comparisonItems.map(item => {
+                                const priceDetails = getFinalPrice(item, commissionRates, applicableDiscount);
+                                return (
+                                <TableCell key={item.id} className="text-center font-medium">
+                                    <div className="flex items-baseline justify-center gap-2">
+                                        <span>${priceDetails.final.toFixed(2)}</span>
+                                        {priceDetails.hasDiscount && (
+                                            <span className="text-sm text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</span>
+                                        )}
+                                    </div>
+                                    {priceDetails.hasDiscount && (
+                                        <Badge variant="destructive" className="mt-1">
+                                            <Tag className="mr-1 h-3 w-3"/> {priceDetails.discountValue}% OFF
+                                        </Badge>
+                                     )}
+                                </TableCell>
+                            )})}
                         </TableRow>
                         <TableRow>
                             <TableCell className="font-semibold">Rating</TableCell>

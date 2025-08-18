@@ -3,29 +3,35 @@
 "use client";
 
 import Image from "next/image";
-import { notFound, useParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { notFound, useParams } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel } from "lucide-react";
+import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+import { ProductInteractions } from "./_components/product-interactions";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { ReviewsPreview } from "./_components/reviews-preview";
-import { useMemo, useState, useEffect } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useComparison } from "@/context/comparison-context";
 import { useToast } from "@/hooks/use-toast";
-import { useCart } from "@/context/cart-context";
-import { CorporateProductInteractions } from "./_components/product-interactions";
-import { useBidRequest } from "@/context/bid-request-context";
+import { useWishlist } from "@/context/wishlist-context";
+import { useUser } from "@/context/user-context";
+import { useAuthDialog } from "@/context/auth-dialog-context";
+import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { DisplayProduct, MarketingCampaign } from "@/lib/types";
 import { BrandedLoader } from "@/components/branded-loader";
-import { useUser } from "@/context/user-context";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useComparison } from "@/context/comparison-context";
+import { CorporateProductInteractions } from "./_components/product-interactions";
+import { useBidRequest } from "@/context/bid-request-context";
+import Link from 'next/link';
+import { Badge } from "@/components/ui/badge";
 
+const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
+    loading: () => <Skeleton className="h-[300px] w-full" />
+});
 
 function ProductPageCampaignBanner() {
     const [bannerCampaign, setBannerCampaign] = useState<MarketingCampaign | null>(null);
@@ -66,10 +72,11 @@ export default function B2BProductDetailPage() {
   const router = useRouter();
   const { toast } = useToast();
   const id = params.id as string;
-  const { commissionRates } = useUser();
+  const { commissionRates, user } = useUser();
   
   const [product, setProduct] = useState<DisplayProduct | null>(null);
   const [loading, setLoading] = useState(true);
+  const [promotions, setPromotions] = useState<MarketingCampaign[]>([]);
 
   const [activeImage, setActiveImage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(100);
@@ -82,7 +89,8 @@ export default function B2BProductDetailPage() {
         if (!id) return;
         setLoading(true);
         const productRef = doc(db, 'products', id);
-        const unsubscribe = onSnapshot(productRef, (docSnap) => {
+        
+        const unsubProduct = onSnapshot(productRef, (docSnap) => {
             if (docSnap.exists() && docSnap.data().b2bEnabled) {
                 const productData = { id: docSnap.id, ...docSnap.data() } as DisplayProduct;
                 setProduct(productData);
@@ -93,12 +101,28 @@ export default function B2BProductDetailPage() {
             }
             setLoading(false);
         });
-        return () => unsubscribe();
+
+        const campaignsQuery = query(collection(db, "marketingCampaigns"), where("status", "==", "Active"));
+        const unsubCampaigns = onSnapshot(campaignsQuery, (snapshot) => {
+            const campaignsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as MarketingCampaign));
+            setPromotions(campaignsData);
+        });
+
+        return () => {
+            unsubProduct();
+            unsubCampaigns();
+        };
     }, [id]);
 
   const isCustomizable = useMemo(() => {
     return Object.values(product?.customizationAreas || {}).some(areas => areas && areas.length > 0);
   }, [product]);
+
+   const applicableDiscount = useMemo(() => {
+    if (!product) return null;
+    return promotions.find(p => p.type === 'Sale' && (p.placement === 'corporate-banner' || p.placement === 'hero') && p.associatedProducts?.includes(product.id));
+  }, [promotions, product]);
+
 
   const getBufferedPrice = (basePrice: number) => {
       if (!product || !commissionRates) return basePrice;
@@ -113,18 +137,31 @@ export default function B2BProductDetailPage() {
       return basePrice;
   }
 
-  const pricePerUnit = useMemo(() => {
-    if (!product) return 0;
-    const basePrice = product.tierPrices
+  const priceDetails = useMemo(() => {
+    if (!product) return { original: 0, final: 0, hasDiscount: false, discountValue: 0 };
+    
+    const tierPrice = product.tierPrices
         ?.slice()
         .sort((a, b) => b.quantity - a.quantity)
         .find(tier => quantity >= tier.quantity)?.price || product.price;
-    return getBufferedPrice(basePrice);
-  }, [product, quantity, commissionRates]);
+
+    const originalPrice = getBufferedPrice(tierPrice);
+    let finalPrice = originalPrice;
+    
+    // Simplistic discount logic: assumes first found 'Sale' campaign applies
+    const discountValue = applicableDiscount?.creatives?.[0]?.title ? parseInt(applicableDiscount.creatives[0].title, 10) : 0;
+    
+    if (applicableDiscount && discountValue) {
+        finalPrice *= (1 - (discountValue / 100));
+    }
+    
+    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount && discountValue > 0, discountValue };
+  }, [product, quantity, commissionRates, applicableDiscount]);
+
 
   const totalPrice = useMemo(() => {
-    return pricePerUnit * quantity;
-  }, [pricePerUnit, quantity]);
+    return priceDetails.final * quantity;
+  }, [priceDetails, quantity]);
   
   const handleQuantityChange = (value: string | number) => {
       const numValue = Number(value);
@@ -175,10 +212,15 @@ export default function B2BProductDetailPage() {
           <div className="aspect-square relative w-full overflow-hidden rounded-lg shadow-lg">
             {activeImage && <Image src={activeImage} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />}
              {isCustomizable && (
-              <div className="absolute top-4 left-4 bg-primary text-primary-foreground text-sm font-semibold px-3 py-1.5 rounded-full flex items-center gap-2">
-                <Wand2 className="h-4 w-4" />
-                <span>Customizable</span>
-              </div>
+              <Badge variant="secondary" className="absolute top-4 left-4">
+                <Wand2 className="h-3 w-3 mr-1.5" />
+                Customizable
+              </Badge>
+            )}
+             {priceDetails.hasDiscount && (
+                <Badge variant="destructive" className="absolute top-4 right-4">
+                    <Tag className="mr-1 h-3 w-3"/> {priceDetails.discountValue}% OFF
+                </Badge>
             )}
           </div>
           {allImages.length > 1 && (
@@ -256,7 +298,12 @@ export default function B2BProductDetailPage() {
                     <Separator/>
                      <div className="flex justify-between items-center text-sm">
                         <span className="text-muted-foreground">Price per Unit</span>
-                        <span className="font-semibold">${pricePerUnit.toFixed(2)}</span>
+                         <div className="flex items-baseline gap-2">
+                            {priceDetails.hasDiscount && (
+                                <span className="text-base text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</span>
+                            )}
+                            <span className="font-semibold text-base">${priceDetails.final.toFixed(2)}</span>
+                        </div>
                     </div>
                     <Separator/>
                     <div className="flex justify-between items-center font-bold text-lg">
@@ -294,7 +341,7 @@ export default function B2BProductDetailPage() {
 
       <Separator className="my-12" />
 
-      <ReviewsPreview />
+      <ReviewsPreview productId={product.id} />
     </div>
   );
 }
