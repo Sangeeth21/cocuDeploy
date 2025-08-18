@@ -1,14 +1,14 @@
 
+
 "use client";
 
 import Image from "next/image";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel, Tag, Video, Minus, Plus, CheckCircle } from "lucide-react";
+import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel, Tag, Video, Minus, Plus, CheckCircle, MessageSquare, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CorporateProductInteractions } from "./_components/product-interactions";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/context/user-context";
@@ -31,6 +31,7 @@ import { Loader2 } from 'lucide-react';
 import { B2bProductCard } from "../../_components/b2b-product-card";
 import { FrequentlyBoughtTogetherPreview } from "@/app/products/[id]/_components/frequently-bought-together-preview";
 import { useCart } from "@/context/cart-context";
+import type { DisplayProduct, User, Program, Coupon } from "@/lib/types";
 
 
 const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
@@ -319,6 +320,17 @@ export default function B2BProductDetailPage() {
     }
     setIsCheckingPincode(false);
   }
+  
+  const handleMessageVendor = () => {
+    router.push(`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}&type=corporate`);
+  }
+  
+  const handleRequestSample = () => {
+    toast({
+        title: "Sample Requested (Simulated)",
+        description: `Your request for a sample of "${product.name}" has been sent to the vendor.`,
+    });
+  }
 
   if (loading) {
     return <BrandedLoader />;
@@ -355,56 +367,58 @@ export default function B2BProductDetailPage() {
   return (
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
-      <div className="grid md:grid-cols-2 gap-12 items-start">
-        <div className={cn("flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
-           <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
-                {activeMedia?.type === 'image' && activeMedia.src ? (
-                    <Image src={activeMedia.src} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
-                ) : activeMedia?.type === 'video' && activeMedia.src ? (
-                    <iframe
-                        src={activeMedia.src}
-                        title="Product Video"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        className="w-full h-full"
-                    ></iframe>
-                ) : null}
-             {isCustomizable && (
-              <Badge variant="secondary" className="absolute top-4 left-4">
-                <Wand2 className="h-3 w-3 mr-1.5" />
-                Customizable
-              </Badge>
-            )}
-             {priceDetails.hasDiscount && (
-                <Badge variant="destructive" className="absolute top-4 right-4">
-                    <Tag className="mr-1 h-3 w-3"/> {priceDetails.discountValue}% OFF
-                </Badge>
-            )}
-          </div>
-          {allMedia.length > 1 && (
-            <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition as keyof typeof thumbnailLayoutClasses], thumbnailOrderClasses[thumbnailPosition as keyof typeof thumbnailOrderClasses])}>
-             {allMedia.map((media, index) => {
-                 const isVideo = media.type === 'video';
-                 return (
-                 <button
-                    key={index}
-                    onClick={() => setActiveMedia(media)}
-                    className={cn(
-                        "relative aspect-square rounded-md overflow-hidden transition-all flex-shrink-0",
-                        activeMedia?.src === media.src ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
-                        thumbnailPosition === 'bottom' ? 'w-20' : 'w-16'
+      <div className="grid md:grid-cols-2 gap-12">
+        <div className="md:sticky md:top-24 flex gap-4 h-[600px] flex-col">
+           <div className={cn("flex gap-4 h-full", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
+                <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
+                        {activeMedia?.type === 'image' && activeMedia.src ? (
+                            <Image src={activeMedia.src} alt={product.name} fill className="object-cover" priority data-ai-hint={`${product.tags?.[0] || 'product'} ${product.tags?.[1] || ''}`} />
+                        ) : activeMedia?.type === 'video' && activeMedia.src ? (
+                            <iframe
+                                src={activeMedia.src}
+                                title="Product Video"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                className="w-full h-full"
+                            ></iframe>
+                        ) : null}
+                    {isCustomizable && (
+                    <Badge variant="secondary" className="absolute top-4 left-4">
+                        <Wand2 className="h-3 w-3 mr-1.5" />
+                        Customizable
+                    </Badge>
                     )}
-                 >
-                    <Image src={isVideo ? product.imageUrl : media.src} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
-                    {isVideo && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <Video className="h-6 w-6 text-white" />
-                        </div>
+                    {priceDetails.hasDiscount && (
+                        <Badge variant="destructive" className="absolute top-4 right-4 text-[10px] h-auto px-1.5 py-0 leading-tight">
+                            <Tag className="mr-1 h-2.5 w-2.5" /> {priceDetails.discountValue}% OFF
+                        </Badge>
                     )}
-                 </button>
-             )})}
-            </div>
-          )}
+                </div>
+                {allMedia.length > 1 && (
+                    <div className={cn("flex gap-2", thumbnailLayoutClasses[thumbnailPosition as keyof typeof thumbnailLayoutClasses], thumbnailOrderClasses[thumbnailPosition as keyof typeof thumbnailOrderClasses])}>
+                    {allMedia.map((media, index) => {
+                        const isVideo = media.type === 'video';
+                        return (
+                        <button
+                            key={index}
+                            onClick={() => setActiveMedia(media)}
+                            className={cn(
+                                "relative aspect-square rounded-md overflow-hidden transition-all flex-shrink-0",
+                                activeMedia?.src === media.src ? "ring-2 ring-primary ring-offset-2" : "opacity-70 hover:opacity-100",
+                                thumbnailPosition === 'bottom' ? 'w-20' : 'w-16'
+                            )}
+                        >
+                            <Image src={isVideo ? product.imageUrl : media.src} alt={`${product.name} thumbnail ${index + 1}`} fill className="object-cover" />
+                            {isVideo && (
+                                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                    <Video className="h-6 w-6 text-white" />
+                                </div>
+                            )}
+                        </button>
+                    )})}
+                    </div>
+                )}
+                </div>
         </div>
 
         <div className="space-y-6">
@@ -430,23 +444,27 @@ export default function B2BProductDetailPage() {
           </div>
           
            {(promotions.length > 0 || publicCoupons.length > 0) && (
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
-                    <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
+                <Card className="bg-muted/30">
+                    <CardHeader className="p-3 border-b">
+                        <CardTitle className="text-sm flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-3 text-xs space-y-2">
                     {promotions.map(promo => {
                         if (promo.type === 'discount' || promo.type === 'Sale') {
-                           return <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}</p>
+                           return <p key={promo.id} className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}</p>
                         }
                         return null;
                     })}
                     {publicCoupons.map(coupon => (
-                         <p key={coupon.id} className="text-sm flex items-center gap-2">
+                         <p key={coupon.id} className="flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-500" />
                             <span>
                                 {coupon.type === 'percentage' ? `${coupon.value}% OFF` : `₹${coupon.value} OFF`} with code: <span className="font-bold font-mono">{coupon.code}</span>
                             </span>
                          </p>
                     ))}
-                </div>
+                    </CardContent>
+                </Card>
             )}
           
           <Card>
@@ -493,8 +511,8 @@ export default function B2BProductDetailPage() {
                         <span className="text-muted-foreground flex items-center gap-1.5">
                             Price per Unit
                             {priceDetails.hasDiscount && (
-                                <Badge variant="destructive" className="text-[10px] h-auto px-1.5 py-0 leading-tight">
-                                    <Tag className="mr-1 h-3 w-3" /> {priceDetails.discountValue}% OFF
+                                <Badge variant="destructive" className="text-[9px] h-auto px-1.5 py-0 leading-tight">
+                                    <Tag className="mr-1 h-2.5 w-2.5" /> {priceDetails.discountValue}% OFF
                                 </Badge>
                              )}
                         </span>
@@ -509,7 +527,7 @@ export default function B2BProductDetailPage() {
                     <div className="flex justify-between items-center font-bold text-lg">
                         <span>Estimated Total</span>
                         <div className="flex items-baseline gap-2">
-                            {priceDetails.hasDiscount && (
+                             {priceDetails.hasDiscount && (
                                 <span className="text-base text-muted-foreground line-through font-medium">${originalTotalPrice.toFixed(2)}</span>
                             )}
                             <span>${totalPrice.toFixed(2)}</span>
@@ -523,24 +541,29 @@ export default function B2BProductDetailPage() {
                 <Button size="lg" className="w-full" onClick={handleRequestQuote}>
                     {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
                 </Button>
-                 <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
-                    <Gavel className="mr-2 h-5 w-5" />
-                    {isInBid(product.id) ? 'Added to Bid Request' : 'Add to Bid Request'}
-                </Button>
                 <div className="grid grid-cols-2 gap-2">
-                    <Button size="lg" variant="outline" className="w-full" onClick={handleCompareClick}>
+                    <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
+                        <Gavel className="mr-2 h-5 w-5" />
+                        {isInBid(product.id) ? 'Added to Bid' : 'Add to Bid'}
+                    </Button>
+                    <Button size="lg" variant="secondary" className="w-full" onClick={handleCompareClick}>
                         <Scale className="mr-2 h-5 w-5" />
                         {isComparing(product.id) ? 'Remove' : 'Compare'}
                     </Button>
-                    <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
-                        <ShoppingCart className="mr-2 h-5 w-5" />
-                        Add to Cart
+                </div>
+                 <div className="grid grid-cols-2 gap-2">
+                    <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendor}>
+                        <MessageSquare className="mr-2 h-5 w-5" />
+                        Message Vendor
+                    </Button>
+                    <Button size="lg" variant="outline" className="w-full" onClick={handleRequestSample}>
+                        <Package className="mr-2 h-5 w-5" />
+                        Request Sample
                     </Button>
                 </div>
-                <CorporateProductInteractions product={product} isCustomizable={isCustomizable} />
             </div>
 
-            <div className="border rounded-lg p-3 space-y-2">
+             <div className="border rounded-lg p-3 space-y-2">
                 <div className="flex items-center gap-2">
                     <Truck className="h-5 w-5 text-muted-foreground" />
                     <Label htmlFor="pincode-check" className="font-semibold">Check Delivery Options</Label>
@@ -565,8 +588,11 @@ export default function B2BProductDetailPage() {
                     </div>
                 )}
             </div>
-
-          <p className="text-muted-foreground leading-relaxed pt-4">{product.description}</p>
+            
+            <div className="pt-6">
+                <h2 className="font-bold text-xl font-headline mb-2">Description</h2>
+                <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+            </div>
         </div>
       </div>
 
@@ -600,3 +626,5 @@ export default function B2BProductDetailPage() {
     </Dialog>
   );
 }
+
+    
