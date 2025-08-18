@@ -5,7 +5,7 @@
 import Image from "next/image";
 import { notFound, useParams, useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel, Tag } from "lucide-react";
+import { Star, Truck, Wand2, DollarSign, Info, ShoppingCart, Scale, Gavel, Tag, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +28,7 @@ import { useComparison } from "@/context/comparison-context";
 import { useBidRequest } from "@/context/bid-request-context";
 import Link from 'next/link';
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
     loading: () => <Skeleton className="h-[300px] w-full" />
