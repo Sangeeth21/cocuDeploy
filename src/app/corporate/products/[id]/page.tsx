@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUser } from "@/context/user-context";
 import { useComparison } from "@/context/comparison-context";
 import { useBidRequest } from "@/context/bid-request-context";
+import { useCart } from "@/context/cart-context";
 import { useMemo, useState, useEffect } from "react";
 import { collection, doc, getDoc, getDocs, query, where, limit, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -29,13 +30,15 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { getEstimatedDelivery } from "@/app/actions";
 import { Loader2 } from 'lucide-react';
 import { B2bProductCard } from "../../_components/b2b-product-card";
-import { FrequentlyBoughtTogetherPreview } from "@/app/products/[id]/_components/frequently-bought-together-preview";
-import { useCart } from "@/context/cart-context";
 import type { DisplayProduct, User, Program, Coupon } from "@/lib/types";
 
 
 const ReviewsPreview = dynamic(() => import('./_components/reviews-preview').then(mod => mod.ReviewsPreview), {
     loading: () => <Skeleton className="h-[300px] w-full" />
+});
+
+const FrequentlyBoughtTogetherPreview = dynamic(() => import('@/app/products/[id]/_components/frequently-bought-together-preview').then(mod => mod.FrequentlyBoughtTogetherPreview), {
+    loading: () => <Skeleton className="h-[200px] w-full rounded-xl" />
 });
 
 function ProductPageCampaignBanner() {
@@ -247,7 +250,6 @@ export default function B2BProductDetailPage() {
 
   const allMedia = useMemo(() => {
     if (!product) return [];
-    
     const media: MediaItem[] = [];
     const imageUrls = new Set<string>();
 
@@ -268,9 +270,8 @@ export default function B2BProductDetailPage() {
     if (product.videoUrl) {
         media.push({ type: 'video', src: product.videoUrl });
     }
-
     return media;
-  }, [product]);
+}, [product]);
   
   const handleQuantityChange = (value: string | number) => {
       const numValue = Number(value);
@@ -290,6 +291,12 @@ export default function B2BProductDetailPage() {
   const handleAddToCart = () => {
       addToCart({product, customizations: {}, quantity});
       toast({title: "Added to Cart", description: `${quantity} x ${product.name} has been added to your cart.`});
+  }
+
+  const handleBuyNow = () => {
+    // In a real B2B scenario, this might lead to a different checkout flow
+    addToCart({product, customizations: {}, quantity});
+    router.push('/checkout');
   }
   
   const handleAddToBid = () => {
@@ -368,7 +375,7 @@ export default function B2BProductDetailPage() {
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
       <div className="grid md:grid-cols-2 gap-12">
-        <div className="md:sticky md:top-24 flex gap-4 h-[600px] flex-col">
+        <div className="flex gap-4 h-[600px] flex-col">
            <div className={cn("flex gap-4 h-full", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
                 <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
                         {activeMedia?.type === 'image' && activeMedia.src ? (
@@ -387,11 +394,6 @@ export default function B2BProductDetailPage() {
                         <Wand2 className="h-3 w-3 mr-1.5" />
                         Customizable
                     </Badge>
-                    )}
-                    {priceDetails.hasDiscount && (
-                        <Badge variant="destructive" className="absolute top-4 right-4 text-[10px] h-auto px-1.5 py-0 leading-tight">
-                            <Tag className="mr-1 h-2.5 w-2.5" /> {priceDetails.discountValue}% OFF
-                        </Badge>
                     )}
                 </div>
                 {allMedia.length > 1 && (
@@ -442,30 +444,30 @@ export default function B2BProductDetailPage() {
               <span className="text-muted-foreground text-sm">({product.reviewCount} reviews)</span>
             </div>
           </div>
-          
-           {(promotions.length > 0 || publicCoupons.length > 0) && (
-                <Card className="bg-muted/30">
-                    <CardHeader className="p-3 border-b">
-                        <CardTitle className="text-sm flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-3 text-xs space-y-2">
-                    {promotions.map(promo => {
-                        if (promo.type === 'discount' || promo.type === 'Sale') {
-                           return <p key={promo.id} className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}</p>
-                        }
-                        return null;
-                    })}
-                    {publicCoupons.map(coupon => (
-                         <p key={coupon.id} className="flex items-center gap-2">
-                            <CheckCircle className="h-4 w-4 text-green-500" />
-                            <span>
-                                {coupon.type === 'percentage' ? `${coupon.value}% OFF` : `₹${coupon.value} OFF`} with code: <span className="font-bold font-mono">{coupon.code}</span>
-                            </span>
-                         </p>
-                    ))}
-                    </CardContent>
-                </Card>
-            )}
+
+          {(promotions.length > 0 || publicCoupons.length > 0) && (
+              <Card className="bg-muted/30">
+                  <CardHeader className="p-3 border-b">
+                      <CardTitle className="text-sm flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-3 text-xs space-y-2">
+                  {promotions.map(promo => {
+                      if (promo.type === 'discount' || promo.type === 'Sale') {
+                          return <p key={promo.id} className="flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}</p>
+                      }
+                      return null;
+                  })}
+                  {publicCoupons.map(coupon => (
+                        <p key={coupon.id} className="flex items-center gap-2">
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <span>
+                              {coupon.type === 'percentage' ? `${coupon.value}% OFF` : `₹${coupon.value} OFF`} with code: <span className="font-bold font-mono">{coupon.code}</span>
+                          </span>
+                        </p>
+                  ))}
+                  </CardContent>
+              </Card>
+          )}
           
           <Card>
             <CardHeader>
@@ -511,7 +513,7 @@ export default function B2BProductDetailPage() {
                         <span className="text-muted-foreground flex items-center gap-1.5">
                             Price per Unit
                             {priceDetails.hasDiscount && (
-                                <Badge variant="destructive" className="text-[9px] h-auto px-1.5 py-0 leading-tight">
+                                <Badge variant="destructive" className="text-[10px] h-auto px-1.5 py-0 leading-tight">
                                     <Tag className="mr-1 h-2.5 w-2.5" /> {priceDetails.discountValue}% OFF
                                 </Badge>
                              )}
@@ -527,7 +529,7 @@ export default function B2BProductDetailPage() {
                     <div className="flex justify-between items-center font-bold text-lg">
                         <span>Estimated Total</span>
                         <div className="flex items-baseline gap-2">
-                             {priceDetails.hasDiscount && (
+                            {priceDetails.hasDiscount && (
                                 <span className="text-base text-muted-foreground line-through font-medium">${originalTotalPrice.toFixed(2)}</span>
                             )}
                             <span>${totalPrice.toFixed(2)}</span>
@@ -542,16 +544,24 @@ export default function B2BProductDetailPage() {
                     {isCustomizable ? 'Customize & Quote' : 'Request a Quote'}
                 </Button>
                 <div className="grid grid-cols-2 gap-2">
-                    <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
+                    <Button size="lg" variant="secondary" className="w-full" onClick={handleAddToCart}>
+                        <ShoppingCart className="mr-2 h-5 w-5" /> Add to Cart
+                    </Button>
+                     <Button size="lg" variant="default" className="w-full" onClick={handleBuyNow}>
+                        Buy Now
+                    </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                    <Button size="lg" variant="outline" className="w-full" onClick={handleAddToBid} disabled={isInBid(product.id)}>
                         <Gavel className="mr-2 h-5 w-5" />
                         {isInBid(product.id) ? 'Added to Bid' : 'Add to Bid'}
                     </Button>
-                    <Button size="lg" variant="secondary" className="w-full" onClick={handleCompareClick}>
+                    <Button size="lg" variant="outline" className="w-full" onClick={handleCompareClick}>
                         <Scale className="mr-2 h-5 w-5" />
                         {isComparing(product.id) ? 'Remove' : 'Compare'}
                     </Button>
                 </div>
-                 <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 gap-2">
                     <Button size="lg" variant="outline" className="w-full" onClick={handleMessageVendor}>
                         <MessageSquare className="mr-2 h-5 w-5" />
                         Message Vendor
@@ -626,5 +636,3 @@ export default function B2BProductDetailPage() {
     </Dialog>
   );
 }
-
-    
