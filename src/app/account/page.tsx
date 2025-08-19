@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import Link from "next/link";
-import type { Message, Conversation, DisplayProduct, Order, User, OrderItem } from "@/lib/types";
+import type { Message, Conversation, DisplayProduct, Order, User, OrderItem, Notification } from "@/lib/types";
 import { useUser } from "@/context/user-context";
 import { useWishlist } from "@/context/wishlist-context";
 import { ProductCard } from "@/components/product-card";
@@ -335,6 +335,18 @@ function ShareDialog({ referralCode }: { referralCode: string }) {
     )
 }
 
+const notificationIcons: { [key: string]: React.ElementType } = {
+    'order': ListChecks,
+    'message': MessageSquare,
+    'stock': Package,
+    'confirmation': BellRing,
+    'user_report': ShieldAlert,
+    'new_vendor': User,
+    'order_shipped': Truck,
+    'request_approved': CheckCircle,
+    'request_denied': X,
+    default: BellRing
+};
 
 export default function AccountPage() {
   const searchParams = useSearchParams();
@@ -362,6 +374,7 @@ export default function AccountPage() {
   
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   
   const MAX_MESSAGE_LENGTH = 1500;
   
@@ -445,12 +458,26 @@ export default function AccountPage() {
         });
         setOrders(userOrders);
     });
+    
+    // Fetch Notifications
+    const notifQuery = query(
+        collection(db, "notifications"), 
+        where("customerId", "==", currentUserId), 
+        orderBy("timestamp", "desc"),
+        limit(5)
+    );
+    const unsubscribeNotifs = onSnapshot(notifQuery, (snapshot) => {
+        const notifsData: Notification[] = [];
+        snapshot.forEach(doc => notifsData.push({ id: doc.id, ...doc.data() } as Notification));
+        setNotifications(notifsData);
+    });
 
     return () => {
         unsubscribeUser();
         unsubscribeAddresses();
         unsubscribePayments();
         unsubscribeOrders();
+        unsubscribeNotifs();
     };
   }, [isLoggedIn, currentUserId, setUser]);
 
@@ -806,30 +833,28 @@ export default function AccountPage() {
                         <CardDescription>Recent updates about your orders and account activity.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                         <div className="flex items-center gap-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
-                                <div className="p-2 bg-blue-100 rounded-full dark:bg-blue-900">
-                                    <Truck className="h-5 w-5 text-blue-600 dark:text-blue-400"/>
+                         {notifications.length > 0 ? (
+                             notifications.map(item => {
+                                const Icon = notificationIcons[item.type] || notificationIcons.default;
+                                return (
+                                <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg bg-blue-50 dark:bg-blue-950">
+                                        <div className="p-2 bg-blue-100 rounded-full dark:bg-blue-900">
+                                            <Icon className="h-5 w-5 text-blue-600 dark:text-blue-400"/>
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-blue-800 dark:text-blue-200">{item.text}</p>
+                                        </div>
+                                        {item.href && (
+                                            <Button size="sm" asChild variant="outline" className="bg-white">
+                                                <Link href={item.href}>View</Link>
+                                            </Button>
+                                        )}
                                 </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold text-blue-800 dark:text-blue-200">Your order #ORD002 has shipped!</p>
-                                    <p className="text-sm text-blue-600 dark:text-blue-400">Estimated delivery: June 25, 2024.</p>
-                                </div>
-                                <Button size="sm" asChild variant="outline" className="bg-white">
-                                    <Link href="/account?tab=orders&tracking=ORD002">Track</Link>
-                                </Button>
-                        </div>
-                        <div className="flex items-center gap-4 p-4 border rounded-lg bg-green-50 dark:bg-green-950">
-                                <div className="p-2 bg-green-100 rounded-full dark:bg-green-900">
-                                    <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400"/>
-                                </div>
-                                <div className="flex-1">
-                                    <p className="font-semibold text-green-800 dark:text-green-200">Your request for "Classic Leather Watch" was approved!</p>
-                                    <p className="text-sm text-green-600 dark:text-green-400">The vendor has confirmed availability. You can now complete your purchase.</p>
-                                </div>
-                                <Button size="sm" asChild>
-                                    <Link href="/cart">Go to Cart</Link>
-                                </Button>
-                        </div>
+                                );
+                            })
+                         ) : (
+                            <p className="text-sm text-muted-foreground text-center py-4">You have no new notifications.</p>
+                         )}
                     </CardContent>
                 </Card>
             </div>

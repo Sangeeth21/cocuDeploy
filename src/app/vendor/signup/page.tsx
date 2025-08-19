@@ -20,8 +20,11 @@ import { cn } from "@/lib/utils";
 import { doc, setDoc } from "firebase/firestore";
 import type { User as VendorUser } from "@/lib/types";
 
+// This will be a mock. In a real app, this would involve a backend service.
+const MOCK_OTP = "123456";
+
 export default function VendorSignupPage() {
-  const [step, setStep] = useState<"details" | "type" | "verified">("details");
+  const [step, setStep] = useState<"details" | "verify" | "type" | "verified">("details");
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -32,6 +35,7 @@ export default function VendorSignupPage() {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [vendorType, setVendorType] = useState<"personalized" | "corporate" | "both">();
+  const [otp, setOtp] = useState("");
 
   const router = useRouter();
   const { toast } = useToast();
@@ -76,8 +80,24 @@ export default function VendorSignupPage() {
         toast({ variant: "destructive", title: "Password is too weak" });
         return;
     }
-    setStep("type");
+    // Simulate sending OTP
+    setIsLoading(true);
+    setTimeout(() => {
+        toast({ title: "Verification Code Sent", description: "A 6-digit code has been sent to your email." });
+        setStep("verify");
+        setIsLoading(false);
+    }, 1000);
   };
+  
+  const handleVerifySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp === MOCK_OTP) {
+        toast({ title: "Email Verified!" });
+        setStep("type");
+    } else {
+        toast({ variant: "destructive", title: "Invalid Code", description: "Please check the code and try again." });
+    }
+  }
 
   const handleTypeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,9 +109,6 @@ export default function VendorSignupPage() {
     try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
-
-        // Send verification email
-        await sendEmailVerification(user);
 
         // Create user document in Firestore
         const newVendor: Omit<VendorUser, 'id'> = {
@@ -112,7 +129,7 @@ export default function VendorSignupPage() {
         
         toast({
             title: "Account Created!",
-            description: "You're now logged in. Please check your email to verify your account and then complete the verification steps.",
+            description: "You're now logged in. Please complete the verification steps to start selling.",
         });
 
         router.push('/vendor/verify');
@@ -127,146 +144,176 @@ export default function VendorSignupPage() {
         setIsLoading(false);
     }
   };
+  
+  const renderStep = () => {
+      switch(step) {
+          case 'details':
+              return (
+                  <form onSubmit={handleDetailsSubmit}>
+                    <CardHeader className="text-center">
+                        <CardTitle className="text-3xl font-headline">Become a Vendor</CardTitle>
+                        <CardDescription>Create your account to start selling</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        {/* Name, Email, Phone, Password Fields as before */}
+                        <div className="space-y-2">
+                            <Label htmlFor="name">Full Name or Business Name</Label>
+                            <Input id="name" type="text" placeholder="e.g. Timeless Co." required value={name} onChange={e => setName(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email</Label>
+                            <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Phone Number</Label>
+                            <Input id="phone" type="tel" placeholder="+1 (555) 555-5555" required value={phone} onChange={(e) => setPhone(e.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="vendor-password">Password</Label>
+                            <div className="relative">
+                                <Input 
+                                    id="vendor-password" 
+                                    type={showPassword ? "text" : "password"} 
+                                    required 
+                                    value={password} 
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    onFocus={() => setIsPasswordFocused(true)}
+                                    onBlur={() => setIsPasswordFocused(false)}
+                                />
+                                <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                                    {showPassword ? <EyeOff /> : <Eye />}
+                                </Button>
+                            </div>
+                        </div>
+                        {isPasswordFocused && password.length > 0 && (
+                            <div className="space-y-3 pt-1">
+                                <Progress value={passwordCheck.strength * 20} className={cn("h-2", getStrengthColor())} />
+                                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                    {Object.entries(passwordCheck.checks).map(([key, value]) => (
+                                        <li key={key} className={cn("flex items-center gap-2", value && "text-green-600")}>
+                                            <Check className={cn("h-3.5 w-3.5 transition-all", value ? "opacity-100" : "opacity-30")} />
+                                            <span>
+                                                {
+                                                    {
+                                                        length: 'At least 8 characters',
+                                                        uppercase: 'One uppercase letter',
+                                                        lowercase: 'One lowercase letter',
+                                                        number: 'One number',
+                                                        specialChar: 'One special character',
+                                                    }[key]
+                                                }
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                        <div className="space-y-2">
+                            <Label htmlFor="vendor-confirm-password">Confirm Password</Label>
+                            <div className="relative">
+                                <Input id="vendor-confirm-password" type={showPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="space-y-3 pt-2">
+                            <div className="flex items-start space-x-2">
+                                <Checkbox id="terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
+                                <Label htmlFor="terms" className="font-normal text-xs text-muted-foreground leading-snug">
+                                    I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Vendor Terms and Conditions</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
+                                </Label>
+                            </div>
+                        </div>
+                    </CardContent>
+                    <CardFooter className="flex flex-col gap-4">
+                        <Button type="submit" className="w-full" disabled={isLoading}>
+                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                             Continue
+                        </Button>
+                        <p className="text-sm text-center text-muted-foreground">
+                            Already have a vendor account?{" "}
+                            <Link href="/vendor/login" className="font-semibold text-primary hover:underline">
+                                Sign In
+                            </Link>
+                        </p>
+                    </CardFooter>
+                  </form>
+              );
+          case 'verify':
+              return (
+                   <form onSubmit={handleVerifySubmit}>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-3xl font-headline">Verify Your Email</CardTitle>
+                            <CardDescription>Enter the 6-digit code sent to {email}.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                             <div className="space-y-2">
+                                <Label htmlFor="otp">Verification Code</Label>
+                                <Input id="otp" type="text" maxLength={6} placeholder="_ _ _ _ _ _" required value={otp} onChange={(e) => setOtp(e.target.value)} className="text-center text-2xl tracking-[0.5em]"/>
+                            </div>
+                             <p className="text-xs text-muted-foreground text-center">Didn't receive a code? <Button variant="link" size="sm" type="button" className="p-0 h-auto">Resend</Button></p>
+                        </CardContent>
+                        <CardFooter className="flex justify-between">
+                            <Button variant="ghost" onClick={() => setStep('details')}>Back</Button>
+                            <Button type="submit">Verify & Continue</Button>
+                        </CardFooter>
+                   </form>
+              );
+          case 'type':
+                return (
+                    <form onSubmit={handleTypeSubmit}>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-3xl font-headline">Select Vendor Type</CardTitle>
+                            <CardDescription>Choose the type of business you operate.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <RadioGroup value={vendorType} onValueChange={(v) => setVendorType(v as any)} className="space-y-4">
+                                <Label htmlFor="type-personalized" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                    <div className="flex items-center gap-4">
+                                        <RadioGroupItem value="personalized" id="type-personalized" />
+                                        <div className="flex items-center gap-2">
+                                            <User className="h-5 w-5" />
+                                            <span className="font-semibold">Personalized Retail</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2 ml-8">Sell individual items directly to customers. Perfect for artisans and small-scale sellers.</p>
+                                </Label>
+                                <Label htmlFor="type-corporate" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                    <div className="flex items-center gap-4">
+                                        <RadioGroupItem value="corporate" id="type-corporate" />
+                                        <div className="flex items-center gap-2">
+                                            <Building className="h-5 w-5" />
+                                            <span className="font-semibold">Corporate & Bulk Sales</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2 ml-8">Fulfill bulk orders and participate in corporate bid requests. Ideal for wholesale suppliers.</p>
+                                </Label>
+                                <Label htmlFor="type-both" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
+                                    <div className="flex items-center gap-4">
+                                        <RadioGroupItem value="both" id="type-both" />
+                                        <div className="flex items-center gap-2">
+                                            <Combine className="h-5 w-5" />
+                                            <span className="font-semibold">Both Channels</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-2 ml-8">Engage in both personalized retail and corporate bulk sales.</p>
+                                </Label>
+                            </RadioGroup>
+                        </CardContent>
+                        <CardFooter className="flex justify-between">
+                            <Button variant="ghost" onClick={() => setStep('details')}>Back</Button>
+                            <Button type="submit" disabled={isLoading}>
+                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Create Account
+                            </Button>
+                        </CardFooter>
+                    </form>
+                );
+      }
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
       <Card className="w-full max-w-md">
-        {step === 'details' ? (
-          <form onSubmit={handleDetailsSubmit}>
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-headline">Become a Vendor</CardTitle>
-              <CardDescription>Create your account to start selling</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name or Business Name</Label>
-                <Input id="name" type="text" placeholder="e.g. Timeless Co." required value={name} onChange={e => setName(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" type="tel" placeholder="+1 (555) 555-5555" required value={phone} onChange={(e) => setPhone(e.target.value)} />
-              </div>
-               <div className="space-y-2">
-                    <Label htmlFor="vendor-password">Password</Label>
-                    <div className="relative">
-                        <Input 
-                            id="vendor-password" 
-                            type={showPassword ? "text" : "password"} 
-                            required 
-                            value={password} 
-                            onChange={(e) => setPassword(e.target.value)}
-                            onFocus={() => setIsPasswordFocused(true)}
-                            onBlur={() => setIsPasswordFocused(false)}
-                        />
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                            {showPassword ? <EyeOff /> : <Eye />}
-                        </Button>
-                    </div>
-                </div>
-                {isPasswordFocused && password.length > 0 && (
-                     <div className="space-y-3 pt-1">
-                        <Progress value={passwordCheck.strength * 20} className={cn("h-2", getStrengthColor())} />
-                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                            {Object.entries(passwordCheck.checks).map(([key, value]) => (
-                                <li key={key} className={cn("flex items-center gap-2", value && "text-green-600")}>
-                                    <Check className={cn("h-3.5 w-3.5 transition-all", value ? "opacity-100" : "opacity-30")} />
-                                    <span>
-                                        {
-                                            {
-                                                length: 'At least 8 characters',
-                                                uppercase: 'One uppercase letter',
-                                                lowercase: 'One lowercase letter',
-                                                number: 'One number',
-                                                specialChar: 'One special character',
-                                            }[key]
-                                        }
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-                 <div className="space-y-2">
-                    <Label htmlFor="vendor-confirm-password">Confirm Password</Label>
-                     <div className="relative">
-                        <Input id="vendor-confirm-password" type={showPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                    </div>
-                </div>
-               <div className="space-y-3 pt-2">
-                    <div className="flex items-start space-x-2">
-                        <Checkbox id="terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
-                        <Label htmlFor="terms" className="font-normal text-xs text-muted-foreground leading-snug">
-                            I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Vendor Terms and Conditions</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
-                        </Label>
-                    </div>
-                </div>
-
-            </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full">
-                Continue
-              </Button>
-              <p className="text-sm text-center text-muted-foreground">
-                  Already have a vendor account?{" "}
-                  <Link href="/vendor/login" className="font-semibold text-primary hover:underline">
-                      Sign In
-                  </Link>
-              </p>
-            </CardFooter>
-          </form>
-        ) : (
-             <form onSubmit={handleTypeSubmit}>
-                <CardHeader className="text-center">
-                    <CardTitle className="text-3xl font-headline">Select Vendor Type</CardTitle>
-                    <CardDescription>Choose the type of business you operate.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <RadioGroup value={vendorType} onValueChange={(v) => setVendorType(v as any)} className="space-y-4">
-                        <Label htmlFor="type-personalized" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                            <div className="flex items-center gap-4">
-                                <RadioGroupItem value="personalized" id="type-personalized" />
-                                <div className="flex items-center gap-2">
-                                    <User className="h-5 w-5" />
-                                    <span className="font-semibold">Personalized Retail</span>
-                                </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2 ml-8">Sell individual items directly to customers. Perfect for artisans and small-scale sellers.</p>
-                        </Label>
-                        <Label htmlFor="type-corporate" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                             <div className="flex items-center gap-4">
-                                <RadioGroupItem value="corporate" id="type-corporate" />
-                                <div className="flex items-center gap-2">
-                                    <Building className="h-5 w-5" />
-                                    <span className="font-semibold">Corporate & Bulk Sales</span>
-                                </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2 ml-8">Fulfill bulk orders and participate in corporate bid requests. Ideal for wholesale suppliers.</p>
-                        </Label>
-                         <Label htmlFor="type-both" className="flex flex-col p-4 border rounded-lg cursor-pointer hover:bg-muted/50 has-[:checked]:bg-primary/10 has-[:checked]:border-primary">
-                            <div className="flex items-center gap-4">
-                                <RadioGroupItem value="both" id="type-both" />
-                                 <div className="flex items-center gap-2">
-                                    <Combine className="h-5 w-5" />
-                                    <span className="font-semibold">Both Channels</span>
-                                </div>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-2 ml-8">Engage in both personalized retail and corporate bulk sales.</p>
-                        </Label>
-                    </RadioGroup>
-                </CardContent>
-                <CardFooter className="flex justify-between">
-                    <Button variant="ghost" onClick={() => setStep('details')}>Back</Button>
-                    <Button type="submit" disabled={isLoading}>
-                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Create Account
-                    </Button>
-                </CardFooter>
-            </form>
-        )}
+        {renderStep()}
       </Card>
     </div>
   );

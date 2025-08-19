@@ -63,7 +63,7 @@ export default function VendorLoginPage() {
             }
 
         } catch (error: any) {
-            toast({ variant: 'destructive', title: "Login Failed", description: error.message });
+            toast({ variant: 'destructive', title: "Login Failed", description: "Invalid password or email." });
         } finally {
             setIsLoading(false);
         }
@@ -97,9 +97,14 @@ export default function VendorLoginPage() {
                                 </Button>
                             </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                            <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={(checked) => setRememberMe(checked as boolean)} />
-                            <Label htmlFor="remember-me" className="text-sm font-normal">Remember me</Label>
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={(checked) => setRememberMe(checked as boolean)} />
+                                <Label htmlFor="remember-me" className="text-sm font-normal">Remember me</Label>
+                            </div>
+                             <Link href="#" className="text-sm text-primary hover:underline">
+                                Forgot password?
+                            </Link>
                         </div>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4">
