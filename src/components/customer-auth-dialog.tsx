@@ -33,7 +33,8 @@ import {
     signInWithPopup,
     GoogleAuthProvider,
     linkWithCredential,
-    EmailAuthProvider
+    EmailAuthProvider,
+    sendPasswordResetEmail
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import type { User } from "@/lib/types";
@@ -50,6 +51,7 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const [rememberMe, setRememberMe] = useState(true);
     const { toast } = useToast();
     const { login } = useUser();
+    const { openForgotPasswordDialog } = useAuthDialog();
 
     const handlePasswordLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -104,7 +106,9 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                 <div className="space-y-2">
                      <div className="flex justify-between items-center">
                         <Label htmlFor="customer-password">Password</Label>
-                        <Link href="#" className="text-xs text-primary hover:underline">Forgot password?</Link>
+                        <Button type="button" variant="link" className="text-xs h-auto p-0" onClick={openForgotPasswordDialog}>
+                            Forgot password?
+                        </Button>
                      </div>
                     <div className="relative">
                         <Input id="customer-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -359,51 +363,113 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     );
 }
 
-// Main Dialog Component
-export function CustomerAuthDialog() {
-    const { authDialogState, closeDialog } = useAuthDialog();
+function ForgotPasswordForm({ onForgotPasswordSuccess }: { onForgotPasswordSuccess: () => void }) {
+    const [email, setEmail] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const { toast } = useToast();
+
+    const handlePasswordReset = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            await sendPasswordResetEmail(auth, email);
+            toast({
+                title: "Password Reset Email Sent",
+                description: "Please check your inbox to reset your password.",
+            });
+            onForgotPasswordSuccess();
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: "Could not send password reset email. Please try again.",
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     return (
-        <Dialog open={authDialogState.isOpen} onOpenChange={closeDialog}>
+        <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="reset-email">Email</Label>
+                <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="Enter your registered email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Send Reset Link
+            </Button>
+        </form>
+    );
+}
+
+// Main Dialog Component
+export function CustomerAuthDialog() {
+    const { authDialogState, closeDialog, openDialog } = useAuthDialog();
+
+    return (
+        <Dialog open={authDialogState.currentState !== 'closed'} onOpenChange={closeDialog}>
             <DialogContent className="sm:max-w-lg flex flex-col max-h-[90vh]">
-                 <DialogHeader>
-                    <DialogTitle className="text-center font-headline text-2xl">Account Access</DialogTitle>
-                </DialogHeader>
-                <Tabs defaultValue={authDialogState.initialTab} className="w-full flex flex-col min-h-0">
-                    <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
-                        <TabsTrigger value="login">Login</TabsTrigger>
-                        <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                    </TabsList>
-                    <div className="pt-4 flex-1 min-h-0">
-                        <TabsContent value="login">
-                             <Tabs defaultValue="personal" className="w-full">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="personal"><UserIcon className="mr-2 h-4 w-4"/> Personal</TabsTrigger>
-                                    <TabsTrigger value="corporate"><Building className="mr-2 h-4 w-4"/> Corporate</TabsTrigger>
-                                </TabsList>
-                                <div className="pt-4">
-                                <TabsContent value="personal">
-                                    <PersonalLoginForm onLoginSuccess={closeDialog} />
+                 {authDialogState.currentState === 'auth' ? (
+                     <>
+                        <DialogHeader>
+                            <DialogTitle className="text-center font-headline text-2xl">Account Access</DialogTitle>
+                        </DialogHeader>
+                        <Tabs defaultValue={authDialogState.initialTab} className="w-full flex flex-col min-h-0">
+                            <TabsList className="grid w-full grid-cols-2 flex-shrink-0">
+                                <TabsTrigger value="login">Login</TabsTrigger>
+                                <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                            </TabsList>
+                            <div className="pt-4 flex-1 min-h-0">
+                                <TabsContent value="login">
+                                    <Tabs defaultValue="personal" className="w-full">
+                                        <TabsList className="grid w-full grid-cols-2">
+                                            <TabsTrigger value="personal"><UserIcon className="mr-2 h-4 w-4"/> Personal</TabsTrigger>
+                                            <TabsTrigger value="corporate"><Building className="mr-2 h-4 w-4"/> Corporate</TabsTrigger>
+                                        </TabsList>
+                                        <div className="pt-4">
+                                        <TabsContent value="personal">
+                                            <PersonalLoginForm onLoginSuccess={closeDialog} />
+                                        </TabsContent>
+                                        <TabsContent value="corporate">
+                                            <AdminAuthProvider>
+                                                <CorporateLoginForm onLoginSuccess={closeDialog} />
+                                            </AdminAuthProvider>
+                                        </TabsContent>
+                                        </div>
+                                    </Tabs>
                                 </TabsContent>
-                                <TabsContent value="corporate">
-                                    <AdminAuthProvider>
-                                         <CorporateLoginForm onLoginSuccess={closeDialog} />
-                                    </AdminAuthProvider>
+                                <TabsContent value="signup" className="h-full flex flex-col">
+                                    <div className="text-center mb-4">
+                                        <h3 className="text-lg font-semibold">Create a Personal Account</h3>
+                                        <p className="text-sm text-muted-foreground">Join our community to shop, save favorites, and track orders.</p>
+                                    </div>
+                                    <ScrollArea className="flex-1 -mr-6 pr-6">
+                                        <SignupForm onSignupSuccess={closeDialog} />
+                                    </ScrollArea>
                                 </TabsContent>
-                                </div>
-                            </Tabs>
-                        </TabsContent>
-                        <TabsContent value="signup" className="h-full flex flex-col">
-                            <div className="text-center mb-4">
-                                <h3 className="text-lg font-semibold">Create a Personal Account</h3>
-                                <p className="text-sm text-muted-foreground">Join our community to shop, save favorites, and track orders.</p>
                             </div>
-                            <ScrollArea className="flex-1 -mr-6 pr-6">
-                                <SignupForm onSignupSuccess={closeDialog} />
-                            </ScrollArea>
-                        </TabsContent>
-                    </div>
-                </Tabs>
+                        </Tabs>
+                     </>
+                 ) : (
+                     <>
+                        <DialogHeader>
+                            <DialogTitle>Reset Your Password</DialogTitle>
+                            <DialogDescription>
+                                Enter your email address and we'll send you a link to get back into your account.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <ForgotPasswordForm onForgotPasswordSuccess={closeDialog} />
+                        <Button variant="link" size="sm" onClick={() => openDialog('login')}>Back to Login</Button>
+                     </>
+                 )}
             </DialogContent>
         </Dialog>
     );

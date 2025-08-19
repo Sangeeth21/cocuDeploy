@@ -1,17 +1,20 @@
 
-
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-type AuthDialogState = {
-    isOpen: boolean;
-    initialTab: 'login' | 'signup';
+type DialogTab = 'login' | 'signup';
+type DialogState = 'closed' | 'auth' | 'forgot_password';
+
+interface AuthDialogState {
+    currentState: DialogState;
+    initialTab: DialogTab;
 };
 
 type AuthDialogContextType = {
     authDialogState: AuthDialogState;
-    openDialog: (tab?: 'login' | 'signup') => void;
+    openDialog: (tab?: DialogTab) => void;
+    openForgotPasswordDialog: () => void;
     closeDialog: () => void;
 };
 
@@ -19,20 +22,24 @@ const AuthDialogContext = createContext<AuthDialogContextType | undefined>(undef
 
 export const AuthDialogProvider = ({ children }: { children: ReactNode }) => {
     const [authDialogState, setAuthDialogState] = useState<AuthDialogState>({
-        isOpen: false,
+        currentState: 'closed',
         initialTab: 'login',
     });
 
-    const openDialog = (tab: 'login' | 'signup' = 'login') => {
-        setAuthDialogState({ isOpen: true, initialTab: tab });
+    const openDialog = (tab: DialogTab = 'login') => {
+        setAuthDialogState({ currentState: 'auth', initialTab: tab });
+    };
+
+    const openForgotPasswordDialog = () => {
+        setAuthDialogState({ currentState: 'forgot_password', initialTab: 'login' });
     };
 
     const closeDialog = () => {
-        setAuthDialogState({ ...authDialogState, isOpen: false });
+        setAuthDialogState({ ...authDialogState, currentState: 'closed' });
     };
 
     return (
-        <AuthDialogContext.Provider value={{ authDialogState, openDialog, closeDialog }}>
+        <AuthDialogContext.Provider value={{ authDialogState, openDialog, openForgotPasswordDialog, closeDialog }}>
             {children}
         </AuthDialogContext.Provider>
     );
