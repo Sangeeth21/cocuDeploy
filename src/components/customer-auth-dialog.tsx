@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -9,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Info, Check, User as UserIcon, Building, Combine } from "lucide-react";
+import { Loader2, Eye, EyeOff, Info, Check, User as UserIcon, Building, Combine, Mail, KeyRound, ExternalLink } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -31,6 +30,10 @@ import {
     browserSessionPersistence,
     browserLocalPersistence,
     sendSignInLinkToEmail,
+    signInWithPopup,
+    GoogleAuthProvider,
+    linkWithCredential,
+    EmailAuthProvider
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import type { User } from "@/lib/types";
@@ -56,7 +59,7 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
             await setPersistence(auth, persistence);
 
             await signInWithEmailAndPassword(auth, email, password);
-            login();
+            login(); // This will trigger the context to update the user state
             toast({ title: "Login Successful", description: "Welcome back!" });
             onLoginSuccess();
         } catch (error: any) {
@@ -65,6 +68,31 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
             setIsLoading(false);
         }
     };
+    
+    const handleGoogleSignIn = async () => {
+        setIsLoading(true);
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+            // onAuthStateChanged will handle the rest
+            toast({ title: "Login Successful", description: "Welcome!" });
+            onLoginSuccess();
+        } catch (error: any) {
+            if (error.code === 'auth/account-exists-with-different-credential') {
+                 toast({
+                    variant: 'destructive',
+                    title: 'Account Exists',
+                    description: "An account already exists with this email. Please sign in with your password to link your Google account.",
+                    duration: 7000
+                });
+            } else {
+                toast({ variant: 'destructive', title: "Google Sign-In Failed", description: error.message });
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
 
     return (
         <div className="space-y-4">
@@ -91,9 +119,21 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign In
+                    Sign In with Email
                 </Button>
             </form>
+             <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+            </div>
+             <Button variant="outline" className="w-full" onClick={handleGoogleSignIn} disabled={isLoading}>
+                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 177.2 56.5L357 150.3C320.3 116.8 288.5 97.2 248 97.2c-83.3 0-151.8 68.3-151.8 158.8s68.5 158.8 151.8 158.8c99.1 0 134.3-84.3 138.6-124.6H248v-85.3h236.1c2.3 12.7 3.9 24.9 3.9 41.4z"></path></svg>}
+                Google
+            </Button>
         </div>
     );
 }
@@ -162,6 +202,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const [agreedToTerms, setAgreedToTerms] = useState(true);
     const [isPasswordFocused, setIsPasswordFocused] = useState(false);
     const { toast } = useToast();
+    const { login } = useUser();
 
     const passwordCheck = useMemo(() => {
         const checks = {
@@ -209,19 +250,31 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         
         setIsLoading(true);
         try {
-            const actionCodeSettings = {
-                url: window.location.href,
-                handleCodeInApp: true,
-            };
-            await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const firebaseUser = userCredential.user;
 
-            window.localStorage.setItem('emailForSignIn', email);
-            window.localStorage.setItem('pendingSignupDetails', JSON.stringify({name, password}));
+            // Create the user document in Firestore.
+            const newUser: User = {
+                id: firebaseUser.uid,
+                name,
+                email: firebaseUser.email || '',
+                role: 'Customer',
+                status: 'Active',
+                joinedDate: new Date().toISOString().split('T')[0],
+                avatar: 'https://placehold.co/40x40.png',
+                wishlist: [],
+                cart: [],
+                loyalty: {
+                    referralCode: `${name.split(' ')[0].toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+                    referrals: 0, referralsForNextTier: 5, walletBalance: 0,
+                    ordersToNextReward: 3, totalOrdersForReward: 3, loyaltyPoints: 0,
+                    loyaltyTier: 'Bronze', nextLoyaltyTier: 'Silver', pointsToNextTier: 7500,
+                }
+            };
+            await setDoc(doc(db, "users", firebaseUser.uid), newUser);
             
-            toast({
-                title: "Verification Email Sent",
-                description: "Please check your email and click the link to complete your registration.",
-            });
+            login(); // Update context
+            toast({ title: 'Account Created!', description: 'Welcome to Co & Cu!' });
             onSignupSuccess();
             
         } catch (error: any) {
