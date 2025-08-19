@@ -34,7 +34,8 @@ import {
     GoogleAuthProvider,
     linkWithCredential,
     EmailAuthProvider,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    fetchSignInMethodsForEmail,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import type { User } from "@/lib/types";
@@ -51,7 +52,7 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const [rememberMe, setRememberMe] = useState(true);
     const { toast } = useToast();
     const { login } = useUser();
-    const { openForgotPasswordDialog } = useAuthDialog();
+    const { openForgotPasswordDialog, closeDialog } = useAuthDialog();
 
     const handlePasswordLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -75,17 +76,19 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
         setIsLoading(true);
         const provider = new GoogleAuthProvider();
         try {
-            await signInWithPopup(auth, provider);
-            // onAuthStateChanged will handle the rest
+            const result = await signInWithPopup(auth, provider);
+            // onAuthStateChanged will handle the rest, including Firestore user creation if needed.
             toast({ title: "Login Successful", description: "Welcome!" });
             onLoginSuccess();
         } catch (error: any) {
-            if (error.code === 'auth/account-exists-with-different-credential') {
-                 toast({
+             if (error.code === 'auth/account-exists-with-different-credential') {
+                const email = error.customData.email;
+                const methods = await fetchSignInMethodsForEmail(auth, email);
+                toast({
                     variant: 'destructive',
                     title: 'Account Exists',
-                    description: "An account already exists with this email. Please sign in with your password to link your Google account.",
-                    duration: 7000
+                    description: `You already have an account with this email signed up via ${methods[0]}. Please sign in with that method to link your Google account.`,
+                    duration: 8000
                 });
             } else {
                 toast({ variant: 'destructive', title: "Google Sign-In Failed", description: error.message });
@@ -106,7 +109,7 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                 <div className="space-y-2">
                      <div className="flex justify-between items-center">
                         <Label htmlFor="customer-password">Password</Label>
-                        <Button type="button" variant="link" className="text-xs h-auto p-0" onClick={openForgotPasswordDialog}>
+                        <Button type="button" variant="link" className="text-xs h-auto p-0" onClick={() => { closeDialog(); openForgotPasswordDialog(); }}>
                             Forgot password?
                         </Button>
                      </div>
@@ -123,7 +126,7 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign In with Email
+                    Sign In
                 </Button>
             </form>
              <div className="relative">
@@ -205,6 +208,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(true);
     const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+    const [isAwaitingVerification, setIsAwaitingVerification] = useState(false);
     const { toast } = useToast();
     const { login } = useUser();
 
@@ -254,32 +258,23 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         
         setIsLoading(true);
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const firebaseUser = userCredential.user;
-
-            // Create the user document in Firestore.
-            const newUser: User = {
-                id: firebaseUser.uid,
-                name,
-                email: firebaseUser.email || '',
-                role: 'Customer',
-                status: 'Active',
-                joinedDate: new Date().toISOString().split('T')[0],
-                avatar: 'https://placehold.co/40x40.png',
-                wishlist: [],
-                cart: [],
-                loyalty: {
-                    referralCode: `${name.split(' ')[0].toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-                    referrals: 0, referralsForNextTier: 5, walletBalance: 0,
-                    ordersToNextReward: 3, totalOrdersForReward: 3, loyaltyPoints: 0,
-                    loyaltyTier: 'Bronze', nextLoyaltyTier: 'Silver', pointsToNextTier: 7500,
-                }
+            // This is the magic link flow.
+            const actionCodeSettings = {
+                url: window.location.href, // Redirect back to the same page
+                handleCodeInApp: true,
             };
-            await setDoc(doc(db, "users", firebaseUser.uid), newUser);
             
-            login(); // Update context
-            toast({ title: 'Account Created!', description: 'Welcome to Co & Cu!' });
-            onSignupSuccess();
+            await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+
+            // Store user details temporarily to use after email verification
+            window.localStorage.setItem('emailForSignIn', email);
+            window.localStorage.setItem('pendingSignupDetails', JSON.stringify({name, password}));
+
+            toast({
+                title: "Verification Email Sent",
+                description: "Please check your email and click the link to complete your registration.",
+            });
+            setIsAwaitingVerification(true);
             
         } catch (error: any) {
              toast({ variant: "destructive", title: "Signup Failed", description: error.message });
@@ -287,6 +282,19 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             setIsLoading(false);
         }
     };
+
+    if (isAwaitingVerification) {
+        return (
+            <div className="text-center py-8 space-y-4">
+                <Mail className="h-12 w-12 mx-auto text-primary" />
+                <h3 className="text-xl font-headline">Check Your Email</h3>
+                <p className="text-muted-foreground">
+                    We've sent a verification link to <span className="font-semibold text-foreground">{email}</span>. Click the link to complete your signup and sign in.
+                </p>
+                <Button variant="link" onClick={() => setIsAwaitingVerification(false)}>Back to Signup</Button>
+            </div>
+        )
+    }
     
     return (
         <form onSubmit={handleSignupSubmit} className="space-y-4">
@@ -357,7 +365,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Sign Up
+                Create Account
             </Button>
         </form>
     );
