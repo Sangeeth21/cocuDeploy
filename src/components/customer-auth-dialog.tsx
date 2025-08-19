@@ -210,6 +210,35 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const { toast } = useToast();
     const { login } = useUser();
 
+    const passwordCheck = useMemo(() => {
+        const checks = {
+            length: password.length >= 8,
+            uppercase: /[A-Z]/.test(password),
+            lowercase: /[a-z]/.test(password),
+            number: /[0-9]/.test(password),
+            specialChar: /[^A-Za-z0-9]/.test(password),
+        };
+        const strength = Object.values(checks).filter(Boolean).length;
+        return { checks, strength };
+    }, [password]);
+
+    const getStrengthColor = () => {
+        switch (passwordCheck.strength) {
+            case 0:
+            case 1:
+            case 2:
+                return 'bg-red-500'; // Weak
+            case 3:
+            case 4:
+                return 'bg-yellow-500'; // Medium
+            case 5:
+                return 'bg-green-500'; // Strong
+            default:
+                return 'bg-gray-200';
+        }
+    };
+
+
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -259,6 +288,32 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                         </Button>
                     </div>
                 </div>
+
+                {/* Password Strength Indicator */}
+                {password.length > 0 && (
+                     <div className="space-y-3 pt-1">
+                        <Progress value={passwordCheck.strength * 20} className={cn("h-2", getStrengthColor())} />
+                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                            {Object.entries(passwordCheck.checks).map(([key, value]) => (
+                                <li key={key} className={cn("flex items-center gap-2", value && "text-green-600")}>
+                                    <Check className={cn("h-3.5 w-3.5 transition-all", value ? "opacity-100" : "opacity-30")} />
+                                    <span>
+                                        {
+                                            {
+                                                length: 'At least 8 characters',
+                                                uppercase: 'One uppercase letter',
+                                                lowercase: 'One lowercase letter',
+                                                number: 'One number',
+                                                specialChar: 'One special character',
+                                            }[key]
+                                        }
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
                 <div className="space-y-2">
                     <Label htmlFor="customer-confirm-password">Confirm Password</Label>
                      <div className="relative">
@@ -274,7 +329,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                         I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
                     </Label>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
+                <Button type="submit" className="w-full" disabled={isLoading || passwordCheck.strength < 5}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Create Account
                 </Button>
