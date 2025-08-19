@@ -258,9 +258,8 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         
         setIsLoading(true);
         try {
-            // This is the magic link flow.
             const actionCodeSettings = {
-                url: window.location.href, // Redirect back to the same page
+                url: `${window.location.origin}`,
                 handleCodeInApp: true,
             };
             
