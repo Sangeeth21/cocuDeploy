@@ -1,8 +1,7 @@
 
-
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,10 +17,13 @@ import {
     setPersistence,
     browserLocalPersistence,
     browserSessionPersistence,
-    sendSignInLinkToEmail
+    sendSignInLinkToEmail,
+    isSignInWithEmailLink,
+    signInWithEmailLink
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
+import type { User } from "@/lib/types";
 
 export default function VendorLoginPage() {
     const [email, setEmail] = useState("");
@@ -33,6 +35,69 @@ export default function VendorLoginPage() {
     const { toast } = useToast();
     const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
     
+    // This effect will handle the magic link sign-in process
+    useEffect(() => {
+        const handleMagicLinkSignIn = async () => {
+            if (isSignInWithEmailLink(auth, window.location.href)) {
+                setIsLoading(true);
+                let emailFromStorage = window.localStorage.getItem('emailForSignIn');
+                if (!emailFromStorage) {
+                    // This can happen if the user opens the link on a different device/browser.
+                    emailFromStorage = window.prompt('Please provide your email for confirmation');
+                }
+                
+                if (!emailFromStorage) {
+                    toast({ variant: 'destructive', title: 'Could not complete sign-in.', description: 'Your email is required to finalize verification.'});
+                    setIsLoading(false);
+                    return;
+                }
+
+                try {
+                    const userCredential = await signInWithEmailLink(auth, emailFromStorage, window.location.href);
+                    
+                    const pendingDetailsRaw = window.localStorage.getItem('pendingSignupDetails');
+                    if (pendingDetailsRaw && userCredential.user) {
+                        // This is a new user completing signup.
+                        const { name, vendorType: vType } = JSON.parse(pendingDetailsRaw);
+                        const userDocRef = doc(db, "users", userCredential.user.uid);
+
+                        // Check if a document already exists, just in case.
+                        const docSnap = await getDoc(userDocRef);
+                        if (!docSnap.exists()) {
+                            const newUser: Omit<User, 'id'> = {
+                                name,
+                                email: userCredential.user.email || emailFromStorage,
+                                role: 'Vendor',
+                                vendorType: vType,
+                                status: 'Active',
+                                verificationStatus: 'pending',
+                                joinedDate: new Date().toISOString().split('T')[0],
+                                avatar: 'https://placehold.co/40x40.png'
+                            };
+                            await setDoc(userDocRef, newUser);
+                        }
+                        
+                        setVendorType(vType);
+                        setAsUnverified(); // They are new, so they are unverified.
+                    }
+
+                    window.localStorage.removeItem('emailForSignIn');
+                    window.localStorage.removeItem('pendingSignupDetails');
+                    
+                    toast({ title: 'Sign-in Successful!', description: 'You have been securely signed in.' });
+                    router.push("/vendor/dashboard");
+
+                } catch (error: any) {
+                    toast({ variant: 'destructive', title: "Sign-in Failed", description: "The link may be expired or invalid." });
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        handleMagicLinkSignIn();
+    }, [router, toast, setAsUnverified, setAsVerified, setVendorType]);
+
     const handlePasswordLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -56,7 +121,7 @@ export default function VendorLoginPage() {
                         setAsUnverified();
                     }
                     toast({ title: "Login Successful", description: "Redirecting to your dashboard." });
-                    router.push(`/vendor/both/dashboard`);
+                    router.push(`/vendor/dashboard`);
                 } else {
                      throw new Error("This account is not registered as a vendor.");
                 }
