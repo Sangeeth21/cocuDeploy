@@ -712,7 +712,8 @@ function ProgramTable({ programs, onEdit, onToggleStatus, onDelete }: { programs
         }
     }
 
-    const getRewardIcon = (type: Reward['type']) => {
+    const getRewardIcon = (type?: Reward['type']) => {
+        if (!type) return <Trophy className="h-4 w-4 text-muted-foreground" />;
         switch (type) {
             case 'wallet_credit': return <DollarSign className="h-4 w-4 text-muted-foreground" />;
             case 'discount_percent': return <Percent className="h-4 w-4 text-muted-foreground" />;
@@ -747,11 +748,11 @@ function ProgramTable({ programs, onEdit, onToggleStatus, onDelete }: { programs
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
-                                        {getRewardIcon(program.reward.referrer.type)}
+                                        {getRewardIcon(program.reward?.referrer?.type)}
                                         <span>
-                                            {program.reward.referrer.type === 'wallet_credit' && `₹${program.reward.referrer.value}`}
-                                            {(program.reward.referrer.type === 'discount_percent' || program.reward.referrer.type === 'commission_discount') && `${program.reward.referrer.value}%`}
-                                            {(program.reward.referrer.type === 'free_shipping') && `${program.reward.referrer.value} Orders`}
+                                            {program.reward?.referrer?.type === 'wallet_credit' && `₹${program.reward.referrer.value}`}
+                                            {(program.reward?.referrer?.type === 'discount_percent' || program.reward?.referrer?.type === 'commission_discount') && `${program.reward.referrer.value}%`}
+                                            {(program.reward?.referrer?.type === 'free_shipping') && `${program.reward.referrer.value} Orders`}
                                         </span>
                                     </div>
                                 </TableCell>
