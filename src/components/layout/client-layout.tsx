@@ -17,7 +17,9 @@ import { CorporateAuthDialog } from '@/components/corporate-auth-dialog';
 import { GiftyAngelChatbot } from '@/components/gifty-angel-chatbot';
 import type { MarketingCampaign } from '@/lib/types';
 import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
+import { isSignInWithEmailLink, signInWithEmailLink } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 
 function CampaignBanner() {
@@ -105,6 +107,7 @@ function CampaignPopup() {
 
 export function ClientLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { toast } = useToast();
   const isAdminRoute = pathname.startsWith('/admin');
   const isVendorRoute = pathname.startsWith('/vendor');
   const isCorporateRoute = pathname.startsWith('/corporate');
@@ -113,6 +116,30 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
   const showGiftyAngel = 
     pathname === '/' || 
     pathname.startsWith('/products');
+
+  useEffect(() => {
+    // This effect handles the magic link sign-in redirect.
+    if (isSignInWithEmailLink(auth, window.location.href)) {
+        let email = window.localStorage.getItem('emailForSignIn');
+        if (!email) {
+            email = window.prompt('Please provide your email for confirmation');
+        }
+        if (email) {
+            signInWithEmailLink(auth, email, window.location.href)
+                .then((result) => {
+                    window.localStorage.removeItem('emailForSignIn');
+                    toast({ title: 'Successfully signed in!', description: 'Welcome back.' });
+                })
+                .catch((error) => {
+                    toast({
+                        variant: 'destructive',
+                        title: 'Sign in failed',
+                        description: 'The sign-in link is invalid or has expired. Please try again.',
+                    });
+                });
+        }
+    }
+  }, [toast]);
 
   return (
     <>

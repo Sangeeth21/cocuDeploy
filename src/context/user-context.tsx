@@ -15,6 +15,7 @@ interface UserState {
     user: User | null;
     avatar: string;
     commissionRates: { [key: string]: { [key: string]: CommissionRule } } | null;
+    isLoading: boolean;
 }
 
 // Define the actions that can be performed
@@ -46,7 +47,6 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                     } else {
                         // This case handles the delay between user creation in Auth and Firestore doc creation
                         // We don't set user to null here, we just wait for the doc to be created.
-                        // The user will be set once the doc is available.
                         console.log("Waiting for user document to be created...");
                     }
                     setIsLoading(false);
@@ -93,13 +93,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     
     const avatar = user?.avatar || DEFAULT_AVATAR;
 
-    // Don't render children until we've checked the auth state
-    if (isLoading) {
-        return null; // Or a global loader
-    }
-
     return (
-        <UserContext.Provider value={{ isLoggedIn, user, avatar, login, logout, updateAvatar, setUser, commissionRates }}>
+        <UserContext.Provider value={{ isLoggedIn, user, avatar, login, logout, updateAvatar, setUser, commissionRates, isLoading }}>
             {children}
         </UserContext.Provider>
     );
