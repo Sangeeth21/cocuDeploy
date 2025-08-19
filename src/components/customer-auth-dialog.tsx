@@ -208,15 +208,12 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         
         setIsLoading(true);
         try {
-            // This is the correct flow for production.
-            // When the user clicks the link, the logic in ClientLayout will handle it.
             const actionCodeSettings = {
-                url: `${window.location.origin}/`,
+                url: `${window.location.origin}`,
                 handleCodeInApp: true,
             };
             await sendSignInLinkToEmail(auth, email, actionCodeSettings);
 
-            // Store email locally to use after redirect
             window.localStorage.setItem('emailForSignIn', email);
             window.localStorage.setItem('pendingSignupDetails', JSON.stringify({name, password}));
             
