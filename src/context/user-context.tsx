@@ -44,8 +44,10 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                     if (docSnap.exists()) {
                         setUser({ id: docSnap.id, ...docSnap.data() } as User);
                     } else {
-                         // This is where you might create a new user document in Firestore
-                        setUser(null);
+                        // This case handles the delay between user creation in Auth and Firestore doc creation
+                        // We don't set user to null here, we just wait for the doc to be created.
+                        // The user will be set once the doc is available.
+                        console.log("Waiting for user document to be created...");
                     }
                     setIsLoading(false);
                 });
@@ -85,7 +87,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const updateAvatar = (newAvatar: string) => {
         if (user) {
             setUser({ ...user, avatar: newAvatar });
-            // Here you would also update the avatar in Firestore
+            // The actual DB update happens in the component that calls this
         }
     };
     

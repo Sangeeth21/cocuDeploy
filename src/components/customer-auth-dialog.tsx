@@ -22,7 +22,7 @@ import { useUser } from "@/context/user-context";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { auth } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase";
 import { 
     fetchSignInMethodsForEmail, 
     sendSignInLinkToEmail,
@@ -31,6 +31,9 @@ import {
     isSignInWithEmailLink,
     signInWithEmailLink
 } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import type { User } from "@/lib/types";
+
 
 const actionCodeSettings = {
     url: 'https://9000-firebase-studio-1753597464708.cluster-l6vkdperq5ebaqo3qy4ksvoqom.cloudworkstations.dev/account',
@@ -201,6 +204,7 @@ function CorporateLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) 
 // SignupForm Component
 function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const [isLoading, setIsLoading] = useState(false);
+    const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -254,8 +258,30 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
 
         setIsLoading(true);
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
-            login();
+            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const firebaseUser = userCredential.user;
+
+            // Create user document in Firestore
+            const newUser: User = {
+                id: firebaseUser.uid,
+                name,
+                email: firebaseUser.email || '',
+                role: 'Customer',
+                status: 'Active',
+                joinedDate: new Date().toISOString().split('T')[0],
+                avatar: 'https://placehold.co/40x40.png',
+                wishlist: [],
+                cart: [],
+                 loyalty: {
+                    referralCode: `${name.split(' ')[0].toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
+                    referrals: 0, referralsForNextTier: 5, walletBalance: 0,
+                    ordersToNextReward: 3, totalOrdersForReward: 3, loyaltyPoints: 0,
+                    loyaltyTier: 'Bronze', nextLoyaltyTier: 'Silver', pointsToNextTier: 7500,
+                }
+            };
+            await setDoc(doc(db, "users", firebaseUser.uid), newUser);
+            
+            login(); // This will now be handled by onAuthStateChanged
             toast({ title: "Account Created!", description: "Welcome to Co & Cu!" });
             onSignupSuccess();
         } catch (error: any) {
@@ -274,7 +300,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="customer-name">Full Name</Label>
-                    <Input id="customer-name" placeholder="Your Name" required />
+                    <Input id="customer-name" placeholder="Your Name" required value={name} onChange={e => setName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="customer-signup-email">Email</Label>
@@ -299,7 +325,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                 </div>
 
                 {/* Password Strength Indicator */}
-                {isPasswordFocused && (
+                {isPasswordFocused && password.length > 0 && (
                      <div className="space-y-3 pt-1">
                         <Progress value={passwordCheck.strength * 20} className={cn("h-2", getStrengthColor())} />
                         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
