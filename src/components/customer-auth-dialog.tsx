@@ -207,6 +207,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(true);
+    const [isPasswordFocused, setIsPasswordFocused] = useState(false);
     const { toast } = useToast();
     const { login } = useUser();
 
@@ -282,7 +283,15 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                 <div className="space-y-2">
                     <Label htmlFor="customer-signup-password">Password</Label>
                     <div className="relative">
-                        <Input id="customer-signup-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                        <Input 
+                            id="customer-signup-password" 
+                            type={showPassword ? "text" : "password"} 
+                            required 
+                            value={password} 
+                            onChange={(e) => setPassword(e.target.value)}
+                            onFocus={() => setIsPasswordFocused(true)}
+                            onBlur={() => setIsPasswordFocused(false)}
+                        />
                         <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
                             {showPassword ? <EyeOff /> : <Eye />}
                         </Button>
@@ -290,7 +299,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                 </div>
 
                 {/* Password Strength Indicator */}
-                {password.length > 0 && (
+                {isPasswordFocused && password.length > 0 && (
                      <div className="space-y-3 pt-1">
                         <Progress value={passwordCheck.strength * 20} className={cn("h-2", getStrengthColor())} />
                         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
