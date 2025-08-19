@@ -85,7 +85,6 @@ export default function VendorSignupPage() {
     setIsLoading(true);
     try {
         const actionCodeSettings = {
-            // This is the crucial change. We use a consistent, whitelisted URL.
             url: `https://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}/vendor/login`,
             handleCodeInApp: true,
         };
