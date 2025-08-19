@@ -259,7 +259,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         setIsLoading(true);
         try {
             const actionCodeSettings = {
-                url: `${window.location.origin}/`,
+                url: `https://shopsphere-bsdmb.web.app/`, // Use the production URL
                 handleCodeInApp: true,
             };
             
