@@ -141,7 +141,7 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
                         const firebaseUser = userCredential.user;
                         
                         // Now we can be sure the user exists in Auth before creating the DB record
-                        const newUser: User = {
+                        const newUser: AppUser = {
                             id: firebaseUser.uid,
                             name,
                             email: firebaseUser.email || '',

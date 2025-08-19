@@ -277,7 +277,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             setIsAwaitingVerification(true);
             
         } catch (error: any) {
-             toast({ variant: "destructive", title: "Signup Failed", description: error.message });
+             toast({ variant: "destructive", title: "Signup Failed", description: error.code === 'auth/email-already-in-use' ? 'An account with this email already exists.' : error.message });
         } finally {
             setIsLoading(false);
         }
