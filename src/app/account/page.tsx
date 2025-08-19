@@ -79,7 +79,7 @@ function OrderDetailsDialog({ order }: { order: Order }) {
          <DialogContent className="sm:max-w-3xl">
             <DialogHeader>
                 <DialogTitle>Order Details: {order.id}</DialogTitle>
-                <DialogDescription>{new Date(order.date.toDate()).toLocaleString()}</DialogDescription>
+                <DialogDescription>{order.date ? new Date(order.date.toDate()).toLocaleString() : 'N/A'}</DialogDescription>
             </DialogHeader>
             <div className="grid gap-4 py-4">
                  <Table>

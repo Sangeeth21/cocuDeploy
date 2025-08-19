@@ -34,6 +34,9 @@ import { doc, setDoc } from "firebase/firestore";
 import type { User } from "@/lib/types";
 
 
+// This will be a mock. In a real app, this would involve a backend service.
+const MOCK_OTP = "123456";
+
 // LoginForm Component
 function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const [email, setEmail] = useState("");
@@ -148,6 +151,7 @@ function CorporateLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) 
 
 // SignupForm Component
 function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
+    const [step, setStep] = useState<'details' | 'verify'>('details');
     const [isLoading, setIsLoading] = useState(false);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
@@ -157,6 +161,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(true);
     const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+    const [otp, setOtp] = useState("");
     const { toast } = useToast();
     const { login } = useUser();
 
@@ -189,15 +194,33 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     };
 
 
-    const handleSignup = async (e: React.FormEvent) => {
+    const handleDetailsSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (password !== confirmPassword) {
+        if (!agreedToTerms) {
+            toast({ variant: "destructive", title: "Terms and Conditions required" });
+            return;
+        }
+         if (password !== confirmPassword) {
             toast({ variant: "destructive", title: "Passwords do not match" });
             return;
         }
-        if (!agreedToTerms) {
-            toast({ variant: "destructive", title: "Terms and Conditions required" });
+        if (passwordCheck.strength < 5) {
+            toast({ variant: "destructive", title: "Password is too weak" });
+            return;
+        }
+        setIsLoading(true);
+        // Simulate sending OTP
+        setTimeout(() => {
+            setIsLoading(false);
+            toast({ title: "Verification Code Sent", description: "A 6-digit code has been sent to your email." });
+            setStep("verify");
+        }, 1000);
+    };
+    
+    const handleVerifyAndCreateAccount = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (otp !== MOCK_OTP) {
+            toast({ variant: "destructive", title: "Invalid Code", description: "Please check the code and try again." });
             return;
         }
 
@@ -206,7 +229,6 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const firebaseUser = userCredential.user;
 
-            // Create user document in Firestore
             const newUser: User = {
                 id: firebaseUser.uid,
                 name,
@@ -226,12 +248,11 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             };
             await setDoc(doc(db, "users", firebaseUser.uid), newUser);
             
-            // This happens automatically via onAuthStateChanged, but we can be explicit
             login();
             toast({ title: "Account Created!", description: "Welcome to Co & Cu!" });
             onSignupSuccess();
         } catch (error: any) {
-            if (error.code === 'auth/email-already-in-use') {
+             if (error.code === 'auth/email-already-in-use') {
                  toast({ variant: "destructive", title: "Account already exists", description: "Please log in instead." });
             } else {
                  toast({ variant: "destructive", title: "Signup Failed", description: error.message });
@@ -240,81 +261,100 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             setIsLoading(false);
         }
     };
-    
-    return (
-        <div className="space-y-4">
-            <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="customer-name">Full Name</Label>
-                    <Input id="customer-name" placeholder="Your Name" required value={name} onChange={e => setName(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="customer-signup-email">Email</Label>
-                    <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="customer-signup-password">Password</Label>
-                    <div className="relative">
-                        <Input 
-                            id="customer-signup-password" 
-                            type={showPassword ? "text" : "password"} 
-                            required 
-                            value={password} 
-                            onChange={(e) => setPassword(e.target.value)}
-                            onFocus={() => setIsPasswordFocused(true)}
-                            onBlur={() => setIsPasswordFocused(false)}
-                        />
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                            {showPassword ? <EyeOff /> : <Eye />}
-                        </Button>
-                    </div>
-                </div>
 
-                {isPasswordFocused && password.length > 0 && (
-                     <div className="space-y-3 pt-1">
-                        <Progress value={passwordCheck.strength * 20} className={cn("h-2", getStrengthColor())} />
-                        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                            {Object.entries(passwordCheck.checks).map(([key, value]) => (
-                                <li key={key} className={cn("flex items-center gap-2", value && "text-green-600")}>
-                                    <Check className={cn("h-3.5 w-3.5 transition-all", value ? "opacity-100" : "opacity-30")} />
-                                    <span>
-                                        {
-                                            {
-                                                length: 'At least 8 characters',
-                                                uppercase: 'One uppercase letter',
-                                                lowercase: 'One lowercase letter',
-                                                number: 'One number',
-                                                specialChar: 'One special character',
-                                            }[key]
-                                        }
-                                    </span>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-
-                <div className="space-y-2">
-                    <Label htmlFor="customer-confirm-password">Confirm Password</Label>
-                     <div className="relative">
-                        <Input id="customer-confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                            {showConfirmPassword ? <EyeOff /> : <Eye />}
-                        </Button>
-                    </div>
+    if (step === 'verify') {
+        return (
+            <form onSubmit={handleVerifyAndCreateAccount} className="space-y-4">
+                <div className="text-center">
+                    <h3 className="text-lg font-semibold">Verify Your Email</h3>
+                    <p className="text-sm text-muted-foreground">Enter the 6-digit code sent to {email}.</p>
                 </div>
-                <div className="flex items-center space-x-2 pt-2">
-                    <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
-                    <Label htmlFor="customer-terms" className="font-normal text-xs text-muted-foreground leading-snug">
-                        I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
-                    </Label>
+                 <div className="space-y-2">
+                    <Label htmlFor="otp">Verification Code</Label>
+                    <Input id="otp" type="text" maxLength={6} placeholder="_ _ _ _ _ _" required value={otp} onChange={(e) => setOtp(e.target.value)} className="text-center text-2xl tracking-[0.5em]"/>
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading || passwordCheck.strength < 5}>
+                <p className="text-xs text-muted-foreground text-center">Didn't receive a code? <Button variant="link" size="sm" type="button" className="p-0 h-auto">Resend</Button></p>
+                 <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Create Account
                 </Button>
+                 <Button variant="ghost" onClick={() => setStep('details')} className="w-full">Back</Button>
             </form>
-        </div>
+        )
+    }
+    
+    return (
+        <form onSubmit={handleDetailsSubmit} className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="customer-name">Full Name</Label>
+                <Input id="customer-name" placeholder="Your Name" required value={name} onChange={e => setName(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="customer-signup-email">Email</Label>
+                <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="customer-signup-password">Password</Label>
+                <div className="relative">
+                    <Input 
+                        id="customer-signup-password" 
+                        type={showPassword ? "text" : "password"} 
+                        required 
+                        value={password} 
+                        onChange={(e) => setPassword(e.target.value)}
+                        onFocus={() => setIsPasswordFocused(true)}
+                        onBlur={() => setIsPasswordFocused(false)}
+                    />
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                        {showPassword ? <EyeOff /> : <Eye />}
+                    </Button>
+                </div>
+            </div>
+
+            {isPasswordFocused && password.length > 0 && (
+                    <div className="space-y-3 pt-1">
+                    <Progress value={passwordCheck.strength * 20} className={cn("h-2", getStrengthColor())} />
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {Object.entries(passwordCheck.checks).map(([key, value]) => (
+                            <li key={key} className={cn("flex items-center gap-2", value && "text-green-600")}>
+                                <Check className={cn("h-3.5 w-3.5 transition-all", value ? "opacity-100" : "opacity-30")} />
+                                <span>
+                                    {
+                                        {
+                                            length: 'At least 8 characters',
+                                            uppercase: 'One uppercase letter',
+                                            lowercase: 'One lowercase letter',
+                                            number: 'One number',
+                                            specialChar: 'One special character',
+                                        }[key]
+                                    }
+                                </span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
+
+            <div className="space-y-2">
+                <Label htmlFor="customer-confirm-password">Confirm Password</Label>
+                    <div className="relative">
+                    <Input id="customer-confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                    <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+                        {showConfirmPassword ? <EyeOff /> : <Eye />}
+                    </Button>
+                </div>
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+                <Checkbox id="customer-terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
+                <Label htmlFor="customer-terms" className="font-normal text-xs text-muted-foreground leading-snug">
+                    I agree to the Co & Cu <Link href="#" className="font-medium text-primary hover:underline">Terms</Link> and <Link href="#" className="font-medium text-primary hover:underline">Privacy Policy</Link>.
+                </Label>
+            </div>
+            <Button type="submit" className="w-full" disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Continue to Verification
+            </Button>
+        </form>
     );
 }
 

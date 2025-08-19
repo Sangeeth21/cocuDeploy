@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, User, Building, Combine, Eye, EyeOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { auth, db } from "@/lib/firebase";
-import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { useVerification } from "@/context/vendor-verification-context";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
@@ -24,7 +24,7 @@ import type { User as VendorUser } from "@/lib/types";
 const MOCK_OTP = "123456";
 
 export default function VendorSignupPage() {
-  const [step, setStep] = useState<"details" | "verify" | "type" | "verified">("details");
+  const [step, setStep] = useState<"details" | "verify" | "type">("details");
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -155,7 +155,6 @@ export default function VendorSignupPage() {
                         <CardDescription>Create your account to start selling</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        {/* Name, Email, Phone, Password Fields as before */}
                         <div className="space-y-2">
                             <Label htmlFor="name">Full Name or Business Name</Label>
                             <Input id="name" type="text" placeholder="e.g. Timeless Co." required value={name} onChange={e => setName(e.target.value)} />
