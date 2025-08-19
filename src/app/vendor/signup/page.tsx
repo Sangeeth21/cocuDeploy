@@ -10,98 +10,31 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Info, Check, User, Building, Combine } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { Loader2, Info, Check, User, Building, Combine } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { auth } from "@/lib/firebase";
+import { createUserWithEmailAndPassword, sendSignInLinkToEmail } from "firebase/auth";
 
-const MOCK_EMAIL_OTP = "123456";
-const MOCK_PHONE_OTP = "654321";
+const actionCodeSettings = {
+    url: typeof window !== 'undefined' ? `${window.location.origin}/vendor/verify` : 'http://localhost:3000/vendor/verify',
+    handleCodeInApp: true,
+};
 
 export default function VendorSignupPage() {
-  const [step, setStep] = useState<"details" | "type" | "verify">("details");
+  const [step, setStep] = useState<"details" | "type" | "magic-link-sent">("details");
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
+  const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState({ score: 0, label: '', color: '' });
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [vendorType, setVendorType] = useState<"personalized" | "corporate" | "both">();
-  
-  const [emailOtp, setEmailOtp] = useState("");
-  const [phoneOtp, setPhoneOtp] = useState("");
-
-  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
-  const [passwordCriteria, setPasswordCriteria] = useState({
-    length: false,
-    uppercase: false,
-    number: false,
-    specialChar: false,
-  });
 
   const router = useRouter();
   const { toast } = useToast();
 
-  useEffect(() => {
-    const checkPasswordStrength = (pass: string) => {
-        let score = 0;
-        const newCriteria = {
-            length: pass.length >= 8,
-            uppercase: /[A-Z]/.test(pass),
-            number: /[0-9]/.test(pass),
-            specialChar: /[^A-Za-z0-9]/.test(pass),
-        };
-        setPasswordCriteria(newCriteria);
-        
-        if (newCriteria.length) score++;
-        if (newCriteria.uppercase) score++;
-        if (newCriteria.number) score++;
-        if (newCriteria.specialChar) score++;
-        
-        if (score < 2) {
-            setPasswordStrength({ score, label: 'Weak', color: 'bg-destructive' });
-        } else if (score < 4) {
-             setPasswordStrength({ score, label: 'Medium', color: 'bg-yellow-500' });
-        } else {
-             setPasswordStrength({ score, label: 'Strong', color: 'bg-green-500' });
-        }
-    }
-    checkPasswordStrength(password);
-  }, [password]);
-
   const handleDetailsSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (email === 'test-vendor@example.com') {
-        toast({
-            title: "Signup Bypassed for Testing",
-            description: "Please log in with the unverified vendor account to test the verification flow.",
-        });
-        router.push('/vendor/login');
-        return;
-    }
-
-    if (password !== confirmPassword) {
-        toast({
-            variant: "destructive",
-            title: "Passwords do not match",
-            description: "Please re-enter your passwords.",
-        });
-        return;
-    }
-     if (passwordStrength.score < 4) {
-        toast({
-            variant: "destructive",
-            title: "Password is too weak",
-            description: "Please choose a stronger password that meets all the criteria.",
-        });
-        return;
-    }
-     if (!agreedToTerms) {
+    if (!agreedToTerms) {
         toast({
             variant: "destructive",
             title: "Terms and Conditions",
@@ -112,7 +45,7 @@ export default function VendorSignupPage() {
     setStep("type");
   };
 
-  const handleTypeSubmit = (e: React.FormEvent) => {
+  const handleTypeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
      if (!vendorType) {
         toast({
@@ -122,45 +55,22 @@ export default function VendorSignupPage() {
         return;
     }
     setIsLoading(true);
-    setTimeout(() => {
-      toast({
-        title: "Verification Required",
-        description: "We've sent verification codes to your email and phone.",
-      });
-      setStep("verify");
-      setIsLoading(false);
-    }, 1500);
-  };
-  
-  const handleVerificationSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    if (emailOtp === MOCK_EMAIL_OTP && phoneOtp === MOCK_PHONE_OTP) {
-       setTimeout(() => {
-          toast({
-            title: "Account Created!",
-            description: "Your account has been successfully verified.",
-          });
-          router.push("/vendor/verify");
-       }, 1500);
-    } else {
+    try {
+        // In a real app, you would first create the user document in Firestore with their details
+        // before sending the sign-in link, to store their vendorType, name, etc.
+        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+        window.localStorage.setItem('emailForSignIn', email); // To pre-fill email on the landing device
+        setStep('magic-link-sent');
+    } catch (error: any) {
         toast({
             variant: "destructive",
-            title: "Verification Failed",
-            description: "Invalid verification codes. Please try again.",
+            title: "Signup Failed",
+            description: error.code === 'auth/email-already-in-use' ? 'An account with this email already exists.' : error.message
         });
+    } finally {
         setIsLoading(false);
     }
-  }
-
-  const renderCriteriaCheck = (label: string, isMet: boolean) => (
-    <div className={cn("flex items-center text-xs gap-2", isMet ? "text-green-600" : "text-muted-foreground")}>
-        <Check className="h-3 w-3" />
-        <span>{label}</span>
-    </div>
-  );
-
+  };
 
   return (
     <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
@@ -169,12 +79,12 @@ export default function VendorSignupPage() {
           <form onSubmit={handleDetailsSubmit}>
             <CardHeader className="text-center">
               <CardTitle className="text-3xl font-headline">Become a Vendor</CardTitle>
-              <CardDescription>Create your vendor account to start selling</CardDescription>
+              <CardDescription>Create your account to start selling</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name or Business Name</Label>
-                <Input id="name" type="text" placeholder="e.g. Timeless Co." required />
+                <Input id="name" type="text" placeholder="e.g. Timeless Co." required value={name} onChange={e => setName(e.target.value)} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
@@ -184,74 +94,6 @@ export default function VendorSignupPage() {
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input id="phone" type="tel" placeholder="+1 (555) 555-5555" required value={phone} onChange={(e) => setPhone(e.target.value)} />
               </div>
-              <div className="space-y-2">
-                 <div className="flex items-center gap-2">
-                    <Label htmlFor="password">Password</Label>
-                    <TooltipProvider delayDuration={0}>
-                         <Tooltip>
-                            <TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
-                            <TooltipContent>
-                                <ul className="list-disc pl-4 text-xs space-y-1">
-                                    <li>At least 8 characters long</li>
-                                    <li>Contains an uppercase letter</li>
-                                    <li>Contains a number</li>
-                                    <li>Contains a special character</li>
-                                </ul>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <div className="relative">
-                    <Input 
-                        id="password" 
-                        type={showPassword ? "text" : "password"} 
-                        required 
-                        value={password} 
-                        onChange={(e) => setPassword(e.target.value)} 
-                        onFocus={() => setIsPasswordFocused(true)}
-                        onBlur={() => setIsPasswordFocused(false)}
-                    />
-                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                        {showPassword ? <EyeOff /> : <Eye />}
-                    </Button>
-                </div>
-                 {isPasswordFocused && (
-                    <div className="space-y-2">
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 p-2 rounded-md bg-muted/50">
-                            {renderCriteriaCheck("8+ characters", passwordCriteria.length)}
-                            {renderCriteriaCheck("1 uppercase", passwordCriteria.uppercase)}
-                            {renderCriteriaCheck("1 number", passwordCriteria.number)}
-                            {renderCriteriaCheck("1 special char", passwordCriteria.specialChar)}
-                        </div>
-                        {password.length > 0 && (
-                            <div className="flex items-center gap-2">
-                                <Progress value={passwordStrength.score * 25} className={cn("h-1 w-full", passwordStrength.color)} />
-                                <span className="text-xs text-muted-foreground flex-shrink-0">{passwordStrength.label}</span>
-                            </div>
-                        )}
-                    </div>
-                 )}
-              </div>
-               <div className="space-y-2">
-                 <div className="flex items-center gap-2">
-                    <Label htmlFor="confirm-password">Confirm Password</Label>
-                     <TooltipProvider delayDuration={0}>
-                         <Tooltip>
-                            <TooltipTrigger type="button"><Info className="h-3 w-3 text-muted-foreground"/></TooltipTrigger>
-                            <TooltipContent>
-                                <p className="text-xs">Passwords must match.</p>
-                            </TooltipContent>
-                        </Tooltip>
-                    </TooltipProvider>
-                </div>
-                <div className="relative">
-                    <Input id="confirm-password" type={showConfirmPassword ? "text" : "password"} required value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                     <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                        {showConfirmPassword ? <EyeOff /> : <Eye />}
-                    </Button>
-                </div>
-              </div>
-              
                <div className="space-y-3 pt-2">
                     <div className="flex items-start space-x-2">
                         <Checkbox id="terms" checked={agreedToTerms} onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)} />
@@ -307,7 +149,7 @@ export default function VendorSignupPage() {
                                 <RadioGroupItem value="both" id="type-both" />
                                  <div className="flex items-center gap-2">
                                     <Combine className="h-5 w-5" />
-                                    <span className="font-semibold">Both</span>
+                                    <span className="font-semibold">Both Channels</span>
                                 </div>
                             </div>
                             <p className="text-xs text-muted-foreground mt-2 ml-8">Engage in both personalized retail and corporate bulk sales.</p>
@@ -318,36 +160,17 @@ export default function VendorSignupPage() {
                     <Button variant="ghost" onClick={() => setStep('details')}>Back</Button>
                     <Button type="submit" disabled={isLoading}>
                          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Next
+                        Create Account
                     </Button>
                 </CardFooter>
             </form>
         ) : (
-          <form onSubmit={handleVerificationSubmit}>
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-headline">Verify Your Account</CardTitle>
-              <CardDescription>Enter the codes sent to your email and phone.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email-otp">Email Verification Code</Label>
-                <Input id="email-otp" type="text" placeholder="123456" required value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)} />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phone-otp">Phone Verification Code</Label>
-                <Input id="phone-otp" type="text" placeholder="654321" required value={phoneOtp} onChange={(e) => setPhoneOtp(e.target.value)} />
-              </div>
+             <CardContent className="pt-6 text-center space-y-4">
+                <Check className="h-12 w-12 mx-auto text-green-500" />
+                <h3 className="text-lg font-semibold">Check your email to finish signing up!</h3>
+                <p className="text-muted-foreground">A confirmation link has been sent to <strong>{email}</strong>. Check your inbox and click the link to sign in and begin verification.</p>
+                <Button variant="link" onClick={() => setStep('details')}>Use a different email</Button>
             </CardContent>
-            <CardFooter className="flex flex-col gap-4">
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                 Verify and Continue
-              </Button>
-              <Button variant="link" size="sm" onClick={() => setStep('type')} className="w-full text-muted-foreground">
-                Back to previous step
-              </Button>
-            </CardFooter>
-          </form>
         )}
       </Card>
     </div>

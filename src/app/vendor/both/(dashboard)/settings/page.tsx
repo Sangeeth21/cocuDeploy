@@ -15,6 +15,8 @@ import { useState } from "react";
 import { useUser } from "@/context/user-context";
 import { updateVendorProfile } from "../../../actions";
 import { Loader2 } from "lucide-react";
+import { EmailAuthProvider, updatePassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
 
 export default function VendorSettingsPage() {
     const { toast } = useToast();
@@ -24,6 +26,15 @@ export default function VendorSettingsPage() {
     const [storeName, setStoreName] = useState(user?.name || "Timeless Co.");
     const [storeBio, setStoreBio] = useState(user?.bio || "Specializing in handcrafted leather goods and timeless accessories. Committed to quality and craftsmanship.");
     const [isSaving, setIsSaving] = useState(false);
+    
+    // Password state
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+    
+    const hasPasswordProvider = auth.currentUser?.providerData.some(
+        (p) => p.providerId === EmailAuthProvider.PROVIDER_ID
+    );
 
     const handleSaveChanges = async () => {
         if (!user) {
@@ -46,6 +57,28 @@ export default function VendorSettingsPage() {
             });
         }
         setIsSaving(false);
+    }
+    
+    const handleSetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newPassword !== confirmPassword) {
+            toast({ variant: 'destructive', title: 'Passwords do not match.'});
+            return;
+        }
+        if (!auth.currentUser) return;
+
+        setIsUpdatingPassword(true);
+        try {
+            await updatePassword(auth.currentUser, newPassword);
+            toast({ title: 'Password Set!', description: 'You can now sign in using your password.'});
+            setNewPassword('');
+            setConfirmPassword('');
+             // You may need to refresh user state here to update hasPasswordProvider
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: 'Error', description: error.message });
+        } finally {
+            setIsUpdatingPassword(false);
+        }
     }
     
     const handleSaveAutoReply = () => {
@@ -80,6 +113,38 @@ export default function VendorSettingsPage() {
                             {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Save Changes
                          </Button>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Security</CardTitle>
+                        <CardDescription>Manage your account security settings.</CardDescription>
+                    </CardHeader>
+                     <CardContent>
+                        {!hasPasswordProvider ? (
+                            <form onSubmit={handleSetPassword} className="space-y-4">
+                                <p className="text-sm text-muted-foreground">
+                                    You are currently signing in with a magic link. You can set a password for your account for an alternative way to log in.
+                                </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="new-password">New Password</Label>
+                                        <Input id="new-password" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="confirm-password">Confirm New Password</Label>
+                                        <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required />
+                                    </div>
+                                </div>
+                                <Button type="submit" disabled={isUpdatingPassword}>
+                                     {isUpdatingPassword && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                     Set Password
+                                </Button>
+                            </form>
+                        ) : (
+                           <p className="text-sm text-muted-foreground">You can manage your password on the main account settings page. For now, this is a placeholder.</p>
+                        )}
                     </CardContent>
                 </Card>
 
