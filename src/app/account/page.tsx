@@ -1181,7 +1181,7 @@ export default function AccountPage() {
                         </form>
                     ) : (
                          <form onSubmit={handleSetPassword} className="space-y-4">
-                            <p className="text-sm text-muted-foreground">You currently sign in with a magic link. You can set a password for your account for an alternative way to log in.</p>
+                            <p className="text-sm text-muted-foreground">You currently sign in with a social provider or magic link. You can set a password for your account for an alternative way to log in.</p>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="new-password-set">New Password</Label>
