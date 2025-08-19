@@ -36,7 +36,7 @@ import type { User } from "@/lib/types";
 
 
 const actionCodeSettings = {
-    url: 'https://9000-firebase-studio-1753597464708.cluster-l6vkdperq5ebaqo3qy4ksvoqom.cloudworkstations.dev/account',
+    url: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
     handleCodeInApp: true,
 };
 
@@ -324,7 +324,6 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                     </div>
                 </div>
 
-                {/* Password Strength Indicator */}
                 {isPasswordFocused && password.length > 0 && (
                      <div className="space-y-3 pt-1">
                         <Progress value={passwordCheck.strength * 20} className={cn("h-2", getStrengthColor())} />

@@ -19,7 +19,7 @@ import {
 } from "firebase/auth";
 
 const actionCodeSettings = {
-    url: 'https://9000-firebase-studio-1753597464708.cluster-l6vkdperq5ebaqo3qy4ksvoqom.cloudworkstations.dev/vendor/both/dashboard',
+    url: typeof window !== 'undefined' ? `${window.location.origin}/vendor/login` : 'http://localhost:3000/vendor/login',
     handleCodeInApp: true,
 };
 
@@ -33,28 +33,6 @@ export default function VendorLoginPage() {
     const { toast } = useToast();
     const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
     
-    // This effect should ideally be in a wrapper component, but for this scope,
-    // we place it here to handle the magic link sign-in redirect.
-    useEffect(() => {
-        if (auth.isSignInWithEmailLink(window.location.href)) {
-            let emailFromStorage = window.localStorage.getItem('emailForSignIn');
-            if (!emailFromStorage) {
-                // User opened the link on a different device. To prevent session fixation
-                // attacks, ask for the email again.
-                emailFromStorage = window.prompt('Please provide your email for confirmation');
-            }
-            if(emailFromStorage) {
-                // The logic to sign in the user would go here.
-                // For this example, we'll simulate a successful login.
-                setAsVerified(); // Assuming all magic link users are verified for this flow
-                setVendorType('both'); // Defaulting to 'both'
-                toast({ title: "Magic Link Login Successful", description: "Welcome back!" });
-                router.push('/vendor/both/dashboard');
-            }
-        }
-    }, [router, setAsVerified, setVendorType, toast]);
-
-
     const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
