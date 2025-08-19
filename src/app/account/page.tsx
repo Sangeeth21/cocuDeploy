@@ -41,8 +41,9 @@ import { Progress } from "@/components/ui/progress";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { ProductFilterSidebar } from "@/components/product-filter-sidebar";
 import { collection, onSnapshot, query, where, addDoc, serverTimestamp, doc, updateDoc, orderBy, getDocs, limit } from "firebase/firestore";
-import { db, storage } from "@/lib/firebase";
+import { db, storage, auth } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { updatePassword as firebaseUpdatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
 
 
 type Attachment = {
@@ -509,12 +510,50 @@ export default function AccountPage() {
     });
   }
   
-  const handleUpdatePassword = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleUpdatePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    toast({
-        title: "Password Updated",
-        description: "Your password has been changed.",
-    });
+    const formData = new FormData(e.currentTarget);
+    const currentPassword = formData.get('current-password') as string;
+    const newPassword = formData.get('new-password') as string;
+
+    const currentUser = auth.currentUser;
+    if (!currentUser || !currentUser.email) {
+        toast({ variant: 'destructive', title: 'Error', description: 'No authenticated user found.' });
+        return;
+    }
+    
+    // Re-authenticate if the user logged in via magic link
+    const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
+    
+    try {
+        await reauthenticateWithCredential(currentUser, credential);
+        await firebaseUpdatePassword(currentUser, newPassword);
+        toast({ title: "Password Updated", description: "Your password has been changed." });
+        (e.target as HTMLFormElement).reset();
+    } catch (error) {
+        console.error("Password update error:", error);
+        toast({ variant: 'destructive', title: 'Password Update Failed', description: 'Your current password may be incorrect.' });
+    }
+  }
+
+  const handleSetPassword = async (e: React.FormEvent<HTMLFormElement>) => {
+     e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const newPassword = formData.get('new-password') as string;
+    const currentUser = auth.currentUser;
+
+    if (!currentUser) return;
+    
+    try {
+        await firebaseUpdatePassword(currentUser, newPassword);
+        toast({ title: "Password Set", description: "You can now log in with your new password." });
+        (e.target as HTMLFormElement).reset();
+        // Force re-render to hide the form
+        setUser(prev => prev ? { ...prev } : null);
+    } catch (error) {
+         console.error("Password set error:", error);
+         toast({ variant: 'destructive', title: 'Error', description: 'Could not set your password.' });
+    }
   }
   
   const handleNotificationSettingsChange = () => {
@@ -678,6 +717,10 @@ export default function AccountPage() {
     const loyaltyProgress = ((user?.loyalty?.totalOrdersForReward ?? 3) - (user?.loyalty?.ordersToNextReward ?? 1)) / (user?.loyalty?.totalOrdersForReward ?? 3) * 100;
     const referralsProgress = (user?.loyalty?.referrals ?? 0) / (user?.loyalty?.referralsForNextTier ?? 5) * 100;
     const loyaltyPointsProgress = (user?.loyalty?.loyaltyPoints ?? 0) / (user?.loyalty?.pointsToNextTier ?? 7500) * 100;
+    
+    const hasPasswordProvider = auth.currentUser?.providerData.some(
+        (provider) => provider.providerId === EmailAuthProvider.PROVIDER_ID
+    );
 
     if (!isLoggedIn || !user) {
         return (
@@ -1076,7 +1119,7 @@ export default function AccountPage() {
           <Card>
             <CardHeader>
               <CardTitle className="font-headline">Account Settings</CardTitle>
-              <CardDescription>Manage your account preferences and contact information.</CardDescription>
+              <CardDescription>Manage your account preferences and security.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
                 <div>
@@ -1087,51 +1130,46 @@ export default function AccountPage() {
                         <Label className="font-medium">Email Address</Label>
                         <div className="text-sm text-muted-foreground">{user.email} <Badge variant="secondary" className="ml-2">Verified</Badge></div>
                       </div>
-                      <Dialog open={isEmailVerifyOpen} onOpenChange={setIsEmailVerifyOpen}>
-                        <DialogTrigger asChild><Button variant="outline">Change</Button></DialogTrigger>
-                        <DialogContent>
-                            <DialogHeader>
-                                <DialogTitle>Change Email Address</DialogTitle>
-                                <DialogDescription>A verification code will be sent to your new email.</DialogDescription>
-                            </DialogHeader>
-                            <div className="space-y-4 py-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="new-email">New Email</Label>
-                                    <Input id="new-email" type="email" placeholder="new.email@example.com" />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="email-otp">Verification Code</Label>
-                                    <Input id="email-otp" placeholder="Enter 6-digit code" />
-                                </div>
-                            </div>
-                            <DialogFooter>
-                                <Button onClick={() => handleVerifySubmit('email')}>Verify & Update</Button>
-                            </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
                     </div>
                   </div>
                 </div>
                 <Separator/>
-                <div>
-                    <h3 className="font-semibold mb-4 text-lg">Change Password</h3>
-                    <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="current-password">Current Password</Label>
-                            <Input id="current-password" type="password" />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div>
+                    <h3 className="font-semibold mb-4 text-lg">Security</h3>
+                    {hasPasswordProvider ? (
+                        <form onSubmit={handleUpdatePassword} className="space-y-4">
                              <div className="space-y-2">
-                                <Label htmlFor="new-password">New Password</Label>
-                                <Input id="new-password" type="password" />
+                                <Label htmlFor="current-password">Current Password</Label>
+                                <Input id="current-password" type="password" name="current-password" required />
                             </div>
-                             <div className="space-y-2">
-                                <Label htmlFor="confirm-password">Confirm New Password</Label>
-                                <Input id="confirm-password" type="password" />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-password">New Password</Label>
+                                    <Input id="new-password" type="password" name="new-password" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirm-password">Confirm New Password</Label>
+                                    <Input id="confirm-password" type="password" required />
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                    <Button className="mt-4" onClick={handleUpdatePassword}>Update Password</Button>
+                            <Button type="submit">Update Password</Button>
+                        </form>
+                    ) : (
+                         <form onSubmit={handleSetPassword} className="space-y-4">
+                            <p className="text-sm text-muted-foreground">You currently sign in with a magic link. You can set a password for your account for an alternative way to log in.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="new-password-set">New Password</Label>
+                                    <Input id="new-password-set" type="password" name="new-password" required />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="confirm-password-set">Confirm New Password</Label>
+                                    <Input id="confirm-password-set" type="password" required />
+                                </div>
+                            </div>
+                             <Button type="submit">Set Password</Button>
+                        </form>
+                    )}
                 </div>
                 <Separator/>
                  <div>

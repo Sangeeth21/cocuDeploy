@@ -4,7 +4,8 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import type { User, CommissionRule } from '@/lib/types';
 import { doc, onSnapshot, getDoc, collection } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, auth } from '@/lib/firebase';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
 
 const DEFAULT_AVATAR = 'https://placehold.co/40x40.png';
 
@@ -32,42 +33,51 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [user, setUser] = useState<User | null>(null);
     const [commissionRates, setCommissionRates] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-
-    // Fetch user and commission data
     useEffect(() => {
+        const unsubscribeAuth = onAuthStateChanged(auth, (firebaseUser) => {
+            if (firebaseUser) {
+                setIsLoggedIn(true);
+                const userDocRef = doc(db, 'users', firebaseUser.uid);
+                const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        setUser({ id: docSnap.id, ...docSnap.data() } as User);
+                    } else {
+                         // This is where you might create a new user document in Firestore
+                        setUser(null);
+                    }
+                    setIsLoading(false);
+                });
+                return () => unsubscribeUser();
+            } else {
+                setIsLoggedIn(false);
+                setUser(null);
+                setIsLoading(false);
+            }
+        });
+
         const commissionRef = doc(db, 'commissions', 'categories');
         const unsubCommissions = onSnapshot(commissionRef, (docSnap) => {
             if (docSnap.exists()) {
                 setCommissionRates(docSnap.data() as any);
             }
         });
-
-        if (isLoggedIn) {
-            const userId = "USR001"; // This would come from an auth session in a real app
-            const unsubUser = onSnapshot(doc(db, "users", userId), (doc) => {
-                if (doc.exists()) {
-                    setUser({ id: doc.id, ...doc.data() } as User);
-                } else {
-                    console.error("User not found in Firestore!");
-                    setUser(null);
-                }
-            });
-            return () => {
-                unsubUser();
-                unsubCommissions();
-            };
-        } else {
-            setUser(null);
-            return () => unsubCommissions();
+        
+        return () => {
+            unsubscribeAuth();
+            unsubCommissions();
         }
-    }, [isLoggedIn]);
+    }, []);
 
     const login = () => {
+        // This is now handled by onAuthStateChanged, but we keep the function
+        // in case we need to trigger manual state updates.
         setIsLoggedIn(true);
     };
 
-    const logout = () => {
+    const logout = async () => {
+        await signOut(auth);
         setIsLoggedIn(false);
         setUser(null);
     };
@@ -80,6 +90,11 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     };
     
     const avatar = user?.avatar || DEFAULT_AVATAR;
+
+    // Don't render children until we've checked the auth state
+    if (isLoading) {
+        return null; // Or a global loader
+    }
 
     return (
         <UserContext.Provider value={{ isLoggedIn, user, avatar, login, logout, updateAvatar, setUser, commissionRates }}>

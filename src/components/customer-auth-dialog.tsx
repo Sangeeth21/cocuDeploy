@@ -22,57 +22,126 @@ import { useUser } from "@/context/user-context";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { auth } from "@/lib/firebase";
+import { 
+    fetchSignInMethodsForEmail, 
+    sendSignInLinkToEmail,
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword,
+    isSignInWithEmailLink,
+    signInWithEmailLink
+} from "firebase/auth";
+
+const actionCodeSettings = {
+    url: typeof window !== 'undefined' ? `${window.location.origin}/account` : 'http://localhost:3000/account',
+    handleCodeInApp: true,
+};
 
 
 // LoginForm Component
 function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
+    const [step, setStep] = useState<'email' | 'password' | 'magic-link-sent'>('email');
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
-    const router = useRouter();
+    const [isLoading, setIsLoading] = useState(false);
     const { toast } = useToast();
     const { login } = useUser();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        if (email === "customer@example.com" && password === "customerpass") {
+        setIsLoading(true);
+        try {
+            const methods = await fetchSignInMethodsForEmail(auth, email);
+            if (methods.includes('password')) {
+                setStep('password');
+            } else {
+                 // If no password method, offer magic link or signup
+                 handleSendMagicLink();
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Error", description: error.message });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    const handlePasswordLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
             login();
             toast({ title: "Login Successful", description: "Welcome back!" });
             onLoginSuccess();
-            router.refresh();
-        } else {
-            toast({
-                variant: "destructive",
-                title: "Login Failed",
-                description: "Invalid email or password.",
-            });
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Login Failed", description: "Invalid password." });
+        } finally {
+            setIsLoading(false);
         }
     };
 
+    const handleSendMagicLink = async () => {
+        setIsLoading(true);
+        try {
+            await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+            window.localStorage.setItem('emailForSignIn', email);
+            setStep('magic-link-sent');
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: "Error", description: error.message });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    if (step === 'magic-link-sent') {
+        return (
+            <div className="text-center space-y-4">
+                <Check className="h-12 w-12 mx-auto text-green-500" />
+                <h3 className="text-lg font-semibold">Check your email</h3>
+                <p className="text-muted-foreground">A sign-in link has been sent to <strong>{email}</strong>. Check your inbox and click the link to sign in.</p>
+                <Button variant="link" onClick={() => setStep('email')}>Back</Button>
+            </div>
+        )
+    }
+
     return (
         <div className="space-y-4">
-            <form onSubmit={handleLogin} className="space-y-4">
-                <div className="space-y-2">
-                    <Label htmlFor="customer-email">Email</Label>
-                    <Input id="customer-email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor="customer-password">Password</Label>
-                        <Link href="#" className="text-sm text-primary hover:underline">
-                            Forgot your password?
-                        </Link>
+            {step === 'email' && (
+                 <form onSubmit={handleEmailSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="customer-email">Email</Label>
+                        <Input id="customer-email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
                     </div>
-                    <div className="relative">
-                        <Input id="customer-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
-                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                            {showPassword ? <EyeOff /> : <Eye />}
-                        </Button>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Continue
+                    </Button>
+                </form>
+            )}
+
+            {step === 'password' && (
+                <form onSubmit={handlePasswordLogin} className="space-y-4">
+                    <div className="space-y-2">
+                         <div className="flex justify-between items-center">
+                            <Label htmlFor="customer-password">Password</Label>
+                            <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setStep('email')}>Use different email</Button>
+                         </div>
+                        <div className="relative">
+                            <Input id="customer-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                            <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                                {showPassword ? <EyeOff /> : <Eye />}
+                            </Button>
+                        </div>
                     </div>
-                </div>
-                <Button type="submit" className="w-full">Sign In</Button>
-            </form>
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Sign In
+                    </Button>
+                    <Separator />
+                    <Button variant="outline" className="w-full" onClick={handleSendMagicLink}>Email me a sign-in link</Button>
+                </form>
+            )}
         </div>
     );
 }
@@ -131,93 +200,48 @@ function CorporateLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) 
 
 // SignupForm Component
 function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
-    const [step, setStep] = useState<"details" | "verify">("details");
     const [isLoading, setIsLoading] = useState(false);
     const [email, setEmail] = useState("");
-    const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(true);
-    const [emailOtp, setEmailOtp] = useState("");
-    const [phoneOtp, setPhoneOtp] = useState("");
-    const router = useRouter();
     const { toast } = useToast();
     const { login } = useUser();
 
-    const handleDetailsSubmit = (e: React.FormEvent) => {
+    const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault();
 
         if (password !== confirmPassword) {
-            toast({
-                variant: "destructive",
-                title: "Passwords do not match",
-                description: "Please ensure your passwords match.",
-            });
+            toast({ variant: "destructive", title: "Passwords do not match" });
             return;
         }
-
         if (!agreedToTerms) {
-            toast({
-                variant: "destructive",
-                title: "Terms and Conditions",
-                description: "You must agree to the terms to sign up.",
-            });
+            toast({ variant: "destructive", title: "Terms and Conditions required" });
             return;
         }
 
         setIsLoading(true);
-        setTimeout(() => {
-          toast({ title: "Verification Required", description: "Codes sent to your email & phone." });
-          setStep("verify");
-          setIsLoading(false);
-        }, 1500);
+        try {
+            await createUserWithEmailAndPassword(auth, email, password);
+            login();
+            toast({ title: "Account Created!", description: "Welcome to Co & Cu!" });
+            onSignupSuccess();
+        } catch (error: any) {
+            if (error.code === 'auth/email-already-in-use') {
+                 toast({ variant: "destructive", title: "Account already exists", description: "Please log in instead." });
+            } else {
+                 toast({ variant: "destructive", title: "Signup Failed", description: error.message });
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
-    
-    const handleVerificationSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        // Mock OTP check
-        setTimeout(() => {
-           login();
-           toast({ title: "Account Created!", description: "Welcome to Co & Cu!" });
-           onSignupSuccess();
-           router.refresh();
-        }, 1500);
-    };
-
-    if (step === 'verify') {
-        return (
-            <form onSubmit={handleVerificationSubmit} className="space-y-4">
-                 <div className="text-center">
-                    <h3 className="text-lg font-semibold">Verify Your Account</h3>
-                    <p className="text-sm text-muted-foreground">Enter the codes sent to your email and phone.</p>
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="email-otp">Email Verification Code</Label>
-                    <Input id="email-otp" required value={emailOtp} onChange={(e) => setEmailOtp(e.target.value)} />
-                </div>
-                 {phone && (
-                    <div className="space-y-2">
-                        <Label htmlFor="phone-otp">Phone Verification Code</Label>
-                        <Input id="phone-otp" required value={phoneOtp} onChange={e => setPhoneOtp(e.target.value)} />
-                    </div>
-                 )}
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                     Verify and Sign Up
-                </Button>
-                <Button variant="link" size="sm" onClick={() => setStep('details')} className="w-full text-muted-foreground">
-                    Back to previous step
-                </Button>
-            </form>
-        );
-    }
     
     return (
         <div className="space-y-4">
-            <form onSubmit={handleDetailsSubmit} className="space-y-4">
+            <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
                     <Label htmlFor="customer-name">Full Name</Label>
                     <Input id="customer-name" placeholder="Your Name" required />
@@ -225,21 +249,6 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                 <div className="space-y-2">
                     <Label htmlFor="customer-signup-email">Email</Label>
                     <Input id="customer-signup-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="customer-signup-phone">Phone Number</Label>
-                    <Input 
-                        id="customer-signup-phone" 
-                        type="tel" 
-                        value={phone} 
-                        onChange={(e) => {
-                            const numericValue = e.target.value.replace(/\D/g, '');
-                            if (numericValue.length <= 10) {
-                                setPhone(numericValue);
-                            }
-                        }} 
-                        maxLength={10}
-                    />
                 </div>
                 <div className="space-y-2">
                     <Label htmlFor="customer-signup-password">Password</Label>
