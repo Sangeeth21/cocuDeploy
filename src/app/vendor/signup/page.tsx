@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo } from "react";
@@ -85,7 +86,7 @@ export default function VendorSignupPage() {
     setIsLoading(true);
     try {
         const actionCodeSettings = {
-            url: `${window.location.origin}/vendor/login`, // Redirect back to login after verification
+            url: window.location.href.replace('signup', 'login'), // Redirect back to login after verification
             handleCodeInApp: true,
         };
 

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -209,7 +210,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
         setIsLoading(true);
         try {
             const actionCodeSettings = {
-                url: `${window.location.origin}`,
+                url: window.location.href,
                 handleCodeInApp: true,
             };
             await sendSignInLinkToEmail(auth, email, actionCodeSettings);
