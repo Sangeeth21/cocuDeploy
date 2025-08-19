@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
@@ -427,12 +428,8 @@ export default function AccountPage() {
     if (!isLoggedIn || !currentUserId) return;
 
     // Fetch user-specific data
-    const userDocRef = doc(db, "users", currentUserId);
-    const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-        if (doc.exists()) {
-            setUser({ id: doc.id, ...doc.data() } as UserType);
-        }
-    });
+    // The user object is now primarily managed by the useUser context,
+    // which already has an onSnapshot listener.
     
     // Fetch addresses
     const addressesQuery = query(collection(db, `users/${currentUserId}/addresses`));
@@ -473,13 +470,12 @@ export default function AccountPage() {
     });
 
     return () => {
-        unsubscribeUser();
         unsubscribeAddresses();
         unsubscribePayments();
         unsubscribeOrders();
         unsubscribeNotifs();
     };
-  }, [isLoggedIn, currentUserId, setUser]);
+  }, [isLoggedIn, currentUserId]);
 
 
   // Handle navigation from product page to start a chat
@@ -1153,7 +1149,14 @@ export default function AccountPage() {
                     <div className="flex items-center justify-between p-4 border rounded-lg">
                       <div>
                         <Label className="font-medium">Email Address</Label>
-                        <div className="text-sm text-muted-foreground">{user.email} <Badge variant="secondary" className="ml-2">Verified</Badge></div>
+                        <div className="text-sm text-muted-foreground flex items-center gap-2">
+                          {user.email} 
+                          {user.emailVerified ? (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-200">Verified</Badge>
+                          ) : (
+                            <Badge variant="destructive">Not Verified</Badge>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

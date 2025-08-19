@@ -43,7 +43,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
                 const userDocRef = doc(db, 'users', firebaseUser.uid);
                 const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
                     if (docSnap.exists()) {
-                        setUser({ id: docSnap.id, ...docSnap.data() } as User);
+                         const firestoreUser = docSnap.data() as Omit<User, 'id'>;
+                         // Combine auth data with firestore data for a complete user object
+                        setUser({ 
+                            id: docSnap.id, 
+                            ...firestoreUser,
+                            // Always take these from the source of truth: Firebase Auth
+                            email: firebaseUser.email || firestoreUser.email, 
+                            emailVerified: firebaseUser.emailVerified 
+                        } as User);
                     } else {
                         // This case handles the delay between user creation in Auth and Firestore doc creation
                         // We don't set user to null here, we just wait for the doc to be created.

@@ -1,4 +1,5 @@
 
+
 export type CustomizationValue = {
   text: string;
   fontFamily: string;
@@ -201,6 +202,7 @@ export type User = {
     username?: string;
     bio?: string;
     email: string;
+    emailVerified?: boolean; // Now included from Auth
     phone?: string;
     role: 'Customer' | 'Vendor' | 'Admin';
     status: 'Active' | 'Suspended';
