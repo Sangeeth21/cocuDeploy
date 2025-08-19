@@ -447,8 +447,8 @@ function CreateProgramDialog({
     const [type, setType] = useState('');
 
     // Step 2: Condition
-    const [referralCondition, setReferralCondition] = useState<ReferralCondition>({ count: 1, requiredActions: ['signup'] });
-    const [milestoneCondition, setMilestoneCondition] = useState<MilestoneCondition>({ orders: 1, amount: 0 });
+    const [referralCondition, setReferralCondition] = useState<ReferralCondition>({ type: 'referral', count: 1, requiredActions: ['signup'] });
+    const [milestoneCondition, setMilestoneCondition] = useState<MilestoneCondition>({ type: 'milestone', orders: 1, amount: 0 });
 
     // Step 3: Reward
     const [referrerReward, setReferrerReward] = useState<Partial<Reward>>({ type: 'discount_percent', value: 10 });
@@ -463,8 +463,8 @@ function CreateProgramDialog({
         setPlatform('both');
         setTargetAudience('');
         setType('');
-        setReferralCondition({ count: 1, requiredActions: ['signup'] });
-        setMilestoneCondition({ orders: 1, amount: 0 });
+        setReferralCondition({ type: 'referral', count: 1, requiredActions: ['signup'] });
+        setMilestoneCondition({ type: 'milestone', orders: 1, amount: 0 });
         setReferrerReward({ type: 'discount_percent', value: 10 });
         setReferredUserReward({ type: 'discount_percent', value: 5 });
         setDate(undefined);

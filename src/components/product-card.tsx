@@ -43,6 +43,58 @@ const getFinalPrice = (product: DisplayProduct, commissionRates: any, applicable
     return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
 }
 
+export function TinyProductCard({ product }: ProductCardProps) {
+    const { commissionRates } = useUser();
+    const [promotions, setPromotions] = useState<Program[]>([]);
+
+    useEffect(() => {
+        const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+        const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+            const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+            const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === 'personalized' || p.platform === 'both'));
+            setPromotions(relevantPromos);
+        });
+        return () => unsubscribe();
+    }, []);
+
+    const applicableDiscount = useMemo(() => {
+        return promotions.find(p => p.type === 'discount');
+    }, [promotions]);
+
+    const priceDetails = getFinalPrice(product, commissionRates, applicableDiscount);
+
+    return (
+        <Card className="overflow-hidden h-full">
+            <Link href={`/products/${product.id}`} className="block group h-full flex flex-col relative">
+                 <div className="relative aspect-square w-full overflow-hidden">
+                     <Image
+                        src={product.imageUrl}
+                        alt={product.name}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                    />
+                     {priceDetails.hasDiscount && (
+                        <Badge variant="destructive" className="absolute top-2 left-2 text-[10px] h-auto px-1.5 py-0">
+                            <Tag className="mr-1 h-3 w-3"/> {priceDetails.discountValue}% OFF
+                        </Badge>
+                     )}
+                </div>
+                 <div className="p-2 flex-grow flex flex-col justify-between">
+                    <p className="text-xs font-medium leading-tight line-clamp-2">{product.name}</p>
+                     <div>
+                        <div className="flex items-baseline gap-1.5 mt-1">
+                            <p className="text-sm font-bold">${priceDetails.final.toFixed(2)}</p>
+                             {priceDetails.hasDiscount && (
+                                <p className="text-xs text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </Link>
+        </Card>
+    )
+}
+
 export function ProductCard({ product }: ProductCardProps) {
   const { toast } = useToast();
   const { addToCart } = useCart();
