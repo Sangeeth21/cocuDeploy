@@ -16,7 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy, Share2, Twitter, Facebook, Instagram, Linkedin, User as UserIcon, Wand2 } from "lucide-react";
+import { Camera, Home, CreditCard, PlusCircle, MoreVertical, Trash2, Edit, CheckCircle, Eye, EyeOff, MessageSquare, Search, Send, Paperclip, X, File as FileIcon, ImageIcon, Download, AlertTriangle, ShieldCheck, BellRing, Package, ShoppingCart, Truck, Gift, Copy, Gem, Trophy, Share2, Twitter, Facebook, Instagram, Linkedin, User as UserIcon, Wand2, ListChecks, ShieldAlert, User } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Image from "next/image";
 import Link from "next/link";
-import type { Message, Conversation, DisplayProduct, Order, User, OrderItem, Notification } from "@/lib/types";
+import type { Message, Conversation, DisplayProduct, Order, User as UserType, OrderItem, Notification } from "@/lib/types";
 import { useUser } from "@/context/user-context";
 import { useWishlist } from "@/context/wishlist-context";
 import { ProductCard } from "@/components/product-card";
@@ -430,7 +430,7 @@ export default function AccountPage() {
     const userDocRef = doc(db, "users", currentUserId);
     const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
         if (doc.exists()) {
-            setUser({ id: doc.id, ...doc.data() } as User);
+            setUser({ id: doc.id, ...doc.data() } as UserType);
         }
     });
     
