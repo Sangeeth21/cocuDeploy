@@ -75,7 +75,6 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<DisplayProduct | null>(null);
   const [vendor, setVendor] = useState<User | null>(null);
   const [similarProducts, setSimilarProducts] = useState<DisplayProduct[]>([]);
-  const [vendorProducts, setVendorProducts] = useState<DisplayProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [commissionRule, setCommissionRule] = useState<CommissionRule | null>(null);
   const [promotions, setPromotions] = useState<Program[]>([]);
@@ -126,6 +125,7 @@ export default function ProductDetailPage() {
             
             const activePromos = promotionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
             const relevantPromos = activePromos.filter(p => {
+                if (p.platform === 'corporate') return false; // Exclude corporate-only promos
                 if(p.productScope === 'all') return true;
                 // Add logic for 'selected' products if needed
                 return false;
@@ -134,6 +134,7 @@ export default function ProductDetailPage() {
 
             const allPublicCoupons = couponsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Coupon));
             const relevantCoupons = allPublicCoupons.filter(c => {
+                if (c.platform === 'corporate') return false; // Exclude corporate-only coupons
                 if (c.scope === 'all') return true;
                 if (c.scope === 'category' && c.applicableCategories?.includes(productData.category)) return true;
                 if (c.scope === 'product' && c.applicableProducts?.includes(productData.id)) return true;
@@ -413,9 +414,12 @@ export default function ProductDetailPage() {
             {(promotions.length > 0 || publicCoupons.length > 0) && (
                 <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
                     <h3 className="font-semibold flex items-center gap-2"><Tag className="h-4 w-4 text-primary"/> Available Offers</h3>
-                    {promotions.map(promo => (
-                        <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}: Get {promo.reward.value}{promo.reward.type === 'discount_percent' ? '%' : '₹'} off</p>
-                    ))}
+                    {promotions.map(promo => {
+                        if (promo.type === 'discount' || promo.type === 'Sale') {
+                            return <p key={promo.id} className="text-sm flex items-center gap-2"><CheckCircle className="h-4 w-4 text-green-500" /> {promo.name}</p>
+                        }
+                        return null;
+                    })}
                     {publicCoupons.map(coupon => (
                          <p key={coupon.id} className="text-sm flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-500" />
@@ -463,12 +467,14 @@ export default function ProductDetailPage() {
       <div className="my-12 space-y-12">
         <ReviewsPreview productId={product.id} />
         <FrequentlyBoughtTogetherPreview currentProduct={product} />
-        <div>
-          <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
-          </div>
-        </div>
+        {similarProducts.length > 0 && (
+            <div>
+                <h2 className="text-2xl font-bold font-headline mb-6">Similar Products</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {similarProducts.map(p => <ProductCard key={p.id} product={p} />)}
+                </div>
+            </div>
+        )}
       </div>
       
     </div>
@@ -476,4 +482,3 @@ export default function ProductDetailPage() {
     </Dialog>
   );
 }
-

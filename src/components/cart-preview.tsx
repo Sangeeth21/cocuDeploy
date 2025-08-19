@@ -25,7 +25,7 @@ export function CartPreview() {
         const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
         const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
             const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
-            const relevantPromos = activePromos.filter(p => p.productScope === 'all');
+            const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === 'personalized' || p.platform === 'both'));
             setPromotions(relevantPromos);
         });
         return () => unsubscribe();

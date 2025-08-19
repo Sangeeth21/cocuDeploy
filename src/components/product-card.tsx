@@ -54,13 +54,9 @@ export function ProductCard({ product }: ProductCardProps) {
 
   useEffect(() => {
     const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
-     const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+    const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
         const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
-        const relevantPromos = activePromos.filter(p => {
-            if (p.productScope === 'all') return true;
-            // Add logic for 'selected' products if needed
-            return false;
-        });
+        const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === 'personalized' || p.platform === 'both'));
         setPromotions(relevantPromos);
     });
     return () => unsubscribe();
