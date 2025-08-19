@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,26 +9,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Eye, EyeOff, Store, Check } from "lucide-react";
+import { Loader2, Eye, EyeOff, Store } from "lucide-react";
 import { useVerification } from "@/context/vendor-verification-context";
 import { auth, db } from "@/lib/firebase";
 import { 
-    sendSignInLinkToEmail,
     signInWithEmailAndPassword, 
+    setPersistence,
+    browserLocalPersistence,
+    browserSessionPersistence,
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-
-const actionCodeSettings = {
-    url: typeof window !== 'undefined' ? `${window.location.origin}/vendor/login` : 'http://localhost:3000/vendor/login',
-    handleCodeInApp: true,
-};
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function VendorLoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true);
     const router = useRouter();
     const { toast } = useToast();
     const { setAsVerified, setAsUnverified, setVendorType } = useVerification();
@@ -37,6 +35,9 @@ export default function VendorLoginPage() {
         e.preventDefault();
         setIsLoading(true);
         try {
+            const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+            await setPersistence(auth, persistence);
+
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             
@@ -68,37 +69,6 @@ export default function VendorLoginPage() {
         }
     };
 
-    const handleSendMagicLink = async () => {
-        if (!email) {
-            toast({ variant: 'destructive', title: 'Email required', description: 'Please enter your email to receive a sign-in link.' });
-            return;
-        }
-        setIsLoading(true);
-        try {
-            await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-            window.localStorage.setItem('emailForSignIn', email);
-            setIsMagicLinkSent(true);
-        } catch (error: any) {
-             toast({ variant: 'destructive', title: "Error", description: error.message });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    if (isMagicLinkSent) {
-         return (
-             <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
-                <Card className="w-full max-w-md">
-                    <CardContent className="pt-6 text-center space-y-4">
-                        <Check className="h-12 w-12 mx-auto text-green-500" />
-                        <h3 className="text-lg font-semibold">Check your email</h3>
-                        <p className="text-muted-foreground">A sign-in link has been sent to <strong>{email}</strong>. Check your inbox and click the link to sign in.</p>
-                        <Button variant="link" onClick={() => setIsMagicLinkSent(false)}>Back to login</Button>
-                    </CardContent>
-                </Card>
-            </div>
-         )
-    }
 
     return (
         <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
@@ -127,14 +97,16 @@ export default function VendorLoginPage() {
                                 </Button>
                             </div>
                         </div>
+                        <div className="flex items-center space-x-2">
+                            <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={(checked) => setRememberMe(checked as boolean)} />
+                            <Label htmlFor="remember-me" className="text-sm font-normal">Remember me</Label>
+                        </div>
                     </CardContent>
                     <CardFooter className="flex flex-col gap-4">
                         <Button type="submit" className="w-full" disabled={isLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Sign In
                         </Button>
-                        <Separator />
-                        <Button variant="outline" className="w-full" onClick={handleSendMagicLink}>Email me a sign-in link</Button>
                         <p className="text-sm text-center text-muted-foreground">
                             New vendor?{" "}
                             <Link href="/vendor/signup" className="font-semibold text-primary hover:underline">

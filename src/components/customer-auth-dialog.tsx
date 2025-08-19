@@ -24,20 +24,14 @@ import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { auth, db } from "@/lib/firebase";
 import { 
-    sendSignInLinkToEmail,
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword,
-    isSignInWithEmailLink,
-    signInWithEmailLink
+    setPersistence,
+    browserSessionPersistence,
+    browserLocalPersistence,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import type { User } from "@/lib/types";
-
-
-const actionCodeSettings = {
-    url: typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000',
-    handleCodeInApp: true,
-};
 
 
 // LoginForm Component
@@ -46,7 +40,7 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
+    const [rememberMe, setRememberMe] = useState(true);
     const { toast } = useToast();
     const { login } = useUser();
 
@@ -54,6 +48,9 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
         e.preventDefault();
         setIsLoading(true);
         try {
+            const persistence = rememberMe ? browserLocalPersistence : browserSessionPersistence;
+            await setPersistence(auth, persistence);
+
             await signInWithEmailAndPassword(auth, email, password);
             login();
             toast({ title: "Login Successful", description: "Welcome back!" });
@@ -65,34 +62,6 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
         }
     };
 
-    const handleSendMagicLink = async () => {
-        if (!email) {
-            toast({ variant: 'destructive', title: 'Email required', description: 'Please enter your email to receive a sign-in link.' });
-            return;
-        }
-        setIsLoading(true);
-        try {
-            await sendSignInLinkToEmail(auth, email, actionCodeSettings);
-            window.localStorage.setItem('emailForSignIn', email);
-            setIsMagicLinkSent(true);
-        } catch (error: any) {
-             toast({ variant: 'destructive', title: "Error", description: error.message });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
-    if (isMagicLinkSent) {
-        return (
-            <div className="text-center space-y-4">
-                <Check className="h-12 w-12 mx-auto text-green-500" />
-                <h3 className="text-lg font-semibold">Check your email</h3>
-                <p className="text-muted-foreground">A sign-in link has been sent to <strong>{email}</strong>. Check your inbox and click the link to sign in.</p>
-                <Button variant="link" onClick={() => setIsMagicLinkSent(false)}>Back</Button>
-            </div>
-        )
-    }
-
     return (
         <div className="space-y-4">
              <form onSubmit={handlePasswordLogin} className="space-y-4">
@@ -103,6 +72,7 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                 <div className="space-y-2">
                      <div className="flex justify-between items-center">
                         <Label htmlFor="customer-password">Password</Label>
+                        <Link href="#" className="text-xs text-primary hover:underline">Forgot password?</Link>
                      </div>
                     <div className="relative">
                         <Input id="customer-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
@@ -111,12 +81,14 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                         </Button>
                     </div>
                 </div>
+                 <div className="flex items-center space-x-2">
+                    <Checkbox id="remember-me" checked={rememberMe} onCheckedChange={(checked) => setRememberMe(checked as boolean)} />
+                    <Label htmlFor="remember-me" className="text-sm font-normal">Remember me</Label>
+                </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
                     {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
                 </Button>
-                <Separator />
-                <Button variant="outline" className="w-full" onClick={handleSendMagicLink} type="button">Email me a sign-in link</Button>
             </form>
         </div>
     );
@@ -254,7 +226,8 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             };
             await setDoc(doc(db, "users", firebaseUser.uid), newUser);
             
-            login(); // This will now be handled by onAuthStateChanged
+            // This happens automatically via onAuthStateChanged, but we can be explicit
+            login();
             toast({ title: "Account Created!", description: "Welcome to Co & Cu!" });
             onSignupSuccess();
         } catch (error: any) {
