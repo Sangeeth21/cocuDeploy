@@ -125,7 +125,6 @@ export function ClientLayout({ children }: { children: React.ReactNode }) {
             let email = window.localStorage.getItem('emailForSignIn');
             if (!email) {
                 // This can happen if the user opens the link on a different browser.
-                // We will handle this case more gracefully later if needed.
                 email = window.prompt('Please provide your email for confirmation');
             }
 

@@ -7,7 +7,7 @@ import {
 import './globals.css';
 import { cn } from '@/lib/utils';
 import { Providers } from '@/components/layout/providers';
-import { ClientLayout } from '@/components/layout/client-layout';
+import { ClientLayout } from './client-layout';
 import { Toaster } from '@/components/ui/toaster';
 import { CustomerAuthDialog } from '@/components/customer-auth-dialog';
 import { PageLoader } from '@/components/page-loader';

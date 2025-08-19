@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -71,7 +70,7 @@ export function Header() {
                             pathname === link.href ? "text-primary" : "text-foreground"
                         )}
                     >
-                        {link.icon && <link.icon className="h-5 w-5" />}
+                        
                         {link.label}
                     </Link>
                     ))}
@@ -96,7 +95,7 @@ export function Header() {
                     pathname === link.href ? "text-primary" : "text-muted-foreground"
                 )}
                 >
-                {link.icon && <link.icon className="h-4 w-4" />}
+                
                 {link.label}
                 </Link>
             ))}
