@@ -19,7 +19,7 @@ import {
 } from "firebase/auth";
 
 const actionCodeSettings = {
-    url: typeof window !== 'undefined' ? `${window.location.origin}/vendor/both/dashboard` : 'http://localhost:3000/vendor/both/dashboard',
+    url: 'https://9000-firebase-studio-1753597464708.cluster-l6vkdperq5ebaqo3qy4ksvoqom.cloudworkstations.dev/vendor/both/dashboard',
     handleCodeInApp: true,
 };
 

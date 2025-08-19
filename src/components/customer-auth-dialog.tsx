@@ -33,7 +33,7 @@ import {
 } from "firebase/auth";
 
 const actionCodeSettings = {
-    url: typeof window !== 'undefined' ? `${window.location.origin}/account` : 'http://localhost:3000/account',
+    url: 'https://9000-firebase-studio-1753597464708.cluster-l6vkdperq5ebaqo3qy4ksvoqom.cloudworkstations.dev/account',
     handleCodeInApp: true,
 };
 
@@ -299,7 +299,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
                 </div>
 
                 {/* Password Strength Indicator */}
-                {isPasswordFocused && password.length > 0 && (
+                {isPasswordFocused && (
                      <div className="space-y-3 pt-1">
                         <Progress value={passwordCheck.strength * 20} className={cn("h-2", getStrengthColor())} />
                         <ul className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
