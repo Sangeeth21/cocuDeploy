@@ -24,7 +24,6 @@ import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { auth, db } from "@/lib/firebase";
 import { 
-    fetchSignInMethodsForEmail, 
     sendSignInLinkToEmail,
     signInWithEmailAndPassword, 
     createUserWithEmailAndPassword,
@@ -43,32 +42,14 @@ const actionCodeSettings = {
 
 // LoginForm Component
 function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
-    const [step, setStep] = useState<'email' | 'password' | 'magic-link-sent'>('email');
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [isMagicLinkSent, setIsMagicLinkSent] = useState(false);
     const { toast } = useToast();
     const { login } = useUser();
 
-    const handleEmailSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            const methods = await fetchSignInMethodsForEmail(auth, email);
-            if (methods.includes('password')) {
-                setStep('password');
-            } else {
-                 // If no password method, offer magic link or signup
-                 handleSendMagicLink();
-            }
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: "Error", description: error.message });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
     const handlePasswordLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
@@ -78,18 +59,22 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
             toast({ title: "Login Successful", description: "Welcome back!" });
             onLoginSuccess();
         } catch (error: any) {
-            toast({ variant: 'destructive', title: "Login Failed", description: "Invalid password." });
+            toast({ variant: 'destructive', title: "Login Failed", description: "Invalid password or email." });
         } finally {
             setIsLoading(false);
         }
     };
 
     const handleSendMagicLink = async () => {
+        if (!email) {
+            toast({ variant: 'destructive', title: 'Email required', description: 'Please enter your email to receive a sign-in link.' });
+            return;
+        }
         setIsLoading(true);
         try {
             await sendSignInLinkToEmail(auth, email, actionCodeSettings);
             window.localStorage.setItem('emailForSignIn', email);
-            setStep('magic-link-sent');
+            setIsMagicLinkSent(true);
         } catch (error: any) {
              toast({ variant: 'destructive', title: "Error", description: error.message });
         } finally {
@@ -97,54 +82,42 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
         }
     };
     
-    if (step === 'magic-link-sent') {
+    if (isMagicLinkSent) {
         return (
             <div className="text-center space-y-4">
                 <Check className="h-12 w-12 mx-auto text-green-500" />
                 <h3 className="text-lg font-semibold">Check your email</h3>
                 <p className="text-muted-foreground">A sign-in link has been sent to <strong>{email}</strong>. Check your inbox and click the link to sign in.</p>
-                <Button variant="link" onClick={() => setStep('email')}>Back</Button>
+                <Button variant="link" onClick={() => setIsMagicLinkSent(false)}>Back</Button>
             </div>
         )
     }
 
     return (
         <div className="space-y-4">
-            {step === 'email' && (
-                 <form onSubmit={handleEmailSubmit} className="space-y-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="customer-email">Email</Label>
-                        <Input id="customer-email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+             <form onSubmit={handlePasswordLogin} className="space-y-4">
+                <div className="space-y-2">
+                    <Label htmlFor="customer-email">Email</Label>
+                    <Input id="customer-email" type="email" placeholder="m@example.com" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </div>
+                <div className="space-y-2">
+                     <div className="flex justify-between items-center">
+                        <Label htmlFor="customer-password">Password</Label>
+                     </div>
+                    <div className="relative">
+                        <Input id="customer-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
+                        <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
+                            {showPassword ? <EyeOff /> : <Eye />}
+                        </Button>
                     </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Continue
-                    </Button>
-                </form>
-            )}
-
-            {step === 'password' && (
-                <form onSubmit={handlePasswordLogin} className="space-y-4">
-                    <div className="space-y-2">
-                         <div className="flex justify-between items-center">
-                            <Label htmlFor="customer-password">Password</Label>
-                            <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => setStep('email')}>Use different email</Button>
-                         </div>
-                        <div className="relative">
-                            <Input id="customer-password" type={showPassword ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} />
-                            <Button type="button" variant="ghost" size="icon" className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-muted" onClick={() => setShowPassword(!showPassword)}>
-                                {showPassword ? <EyeOff /> : <Eye />}
-                            </Button>
-                        </div>
-                    </div>
-                    <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Sign In
-                    </Button>
-                    <Separator />
-                    <Button variant="outline" className="w-full" onClick={handleSendMagicLink}>Email me a sign-in link</Button>
-                </form>
-            )}
+                </div>
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Sign In
+                </Button>
+                <Separator />
+                <Button variant="outline" className="w-full" onClick={handleSendMagicLink} type="button">Email me a sign-in link</Button>
+            </form>
         </div>
     );
 }
