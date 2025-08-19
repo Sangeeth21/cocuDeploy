@@ -85,9 +85,12 @@ export default function AdminDashboardPage() {
         });
         
         // Fetch Activity (live)
-        const activityQuery = query(collection(db, "notifications"), where("forAdmin", "==", true), orderBy("timestamp", "desc"), limit(5));
+        const activityQuery = query(collection(db, "notifications"), orderBy("timestamp", "desc"), limit(10));
         const unsubscribeActivity = onSnapshot(activityQuery, (snapshot) => {
-            const activityData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const activityData = snapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter(item => item.forAdmin === true)
+                .slice(0, 5);
             setActivity(activityData);
         });
         
