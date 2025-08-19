@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe, Edit, Trash2, PauseCircle, PlayCircle, Ticket, X, Upload, AlertCircle } from "lucide-react";
+import { DollarSign, Percent, Gift, Trophy, PlusCircle, MoreHorizontal, Calendar as CalendarIcon, Users, Store, Loader2, Globe, Edit, Trash2, PauseCircle, PlayCircle, Ticket, X, Upload, AlertCircle, ArrowLeft, ArrowRight } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -20,7 +20,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import type { Program, ProgramPlatform, ProgramTarget, Coupon, Freebie, Category, DisplayProduct } from "@/lib/types";
+import type { Program, ProgramPlatform, ProgramTarget, Coupon, Freebie, Category, DisplayProduct, Reward, ReferralCondition, MilestoneCondition } from "@/lib/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogHeader, AlertDialogTitle, AlertDialogFooter, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
@@ -37,14 +37,18 @@ const programOptions = {
         types: [
             { value: 'referral', label: 'Referral Program' },
             { value: 'milestone', label: 'Purchase Milestone' },
-            { value: 'discount', label: 'Percentage Discount' },
+            { value: 'discount', label: 'Simple Discount' },
             { value: 'wallet_credit', label: 'Wallet Credit Grant' }
         ],
         rewards: [
             { value: 'wallet_credit', label: 'Wallet Credit (₹)' },
             { value: 'discount_percent', label: 'Percentage Discount (%)' },
             { value: 'free_shipping', label: 'Free Shipping (Orders)' },
-        ]
+        ],
+        referralActions: [
+            { id: 'signup', label: 'New user signs up' },
+            { id: 'first_purchase', label: 'Makes their first purchase' }
+        ],
     },
     vendor: {
         types: [
@@ -53,9 +57,14 @@ const programOptions = {
         ],
         rewards: [
             { value: 'commission_discount', label: 'Commission Discount (%)' },
+        ],
+        referralActions: [
+            { id: 'signup', label: 'New vendor signs up' },
+            { id: 'verified', label: 'Gets verified' },
+            { id: 'first_product', label: 'Lists their first product' },
         ]
     }
-}
+};
 
 function CreateCouponDialog({ coupon, onSave, isLoading, open, onOpenChange }: { coupon?: Coupon | null; onSave: (data: Omit<Coupon, 'id' | 'usageCount' | 'status'>, id?: string) => void; isLoading: boolean; open: boolean; onOpenChange: (open: boolean) => void }) {
     const [code, setCode] = useState('');
@@ -429,28 +438,36 @@ function CreateProgramDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+    const [step, setStep] = useState(1);
+    
+    // Step 1
     const [name, setName] = useState('');
     const [platform, setPlatform] = useState<ProgramPlatform>('both');
     const [targetAudience, setTargetAudience] = useState<ProgramTarget | ''>('');
     const [type, setType] = useState('');
-    const [rewardType, setRewardType] = useState('');
-    const [rewardValue, setRewardValue] = useState<number | string>('');
-    const [productScope, setProductScope] = useState('all');
+
+    // Step 2: Condition
+    const [referralCondition, setReferralCondition] = useState<ReferralCondition>({ count: 1, requiredActions: ['signup'] });
+    const [milestoneCondition, setMilestoneCondition] = useState<MilestoneCondition>({ orders: 1, amount: 0 });
+
+    // Step 3: Reward
+    const [referrerReward, setReferrerReward] = useState<Partial<Reward>>({ type: 'discount_percent', value: 10 });
+    const [referredUserReward, setReferredUserReward] = useState<Partial<Reward>>({ type: 'discount_percent', value: 5 });
+    
+    // General
     const [date, setDate] = useState<DateRange | undefined>(undefined);
-    const [expiryDays, setExpiryDays] = useState<number | undefined>();
-    const [code, setCode] = useState("");
     
     const resetForm = () => {
+        setStep(1);
         setName('');
         setPlatform('both');
         setTargetAudience('');
         setType('');
-        setRewardType('');
-        setRewardValue('');
-        setProductScope('all');
+        setReferralCondition({ count: 1, requiredActions: ['signup'] });
+        setMilestoneCondition({ orders: 1, amount: 0 });
+        setReferrerReward({ type: 'discount_percent', value: 10 });
+        setReferredUserReward({ type: 'discount_percent', value: 5 });
         setDate(undefined);
-        setExpiryDays(undefined);
-        setCode('');
     }
     
     useEffect(() => {
@@ -459,33 +476,204 @@ function CreateProgramDialog({
             setPlatform(program.platform);
             setTargetAudience(program.target);
             setType(program.type);
-            setRewardType(program.reward.type);
-            setRewardValue(program.reward.value);
-            setProductScope(program.productScope);
+            setReferrerReward(program.reward.referrer);
+            if(program.reward.referred) setReferredUserReward(program.reward.referred);
+            if(program.condition?.type === 'referral') setReferralCondition(program.condition);
+            if(program.condition?.type === 'milestone') setMilestoneCondition(program.condition);
             setDate({ from: program.startDate, to: program.endDate });
-            setExpiryDays(program.expiryDays);
-            setCode(program.code || "");
         } else {
             resetForm();
         }
     }, [program, open]);
 
     const handleSave = () => {
+        let condition;
+        if(type === 'referral') condition = { type: 'referral' as const, ...referralCondition };
+        if(type === 'milestone') condition = { type: 'milestone' as const, ...milestoneCondition };
+
         const programData: Omit<Program, 'id'> = {
             name,
             platform,
             target: targetAudience as ProgramTarget,
             type: type,
-            reward: { type: rewardType, value: Number(rewardValue) },
-            productScope: productScope as any,
+            condition,
+            reward: {
+                referrer: referrerReward as Reward,
+                ...(type === 'referral' && { referred: referredUserReward as Reward })
+            },
+            status: program?.status === 'Paused' ? 'Paused' : 'Active',
             startDate: date!.from!,
             endDate: date!.to!,
-            expiryDays,
-            status: program?.status === 'Paused' ? 'Paused' : 'Active',
-            code,
         };
         onSave(programData, program?.id);
     };
+
+    const isNextDisabled = () => {
+        if (step === 1) return !name || !targetAudience || !type;
+        return false;
+    }
+
+    const renderStep = () => {
+        switch(step) {
+            case 1:
+                return (
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="program-name">Program Name</Label>
+                            <Input id="program-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Summer Referral Bonanza" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Platform</Label>
+                                <Select value={platform} onValueChange={(value) => setPlatform(value as ProgramPlatform)}>
+                                    <SelectTrigger><SelectValue placeholder="Select platform..." /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="both">Both</SelectItem>
+                                        <SelectItem value="personalized">Personalized</SelectItem>
+                                        <SelectItem value="corporate">Corporate</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Target Audience</Label>
+                                <Select value={targetAudience} onValueChange={(value) => { setTargetAudience(value as ProgramTarget); setType(''); }}>
+                                    <SelectTrigger><SelectValue placeholder="Select audience..." /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="customer">Customer</SelectItem>
+                                        <SelectItem value="vendor">Vendor</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Program Type</Label>
+                            <Select value={type} onValueChange={setType} disabled={!targetAudience}>
+                                <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
+                                <SelectContent>
+                                    {targetAudience && programOptions[targetAudience].types.map(opt => (
+                                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label>Program Duration</Label>
+                             <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button id="date" variant="outline" className="w-full justify-start text-left font-normal">
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {date?.from ? (
+                                            date.to ? `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}` : format(date.from, "LLL dd, y")
+                                        ) : (<span>Pick a date range</span>)}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar mode="range" selected={date} onSelect={setDate} numberOfMonths={2} />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
+                )
+             case 2: // Conditions
+                return (
+                    <div className="space-y-4">
+                        <h4 className="font-semibold">Define Conditions</h4>
+                        {type === 'referral' && targetAudience && (
+                            <div className="p-4 border rounded-md space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Number of successful referrals needed</Label>
+                                    <Input type="number" value={referralCondition.count} onChange={e => setReferralCondition(p => ({...p, count: Number(e.target.value)}))} />
+                                </div>
+                                 <div className="space-y-2">
+                                     <Label>A referral is successful when the new user:</Label>
+                                     {programOptions[targetAudience].referralActions.map(action => (
+                                        <div key={action.id} className="flex items-center space-x-2">
+                                             <Checkbox 
+                                                id={action.id} 
+                                                checked={referralCondition.requiredActions.includes(action.id)}
+                                                onCheckedChange={checked => {
+                                                    setReferralCondition(p => ({
+                                                        ...p,
+                                                        requiredActions: checked
+                                                            ? [...p.requiredActions, action.id]
+                                                            : p.requiredActions.filter(id => id !== action.id)
+                                                    }));
+                                                }}
+                                             />
+                                            <Label htmlFor={action.id} className="font-normal">{action.label}</Label>
+                                        </div>
+                                     ))}
+                                 </div>
+                            </div>
+                        )}
+                        {type === 'milestone' && (
+                             <div className="p-4 border rounded-md space-y-4">
+                                <div className="space-y-2">
+                                    <Label>Number of orders required</Label>
+                                    <Input type="number" value={milestoneCondition.orders} onChange={e => setMilestoneCondition(p => ({...p, orders: Number(e.target.value)}))} />
+                                </div>
+                             </div>
+                        )}
+                         {type === 'onboarding' && <p className="text-sm text-muted-foreground">This program is triggered automatically upon vendor verification.</p>}
+                         {type === 'discount' && <p className="text-sm text-muted-foreground">This program applies a simple discount to all products.</p>}
+                    </div>
+                )
+             case 3: // Rewards
+                const RewardEditor = ({ reward, setReward, audience }: { reward: Partial<Reward>, setReward: (r: Partial<Reward>) => void, audience: ProgramTarget }) => (
+                     <div className="space-y-3">
+                         <div className="grid grid-cols-2 gap-4">
+                             <div className="space-y-2">
+                                 <Label>Reward Type</Label>
+                                 <Select value={reward.type} onValueChange={v => setReward({ ...reward, type: v })}>
+                                     <SelectTrigger><SelectValue /></SelectTrigger>
+                                     <SelectContent>
+                                         {programOptions[audience].rewards.map(opt => (
+                                             <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                         ))}
+                                     </SelectContent>
+                                 </Select>
+                             </div>
+                             <div className="space-y-2">
+                                 <Label>Value</Label>
+                                 <Input type="number" value={reward.value || ''} onChange={e => setReward({ ...reward, value: Number(e.target.value) })} />
+                             </div>
+                         </div>
+                         {reward.type === 'discount_percent' && (
+                             <div className="space-y-2">
+                                <Label>Max Discount (₹)</Label>
+                                <Input type="number" value={reward.maxDiscount || ''} onChange={e => setReward({ ...reward, maxDiscount: Number(e.target.value) })} />
+                             </div>
+                         )}
+                         <div className="space-y-2">
+                             <Label>Reward Expiry (days)</Label>
+                             <Input type="number" value={reward.expiryDays || ''} onChange={e => setReward({ ...reward, expiryDays: Number(e.target.value) })} placeholder="e.g., 30" />
+                         </div>
+                     </div>
+                 );
+                 return (
+                     <div className="space-y-4">
+                         <Card>
+                             <CardHeader className="p-3">
+                                 <CardTitle className="text-base">Reward for Referrer</CardTitle>
+                             </CardHeader>
+                             <CardContent className="p-3">
+                                <RewardEditor reward={referrerReward} setReward={setReferrerReward} audience={targetAudience!} />
+                             </CardContent>
+                         </Card>
+                         {type === 'referral' && (
+                            <Card>
+                                 <CardHeader className="p-3">
+                                     <CardTitle className="text-base">Reward for New {targetAudience}</CardTitle>
+                                 </CardHeader>
+                                 <CardContent className="p-3">
+                                     <RewardEditor reward={referredUserReward} setReward={setReferredUserReward} audience={targetAudience!} />
+                                 </CardContent>
+                             </Card>
+                         )}
+                     </div>
+                 )
+        }
+    }
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -494,92 +682,19 @@ function CreateProgramDialog({
                     <DialogTitle>{program ? "Edit Program" : "Create New Loyalty Program"}</DialogTitle>
                     <DialogDescription>Define the rules and rewards for a new program.</DialogDescription>
                 </DialogHeader>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="program-name">Program Name</Label>
-                        <Input id="program-name" value={name} onChange={e => setName(e.target.value)} placeholder="e.g., Summer Referral Bonanza" />
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Platform</Label>
-                        <Select value={platform} onValueChange={(value) => setPlatform(value as ProgramPlatform)}>
-                            <SelectTrigger><SelectValue placeholder="Select platform..." /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="both">Both</SelectItem>
-                                <SelectItem value="personalized">Personalized</SelectItem>
-                                <SelectItem value="corporate">Corporate</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Target Audience</Label>
-                        <Select value={targetAudience} onValueChange={(value) => setTargetAudience(value as ProgramTarget)}>
-                            <SelectTrigger><SelectValue placeholder="Select audience..." /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="customer">Customer</SelectItem>
-                                <SelectItem value="vendor">Vendor</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Program Type</Label>
-                        <Select value={type} onValueChange={setType} disabled={!targetAudience}>
-                            <SelectTrigger><SelectValue placeholder="Select type..." /></SelectTrigger>
-                            <SelectContent>
-                                {targetAudience && programOptions[targetAudience].types.map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Reward Type</Label>
-                         <Select value={rewardType} onValueChange={setRewardType} disabled={!targetAudience}>
-                            <SelectTrigger><SelectValue placeholder="Select reward..." /></SelectTrigger>
-                            <SelectContent>
-                                {targetAudience && programOptions[targetAudience].rewards.map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Reward Value / Condition</Label>
-                        <Input type="number" value={rewardValue || ''} onChange={e => setRewardValue(Number(e.target.value))} />
-                         <p className="text-xs text-muted-foreground">E.g., 100 for wallet, 15 for %, 2 for # of orders/referrals.</p>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Coupon Code (Optional)</Label>
-                        <Input value={code} onChange={e => setCode(e.target.value)} placeholder="e.g., WELCOME10" />
-                        <p className="text-xs text-muted-foreground">If set, this code will be auto-applied for eligible customers.</p>
-                    </div>
-                     <div className="space-y-2">
-                        <Label>Program Duration</Label>
-                         <Popover>
-                            <PopoverTrigger asChild>
-                                <Button id="date" variant="outline" className="w-full justify-start text-left font-normal">
-                                    <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {date?.from ? (
-                                        date.to ? `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}` : format(date.from, "LLL dd, y")
-                                    ) : (<span>Pick a date range</span>)}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0" align="start">
-                                <Calendar mode="range" selected={date} onSelect={setDate} numberOfMonths={2} />
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                    <div className="md:col-span-2 space-y-2">
-                        <Label htmlFor="expiry-days">Reward Expiry (Optional)</Label>
-                        <Input id="expiry-days" type="number" value={expiryDays || ''} onChange={e => setExpiryDays(e.target.value ? Number(e.target.value) : undefined)} placeholder="e.g., 30" />
-                        <p className="text-xs text-muted-foreground">Number of days the reward is valid for the user after being earned.</p>
-                    </div>
+                <div className="py-4">
+                    {renderStep()}
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-                    <Button onClick={handleSave} disabled={isLoading}>
-                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Save Program
-                    </Button>
+                    {step > 1 && <Button variant="outline" onClick={() => setStep(s => s - 1)}><ArrowLeft className="mr-2 h-4 w-4"/> Previous</Button>}
+                    {step < 3 ? (
+                        <Button onClick={() => setStep(s => s + 1)} disabled={isNextDisabled()}>Next <ArrowRight className="ml-2 h-4 w-4"/></Button>
+                    ) : (
+                        <Button onClick={handleSave} disabled={isLoading}>
+                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Program
+                        </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -597,7 +712,7 @@ function ProgramTable({ programs, onEdit, onToggleStatus, onDelete }: { programs
         }
     }
 
-    const getRewardIcon = (type: Program['reward']['type']) => {
+    const getRewardIcon = (type: Reward['type']) => {
         switch (type) {
             case 'wallet_credit': return <DollarSign className="h-4 w-4 text-muted-foreground" />;
             case 'discount_percent': return <Percent className="h-4 w-4 text-muted-foreground" />;
@@ -632,11 +747,11 @@ function ProgramTable({ programs, onEdit, onToggleStatus, onDelete }: { programs
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex items-center gap-2">
-                                        {getRewardIcon(program.reward.type)}
+                                        {getRewardIcon(program.reward.referrer.type)}
                                         <span>
-                                            {program.reward.type === 'wallet_credit' && `₹${program.reward.value}`}
-                                            {(program.reward.type === 'discount_percent' || program.reward.type === 'commission_discount') && `${program.reward.value}%`}
-                                            {(program.reward.type === 'free_shipping') && `${program.reward.value} Orders`}
+                                            {program.reward.referrer.type === 'wallet_credit' && `₹${program.reward.referrer.value}`}
+                                            {(program.reward.referrer.type === 'discount_percent' || program.reward.referrer.type === 'commission_discount') && `${program.reward.referrer.value}%`}
+                                            {(program.reward.referrer.type === 'free_shipping') && `${program.reward.referrer.value} Orders`}
                                         </span>
                                     </div>
                                 </TableCell>

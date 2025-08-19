@@ -1,5 +1,4 @@
 
-
 export type CustomizationValue = {
   text: string;
   fontFamily: string;
@@ -348,22 +347,39 @@ export type WishlistedCombo = {
 export type ProgramTarget = 'customer' | 'vendor';
 export type ProgramPlatform = 'personalized' | 'corporate' | 'both';
 
+export type Reward = {
+    type: 'wallet_credit' | 'discount_percent' | 'commission_discount' | 'free_shipping';
+    value: number;
+    maxDiscount?: number;
+    expiryDays?: number;
+}
+
+export type ReferralCondition = {
+    type: 'referral';
+    count: number;
+    requiredActions: ('signup' | 'first_purchase' | 'verified' | 'first_product')[];
+}
+
+export type MilestoneCondition = {
+    type: 'milestone';
+    orders?: number; // Number of orders
+    amount?: number; // Spending amount
+}
+
 export type Program = {
     id: string;
     name: string;
     platform: ProgramPlatform;
     target: ProgramTarget;
-    type: string;
+    type: string; // 'referral', 'milestone', 'onboarding', 'discount'
+    condition?: ReferralCondition | MilestoneCondition;
     reward: {
-        type: string;
-        value: number;
+        referrer: Reward;
+        referred?: Reward; // Optional: for the new user
     };
-    productScope: 'all' | 'selected';
     status: 'Active' | 'Scheduled' | 'Expired' | 'Paused';
     startDate: Date;
     endDate: Date;
-    expiryDays?: number;
-    code?: string;
 };
 
 export type Coupon = {
