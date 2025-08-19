@@ -17,6 +17,7 @@ import {
     setPersistence,
     browserLocalPersistence,
     browserSessionPersistence,
+    sendSignInLinkToEmail
 } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";

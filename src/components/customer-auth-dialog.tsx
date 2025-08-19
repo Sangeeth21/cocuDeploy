@@ -29,10 +29,10 @@ import {
     setPersistence,
     browserSessionPersistence,
     browserLocalPersistence,
+    sendSignInLinkToEmail,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import type { User } from "@/lib/types";
-
 
 // This will be a mock. In a real app, this would involve a backend service.
 const MOCK_OTP = "123456";
@@ -151,7 +151,6 @@ function CorporateLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) 
 
 // SignupForm Component
 function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
-    const [step, setStep] = useState<'details' | 'verify'>('details');
     const [isLoading, setIsLoading] = useState(false);
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
@@ -161,9 +160,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [agreedToTerms, setAgreedToTerms] = useState(true);
     const [isPasswordFocused, setIsPasswordFocused] = useState(false);
-    const [otp, setOtp] = useState("");
     const { toast } = useToast();
-    const { login } = useUser();
 
     const passwordCheck = useMemo(() => {
         const checks = {
@@ -194,7 +191,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
     };
 
 
-    const handleDetailsSubmit = (e: React.FormEvent) => {
+    const handleSignupSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!agreedToTerms) {
             toast({ variant: "destructive", title: "Terms and Conditions required" });
@@ -208,83 +205,36 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             toast({ variant: "destructive", title: "Password is too weak" });
             return;
         }
-        setIsLoading(true);
-        // Simulate sending OTP
-        setTimeout(() => {
-            setIsLoading(false);
-            toast({ title: "Verification Code Sent", description: "A 6-digit code has been sent to your email." });
-            setStep("verify");
-        }, 1000);
-    };
-    
-    const handleVerifyAndCreateAccount = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (otp !== MOCK_OTP) {
-            toast({ variant: "destructive", title: "Invalid Code", description: "Please check the code and try again." });
-            return;
-        }
-
+        
         setIsLoading(true);
         try {
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            const firebaseUser = userCredential.user;
-
-            const newUser: User = {
-                id: firebaseUser.uid,
-                name,
-                email: firebaseUser.email || '',
-                role: 'Customer',
-                status: 'Active',
-                joinedDate: new Date().toISOString().split('T')[0],
-                avatar: 'https://placehold.co/40x40.png',
-                wishlist: [],
-                cart: [],
-                 loyalty: {
-                    referralCode: `${name.split(' ')[0].toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-                    referrals: 0, referralsForNextTier: 5, walletBalance: 0,
-                    ordersToNextReward: 3, totalOrdersForReward: 3, loyaltyPoints: 0,
-                    loyaltyTier: 'Bronze', nextLoyaltyTier: 'Silver', pointsToNextTier: 7500,
-                }
+            // This is the correct flow for production.
+            // When the user clicks the link, the logic in ClientLayout will handle it.
+            const actionCodeSettings = {
+                url: `${window.location.origin}/`,
+                handleCodeInApp: true,
             };
-            await setDoc(doc(db, "users", firebaseUser.uid), newUser);
+            await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+
+            // Store email locally to use after redirect
+            window.localStorage.setItem('emailForSignIn', email);
+            window.localStorage.setItem('pendingSignupDetails', JSON.stringify({name, password}));
             
-            login();
-            toast({ title: "Account Created!", description: "Welcome to Co & Cu!" });
+            toast({
+                title: "Verification Email Sent",
+                description: "Please check your email and click the link to complete your registration.",
+            });
             onSignupSuccess();
+            
         } catch (error: any) {
-             if (error.code === 'auth/email-already-in-use') {
-                 toast({ variant: "destructive", title: "Account already exists", description: "Please log in instead." });
-            } else {
-                 toast({ variant: "destructive", title: "Signup Failed", description: error.message });
-            }
+             toast({ variant: "destructive", title: "Signup Failed", description: error.message });
         } finally {
             setIsLoading(false);
         }
     };
-
-    if (step === 'verify') {
-        return (
-            <form onSubmit={handleVerifyAndCreateAccount} className="space-y-4">
-                <div className="text-center">
-                    <h3 className="text-lg font-semibold">Verify Your Email</h3>
-                    <p className="text-sm text-muted-foreground">Enter the 6-digit code sent to {email}.</p>
-                </div>
-                 <div className="space-y-2">
-                    <Label htmlFor="otp">Verification Code</Label>
-                    <Input id="otp" type="text" maxLength={6} placeholder="_ _ _ _ _ _" required value={otp} onChange={(e) => setOtp(e.target.value)} className="text-center text-2xl tracking-[0.5em]"/>
-                </div>
-                <p className="text-xs text-muted-foreground text-center">Didn't receive a code? <Button variant="link" size="sm" type="button" className="p-0 h-auto">Resend</Button></p>
-                 <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Create Account
-                </Button>
-                 <Button variant="ghost" onClick={() => setStep('details')} className="w-full">Back</Button>
-            </form>
-        )
-    }
     
     return (
-        <form onSubmit={handleDetailsSubmit} className="space-y-4">
+        <form onSubmit={handleSignupSubmit} className="space-y-4">
             <div className="space-y-2">
                 <Label htmlFor="customer-name">Full Name</Label>
                 <Input id="customer-name" placeholder="Your Name" required value={name} onChange={e => setName(e.target.value)} />
@@ -352,7 +302,7 @@ function SignupForm({ onSignupSuccess }: { onSignupSuccess: () => void }) {
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Continue to Verification
+                Sign Up
             </Button>
         </form>
     );

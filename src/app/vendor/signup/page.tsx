@@ -12,19 +12,14 @@ import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Check, User, Building, Combine, Eye, EyeOff } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { auth, db } from "@/lib/firebase";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { sendSignInLinkToEmail } from "firebase/auth";
 import { useVerification } from "@/context/vendor-verification-context";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { doc, setDoc } from "firebase/firestore";
-import type { User as VendorUser } from "@/lib/types";
-
-// This will be a mock. In a real app, this would involve a backend service.
-const MOCK_OTP = "123456";
 
 export default function VendorSignupPage() {
-  const [step, setStep] = useState<"details" | "verify" | "type">("details");
+  const [step, setStep] = useState<"details" | "type" | "verify">("details");
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -35,11 +30,9 @@ export default function VendorSignupPage() {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(true);
   const [vendorType, setVendorType] = useState<"personalized" | "corporate" | "both">();
-  const [otp, setOtp] = useState("");
 
   const router = useRouter();
   const { toast } = useToast();
-  const { setAsUnverified, setVendorType: setContextVendorType } = useVerification();
   
   const passwordCheck = useMemo(() => {
         const checks = {
@@ -80,25 +73,9 @@ export default function VendorSignupPage() {
         toast({ variant: "destructive", title: "Password is too weak" });
         return;
     }
-    // Simulate sending OTP
-    setIsLoading(true);
-    setTimeout(() => {
-        toast({ title: "Verification Code Sent", description: "A 6-digit code has been sent to your email." });
-        setStep("verify");
-        setIsLoading(false);
-    }, 1000);
+    setStep("type");
   };
   
-  const handleVerifySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp === MOCK_OTP) {
-        toast({ title: "Email Verified!" });
-        setStep("type");
-    } else {
-        toast({ variant: "destructive", title: "Invalid Code", description: "Please check the code and try again." });
-    }
-  }
-
   const handleTypeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
      if (!vendorType) {
@@ -107,33 +84,22 @@ export default function VendorSignupPage() {
     }
     setIsLoading(true);
     try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        // Create user document in Firestore
-        const newVendor: Omit<VendorUser, 'id'> = {
-            name,
-            email,
-            phone,
-            role: 'Vendor',
-            status: 'Active', // Active but unverified
-            joinedDate: new Date().toISOString().split('T')[0],
-            avatar: 'https://placehold.co/40x40.png',
-            vendorType,
-            verificationStatus: 'unverified'
+        const actionCodeSettings = {
+            url: `${window.location.origin}/vendor/login`, // Redirect back to login after verification
+            handleCodeInApp: true,
         };
-        await setDoc(doc(db, "users", user.uid), newVendor);
-        
-        setAsUnverified();
-        setContextVendorType(vendorType);
-        
+
+        await sendSignInLinkToEmail(auth, email, actionCodeSettings);
+
+        // Store user details temporarily to use after email verification
+        window.localStorage.setItem('emailForSignIn', email);
+        window.localStorage.setItem('pendingSignupDetails', JSON.stringify({name, password, phone, vendorType}));
+
         toast({
-            title: "Account Created!",
-            description: "You're now logged in. Please complete the verification steps to start selling.",
+            title: "Verification Email Sent",
+            description: "Please check your email and click the link to complete your registration.",
         });
-
-        router.push('/vendor/verify');
-
+        setStep("verify"); // Move to a "check your email" screen
     } catch (error: any) {
         toast({
             variant: "destructive",
@@ -236,26 +202,6 @@ export default function VendorSignupPage() {
                     </CardFooter>
                   </form>
               );
-          case 'verify':
-              return (
-                   <form onSubmit={handleVerifySubmit}>
-                        <CardHeader className="text-center">
-                            <CardTitle className="text-3xl font-headline">Verify Your Email</CardTitle>
-                            <CardDescription>Enter the 6-digit code sent to {email}.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                             <div className="space-y-2">
-                                <Label htmlFor="otp">Verification Code</Label>
-                                <Input id="otp" type="text" maxLength={6} placeholder="_ _ _ _ _ _" required value={otp} onChange={(e) => setOtp(e.target.value)} className="text-center text-2xl tracking-[0.5em]"/>
-                            </div>
-                             <p className="text-xs text-muted-foreground text-center">Didn't receive a code? <Button variant="link" size="sm" type="button" className="p-0 h-auto">Resend</Button></p>
-                        </CardContent>
-                        <CardFooter className="flex justify-between">
-                            <Button variant="ghost" onClick={() => setStep('details')}>Back</Button>
-                            <Button type="submit">Verify & Continue</Button>
-                        </CardFooter>
-                   </form>
-              );
           case 'type':
                 return (
                     <form onSubmit={handleTypeSubmit}>
@@ -301,11 +247,27 @@ export default function VendorSignupPage() {
                             <Button variant="ghost" onClick={() => setStep('details')}>Back</Button>
                             <Button type="submit" disabled={isLoading}>
                                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Create Account
+                                Send Verification Email
                             </Button>
                         </CardFooter>
                     </form>
                 );
+            case 'verify':
+                return (
+                    <div>
+                        <CardHeader className="text-center">
+                            <CardTitle className="text-3xl font-headline">Check Your Email</CardTitle>
+                            <CardDescription>
+                                We've sent a verification link to <span className="font-semibold">{email}</span>. Please click the link to complete your registration and sign in.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardFooter>
+                            <Button className="w-full" asChild>
+                                <Link href="/vendor/login">Back to Login</Link>
+                            </Button>
+                        </CardFooter>
+                    </div>
+                )
       }
   }
 
