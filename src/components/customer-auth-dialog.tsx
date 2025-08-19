@@ -76,7 +76,7 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
         setIsLoading(true);
         const provider = new GoogleAuthProvider();
         try {
-            const result = await signInWithPopup(auth, provider);
+            await signInWithPopup(auth, provider);
             // onAuthStateChanged will handle the rest, including Firestore user creation if needed.
             toast({ title: "Login Successful", description: "Welcome!" });
             onLoginSuccess();
@@ -87,7 +87,7 @@ function PersonalLoginForm({ onLoginSuccess }: { onLoginSuccess: () => void }) {
                 toast({
                     variant: 'destructive',
                     title: 'Account Exists',
-                    description: `You already have an account with this email signed up via ${methods[0]}. Please sign in with that method to link your Google account.`,
+                    description: `You already have an account with this email signed up via ${methods[0]}. Please sign in with your password to link your Google account.`,
                     duration: 8000
                 });
             } else {
