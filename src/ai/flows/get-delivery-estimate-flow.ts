@@ -51,26 +51,6 @@ const getTransitTimeTool = ai.defineTool(
 );
 
 
-const deliveryEstimatePrompt = ai.definePrompt({
-    name: 'deliveryEstimatePrompt',
-    input: { schema: z.object({ productCategory: z.string(), vendorId: z.string() }) },
-    output: { schema: z.object({ fulfillmentDays: z.number() }) },
-    tools: [getTransitTimeTool],
-    prompt: `You are a fulfillment logistics expert for an e-commerce platform.
-    Your task is to estimate a realistic fulfillment time in business days for a vendor to prepare and ship an order.
-    
-    Consider the following information:
-    - Product Category: "{{productCategory}}"
-    - Vendor ID: "{{vendorId}}"
-    
-    Base your estimate on the product category. For example, handcrafted items or custom apparel might take longer to prepare (3-4 days) than pre-packaged electronics (1-2 days).
-    
-    If you are unsure, default to a standard fulfillment time of 2 business days.
-    
-    Your response must only be the estimated number of fulfillment days.`,
-});
-
-
 export const getDeliveryEstimateFlow = ai.defineFlow(
   {
     name: 'getDeliveryEstimateFlow',
@@ -98,14 +78,7 @@ export const getDeliveryEstimateFlow = ai.defineFlow(
          throw new Error('Vendor location is not available.');
     }
 
-    // 2. Use AI to estimate fulfillment time
-    const fulfillmentResponse = await deliveryEstimatePrompt({ 
-        productCategory: product.category,
-        vendorId: product.vendorId
-    });
-    const fulfillmentDays = fulfillmentResponse.output?.fulfillmentDays || 2; // Default to 2 days
-
-    // 3. Use the tool to get shipping transit time
+    // 2. Use the tool to get shipping transit time
     const shippingResponse = await getTransitTimeTool({
         originPincode: vendorPincode,
         destinationPincode: input.pincode,
@@ -113,7 +86,8 @@ export const getDeliveryEstimateFlow = ai.defineFlow(
     });
     const transitDays = shippingResponse.days;
 
-    // 4. Calculate the date range
+    // 3. Calculate the date range
+    const fulfillmentDays = 2; // Standard 2-day fulfillment/processing time
     const totalMinDays = fulfillmentDays + transitDays;
     const totalMaxDays = totalMinDays + 2; // Add a buffer of 2 days for the range
 
