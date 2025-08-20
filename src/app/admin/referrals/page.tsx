@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -17,7 +18,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import type { DateRange } from "react-day-picker";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc, Timestamp } from "firebase/firestore";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { Program, ProgramPlatform, ProgramTarget, Coupon, Freebie, Category, DisplayProduct, Reward, ReferralCondition, MilestoneCondition } from "@/lib/types";
@@ -433,7 +434,7 @@ function CreateProgramDialog({
   onOpenChange,
 }: {
   program?: Program | null;
-  onSave: (program: Omit<Program, 'id'>, id?: string) => void;
+  onSave: (program: Omit<Program, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date }, id?: string) => void;
   isLoading: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -471,7 +472,7 @@ function CreateProgramDialog({
     }
     
     useEffect(() => {
-        if (program) {
+        if (open && program) {
             setName(program.name);
             setPlatform(program.platform);
             setTargetAudience(program.target);
@@ -481,7 +482,7 @@ function CreateProgramDialog({
             if(program.condition?.type === 'referral') setReferralCondition(program.condition);
             if(program.condition?.type === 'milestone') setMilestoneCondition(program.condition);
             setDate({ from: program.startDate, to: program.endDate });
-        } else {
+        } else if (open && !program) {
             resetForm();
         }
     }, [program, open]);
@@ -491,7 +492,7 @@ function CreateProgramDialog({
         if(type === 'referral') condition = { type: 'referral' as const, ...referralCondition };
         if(type === 'milestone') condition = { type: 'milestone' as const, ...milestoneCondition };
 
-        const programData: Omit<Program, 'id'> = {
+        const programData: Omit<Program, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date } = {
             name,
             platform,
             target: targetAudience as ProgramTarget,
@@ -502,14 +503,14 @@ function CreateProgramDialog({
                 ...(type === 'referral' && { referred: referredUserReward as Reward })
             },
             status: program?.status === 'Paused' ? 'Paused' : 'Active',
-            startDate: date!.from!,
-            endDate: date!.to!,
+            startDate: date?.from,
+            endDate: date?.to,
         };
         onSave(programData, program?.id);
     };
 
     const isNextDisabled = () => {
-        if (step === 1) return !name || !targetAudience || !type;
+        if (step === 1) return !name || !targetAudience || !type || !date?.from || !date?.to;
         return false;
     }
 
@@ -676,7 +677,7 @@ function CreateProgramDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
+        <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) resetForm(); onOpenChange(isOpen); }}>
             <DialogContent className="sm:max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>{program ? "Edit Program" : "Create New Loyalty Program"}</DialogTitle>
@@ -845,15 +846,21 @@ export default function PromotionsPage() {
         }
     }, []);
 
-    const handleSaveProgram = async (programData: Omit<Program, 'id'>, id?: string) => {
+    const handleSaveProgram = async (programData: Omit<Program, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date }, id?: string) => {
         setIsLoading(true);
         try {
+            const dataToSave = {
+                ...programData,
+                startDate: programData.startDate ? Timestamp.fromDate(programData.startDate) : null,
+                endDate: programData.endDate ? Timestamp.fromDate(programData.endDate) : null,
+            };
+
             if (id) {
-                await updateDoc(doc(db, 'programs', id), programData as any);
-                toast({ title: "Program Updated!", description: `"${programData.name}" has been successfully updated.` });
+                await updateDoc(doc(db, 'programs', id), dataToSave as any);
+                toast({ title: "Program Updated!", description: `"${dataToSave.name}" has been successfully updated.` });
             } else {
-                await addDoc(collection(db, "programs"), programData);
-                toast({ title: "Program Created!", description: `"${programData.name}" has been successfully added.` });
+                await addDoc(collection(db, "programs"), dataToSave);
+                toast({ title: "Program Created!", description: `"${dataToSave.name}" has been successfully added.` });
             }
             setIsProgramDialogOpen(false);
             setEditingProgram(null);
