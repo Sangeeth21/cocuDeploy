@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Image from "next/image";
@@ -309,7 +308,7 @@ export default function ProductDetailPage() {
   return (
     <Dialog open={isVendorInfoOpen} onOpenChange={setIsVendorInfoOpen}>
     <div className="container py-12">
-      <div className="grid md:grid-cols-2 gap-12 items-start">
+      <div className="grid md:grid-cols-2 gap-12">
         <div className={cn("md:sticky md:top-24 flex gap-4 h-[600px]", galleryLayoutClasses[thumbnailPosition as keyof typeof galleryLayoutClasses])}>
            <div className={cn("relative flex-1 w-full h-full overflow-hidden rounded-lg shadow-lg", mainImageOrderClasses[thumbnailPosition as keyof typeof mainImageOrderClasses])}>
                 {activeMedia?.type === 'image' && (
@@ -460,7 +459,10 @@ export default function ProductDetailPage() {
                 )}
             </div>
             
-            <p className="text-muted-foreground leading-relaxed pt-4">{product.description}</p>
+            <div className="pt-6">
+                <h2 className="font-bold text-xl font-headline mb-2">Description</h2>
+                <p className="text-muted-foreground leading-relaxed">{product.description}</p>
+            </div>
         </div>
       </div>
 
