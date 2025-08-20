@@ -105,15 +105,15 @@ export function CoWorkerChatbot() {
 
     const renderCurrentStep = () => {
         const renderHistory = history.map((msg, index) => (
-            <ChatMessage key={index} sender={msg.sender} message={msg.message} />
+            <ChatMessage key={index} sender={msg.sender} message={msg.message} icon={Building}/>
         ));
 
         switch (stage) {
             case "initial":
                 return (
                     <>
-                        <ChatMessage sender="bot" message="Welcome. I am Co-Worker, your assistant for corporate and bulk procurement." />
-                        <ChatMessage sender="bot" message="To begin, what is the purpose of this order?" />
+                        <ChatMessage sender="bot" message="Welcome. I am Co-Worker, your assistant for corporate and bulk procurement." icon={Building} />
+                        <ChatMessage sender="bot" message="To begin, what is the purpose of this order?" icon={Building}/>
                         {!isCustomInputActive && <ChatResponseOptions options={purposeOptions} onSelect={(val) => handleSelect(val, 'quantity')} onCustomClick={handleCustomClick} />}
                     </>
                 );
@@ -121,7 +121,7 @@ export function CoWorkerChatbot() {
                  return (
                      <>
                         {renderHistory}
-                        <ChatMessage sender="bot" message="Understood. What is the approximate quantity required per product?" />
+                        <ChatMessage sender="bot" message="Understood. What is the approximate quantity required per product?" icon={Building}/>
                         {!isCustomInputActive && <ChatResponseOptions options={quantityOptions} onSelect={(val) => handleSelect(val, 'budget')} onCustomClick={handleCustomClick} />}
                     </>
                 );
@@ -129,7 +129,7 @@ export function CoWorkerChatbot() {
                 return (
                     <>
                        {renderHistory}
-                       <ChatMessage sender="bot" message="Thank you. Please select the budget per unit." />
+                       <ChatMessage sender="bot" message="Thank you. Please select the budget per unit." icon={Building}/>
                        {!isCustomInputActive && <ChatResponseOptions options={budgetOptions} onSelect={(val) => handleSelect(val, 'tone')} onCustomClick={handleCustomClick} />}
                    </>
                );
@@ -137,7 +137,7 @@ export function CoWorkerChatbot() {
                 return (
                     <>
                        {renderHistory}
-                       <ChatMessage sender="bot" message="Excellent. What is the desired tone for the branding and products?" />
+                       <ChatMessage sender="bot" message="Excellent. What is the desired tone for the branding and products?" icon={Building}/>
                        {!isCustomInputActive && <ChatResponseOptions options={toneOptions} onSelect={(val) => handleSelect(val, 'results')} onCustomClick={handleCustomClick} />}
                    </>
                );
@@ -145,7 +145,7 @@ export function CoWorkerChatbot() {
                 return (
                     <>
                         {renderHistory}
-                        <ChatMessage sender="bot" message="Based on your requirements, here are three curated package options." />
+                        <ChatMessage sender="bot" message="Based on your requirements, here are three curated package options." icon={Building}/>
                         <Card>
                             <CardHeader className="p-2">
                                 <CardTitle className="text-base">Budget-Friendly Pack</CardTitle>
@@ -168,16 +168,16 @@ export function CoWorkerChatbot() {
     }
 
     return (
-        <div className="fixed bottom-6 right-6 z-40">
+        <div className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-40">
             <Popover open={isOpen} onOpenChange={handleOpenChange}>
                 <PopoverTrigger asChild>
                     <Button 
-                        className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
+                        className="h-14 w-14 md:h-16 md:w-16 rounded-full shadow-2xl animate-float p-0"
                         variant="default"
                         size="icon"
                     >
                         {imageError ? (
-                            <Building className="h-8 w-8 text-primary-foreground" />
+                            <Building className="h-7 w-7 md:h-8 md:w-8 text-primary-foreground" />
                         ) : (
                             <Image 
                                 src="/co-worker.png" 

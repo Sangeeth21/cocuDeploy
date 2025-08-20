@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, User, Gift } from "lucide-react";
+import { Bot, User, Gift, Building } from "lucide-react";
 import { TinyProductCard } from "./product-card";
 import { TinyB2bProductCard } from "@/app/corporate/_components/b2b-product-card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
@@ -93,8 +93,8 @@ export function ChatB2bProductCarousel({ products }: { products: DisplayProduct[
                     </CarouselItem>
                 ))}
             </CarouselContent>
-            <CarouselPrevious />
-            <CarouselNext />
+            <CarouselPrevious className="absolute left-0 top-1/2 -translate-y-1/2" />
+            <CarouselNext className="absolute right-0 top-1/2 -translate-y-1/2" />
         </Carousel>
     );
 }
