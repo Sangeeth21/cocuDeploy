@@ -26,7 +26,7 @@ const navLinks = [
   { href: "/corporate/dashboard", label: "Marketplace", icon: Building },
   { href: "/corporate/products", label: "Products", icon: Package },
   { href: "/corporate/bids/new", label: "Create Bid", icon: PlusCircle, id: 'bid' },
-  { href: "/checkout", label: "Cart", icon: ShoppingCart, id: "cart" },
+  { href: "/cart", label: "Cart", icon: ShoppingCart, id: "cart" },
   { href: "/corporate/compare", label: "Compare", icon: Scale, id: "compare" },
   { href: "/corporate/bids", label: "Active Bids", icon: Gavel },
   { href: "/corporate/orders", label: "Order History", icon: Briefcase },
@@ -55,7 +55,9 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
     const { adminLogout } = useAdminAuth();
     const { totalItems: cartItemsCount } = useCart();
     const { totalItems: comparisonItemsCount } = useComparison();
-    const { totalItems: bidItemsCount } = useBidRequest();
+    const { bidItems } = useBidRequest();
+    const bidItemsCount = bidItems.length;
+
 
     const handleLogout = () => {
         adminLogout();

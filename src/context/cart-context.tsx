@@ -7,6 +7,7 @@ import { useUser } from './user-context';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
+import { usePathname } from 'next/navigation';
 
 // Define the shape of a cart item
 export type CartItem = {
@@ -56,7 +57,10 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 export const CartProvider = ({ children }: { children: ReactNode }) => {
     const { isLoggedIn, user, commissionRates } = useUser();
     const { toast } = useToast();
+    const pathname = usePathname();
     const [state, dispatch] = useReducer(cartReducer, { cartItems: [], loading: true });
+    
+    const platform = pathname.startsWith('/corporate') ? 'corporate' : 'personalized';
 
     // Load cart from Firestore
     useEffect(() => {
@@ -149,9 +153,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         dispatch({ type: 'CLEAR_CART' });
         await updateFirestoreCart([]);
     }
+    
+    const cartItemsForCurrentPlatform = state.cartItems.filter(item => {
+        return platform === 'corporate' ? item.product.b2bEnabled : !item.product.b2bEnabled;
+    });
 
-    const subtotal = state.cartItems.reduce((acc, item) => {
-        const commissionRule = commissionRates?.personalized?.[item.product.category];
+    const subtotal = cartItemsForCurrentPlatform.reduce((acc, item) => {
+        const productPlatform = item.product.b2bEnabled ? 'corporate' : 'personalized';
+        const commissionRule = commissionRates?.[productPlatform]?.[item.product.category];
         let finalPrice = item.product.price;
         if (commissionRule && commissionRule.buffer) {
             if (commissionRule.buffer.type === 'fixed') {
@@ -163,10 +172,10 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return acc + finalPrice * item.quantity;
     }, 0);
 
-    const totalItems = state.cartItems.reduce((acc, item) => acc + item.quantity, 0);
+    const totalItems = cartItemsForCurrentPlatform.reduce((acc, item) => acc + item.quantity, 0);
 
     return (
-        <CartContext.Provider value={{ ...state, addToCart, removeFromCart, updateQuantity, clearCart, subtotal, totalItems }}>
+        <CartContext.Provider value={{ ...state, cartItems: cartItemsForCurrentPlatform, addToCart, removeFromCart, updateQuantity, clearCart, subtotal, totalItems }}>
             {children}
         </CartContext.Provider>
     );

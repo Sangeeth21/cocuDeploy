@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Minus, Plus, Trash2, ArrowRight, Wand2, Tag } from "lucide-react";
+import { Minus, Plus, Trash2, ArrowRight, Wand2, Tag, ShoppingCart as ShoppingCartIcon } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/context/cart-context";
 import { useUser } from "@/context/user-context";
@@ -21,7 +21,7 @@ import { db } from "@/lib/firebase";
 import { Badge } from "@/components/ui/badge";
 
 export default function CartPage() {
-  const { cartItems, updateQuantity, removeFromCart, subtotal, loading } = useCart();
+  const { cartItems, updateQuantity, removeFromCart, loading } = useCart();
   const { isLoggedIn, commissionRates } = useUser();
   const { openDialog } = useAuthDialog();
   const router = useRouter();
@@ -163,7 +163,8 @@ export default function CartPage() {
         </div>
       ) : (
         <div className="text-center py-16">
-            <h2 className="text-2xl font-semibold mb-2">Your cart is empty</h2>
+            <ShoppingCartIcon className="mx-auto h-24 w-24 text-muted-foreground opacity-30" />
+            <h2 className="text-2xl font-semibold mb-2 mt-4">Your cart is empty</h2>
             <p className="text-muted-foreground mb-6">Looks like you haven't added anything to your cart yet.</p>
             <Button asChild>
                 <Link href="/products">Start Shopping</Link>
