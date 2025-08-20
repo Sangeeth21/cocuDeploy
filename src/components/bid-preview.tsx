@@ -8,9 +8,25 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { useBidRequest } from "@/context/bid-request-context";
+import { useUser } from "@/context/user-context";
+import type { DisplayProduct } from "@/lib/types";
 
 export function BidPreview() {
     const { bidItems, removeFromBid, totalItems } = useBidRequest();
+    const { commissionRates } = useUser();
+
+    const getFinalPrice = (product: DisplayProduct) => {
+        const commissionRule = commissionRates?.corporate?.[product.category];
+        let finalPrice = product.price;
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                finalPrice += commissionRule.buffer.value;
+            } else {
+                finalPrice *= (1 + (commissionRule.buffer.value / 100));
+            }
+        }
+        return finalPrice;
+    }
 
     return (
         <Popover>
@@ -44,6 +60,7 @@ export function BidPreview() {
                                         <div className="flex-1 space-y-1">
                                             <Link href={`/corporate/products/${item.id}`} className="text-sm font-medium leading-tight hover:text-primary">{item.name}</Link>
                                             <p className="text-xs text-muted-foreground">{item.category}</p>
+                                            <p className="text-xs text-muted-foreground">Est. Price: ${getFinalPrice(item).toFixed(2)}</p>
                                         </div>
                                         <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => removeFromBid(item.id)}>
                                             <X className="h-4 w-4" />

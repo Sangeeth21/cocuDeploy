@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import Link from "next/link";
@@ -19,8 +18,8 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Badge } from "@/components/ui/badge";
 
-const getFinalPrice = (product: DisplayProduct, commissionRates: any, applicableDiscount?: Program | null) => {
-    const commissionRule = commissionRates?.corporate?.[product.category];
+const getFinalPrice = (product: DisplayProduct, commissionRates: any, applicableDiscount?: Program | null, type: 'personalized' | 'corporate' = 'corporate') => {
+    const commissionRule = commissionRates?.[type]?.[product.category];
     let finalPrice = product.price;
     if (commissionRule && commissionRule.buffer) {
         if (commissionRule.buffer.type === 'fixed') {
@@ -31,11 +30,11 @@ const getFinalPrice = (product: DisplayProduct, commissionRates: any, applicable
     }
     const originalPrice = finalPrice;
     
-    if (applicableDiscount) {
-        finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+    if (applicableDiscount && applicableDiscount.reward.referrer?.value) {
+        finalPrice *= (1 - (applicableDiscount.reward.referrer.value / 100));
     }
     
-    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
+    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.referrer?.value };
 }
 
 
@@ -111,7 +110,7 @@ export default function ComparePage() {
                         <TableRow>
                             <TableCell className="font-semibold">Price</TableCell>
                             {comparisonItems.map(item => {
-                                const priceDetails = getFinalPrice(item, commissionRates, applicableDiscount);
+                                const priceDetails = getFinalPrice(item, commissionRates, applicableDiscount, 'corporate');
                                 return (
                                 <TableCell key={item.id} className="text-center font-medium">
                                     <div className="flex items-baseline justify-center gap-2">

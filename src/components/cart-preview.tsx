@@ -15,28 +15,33 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Program, DisplayProduct } from "@/lib/types";
 import { Badge } from "./ui/badge";
+import { usePathname } from 'next/navigation';
+
 
 export function CartPreview() {
     const { cartItems, updateQuantity, removeFromCart, totalItems } = useCart();
     const { commissionRates } = useUser();
     const [promotions, setPromotions] = useState<Program[]>([]);
+    const pathname = usePathname();
+    const isCorporate = pathname.startsWith('/corporate');
+    const platform = isCorporate ? 'corporate' : 'personalized';
 
     useEffect(() => {
         const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
         const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
             const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
-            const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === 'personalized' || p.platform === 'both'));
+            const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === platform || p.platform === 'both'));
             setPromotions(relevantPromos);
         });
         return () => unsubscribe();
-    }, []);
+    }, [platform]);
 
     const applicableDiscount = useMemo(() => {
         return promotions.find(p => p.type === 'discount');
     }, [promotions]);
 
     const getPriceDetails = (product: DisplayProduct) => {
-        const commissionRule = commissionRates?.personalized?.[product.category];
+        const commissionRule = commissionRates?.[platform]?.[product.category];
         let finalPrice = product.price;
         if (commissionRule && commissionRule.buffer) {
             if (commissionRule.buffer.type === 'fixed') {
@@ -47,11 +52,11 @@ export function CartPreview() {
         }
         const originalPrice = finalPrice;
         
-        if (applicableDiscount) {
-            finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+        if (applicableDiscount && applicableDiscount.reward.referrer?.value) {
+            finalPrice *= (1 - (applicableDiscount.reward.referrer.value / 100));
         }
         
-        return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
+        return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.referrer?.value };
     };
 
     const calculatedSubtotal = useMemo(() => {

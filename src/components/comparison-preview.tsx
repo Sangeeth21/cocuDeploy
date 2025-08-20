@@ -8,9 +8,53 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { useComparison } from "@/context/comparison-context";
+import { useUser } from "@/context/user-context";
+import { useState, useEffect, useMemo } from "react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import type { Program, DisplayProduct } from "@/lib/types";
+import { usePathname } from 'next/navigation';
 
 export function ComparisonPreview() {
     const { comparisonItems, removeFromCompare, totalItems } = useComparison();
+    const { commissionRates } = useUser();
+    const [promotions, setPromotions] = useState<Program[]>([]);
+    const pathname = usePathname();
+    const isCorporate = pathname.startsWith('/corporate');
+    const platform = isCorporate ? 'corporate' : 'personalized';
+
+     useEffect(() => {
+        const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+        const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+            const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+            const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === platform || p.platform === 'both'));
+            setPromotions(relevantPromos);
+        });
+        return () => unsubscribe();
+    }, [platform]);
+
+    const applicableDiscount = useMemo(() => {
+        return promotions.find(p => p.type === 'discount');
+    }, [promotions]);
+
+    const getFinalPrice = (product: DisplayProduct) => {
+        const commissionRule = commissionRates?.[platform]?.[product.category];
+        let finalPrice = product.price;
+        if (commissionRule && commissionRule.buffer) {
+            if (commissionRule.buffer.type === 'fixed') {
+                finalPrice += commissionRule.buffer.value;
+            } else {
+                finalPrice *= (1 + (commissionRule.buffer.value / 100));
+            }
+        }
+        
+        if (applicableDiscount && applicableDiscount.reward.referrer?.value) {
+            finalPrice *= (1 - (applicableDiscount.reward.referrer.value / 100));
+        }
+        
+        return finalPrice;
+    };
+
 
     return (
         <Popover>
@@ -43,7 +87,7 @@ export function ComparisonPreview() {
                                         </div>
                                         <div className="flex-1 space-y-1">
                                             <Link href={`/corporate/products/${item.id}`} className="text-sm font-medium leading-tight hover:text-primary">{item.name}</Link>
-                                            <p className="text-sm font-semibold">${item.price.toFixed(2)}</p>
+                                            <p className="text-sm font-semibold">${getFinalPrice(item).toFixed(2)}</p>
                                         </div>
                                         <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => removeFromCompare(item.id)}>
                                             <X className="h-4 w-4" />

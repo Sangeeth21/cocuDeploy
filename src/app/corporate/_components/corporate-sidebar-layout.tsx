@@ -19,13 +19,14 @@ import { SearchBar } from "@/components/search-bar";
 import { ComparisonPreview } from "@/components/comparison-preview";
 import { BidPreview } from "@/components/bid-preview";
 import { useBidRequest } from "@/context/bid-request-context";
+import { CartPreview } from "@/components/cart-preview";
 
 
 const navLinks = [
   { href: "/corporate/dashboard", label: "Marketplace", icon: Building },
   { href: "/corporate/products", label: "Products", icon: Package },
   { href: "/corporate/bids/new", label: "Create Bid", icon: PlusCircle, id: 'bid' },
-  { href: "/cart", label: "Cart", icon: ShoppingCart, id: "cart" },
+  { href: "/checkout", label: "Cart", icon: ShoppingCart, id: "cart" },
   { href: "/corporate/compare", label: "Compare", icon: Scale, id: "compare" },
   { href: "/corporate/bids", label: "Active Bids", icon: Gavel },
   { href: "/corporate/orders", label: "Order History", icon: Briefcase },
@@ -137,6 +138,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                     <div className="flex items-center gap-2">
                          <BidPreview />
                          <ComparisonPreview />
+                         <CartPreview />
                          <NotificationPopover notifications={mockCorporateActivity} />
                     </div>
                  </header>
