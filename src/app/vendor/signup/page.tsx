@@ -85,7 +85,7 @@ export default function VendorSignupPage() {
     setIsLoading(true);
     try {
         const actionCodeSettings = {
-            url: `https://${process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}/vendor/login`,
+            url: `http://localhost:3000/vendor/login`,
             handleCodeInApp: true,
         };
 
