@@ -97,7 +97,7 @@ export default function CheckoutPage() {
 
     }, [cartItems]);
 
-    const calculateItemPrice = (product: DisplayProduct) => {
+    const calculateItemPrice = useCallback((product: DisplayProduct) => {
         const productType = product.b2bEnabled ? 'corporate' : 'personalized';
         const commissionRule = commissionRates?.[productType]?.[product.category];
 
@@ -110,14 +110,14 @@ export default function CheckoutPage() {
             }
         }
         return finalPrice;
-    }
+    }, [commissionRates]);
 
-    const calculateCouponDiscount = useCallback((coupon: Coupon, relevantItems: DisplayProduct[]) => {
-        const applicableSubtotal = relevantItems.reduce((acc, product) => {
+    const calculateCouponDiscount = useCallback((coupon: Coupon, relevantItems: {product: DisplayProduct, quantity: number}[]) => {
+        const applicableSubtotal = relevantItems.reduce((acc, item) => {
             if (coupon.scope === 'all' || 
-                (coupon.scope === 'category' && coupon.applicableCategories?.includes(product.category)) ||
-                (coupon.scope === 'product' && coupon.applicableProducts?.includes(product.id))) {
-                return acc + calculateItemPrice(product);
+                (coupon.scope === 'category' && coupon.applicableCategories?.includes(item.product.category)) ||
+                (coupon.scope === 'product' && coupon.applicableProducts?.includes(item.product.id))) {
+                return acc + (calculateItemPrice(item.product) * item.quantity);
             }
             return acc;
         }, 0);
@@ -132,46 +132,46 @@ export default function CheckoutPage() {
             calculatedDiscount = Math.min(calculatedDiscount, coupon.maxDiscount);
         }
         return Math.min(calculatedDiscount, applicableSubtotal);
-    }, [commissionRates]);
+    }, [calculateItemPrice]);
 
     const getPriceDetails = useCallback((product: DisplayProduct) => {
         const originalPrice = calculateItemPrice(product);
         let finalPrice = originalPrice;
-        let finalDiscountProgram = platformDiscount;
+        
+        let itemDiscount = 0;
+        const platformDiscountAmount = platformDiscount ? originalPrice * (platformDiscount.reward.value / 100) : 0;
+        const couponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, [{ product, quantity: 1 }]) : 0;
 
-        const couponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, [product]) : 0;
-        
-        if (appliedCoupon) {
-            finalPrice = originalPrice - couponDiscountAmount;
-        } else if (finalDiscountProgram) {
-            finalPrice = originalPrice * (1 - (finalDiscountProgram.reward.value / 100));
+        if (appliedCoupon?.isStackable) {
+            itemDiscount = platformDiscountAmount + couponDiscountAmount;
+        } else {
+            itemDiscount = Math.max(platformDiscountAmount, couponDiscountAmount);
         }
+
+        finalPrice -= itemDiscount;
         
-        return { original: originalPrice, final: finalPrice, hasDiscount: finalPrice < originalPrice, discountValue: finalDiscountProgram?.reward.value };
-    }, [commissionRates, platformDiscount, appliedCoupon, calculateCouponDiscount]);
+        return { 
+            original: originalPrice, 
+            final: finalPrice, 
+            hasDiscount: itemDiscount > 0, 
+            discountValue: itemDiscount > 0 ? (itemDiscount / originalPrice) * 100 : 0
+        };
+    }, [calculateItemPrice, platformDiscount, appliedCoupon, calculateCouponDiscount]);
 
 
     const subtotal = useMemo(() => {
         return cartItems.reduce((acc, item) => acc + calculateItemPrice(item.product) * item.quantity, 0);
-    }, [cartItems, commissionRates]);
+    }, [cartItems, calculateItemPrice]);
 
     const totalDiscount = useMemo(() => {
-        let platformDiscountAmount = 0;
-        let couponDiscountAmount = 0;
+        const platformDiscountAmount = platformDiscount ? subtotal * (platformDiscount.reward.value / 100) : 0;
+        const couponDiscountAmount = appliedCoupon ? calculateCouponDiscount(appliedCoupon, cartItems) : 0;
 
-        if (platformDiscount) {
-            platformDiscountAmount = subtotal * (platformDiscount.reward.value / 100);
-        }
-
-        if (appliedCoupon) {
-            couponDiscountAmount = calculateCouponDiscount(appliedCoupon, cartItems.map(i => i.product));
-            if (!appliedCoupon.isStackable) {
-                return Math.max(platformDiscountAmount, couponDiscountAmount);
-            }
+        if (appliedCoupon?.isStackable) {
+            return platformDiscountAmount + couponDiscountAmount;
         }
         
-        return platformDiscountAmount + couponDiscountAmount;
-
+        return Math.max(platformDiscountAmount, couponDiscountAmount);
     }, [appliedCoupon, platformDiscount, subtotal, cartItems, calculateCouponDiscount]);
 
 
@@ -200,7 +200,7 @@ export default function CheckoutPage() {
 
         if (!coupon.isStackable && platformDiscount) {
             const platformDiscountAmount = platformDiscount ? subtotal * (platformDiscount.reward.value / 100) : 0;
-            const newCouponDiscount = calculateCouponDiscount(coupon, cartItems.map(i => i.product));
+            const newCouponDiscount = calculateCouponDiscount(coupon, cartItems);
             
             if (newCouponDiscount > platformDiscountAmount) {
                 toast({
@@ -372,7 +372,7 @@ export default function CheckoutPage() {
                                                         <Image src={item.product.imageUrl} alt={item.product.name} fill className="object-cover" />
                                                         {priceDetails.hasDiscount && (
                                                             <Badge variant="destructive" className="absolute top-1 left-1 text-[9px] h-auto px-1 py-0 leading-tight">
-                                                                <Tag className="mr-1 h-2.5 w-2.5" /> {priceDetails.discountValue}% OFF
+                                                                <Tag className="mr-1 h-2.5 w-2.5" /> {priceDetails.discountValue.toFixed(0)}% OFF
                                                             </Badge>
                                                         )}
                                                     </div>
