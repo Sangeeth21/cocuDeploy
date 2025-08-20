@@ -492,6 +492,14 @@ function CreateProgramDialog({
         if(type === 'referral') condition = { type: 'referral' as const, ...referralCondition };
         if(type === 'milestone') condition = { type: 'milestone' as const, ...milestoneCondition };
 
+        // Clean reward objects before saving
+        const cleanReward = (reward: Partial<Reward>): Reward => {
+            const newReward: any = { type: reward.type, value: reward.value };
+            if (reward.maxDiscount) newReward.maxDiscount = reward.maxDiscount;
+            if (reward.expiryDays) newReward.expiryDays = reward.expiryDays;
+            return newReward as Reward;
+        };
+
         const programData: Omit<Program, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date } = {
             name,
             platform,
@@ -499,8 +507,8 @@ function CreateProgramDialog({
             type: type,
             condition,
             reward: {
-                referrer: referrerReward as Reward,
-                ...(type === 'referral' && { referred: referredUserReward as Reward })
+                referrer: cleanReward(referrerReward),
+                ...(type === 'referral' && { referred: cleanReward(referredUserReward) })
             },
             status: program?.status === 'Paused' ? 'Paused' : 'Active',
             startDate: date?.from,
