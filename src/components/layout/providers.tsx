@@ -10,13 +10,13 @@ import { CorporateAuthDialogProvider } from '@/context/corporate-auth-dialog-con
 import { BidRequestProvider } from '@/context/bid-request-context';
 import { AdminAuthProvider } from '@/context/admin-auth-context';
 
-export function Providers({ children }: { children: React.ReactNode }) {
+export function Providers({ children, platform = 'personalized' }: { children: React.ReactNode, platform?: 'personalized' | 'corporate' }) {
     return (
         <UserProvider>
             <AuthDialogProvider>
                 <AdminAuthProvider>
                     <CorporateAuthDialogProvider>
-                        <CartProvider>
+                        <CartProvider platform={platform}>
                             <WishlistProvider>
                                 <ComparisonProvider>
                                     <BidRequestProvider>

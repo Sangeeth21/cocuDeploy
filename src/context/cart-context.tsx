@@ -54,14 +54,11 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
     }
 };
 
-export const CartProvider = ({ children }: { children: ReactNode }) => {
+export const CartProvider = ({ children, platform = 'personalized' }: { children: React.ReactNode, platform?: 'personalized' | 'corporate' }) => {
     const { isLoggedIn, user, commissionRates } = useUser();
     const { toast } = useToast();
-    const pathname = usePathname();
     const [state, dispatch] = useReducer(cartReducer, { cartItems: [], loading: true });
     
-    const platform = pathname.startsWith('/corporate') ? 'corporate' : 'personalized';
-
     // Load cart from Firestore
     useEffect(() => {
         if (isLoggedIn && user?.id) {
@@ -106,17 +103,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const userDocRef = doc(db, "users", user.id);
 
         try {
-            // Get current cart from Firestore to ensure we have the latest state
             const docSnap = await getDoc(userDocRef);
             const currentCart: CartItem[] = docSnap.exists() ? docSnap.data().cart || [] : [];
+            
             let newCart: CartItem[];
             
             const moq = product.moq || 1;
             const finalQuantity = product.b2bEnabled ? Math.max(quantity, moq) : quantity;
 
-            // For corporate products, always add as a new item.
-            // For personal products, check if an identical non-customized item exists.
-            if (product.b2bEnabled) {
+            // Always add B2B or customized items as a new line item.
+            // Only stack personal, non-customized items.
+            if (product.b2bEnabled || Object.keys(customizations).length > 0) {
                  const newCartItem: CartItem = {
                     instanceId: `${product.id}-${Date.now()}`,
                     product,
@@ -146,10 +143,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
                 }
             }
             
-            // Update Firestore with the new cart
-            await updateDoc(userDocRef, { cart: newCart });
-            
-            // The onSnapshot listener will automatically update the local state.
+            await updateFirestoreCart(newCart);
             toast({ title: "Added to Cart!", description: `${finalQuantity} x ${product.name}` });
 
         } catch (error) {
@@ -179,12 +173,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     };
     
     const clearCart = async () => {
-        dispatch({ type: 'CLEAR_CART' });
-        await updateFirestoreCart([]);
+        const itemsToKeep = state.cartItems.filter(item => {
+            const isCorporateItem = item.product.b2bEnabled === true;
+            return platform === 'corporate' ? !isCorporateItem : isCorporateItem;
+        });
+        dispatch({ type: 'SET_CART', payload: itemsToKeep });
+        await updateFirestoreCart(itemsToKeep);
     }
     
     const cartItemsForCurrentPlatform = state.cartItems.filter(item => {
-        return platform === 'corporate' ? item.product.b2bEnabled === true : item.product.b2bEnabled !== true;
+        const isCorporateProduct = item.product.b2bEnabled === true;
+        return platform === 'corporate' ? isCorporateProduct : !isCorporateProduct;
     });
 
     const subtotal = cartItemsForCurrentPlatform.reduce((acc, item) => {

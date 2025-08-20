@@ -115,14 +115,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminAuthProvider>
-        <Providers>
-            <BidRequestProvider>
-              <ProtectedCorporateLayout>
-                {children}
-              </ProtectedCorporateLayout>
-              <CorporateCampaignPopup />
-              {showChatbot && <CoWorkerChatbot />}
-            </BidRequestProvider>
+        <Providers platform="corporate">
+          <ProtectedCorporateLayout>
+            {children}
+          </ProtectedCorporateLayout>
+          <CorporateCampaignPopup />
+          {showChatbot && <CoWorkerChatbot />}
         </Providers>
     </AdminAuthProvider>
   );
