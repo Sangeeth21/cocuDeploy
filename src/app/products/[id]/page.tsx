@@ -463,6 +463,8 @@ export default function ProductDetailPage() {
             <p className="text-muted-foreground leading-relaxed pt-4">{product.description}</p>
         </div>
       </div>
+
+      <Separator className="my-12" />
       
       <div className="my-12 space-y-12">
         <ReviewsPreview productId={product.id} />
