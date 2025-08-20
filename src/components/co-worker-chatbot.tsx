@@ -173,7 +173,7 @@ export function CoWorkerChatbot() {
                 <PopoverTrigger asChild>
                     <Button 
                         className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
-                        variant="ghost"
+                        variant="default"
                         size="icon"
                     >
                         {imageError ? (
