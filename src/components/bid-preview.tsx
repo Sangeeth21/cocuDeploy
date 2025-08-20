@@ -37,7 +37,13 @@ export function BidPreview({ platform = 'personalized' }: { platform?: 'personal
 
     const getPriceDetails = (product: DisplayProduct) => {
         const commissionRule = commissionRates?.[platform]?.[product.category];
-        let finalPrice = product.price;
+
+        // Start with the correct base price, considering B2B tiers
+        const basePrice = product.tierPrices && product.tierPrices.length > 0
+            ? Math.min(...product.tierPrices.map(p => p.price))
+            : product.price;
+
+        let finalPrice = basePrice;
         if (commissionRule && commissionRule.buffer) {
             if (commissionRule.buffer.type === 'fixed') {
                 finalPrice += commissionRule.buffer.value;
