@@ -4,8 +4,6 @@
 /**
  * @fileOverview An AI flow to estimate the delivery date for a product to a given pincode.
  * - getDeliveryEstimate - The main function to call.
- * - DeliveryEstimateInputSchema - The Zod schema for the input.
- * - DeliveryEstimateOutputSchema - The Zod schema for the output.
  */
 
 import { ai } from '@/ai/genkit';
@@ -15,17 +13,8 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { DisplayProduct, User } from '@/lib/types';
 import { addDays, format } from 'date-fns';
+import { DeliveryEstimateInputSchema, DeliveryEstimateOutputSchema, type DeliveryEstimateInput, type DeliveryEstimateOutput } from '@/lib/types/delivery-estimate';
 
-export const DeliveryEstimateInputSchema = z.object({
-  productId: z.string().describe('The ID of the product.'),
-  pincode: z.string().length(6).describe('The 6-digit destination pincode.'),
-});
-export type DeliveryEstimateInput = z.infer<typeof DeliveryEstimateInputSchema>;
-
-export const DeliveryEstimateOutputSchema = z.object({
-  estimatedDeliveryDate: z.string().describe('The estimated delivery date range, e.g., "July 29 - Aug 1".'),
-});
-export type DeliveryEstimateOutput = z.infer<typeof DeliveryEstimateOutputSchema>;
 
 // Define a tool for the AI to get shipping transit time
 const getTransitTimeTool = ai.defineTool(
@@ -139,6 +128,6 @@ export const getDeliveryEstimateFlow = ai.defineFlow(
   }
 );
 
-export async function getDeliveryEstimate(input: DeliveryEstimateInput) {
+export async function getDeliveryEstimate(input: DeliveryEstimateInput): Promise<DeliveryEstimateOutput> {
     return getDeliveryEstimateFlow(input);
 }
