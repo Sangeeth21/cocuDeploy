@@ -118,6 +118,7 @@ export function Header() {
           {isLoggedIn ? (
             <>
               <NotificationPopover />
+              <ComparisonPreview platform="personalized" />
               <WishlistPreview />
               <CartPreview />
               <div className="flex items-center rounded-md hover:bg-accent focus-within:bg-accent">

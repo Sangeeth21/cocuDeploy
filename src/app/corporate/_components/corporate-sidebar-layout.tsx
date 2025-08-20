@@ -137,7 +137,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                     </div>
                     <div className="flex items-center gap-2">
                          <BidPreview />
-                         <ComparisonPreview />
+                         <ComparisonPreview platform="corporate" />
                          <CartPreview />
                          <NotificationPopover notifications={mockCorporateActivity} />
                     </div>

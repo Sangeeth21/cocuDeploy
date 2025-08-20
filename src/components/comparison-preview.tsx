@@ -13,16 +13,12 @@ import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { Program, DisplayProduct } from "@/lib/types";
-import { usePathname } from 'next/navigation';
 import { Badge } from "./ui/badge";
 
-export function ComparisonPreview() {
+export function ComparisonPreview({ platform = 'personalized' }: { platform?: 'personalized' | 'corporate' }) {
     const { comparisonItems, removeFromCompare, totalItems } = useComparison();
     const { commissionRates } = useUser();
     const [promotions, setPromotions] = useState<Program[]>([]);
-    const pathname = usePathname();
-    const isCorporate = pathname.startsWith('/corporate');
-    const platform = isCorporate ? 'corporate' : 'personalized';
 
      useEffect(() => {
         const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
