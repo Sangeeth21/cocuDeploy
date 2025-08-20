@@ -19,6 +19,7 @@ import { SearchBar } from "@/components/search-bar";
 import { ComparisonPreview } from "@/components/comparison-preview";
 import { BidPreview } from "@/components/bid-preview";
 import { CartPreview } from "@/components/cart-preview";
+import { useBidRequest } from "@/context/bid-request-context";
 
 
 const navLinks = [
