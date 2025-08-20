@@ -103,42 +103,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
         const { product, customizations, quantity = 1 } = payload;
         
-        let newCart: CartItem[];
-        const hasCustomizations = Object.keys(customizations).length > 0;
-
-        // B2B products or customized products are always added as new items.
-        if (product.b2bEnabled || hasCustomizations) {
-            const newCartItem: CartItem = {
-                instanceId: `${product.id}-${Date.now()}`,
-                product,
-                quantity: product.b2bEnabled ? (quantity < (product.moq || 1) ? product.moq! : quantity) : quantity,
-                customizations,
-            };
-            newCart = [...state.cartItems, newCartItem];
-        } else {
-            // Logic for non-customized, non-B2B products (stacking)
-            const existingItem = state.cartItems.find(item => 
-                item.product.id === product.id && 
-                !item.product.b2bEnabled && 
-                Object.keys(item.customizations).length === 0
-            );
-
-            if (existingItem) {
-                newCart = state.cartItems.map(item => 
-                    item.instanceId === existingItem.instanceId 
-                    ? { ...item, quantity: item.quantity + quantity } 
-                    : item
-                );
-            } else {
-                 const newCartItem: CartItem = {
-                    instanceId: `${product.id}-${Date.now()}`,
-                    product,
-                    quantity,
-                    customizations,
-                };
-                newCart = [...state.cartItems, newCartItem];
-            }
-        }
+        const newCartItem: CartItem = {
+            instanceId: `${product.id}-${Date.now()}`,
+            product,
+            quantity: product.b2bEnabled ? (quantity < (product.moq || 1) ? product.moq! : quantity) : quantity,
+            customizations,
+        };
+        
+        const newCart = [...state.cartItems, newCartItem];
         
         dispatch({ type: 'SET_CART', payload: newCart }); // Optimistic update
         await updateFirestoreCart(newCart);
@@ -168,7 +140,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
     
     const cartItemsForCurrentPlatform = state.cartItems.filter(item => {
-        return platform === 'corporate' ? item.product.b2bEnabled : !item.product.b2bEnabled;
+        return platform === 'corporate' ? item.product.b2bEnabled === true : item.product.b2bEnabled !== true;
     });
 
     const subtotal = cartItemsForCurrentPlatform.reduce((acc, item) => {

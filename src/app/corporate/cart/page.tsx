@@ -13,7 +13,7 @@ import { useUser } from "@/context/user-context";
 import { useAuthDialog } from "@/context/auth-dialog-context";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import type { Program } from "@/lib/types";
+import type { Program, DisplayProduct } from "@/lib/types";
 import { useState, useEffect, useMemo } from "react";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -25,20 +25,20 @@ export default function CorporateCartPage() {
   const { openDialog } = useAuthDialog();
   const router = useRouter();
   const [promotions, setPromotions] = useState<Program[]>([]);
+  const platform = 'corporate';
 
    useEffect(() => {
     const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
      const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
         const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
-        const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === 'corporate' || p.platform === 'both'));
+        const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === platform || p.platform === 'both'));
         setPromotions(relevantPromos);
     });
     return () => unsubscribe();
-  }, []);
+  }, [platform]);
 
   const getPriceDetails = (item: typeof cartItems[0]) => {
-      const productType = item.product.b2bEnabled ? 'corporate' : 'personalized';
-      const commissionRule = commissionRates?.[productType]?.[item.product.category];
+      const commissionRule = commissionRates?.[platform]?.[item.product.category];
       
       const basePrice = item.product.tierPrices?.find(tier => item.quantity >= tier.quantity)?.price || item.product.price;
 
@@ -52,10 +52,10 @@ export default function CorporateCartPage() {
       }
        const originalPrice = finalPrice;
        const applicableDiscount = promotions.find(p => p.productScope === 'all'); // simplified for now
-       if (applicableDiscount) {
-           finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+       if (applicableDiscount && applicableDiscount.reward.referrer?.value) {
+           finalPrice *= (1 - (applicableDiscount.reward.referrer.value / 100));
        }
-      return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
+      return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.referrer?.value };
   }
 
   const calculatedSubtotal = useMemo(() => {
