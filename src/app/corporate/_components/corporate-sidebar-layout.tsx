@@ -26,7 +26,7 @@ const navLinks = [
   { href: "/corporate/dashboard", label: "Marketplace", icon: Building },
   { href: "/corporate/products", label: "Products", icon: Package },
   { href: "/corporate/bids/new", label: "Create Bid", icon: PlusCircle, id: 'bid' },
-  { href: "/cart", label: "Cart", icon: ShoppingCart, id: "cart" },
+  { href: "/corporate/cart", label: "Cart", icon: ShoppingCart, id: "cart" },
   { href: "/corporate/compare", label: "Compare", icon: Scale, id: "compare" },
   { href: "/corporate/bids", label: "Active Bids", icon: Gavel },
   { href: "/corporate/orders", label: "Order History", icon: Briefcase },
@@ -140,7 +140,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                     <div className="flex items-center gap-2">
                          <BidPreview platform="corporate" />
                          <ComparisonPreview platform="corporate" />
-                         <CartPreview />
+                         <CartPreview platform="corporate" />
                          <NotificationPopover notifications={mockCorporateActivity} />
                     </div>
                  </header>

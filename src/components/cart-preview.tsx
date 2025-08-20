@@ -18,13 +18,10 @@ import { Badge } from "./ui/badge";
 import { usePathname } from 'next/navigation';
 
 
-export function CartPreview() {
+export function CartPreview({ platform = 'personalized' }: { platform?: 'personalized' | 'corporate' }) {
     const { cartItems, updateQuantity, removeFromCart, totalItems } = useCart();
     const { commissionRates } = useUser();
     const [promotions, setPromotions] = useState<Program[]>([]);
-    const pathname = usePathname();
-    const isCorporate = pathname.startsWith('/corporate');
-    const platform = isCorporate ? 'corporate' : 'personalized';
 
     useEffect(() => {
         const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
@@ -134,7 +131,7 @@ export function CartPreview() {
                                 </div>
                                 <div className="flex gap-2">
                                      <Button asChild className="w-full" variant="outline">
-                                        <Link href="/cart">View Cart</Link>
+                                        <Link href={platform === 'corporate' ? '/corporate/cart' : '/cart'}>View Cart</Link>
                                     </Button>
                                      <Button asChild className="w-full">
                                         <Link href="/checkout">Checkout</Link>
