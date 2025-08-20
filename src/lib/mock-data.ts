@@ -306,13 +306,89 @@ export const mockUsers: User[] = [
             pointsToNextTier: 7500,
         }
     },
-    { id: 'VDR001', name: 'Timeless Co.', email: 'vendor@example.com', role: 'Vendor', status: 'Active', joinedDate: '2024-02-20', avatar: 'https://placehold.co/40x40.png' },
+    { 
+        id: 'VDR001', 
+        name: 'Timeless Co.', 
+        email: 'vendor@example.com', 
+        role: 'Vendor', 
+        status: 'Active', 
+        joinedDate: '2024-02-20', 
+        avatar: 'https://placehold.co/40x40.png',
+        vendorDetails: { address: { fullAddress: '123 Vendor Ave, Delhi', pincode: '110001' } }
+    },
     { id: 'USR003', name: 'Jackson Lee', email: 'jackson.lee@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-03-10', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'VDR002', name: 'Crafty Creations', email: 'crafty@example.com', role: 'Vendor', status: 'Suspended', joinedDate: '2024-03-15', avatar: 'https://placehold.co/40x40.png' },
+    { 
+        id: 'VDR002', 
+        name: 'Crafty Creations', 
+        email: 'crafty@example.com', 
+        role: 'Vendor', 
+        status: 'Suspended', 
+        joinedDate: '2024-03-15', 
+        avatar: 'https://placehold.co/40x40.png',
+        vendorDetails: { address: { fullAddress: '456 Maker St, Mumbai', pincode: '400001' } }
+    },
     { id: 'USR005', name: 'Isabella Nguyen', email: 'isabella.nguyen@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-04-05', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'VDR003', name: 'Gadget Guru', email: 'gadget@example.com', role: 'Vendor', status: 'Active', joinedDate: '2024-04-22', avatar: 'https://placehold.co/40x40.png' },
+    { 
+        id: 'VDR003', 
+        name: 'Gadget Guru', 
+        email: 'gadget@example.com', 
+        role: 'Vendor', 
+        status: 'Active', 
+        joinedDate: '2024-04-22', 
+        avatar: 'https://placehold.co/40x40.png',
+        vendorDetails: { address: { fullAddress: '789 Tech Park, Bangalore', pincode: '560001' } }
+    },
     { id: 'USR007', name: 'William Kim', email: 'will@email.com', role: 'Customer', status: 'Active', joinedDate: '2024-05-30', avatar: 'https://placehold.co/40x40.png' },
-    { id: 'VDR004', name: 'HomeBody Decor', email: 'home@example.com', role: 'Vendor', status: 'Active', joinedDate: '2024-06-01', avatar: 'https://placehold.co/40x40.png' },
+    { 
+        id: 'VDR004', 
+        name: 'HomeBody Decor', 
+        email: 'home@example.com', 
+        role: 'Vendor', 
+        status: 'Active', 
+        joinedDate: '2024-06-01', 
+        avatar: 'https://placehold.co/40x40.png',
+        vendorDetails: { address: { fullAddress: '101 Comfort Ln, Chennai', pincode: '600001' } }
+    },
+     { 
+        id: 'VDR005', 
+        name: 'Bean Bliss', 
+        email: 'bean@example.com', 
+        role: 'Vendor', 
+        status: 'Active', 
+        joinedDate: '2024-06-05', 
+        avatar: 'https://placehold.co/40x40.png',
+        vendorDetails: { address: { fullAddress: '22 Roast Rd, Coorg', pincode: '571201' } }
+    },
+     { 
+        id: 'VDR006', 
+        name: 'Zenith Yoga', 
+        email: 'zen@example.com', 
+        role: 'Vendor', 
+        status: 'Active', 
+        joinedDate: '2024-06-10', 
+        avatar: 'https://placehold.co/40x40.png',
+        vendorDetails: { address: { fullAddress: '33 Serenity St, Rishikesh', pincode: '249201' } }
+    },
+     { 
+        id: 'VDR007', 
+        name: 'Office Outfitters', 
+        email: 'office@example.com', 
+        role: 'Vendor', 
+        status: 'Active', 
+        joinedDate: '2024-06-12', 
+        avatar: 'https://placehold.co/40x40.png',
+        vendorDetails: { address: { fullAddress: '44 Business Blvd, Hyderabad', pincode: '500001' } }
+    },
+     { 
+        id: 'VDR008', 
+        name: 'Glow Up', 
+        email: 'glow@example.com', 
+        role: 'Vendor', 
+        status: 'Active', 
+        joinedDate: '2024-06-15', 
+        avatar: 'https://placehold.co/40x40.png',
+        vendorDetails: { address: { fullAddress: '55 Beauty Ave, Chandigarh', pincode: '160001' } }
+    },
 ];
 
 export const mockOrders: Order[] = [
@@ -604,7 +680,7 @@ export const mockAiImageStyles: AiImageStyle[] = [
   // Personalized
   { id: 'style-4', name: 'Ghibli Style', backendPrompt: ', ghibli style anime, painted, whimsical, detailed background, atmospheric lighting', target: 'personalized', order: 4 },
   { id: 'style-5', name: '3D Claymation', backendPrompt: ', 3d claymation style, miniature, stop motion, handcrafted, soft lighting', target: 'personalized', order: 5 },
-  { id: 'style-6', name: 'Vintage Comic', backendPrompt: ', vintage comic book style, pop art, halftone dots, bold lines, 1960s', target: 'personalized', order: 6 },
+  { id: 'style-6', name: 'Vintage Comic', backendPrompt: ', vintage comic book style, pop art, halftone dots, 1960s', target: 'personalized', order: 6 },
   { id: 'style-7', name: 'Abstract Oil Painting', backendPrompt: ', abstract oil painting, thick impasto, expressive brushstrokes, vibrant colors, artistic', target: 'personalized', order: 7 },
   { id: 'style-8', name: 'Pixel Art', backendPrompt: ', 16-bit pixel art, detailed, retro video game style, vibrant palette', target: 'personalized', order: 8 },
 
