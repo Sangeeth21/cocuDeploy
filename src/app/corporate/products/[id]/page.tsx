@@ -139,7 +139,12 @@ export default function B2BProductDetailPage() {
             setLoading(false);
         });
 
-        const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+        const promotionsQuery = query(
+            collection(db, "programs"), 
+            where("status", "==", "Active"), 
+            where("target", "==", "customer"),
+            where("platform", "in", ["corporate", "both"])
+        );
         const unsubCampaigns = onSnapshot(promotionsQuery, (snapshot) => {
             const campaignsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
             setPromotions(campaignsData as any); 
