@@ -58,7 +58,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
 
     const handleLogout = () => {
         adminLogout();
-        router.push('/corporate');
+        router.push('/');
     }
 
     return (
