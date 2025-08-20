@@ -102,31 +102,44 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         const { product, customizations, quantity = 1 } = payload;
-        const hasCustomizations = Object.keys(customizations).length > 0;
         
-        // Stack items only if they are not B2B, not customized, and already in the cart.
-        const shouldStack = !hasCustomizations && !product.b2bEnabled;
-        
-        const existingItem = shouldStack 
-            ? state.cartItems.find(item => item.product.id === product.id && Object.keys(item.customizations).length === 0)
-            : null;
-
         let newCart: CartItem[];
-        if (existingItem) {
-            newCart = state.cartItems.map(item => 
-                item.instanceId === existingItem.instanceId 
-                ? { ...item, quantity: item.quantity + quantity } 
-                : item
-            );
-        } else {
+        const hasCustomizations = Object.keys(customizations).length > 0;
+
+        // B2B products or customized products are always added as new items.
+        if (product.b2bEnabled || hasCustomizations) {
             const newCartItem: CartItem = {
                 instanceId: `${product.id}-${Date.now()}`,
                 product,
-                quantity: quantity,
+                quantity: product.b2bEnabled ? (quantity < (product.moq || 1) ? product.moq! : quantity) : quantity,
                 customizations,
             };
             newCart = [...state.cartItems, newCartItem];
+        } else {
+            // Logic for non-customized, non-B2B products (stacking)
+            const existingItem = state.cartItems.find(item => 
+                item.product.id === product.id && 
+                !item.product.b2bEnabled && 
+                Object.keys(item.customizations).length === 0
+            );
+
+            if (existingItem) {
+                newCart = state.cartItems.map(item => 
+                    item.instanceId === existingItem.instanceId 
+                    ? { ...item, quantity: item.quantity + quantity } 
+                    : item
+                );
+            } else {
+                 const newCartItem: CartItem = {
+                    instanceId: `${product.id}-${Date.now()}`,
+                    product,
+                    quantity,
+                    customizations,
+                };
+                newCart = [...state.cartItems, newCartItem];
+            }
         }
+        
         dispatch({ type: 'SET_CART', payload: newCart }); // Optimistic update
         await updateFirestoreCart(newCart);
     };

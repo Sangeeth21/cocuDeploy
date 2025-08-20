@@ -164,7 +164,7 @@ export function B2bProductCard({ product }: ProductCardProps) {
   };
 
   const handleAddToCart = () => {
-    addToCart({product, customizations: {}});
+    addToCart({product, customizations: {}, quantity: product.moq || 1});
     toast({
       title: "Added to Cart",
       description: `${product.name} has been added to your cart.`
@@ -176,7 +176,7 @@ export function B2bProductCard({ product }: ProductCardProps) {
       openDialog('login');
       return;
     }
-    addToCart({product, customizations: {}});
+    addToCart({product, customizations: {}, quantity: product.moq || 1});
     router.push('/checkout');
   };
 
