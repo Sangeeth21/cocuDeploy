@@ -189,8 +189,11 @@ export function CoWorkerChatbot() {
                         )}
                     </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-96 p-0 mr-4" align="end">
-                     <div className="flex flex-col h-[60vh]">
+                <PopoverContent 
+                    className="w-[calc(100vw-2rem)] sm:w-96 p-0 mr-4" 
+                    align="end"
+                >
+                     <div className="flex flex-col h-[70vh] sm:h-[60vh] max-h-[600px]">
                         <div className="flex items-center justify-between p-3 bg-primary text-primary-foreground rounded-t-lg flex-shrink-0">
                              <div className="flex items-center gap-2">
                                 <Building className="h-5 w-5"/>
