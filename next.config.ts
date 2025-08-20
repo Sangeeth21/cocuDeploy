@@ -26,7 +26,8 @@ const nextConfig = {
   experimental: {},
   allowedDevOrigins: [
     'https://9000-firebase-studio-1753597464708.cluster-l6vkdperq5ebaqo3qy4ksvoqom.cloudworkstations.dev',
-    'shopsphere-bsdmb.firebaseapp.com'
+    'shopsphere-bsdmb.firebaseapp.com',
+    'http://localhost:3000',
   ],
 };
 

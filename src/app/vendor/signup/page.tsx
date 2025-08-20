@@ -85,7 +85,7 @@ export default function VendorSignupPage() {
     setIsLoading(true);
     try {
         const actionCodeSettings = {
-            url: `http://localhost:3000/vendor/login`,
+            url: `http://localhost:3000/actions`,
             handleCodeInApp: true,
         };
 
