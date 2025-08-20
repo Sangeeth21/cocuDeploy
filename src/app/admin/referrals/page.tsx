@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -434,7 +433,7 @@ function CreateProgramDialog({
   onOpenChange,
 }: {
   program?: Program | null;
-  onSave: (program: Omit<Program, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date }, id?: string) => void;
+  onSave: (program: Omit<Program, 'id' | 'startDate' | 'endDate' | 'status'> & { startDate?: Date, endDate?: Date }, id?: string) => void;
   isLoading: boolean;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -458,6 +457,8 @@ function CreateProgramDialog({
     // General
     const [date, setDate] = useState<DateRange | undefined>(undefined);
     
+    const typesWithNoConditions = ['discount', 'wallet_credit', 'onboarding'];
+
     const resetForm = () => {
         setStep(1);
         setName('');
@@ -488,46 +489,55 @@ function CreateProgramDialog({
             resetForm();
         }
     }, [program, open]);
-
+    
     const handleSave = () => {
         let condition;
-        if(type === 'referral') condition = { type: 'referral' as const, ...referralCondition };
-        if(type === 'milestone') condition = { type: 'milestone' as const, ...milestoneCondition };
-
-        // Clean reward objects before saving
-        const cleanReward = (reward: Partial<Reward>): Reward => {
-            const newReward: any = { type: reward.type, value: reward.value };
-            if (reward.maxDiscount) newReward.maxDiscount = reward.maxDiscount;
-            if (reward.expiryDays) newReward.expiryDays = reward.expiryDays;
-            return newReward as Reward;
-        };
-        
-        let reward: { referrer: Reward; referred?: Reward; } = { referrer: cleanReward(referrerReward) };
         if (type === 'referral') {
-            reward.referred = cleanReward(referredUserReward);
+            condition = referralCondition;
+        } else if (type === 'milestone') {
+            condition = milestoneCondition;
         }
 
-        const programData: Omit<Program, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date } = {
+        const cleanReward = (reward: Partial<Reward>): Reward => {
+            const newReward: any = { type: reward.type, value: Number(reward.value) };
+            if (reward.maxDiscount) newReward.maxDiscount = Number(reward.maxDiscount);
+            if (reward.expiryDays) newReward.expiryDays = Number(reward.expiryDays);
+            return newReward as Reward;
+        };
+
+        let reward;
+        if (typesWithNoConditions.includes(type)) {
+            reward = { referrer: cleanReward(referrerReward) };
+        } else {
+            reward = {
+                referrer: cleanReward(referrerReward),
+                referred: type === 'referral' ? cleanReward(referredUserReward) : undefined,
+            };
+        }
+        
+        const programData: Omit<Program, 'id' | 'startDate' | 'endDate' | 'status'> & { startDate?: Date, endDate?: Date } = {
             name,
             platform,
             target: targetAudience as ProgramTarget,
             type: type,
-            condition,
-            reward: reward,
-            status: program?.status === 'Paused' ? 'Paused' : 'Active',
+            // Only add condition if it's relevant
+            ...(condition && !typesWithNoConditions.includes(type) && { condition }),
+            reward,
+            productScope: 'all', // Placeholder
             startDate: date?.from,
             endDate: date?.to,
+            expiryDays: referrerReward.expiryDays,
         };
+
         onSave(programData, program?.id);
     };
+
 
     const isNextDisabled = () => {
         if (step === 1) return !name || !targetAudience || !type || !date?.from || !date?.to;
         return false;
     }
     
-    const typesWithNoConditions = ['discount', 'wallet_credit', 'onboarding'];
-
     const handleNext = () => {
         if (step === 1 && typesWithNoConditions.includes(type)) {
             setStep(3); // Skip conditions step
@@ -637,8 +647,7 @@ function CreateProgramDialog({
                                 </div>
                              </div>
                         )}
-                         {type === 'onboarding' && <p className="text-sm text-muted-foreground">This program is triggered automatically upon vendor verification.</p>}
-                         {type === 'discount' && <p className="text-sm text-muted-foreground">This program applies a simple discount to all products.</p>}
+                         {typesWithNoConditions.includes(type) && <p className="text-sm text-muted-foreground">This program type does not require specific conditions.</p>}
                     </div>
                 )
              case 3: // Rewards
@@ -677,7 +686,7 @@ function CreateProgramDialog({
                      <div className="space-y-4">
                          <Card>
                              <CardHeader className="p-3">
-                                 <CardTitle className="text-base">Reward for {type === 'referral' ? 'Referrer' : 'User'}</CardTitle>
+                                 <CardTitle className="text-base">Reward for {typesWithNoConditions.includes(type) ? 'User' : 'Referrer'}</CardTitle>
                              </CardHeader>
                              <CardContent className="p-3">
                                 <RewardEditor reward={referrerReward} setReward={setReferrerReward} audience={targetAudience!} />
@@ -868,20 +877,23 @@ export default function PromotionsPage() {
         }
     }, []);
 
-    const handleSaveProgram = async (programData: Omit<Program, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date }, id?: string) => {
+    const handleSaveProgram = async (programData: Omit<Program, 'id' | 'startDate' | 'endDate' | 'status'> & { startDate?: Date, endDate?: Date }, id?: string) => {
         setIsLoading(true);
         try {
             const dataToSave: any = {
                 ...programData,
+                status: 'Active',
                 startDate: programData.startDate ? Timestamp.fromDate(programData.startDate) : null,
                 endDate: programData.endDate ? Timestamp.fromDate(programData.endDate) : null,
             };
 
             // Remove undefined fields
-            if (dataToSave.reward.referrer.maxDiscount === undefined) delete dataToSave.reward.referrer.maxDiscount;
-            if (dataToSave.reward.referrer.expiryDays === undefined) delete dataToSave.reward.referrer.expiryDays;
-            if (dataToSave.reward.referred?.maxDiscount === undefined) delete dataToSave.reward.referred?.maxDiscount;
-            if (dataToSave.reward.referred?.expiryDays === undefined) delete dataToSave.reward.referred?.expiryDays;
+            if (dataToSave.reward.referrer?.maxDiscount === undefined) delete dataToSave.reward.referrer.maxDiscount;
+            if (dataToSave.reward.referrer?.expiryDays === undefined) delete dataToSave.reward.referrer.expiryDays;
+            if (dataToSave.reward.referred?.maxDiscount === undefined) delete dataToSave.reward.referred.maxDiscount;
+            if (dataToSave.reward.referred?.expiryDays === undefined) delete dataToSave.reward.referred.expiryDays;
+            if (dataToSave.condition === undefined) delete dataToSave.condition;
+            if (dataToSave.reward.referred === undefined) delete dataToSave.reward.referred;
 
             if (id) {
                 await updateDoc(doc(db, 'programs', id), dataToSave);
@@ -1282,3 +1294,5 @@ export default function PromotionsPage() {
         </AlertDialog>
     )
 }
+
+    
