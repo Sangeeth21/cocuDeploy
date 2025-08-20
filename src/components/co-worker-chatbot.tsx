@@ -172,10 +172,8 @@ export function CoWorkerChatbot() {
                 <PopoverTrigger asChild>
                     <Button 
                         className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
-                        variant="ghost"
-                        size="icon"
                     >
-                        <Image src="/co-worker.png" alt="Co-Worker Assistant" fill className="object-contain p-2" />
+                        <Building className="h-8 w-8 text-primary-foreground" />
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-96 p-0 mr-4" align="end">
