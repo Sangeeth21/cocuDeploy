@@ -37,11 +37,11 @@ const getFinalPrice = (product: DisplayProduct, commissionRates: any, applicable
     }
     const originalPrice = finalPrice;
     
-    if (applicableDiscount) {
-        finalPrice *= (1 - (applicableDiscount.reward.value / 100));
+    if (applicableDiscount && applicableDiscount.reward.referrer?.value) {
+        finalPrice *= (1 - (applicableDiscount.reward.referrer.value / 100));
     }
     
-    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.value };
+    return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount, discountValue: applicableDiscount?.reward.referrer?.value };
 }
 
 

@@ -239,7 +239,7 @@ export default function B2BProductDetailPage() {
     
     let discountValue = 0;
     if (applicableDiscount?.type === 'Sale' || applicableDiscount?.type === 'discount') {
-        discountValue = applicableDiscount?.reward.value || 0;
+        discountValue = applicableDiscount?.reward.referrer?.value || 0;
     }
     
     if (applicableDiscount && discountValue > 0) {
