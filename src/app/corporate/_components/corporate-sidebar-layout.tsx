@@ -18,7 +18,6 @@ import { NotificationPopover } from "@/components/notification-popover";
 import { SearchBar } from "@/components/search-bar";
 import { ComparisonPreview } from "@/components/comparison-preview";
 import { BidPreview } from "@/components/bid-preview";
-import { useBidRequest } from "@/context/bid-request-context";
 import { CartPreview } from "@/components/cart-preview";
 
 
@@ -136,7 +135,7 @@ function CorporateSidebarLayoutContent({ children }: { children: React.ReactNode
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
-                         <BidPreview />
+                         <BidPreview platform="corporate" />
                          <ComparisonPreview platform="corporate" />
                          <CartPreview />
                          <NotificationPopover notifications={mockCorporateActivity} />

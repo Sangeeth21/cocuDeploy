@@ -3,20 +3,40 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Gavel, X } from "lucide-react";
+import { Gavel, X, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { useBidRequest } from "@/context/bid-request-context";
 import { useUser } from "@/context/user-context";
-import type { DisplayProduct } from "@/lib/types";
+import type { DisplayProduct, Program } from "@/lib/types";
+import { Badge } from "./ui/badge";
+import { useState, useEffect, useMemo } from "react";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
-export function BidPreview() {
+
+export function BidPreview({ platform = 'personalized' }: { platform?: 'personalized' | 'corporate' }) {
     const { bidItems, removeFromBid, totalItems } = useBidRequest();
     const { commissionRates } = useUser();
+    const [promotions, setPromotions] = useState<Program[]>([]);
 
-    const getFinalPrice = (product: DisplayProduct) => {
-        const commissionRule = commissionRates?.corporate?.[product.category];
+    useEffect(() => {
+        const promotionsQuery = query(collection(db, "programs"), where("status", "==", "Active"), where("target", "==", "customer"));
+        const unsubscribe = onSnapshot(promotionsQuery, (snapshot) => {
+            const activePromos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Program));
+            const relevantPromos = activePromos.filter(p => p.productScope === 'all' && (p.platform === platform || p.platform === 'both'));
+            setPromotions(relevantPromos);
+        });
+        return () => unsubscribe();
+    }, [platform]);
+
+    const applicableDiscount = useMemo(() => {
+        return promotions.find(p => p.type === 'discount');
+    }, [promotions]);
+
+    const getPriceDetails = (product: DisplayProduct) => {
+        const commissionRule = commissionRates?.[platform]?.[product.category];
         let finalPrice = product.price;
         if (commissionRule && commissionRule.buffer) {
             if (commissionRule.buffer.type === 'fixed') {
@@ -25,8 +45,16 @@ export function BidPreview() {
                 finalPrice *= (1 + (commissionRule.buffer.value / 100));
             }
         }
-        return finalPrice;
-    }
+        const originalPrice = finalPrice;
+        
+        let discountValue = 0;
+        if (applicableDiscount?.reward?.referrer?.value) {
+            discountValue = applicableDiscount.reward.referrer.value;
+            finalPrice *= (1 - (discountValue / 100));
+        }
+        
+        return { original: originalPrice, final: finalPrice, hasDiscount: !!applicableDiscount && discountValue > 0, discountValue };
+    };
 
     return (
         <Popover>
@@ -52,21 +80,34 @@ export function BidPreview() {
                        {bidItems.length > 0 ? (
                             <>
                                 <div className="max-h-[22rem] overflow-y-auto pr-2 space-y-4">
-                                {bidItems.map(item => (
-                                    <div key={item.id} className="flex items-start gap-4">
-                                        <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
-                                            <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="product image" />
+                                {bidItems.map(item => {
+                                    const priceDetails = getPriceDetails(item);
+                                    return (
+                                        <div key={item.id} className="flex items-start gap-4">
+                                            <div className="relative h-20 w-20 rounded-md overflow-hidden flex-shrink-0">
+                                                <Image src={item.imageUrl} alt={item.name} fill className="object-cover" data-ai-hint="product image" />
+                                                {priceDetails.hasDiscount && (
+                                                    <Badge variant="destructive" className="absolute top-1 left-1 text-[10px] h-auto px-1.5 py-0">
+                                                        <Tag className="mr-1 h-3 w-3" /> {priceDetails.discountValue}% OFF
+                                                    </Badge>
+                                                )}
+                                            </div>
+                                            <div className="flex-1 space-y-1">
+                                                <Link href={`/corporate/products/${item.id}`} className="text-sm font-medium leading-tight hover:text-primary">{item.name}</Link>
+                                                <p className="text-xs text-muted-foreground">{item.category}</p>
+                                                <div className="flex items-baseline gap-2">
+                                                    <p className="text-sm font-semibold">${priceDetails.final.toFixed(2)}</p>
+                                                    {priceDetails.hasDiscount && (
+                                                        <p className="text-xs text-muted-foreground line-through">${priceDetails.original.toFixed(2)}</p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => removeFromBid(item.id)}>
+                                                <X className="h-4 w-4" />
+                                            </Button>
                                         </div>
-                                        <div className="flex-1 space-y-1">
-                                            <Link href={`/corporate/products/${item.id}`} className="text-sm font-medium leading-tight hover:text-primary">{item.name}</Link>
-                                            <p className="text-xs text-muted-foreground">{item.category}</p>
-                                            <p className="text-xs text-muted-foreground">Est. Price: ${getFinalPrice(item).toFixed(2)}</p>
-                                        </div>
-                                        <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground" onClick={() => removeFromBid(item.id)}>
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    </div>
-                                ))}
+                                    )
+                                })}
                                 </div>
                                 <Separator />
                                 <Button asChild className="w-full">
