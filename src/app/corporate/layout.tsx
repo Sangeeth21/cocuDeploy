@@ -16,6 +16,7 @@ import { db } from "@/lib/firebase";
 import type { MarketingCampaign } from "@/lib/types";
 import { CoWorkerChatbot } from "@/components/co-worker-chatbot";
 import { Providers } from "@/components/layout/providers";
+import { BrandedLoader } from "@/components/branded-loader";
 
 
 function CorporateCampaignPopup() {
@@ -75,35 +76,37 @@ function CorporateCampaignPopup() {
 }
 
 function ProtectedCorporateLayout({ children }: { children: React.ReactNode }) {
-  const { isAdminLoggedIn } = useAdminAuth();
+  const { isAdminLoggedIn, isLoading } = useAdminAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  // This check is a placeholder for corporate-specific authentication
   useEffect(() => {
-    // If we are on a protected corporate route and not logged in, redirect to the login page.
-    if (!isAdminLoggedIn && pathname !== '/corporate') {
+    // Wait until loading is finished before checking auth state
+    if (!isLoading && !isAdminLoggedIn && pathname !== '/corporate') {
       router.replace("/corporate");
     }
-  }, [isAdminLoggedIn, router, pathname]);
+  }, [isAdminLoggedIn, isLoading, router, pathname]);
   
+  if (isLoading) {
+    return <BrandedLoader />;
+  }
+
   // The /corporate page is the login page, so it should not have the sidebar layout.
   if (pathname === '/corporate') {
     return <>{children}</>;
   }
 
-  // For any other page inside /corporate/*, if the user is not logged in, we show a loader/null
-  // while the useEffect above triggers the redirect.
-  if (!isAdminLoggedIn) {
-    return null; // Or a loading spinner
+  // If logged in, show the sidebar layout. Otherwise, the effect will redirect.
+  if (isAdminLoggedIn) {
+    return (
+      <CorporateSidebarLayout>
+        {children}
+      </CorporateSidebarLayout>
+    );
   }
 
-  // If logged in and on a protected corporate route, show the sidebar layout.
-  return (
-    <CorporateSidebarLayout>
-      {children}
-    </CorporateSidebarLayout>
-  );
+  // Render a loader or null while redirecting to avoid content flashing
+  return <BrandedLoader />;
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {

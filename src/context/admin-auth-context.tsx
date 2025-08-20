@@ -7,6 +7,7 @@ const ADMIN_AUTH_KEY = 'shopsphere_admin_auth_status';
 
 interface AdminAuthState {
     isAdminLoggedIn: boolean;
+    isLoading: boolean;
 }
 
 interface AdminAuthContextType extends AdminAuthState {
@@ -17,8 +18,7 @@ interface AdminAuthContextType extends AdminAuthState {
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
 export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
-    const [state, setState] = useState<AdminAuthState>({ isAdminLoggedIn: false });
-    const [isLoading, setIsLoading] = useState(true);
+    const [state, setState] = useState<AdminAuthState>({ isAdminLoggedIn: false, isLoading: true });
 
     useEffect(() => {
         try {
@@ -26,28 +26,31 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
             if (storedAuth) {
                 const parsedAuth = JSON.parse(storedAuth);
                 if (parsedAuth.isAdminLoggedIn === true) {
-                    setState({ isAdminLoggedIn: true });
+                    setState({ isAdminLoggedIn: true, isLoading: false });
+                } else {
+                    setState({ isAdminLoggedIn: false, isLoading: false });
                 }
+            } else {
+                setState({ isAdminLoggedIn: false, isLoading: false });
             }
         } catch (error) {
             console.error("Failed to parse admin auth status from localStorage", error);
-        } finally {
-            setIsLoading(false);
+            setState({ isAdminLoggedIn: false, isLoading: false });
         }
     }, []);
 
     const adminLogin = useCallback(() => {
-        const newState = { isAdminLoggedIn: true };
+        const newState = { isAdminLoggedIn: true, isLoading: false };
         setState(newState);
         try {
-            localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify(newState));
+            localStorage.setItem(ADMIN_AUTH_KEY, JSON.stringify({ isAdminLoggedIn: true }));
         } catch (error) {
             console.error("Failed to save admin auth status to localStorage", error);
         }
     }, []);
 
     const adminLogout = useCallback(() => {
-        const newState = { isAdminLoggedIn: false };
+        const newState = { isAdminLoggedIn: false, isLoading: false };
         setState(newState);
         try {
             localStorage.removeItem(ADMIN_AUTH_KEY);
@@ -56,9 +59,6 @@ export const AdminAuthProvider = ({ children }: { children: ReactNode }) => {
         }
     }, []);
 
-    if (isLoading) {
-        return null; // Or a loading spinner
-    }
 
     return (
         <AdminAuthContext.Provider value={{ ...state, adminLogin, adminLogout }}>
