@@ -111,7 +111,8 @@ export function ProductInteractions({ product, isCustomizable, quantity }: { pro
         openDialog('login');
         return;
     }
-    setIsChatOpen(true);
+    // Directly navigate to the account page with params to initiate chat
+    router.push(`/account?tab=messages&vendorId=${product.vendorId}&productName=${encodeURIComponent(product.name)}`);
   }
   
   const handleRequestSample = () => {
@@ -241,7 +242,7 @@ export function ProductInteractions({ product, isCustomizable, quantity }: { pro
             Message Vendor
         </Button>
       </div>
-
+      
        <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
             <DialogContent className="max-w-xl h-[80vh] flex flex-col p-0 gap-0">
                 {conversation && user ? (
