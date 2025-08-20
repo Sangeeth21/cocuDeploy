@@ -32,6 +32,7 @@ export function CoWorkerChatbot() {
     const [history, setHistory] = useState<{ sender: 'user' | 'bot', message: string }[]>([]);
     const [isCustomInputActive, setIsCustomInputActive] = useState(false);
     const [customInputValue, setCustomInputValue] = useState("");
+    const [imageError, setImageError] = useState(false);
 
     // Load state from sessionStorage on mount
     useEffect(() => {
@@ -172,8 +173,20 @@ export function CoWorkerChatbot() {
                 <PopoverTrigger asChild>
                     <Button 
                         className="h-16 w-16 md:h-20 md:w-20 rounded-full shadow-2xl animate-float p-0"
+                        variant="ghost"
+                        size="icon"
                     >
-                        <Building className="h-8 w-8 text-primary-foreground" />
+                        {imageError ? (
+                            <Building className="h-8 w-8 text-primary-foreground" />
+                        ) : (
+                            <Image 
+                                src="/co-worker.png" 
+                                alt="Co-Worker Assistant" 
+                                fill 
+                                className="object-contain p-2"
+                                onError={() => setImageError(true)}
+                            />
+                        )}
                     </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-96 p-0 mr-4" align="end">
