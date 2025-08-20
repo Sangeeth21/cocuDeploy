@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, ShieldCheck } from "lucide-react";
-import { AdminAuthProvider, useAdminAuth } from "@/context/admin-auth-context";
+import { useAdminAuth } from "@/context/admin-auth-context";
 
 function AdminLoginContent() {
   const [email, setEmail] = useState("");
@@ -73,9 +73,7 @@ function AdminLoginContent() {
 export default function AdminLoginPage() {
     return (
         <div className="flex items-center justify-center min-h-screen py-12 bg-muted/40">
-            <AdminAuthProvider>
-                <AdminLoginContent />
-            </AdminAuthProvider>
+            <AdminLoginContent />
         </div>
     )
 }
