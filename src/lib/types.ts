@@ -206,6 +206,7 @@ export type User = {
     phone?: string;
     role: 'Customer' | 'Vendor' | 'Admin';
     status: 'Active' | 'Suspended';
+    vendorType?: 'personalized' | 'corporate' | 'both';
     joinedDate: string;
     avatar: string;
     verificationStatus?: VerificationStatus;
@@ -364,8 +365,8 @@ export type ReferralCondition = {
 
 export type MilestoneCondition = {
     type: 'milestone';
-    orders?: number; // Number of orders
-    amount?: number; // Spending amount
+    orders: number;
+    amount: number;
 }
 
 export type Program = {
@@ -382,6 +383,11 @@ export type Program = {
     status: 'Active' | 'Scheduled' | 'Expired' | 'Paused';
     startDate: Date;
     endDate: Date;
+    productScope: 'all' | 'category' | 'product';
+    applicableCategories?: string[];
+    applicableProducts?: string[];
+    expiryDays?: number;
+    code?: string;
 };
 
 export type Coupon = {
@@ -408,9 +414,10 @@ export type Freebie = {
   vendorId: string;
   name: string;
   description: string;
-  price: number;
+  price: number; // Cost to the vendor for reimbursement
   imageUrl: string;
-  status: 'pending' | 'active' | 'paused';
+  status: 'pending' | 'active' | 'paused'; // Approval status
+  platform: ProgramPlatform;
 }
 
 

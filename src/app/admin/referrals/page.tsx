@@ -344,6 +344,7 @@ function FreebieDialog({ freebie, onSave, open, onOpenChange, isLoading }: { fre
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [price, setPrice] = useState<number | string>('');
+    const [platform, setPlatform] = useState<ProgramPlatform>('both');
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const { toast } = useToast();
@@ -353,6 +354,7 @@ function FreebieDialog({ freebie, onSave, open, onOpenChange, isLoading }: { fre
             setName(freebie?.name || '');
             setDescription(freebie?.description || '');
             setPrice(freebie?.price || '');
+            setPlatform(freebie?.platform || 'both');
             setPreviewUrl(freebie?.imageUrl || null);
             setImageFile(null);
         }
@@ -380,7 +382,7 @@ function FreebieDialog({ freebie, onSave, open, onOpenChange, isLoading }: { fre
             toast({ variant: 'destructive', title: 'Image Required', description: 'Please upload an image for the freebie.' });
             return;
         }
-        onSave({ name, description, price: numPrice }, imageFile);
+        onSave({ name, description, price: numPrice, platform }, imageFile);
     };
 
     return (
@@ -401,6 +403,17 @@ function FreebieDialog({ freebie, onSave, open, onOpenChange, isLoading }: { fre
                         <Label htmlFor="freebie-name">Name</Label>
                         <Input id="freebie-name" value={name} onChange={e => setName(e.target.value)} />
                     </div>
+                    <div className="space-y-2">
+                        <Label>Platform</Label>
+                        <Select value={platform} onValueChange={(v) => setPlatform(v as any)}>
+                            <SelectTrigger><SelectValue/></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="both">All Platforms</SelectItem>
+                                <SelectItem value="personalized">Personalized</SelectItem>
+                                <SelectItem value="corporate">Corporate</SelectItem>
+                            </SelectContent>
+                        </Select>
+                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="freebie-desc">Description</Label>
                         <Textarea id="freebie-desc" value={description} onChange={e => setDescription(e.target.value)} />
@@ -882,24 +895,29 @@ export default function PromotionsPage() {
         try {
             const typesWithNoConditions = ['discount', 'wallet_credit', 'onboarding'];
             const isNoConditionType = typesWithNoConditions.includes(programData.type);
-
+    
             const dataToSave: any = {
                 ...programData,
                 status: 'Active',
                 startDate: programData.startDate ? Timestamp.fromDate(programData.startDate) : null,
                 endDate: programData.endDate ? Timestamp.fromDate(programData.endDate) : null,
             };
-
+    
             if (isNoConditionType) {
                 delete dataToSave.condition;
-                delete dataToSave.reward.referred;
             }
 
-            // Remove undefined fields to prevent Firestore errors
-            if (dataToSave.reward.referrer?.maxDiscount === undefined) delete dataToSave.reward.referrer.maxDiscount;
-            if (dataToSave.reward.referrer?.expiryDays === undefined) delete dataToSave.reward.referrer.expiryDays;
-            if (dataToSave.reward.referred?.maxDiscount === undefined) delete dataToSave.reward.referred.maxDiscount;
-            if (dataToSave.reward.referred?.expiryDays === undefined) delete dataToSave.reward.referred.expiryDays;
+            if(programData.reward.referred === undefined) {
+                 delete dataToSave.reward.referred;
+            }
+
+            if(dataToSave.reward?.referrer?.maxDiscount === undefined || isNaN(dataToSave.reward.referrer.maxDiscount)) delete dataToSave.reward.referrer.maxDiscount;
+            if(dataToSave.reward?.referrer?.expiryDays === undefined || isNaN(dataToSave.reward.referrer.expiryDays)) delete dataToSave.reward.referrer.expiryDays;
+            
+            if(dataToSave.reward?.referred) {
+                if (dataToSave.reward.referred.maxDiscount === undefined || isNaN(dataToSave.reward.referred.maxDiscount)) delete dataToSave.reward.referred.maxDiscount;
+                if (dataToSave.reward.referred.expiryDays === undefined || isNaN(dataToSave.reward.referred.expiryDays)) delete dataToSave.reward.referred.expiryDays;
+            }
             
             if (id) {
                 await updateDoc(doc(db, 'programs', id), dataToSave);
