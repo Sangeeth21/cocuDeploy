@@ -102,7 +102,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             return;
         }
         const { product, customizations, quantity = 1 } = payload;
-        
+
         const newCartItem: CartItem = {
             instanceId: `${product.id}-${Date.now()}`,
             product,
@@ -110,7 +110,29 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
             customizations,
         };
         
-        const newCart = [...state.cartItems, newCartItem];
+        let newCart: CartItem[];
+
+        // For B2B products, always add as a new line item to handle potential unique customizations or quote requests.
+        // For personal products, check if an identical non-customized item exists and increment its quantity.
+        if (product.b2bEnabled) {
+            newCart = [...state.cartItems, newCartItem];
+        } else {
+             const existingItemIndex = state.cartItems.findIndex(
+                item => item.product.id === product.id && 
+                        Object.keys(item.customizations).length === 0 &&
+                        Object.keys(customizations).length === 0
+            );
+
+            if (existingItemIndex > -1) {
+                newCart = state.cartItems.map((item, index) =>
+                    index === existingItemIndex
+                        ? { ...item, quantity: item.quantity + (quantity || 1) }
+                        : item
+                );
+            } else {
+                newCart = [...state.cartItems, newCartItem];
+            }
+        }
         
         dispatch({ type: 'SET_CART', payload: newCart }); // Optimistic update
         await updateFirestoreCart(newCart);
@@ -126,7 +148,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         const itemToUpdate = state.cartItems.find(item => item.instanceId === instanceId);
         if (!itemToUpdate) return;
         
-        const newQuantity = Math.max(1, itemToUpdate.quantity + delta);
+        const minQuantity = itemToUpdate.product.b2bEnabled ? (itemToUpdate.product.moq || 1) : 1;
+        const newQuantity = Math.max(minQuantity, itemToUpdate.quantity + delta);
+
         const newCart = state.cartItems.map(item => 
             item.instanceId === instanceId ? { ...item, quantity: newQuantity } : item
         );
