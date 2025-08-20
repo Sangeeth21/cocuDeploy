@@ -145,7 +145,12 @@ export default function B2BProductDetailPage() {
             setPromotions(campaignsData as any); 
         });
 
-        const couponsQuery = query(collection(db, "coupons"), where("status", "==", "Active"), where("isPublic", "==", true));
+        const couponsQuery = query(
+            collection(db, "coupons"), 
+            where("status", "==", "Active"), 
+            where("isPublic", "==", true),
+            where("platform", "in", ["corporate", "both"])
+        );
         const unsubCoupons = onSnapshot(couponsQuery, snapshot => {
             setPublicCoupons(snapshot.docs.map(doc => ({id: doc.id, ...doc.data()} as Coupon)));
         });
