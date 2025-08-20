@@ -99,7 +99,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         }
         const { product, customizations, quantity = 1 } = payload;
         const hasCustomizations = Object.keys(customizations).length > 0;
-        const existingItem = !hasCustomizations 
+        
+        // B2B products or customized products should always be added as new items
+        const shouldStack = !hasCustomizations && !product.b2bEnabled;
+        
+        const existingItem = shouldStack 
             ? state.cartItems.find(item => item.product.id === product.id && Object.keys(item.customizations).length === 0)
             : null;
 
