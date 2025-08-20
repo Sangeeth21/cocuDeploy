@@ -521,7 +521,7 @@ function CreateProgramDialog({
             target: targetAudience as ProgramTarget,
             type: type,
             // Only add condition if it's relevant
-            ...(condition && !typesWithNoConditions.includes(type) && { condition }),
+            ...(!typesWithNoConditions.includes(type) && { condition }),
             reward,
             productScope: 'all', // Placeholder
             startDate: date?.from,
@@ -880,6 +880,9 @@ export default function PromotionsPage() {
     const handleSaveProgram = async (programData: Omit<Program, 'id' | 'startDate' | 'endDate' | 'status'> & { startDate?: Date, endDate?: Date }, id?: string) => {
         setIsLoading(true);
         try {
+            const typesWithNoConditions = ['discount', 'wallet_credit', 'onboarding'];
+            const isNoConditionType = typesWithNoConditions.includes(programData.type);
+
             const dataToSave: any = {
                 ...programData,
                 status: 'Active',
@@ -887,14 +890,17 @@ export default function PromotionsPage() {
                 endDate: programData.endDate ? Timestamp.fromDate(programData.endDate) : null,
             };
 
-            // Remove undefined fields
+            if (isNoConditionType) {
+                delete dataToSave.condition;
+                delete dataToSave.reward.referred;
+            }
+
+            // Remove undefined fields to prevent Firestore errors
             if (dataToSave.reward.referrer?.maxDiscount === undefined) delete dataToSave.reward.referrer.maxDiscount;
             if (dataToSave.reward.referrer?.expiryDays === undefined) delete dataToSave.reward.referrer.expiryDays;
             if (dataToSave.reward.referred?.maxDiscount === undefined) delete dataToSave.reward.referred.maxDiscount;
             if (dataToSave.reward.referred?.expiryDays === undefined) delete dataToSave.reward.referred.expiryDays;
-            if (dataToSave.condition === undefined) delete dataToSave.condition;
-            if (dataToSave.reward.referred === undefined) delete dataToSave.reward.referred;
-
+            
             if (id) {
                 await updateDoc(doc(db, 'programs', id), dataToSave);
                 toast({ title: "Program Updated!", description: `"${dataToSave.name}" has been successfully updated.` });
@@ -1294,5 +1300,3 @@ export default function PromotionsPage() {
         </AlertDialog>
     )
 }
-
-    
