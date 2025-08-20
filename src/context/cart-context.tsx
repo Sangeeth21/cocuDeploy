@@ -5,7 +5,7 @@ import React, { createContext, useContext, useReducer, ReactNode, useEffect, use
 import type { DisplayProduct, CustomizationValue } from '@/lib/types';
 import { useUser } from './user-context';
 import { db } from '@/lib/firebase';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc, getDoc } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
 import { usePathname } from 'next/navigation';
 
@@ -97,45 +97,65 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const addToCart = async (payload: { product: DisplayProduct, customizations: { [key: string]: Partial<CustomizationValue> }, quantity?: number }) => {
-        if (!isLoggedIn) {
-            toast({ variant: 'destructive', title: "Please log in to add items to your cart."});
+        if (!isLoggedIn || !user?.id) {
+            toast({ variant: 'destructive', title: "Please log in to add items to your cart." });
             return;
         }
+
         const { product, customizations, quantity = 1 } = payload;
+        const userDocRef = doc(db, "users", user.id);
 
-        const newCartItem: CartItem = {
-            instanceId: `${product.id}-${Date.now()}`,
-            product,
-            quantity: product.b2bEnabled ? (quantity < (product.moq || 1) ? product.moq! : quantity) : quantity,
-            customizations,
-        };
-        
-        let newCart: CartItem[];
+        try {
+            // Get current cart from Firestore to ensure we have the latest state
+            const docSnap = await getDoc(userDocRef);
+            const currentCart: CartItem[] = docSnap.exists() ? docSnap.data().cart || [] : [];
+            let newCart: CartItem[];
+            
+            const moq = product.moq || 1;
+            const finalQuantity = product.b2bEnabled ? Math.max(quantity, moq) : quantity;
 
-        // For B2B products, always add as a new line item to handle potential unique customizations or quote requests.
-        // For personal products, check if an identical non-customized item exists and increment its quantity.
-        if (product.b2bEnabled) {
-            newCart = [...state.cartItems, newCartItem];
-        } else {
-             const existingItemIndex = state.cartItems.findIndex(
-                item => item.product.id === product.id && 
-                        Object.keys(item.customizations).length === 0 &&
-                        Object.keys(customizations).length === 0
-            );
-
-            if (existingItemIndex > -1) {
-                newCart = state.cartItems.map((item, index) =>
-                    index === existingItemIndex
-                        ? { ...item, quantity: item.quantity + (quantity || 1) }
-                        : item
-                );
+            // For corporate products, always add as a new item.
+            // For personal products, check if an identical non-customized item exists.
+            if (product.b2bEnabled) {
+                 const newCartItem: CartItem = {
+                    instanceId: `${product.id}-${Date.now()}`,
+                    product,
+                    quantity: finalQuantity,
+                    customizations,
+                };
+                newCart = [...currentCart, newCartItem];
             } else {
-                newCart = [...state.cartItems, newCartItem];
+                const existingItemIndex = currentCart.findIndex(
+                    item => item.product.id === product.id && Object.keys(item.customizations).length === 0
+                );
+
+                if (existingItemIndex > -1) {
+                    newCart = currentCart.map((item, index) =>
+                        index === existingItemIndex
+                            ? { ...item, quantity: item.quantity + finalQuantity }
+                            : item
+                    );
+                } else {
+                    const newCartItem: CartItem = {
+                        instanceId: `${product.id}-${Date.now()}`,
+                        product,
+                        quantity: finalQuantity,
+                        customizations,
+                    };
+                    newCart = [...currentCart, newCartItem];
+                }
             }
+            
+            // Update Firestore with the new cart
+            await updateDoc(userDocRef, { cart: newCart });
+            
+            // The onSnapshot listener will automatically update the local state.
+            toast({ title: "Added to Cart!", description: `${finalQuantity} x ${product.name}` });
+
+        } catch (error) {
+            console.error("Failed to add to cart:", error);
+            toast({ variant: 'destructive', title: "Could not add item to cart." });
         }
-        
-        dispatch({ type: 'SET_CART', payload: newCart }); // Optimistic update
-        await updateFirestoreCart(newCart);
     };
 
     const removeFromCart = async (instanceId: string) => {
