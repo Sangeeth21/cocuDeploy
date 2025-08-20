@@ -481,7 +481,9 @@ function CreateProgramDialog({
             if(program.reward.referred) setReferredUserReward(program.reward.referred);
             if(program.condition?.type === 'referral') setReferralCondition(program.condition);
             if(program.condition?.type === 'milestone') setMilestoneCondition(program.condition);
-            setDate({ from: program.startDate, to: program.endDate });
+            if(program.startDate && program.endDate) {
+                setDate({ from: new Date(program.startDate), to: new Date(program.endDate) });
+            }
         } else if (open && !program) {
             resetForm();
         }
@@ -499,6 +501,11 @@ function CreateProgramDialog({
             if (reward.expiryDays) newReward.expiryDays = reward.expiryDays;
             return newReward as Reward;
         };
+        
+        let reward: { referrer: Reward; referred?: Reward; } = { referrer: cleanReward(referrerReward) };
+        if (type === 'referral') {
+            reward.referred = cleanReward(referredUserReward);
+        }
 
         const programData: Omit<Program, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date } = {
             name,
@@ -506,10 +513,7 @@ function CreateProgramDialog({
             target: targetAudience as ProgramTarget,
             type: type,
             condition,
-            reward: {
-                referrer: cleanReward(referrerReward),
-                ...(type === 'referral' && { referred: cleanReward(referredUserReward) })
-            },
+            reward: reward,
             status: program?.status === 'Paused' ? 'Paused' : 'Active',
             startDate: date?.from,
             endDate: date?.to,
@@ -520,6 +524,16 @@ function CreateProgramDialog({
     const isNextDisabled = () => {
         if (step === 1) return !name || !targetAudience || !type || !date?.from || !date?.to;
         return false;
+    }
+    
+    const typesWithNoConditions = ['discount', 'wallet_credit', 'onboarding'];
+
+    const handleNext = () => {
+        if (step === 1 && typesWithNoConditions.includes(type)) {
+            setStep(3); // Skip conditions step
+        } else {
+            setStep(s => s + 1);
+        }
     }
 
     const renderStep = () => {
@@ -663,7 +677,7 @@ function CreateProgramDialog({
                      <div className="space-y-4">
                          <Card>
                              <CardHeader className="p-3">
-                                 <CardTitle className="text-base">Reward for Referrer</CardTitle>
+                                 <CardTitle className="text-base">Reward for {type === 'referral' ? 'Referrer' : 'User'}</CardTitle>
                              </CardHeader>
                              <CardContent className="p-3">
                                 <RewardEditor reward={referrerReward} setReward={setReferrerReward} audience={targetAudience!} />
@@ -697,7 +711,7 @@ function CreateProgramDialog({
                 <DialogFooter>
                     {step > 1 && <Button variant="outline" onClick={() => setStep(s => s - 1)}><ArrowLeft className="mr-2 h-4 w-4"/> Previous</Button>}
                     {step < 3 ? (
-                        <Button onClick={() => setStep(s => s + 1)} disabled={isNextDisabled()}>Next <ArrowRight className="ml-2 h-4 w-4"/></Button>
+                        <Button onClick={handleNext} disabled={isNextDisabled()}>Next <ArrowRight className="ml-2 h-4 w-4"/></Button>
                     ) : (
                         <Button onClick={handleSave} disabled={isLoading}>
                              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -857,14 +871,20 @@ export default function PromotionsPage() {
     const handleSaveProgram = async (programData: Omit<Program, 'id' | 'startDate' | 'endDate'> & { startDate?: Date, endDate?: Date }, id?: string) => {
         setIsLoading(true);
         try {
-            const dataToSave = {
+            const dataToSave: any = {
                 ...programData,
                 startDate: programData.startDate ? Timestamp.fromDate(programData.startDate) : null,
                 endDate: programData.endDate ? Timestamp.fromDate(programData.endDate) : null,
             };
 
+            // Remove undefined fields
+            if (dataToSave.reward.referrer.maxDiscount === undefined) delete dataToSave.reward.referrer.maxDiscount;
+            if (dataToSave.reward.referrer.expiryDays === undefined) delete dataToSave.reward.referrer.expiryDays;
+            if (dataToSave.reward.referred?.maxDiscount === undefined) delete dataToSave.reward.referred?.maxDiscount;
+            if (dataToSave.reward.referred?.expiryDays === undefined) delete dataToSave.reward.referred?.expiryDays;
+
             if (id) {
-                await updateDoc(doc(db, 'programs', id), dataToSave as any);
+                await updateDoc(doc(db, 'programs', id), dataToSave);
                 toast({ title: "Program Updated!", description: `"${dataToSave.name}" has been successfully updated.` });
             } else {
                 await addDoc(collection(db, "programs"), dataToSave);
