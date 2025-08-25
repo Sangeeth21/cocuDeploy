@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Search, Send, MessageSquare, AlertTriangle, Check, EyeOff, Eye, CheckCheck } from "lucide-react";
+import { Search, Send, MessageSquare, AlertTriangle, Check, EyeOff, Eye, CheckCheck, FileIcon, Download, ImageIcon, Paperclip, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
