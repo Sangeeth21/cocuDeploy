@@ -15,7 +15,7 @@ import { mockProducts } from "@/lib/mock-data";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useVerification } from "@/context/vendor-verification-context";
-import { ProductDetailsPreview } from "./new/_components/product-details-preview";
+import { ProductDetailsPreview } from "./create/_components/product-details-preview";
 
 type Template = {
     id: string;
